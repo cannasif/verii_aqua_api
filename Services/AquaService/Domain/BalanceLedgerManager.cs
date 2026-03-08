@@ -8,10 +8,12 @@ namespace aqua_api.Services
     public class BalanceLedgerManager : IBalanceLedgerManager
     {
         private readonly IUnitOfWork _uow;
+        private readonly ILocalizationService _localizationService;
 
-        public BalanceLedgerManager(IUnitOfWork uow)
+        public BalanceLedgerManager(IUnitOfWork uow, ILocalizationService localizationService)
         {
             _uow = uow;
+            _localizationService = localizationService;
         }
 
         public async Task ApplyDelta(
@@ -65,12 +67,12 @@ namespace aqua_api.Services
 
             if (nextCount < 0)
             {
-                throw new InvalidOperationException("Batch cage balance cannot go below zero count.");
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("BalanceLedgerManager.BatchCageCountCannotGoNegative"));
             }
 
             if (nextBiomass < 0)
             {
-                throw new InvalidOperationException("Batch cage balance cannot go below zero biomass.");
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("BalanceLedgerManager.BatchCageBiomassCannotGoNegative"));
             }
 
             balance.LiveCount = nextCount;
