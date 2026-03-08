@@ -99,7 +99,7 @@ namespace aqua_api.Services
             {
                 if (dto.QtyUnit <= 0)
                 {
-                    throw new InvalidOperationException("Miktar 0'dan büyük olmalıdır.");
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingLineService.QuantityMustBeGreaterThanZero"));
                 }
 
                 dto.FeedingId = await EnsureFeedingIdAsync(dto);
@@ -221,7 +221,7 @@ namespace aqua_api.Services
 
             if (!dto.ProjectId.HasValue || dto.ProjectId.Value <= 0)
             {
-                throw new InvalidOperationException("Besleme başlığı bulunamadı. Lütfen proje seçerek tekrar deneyin.");
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingLineService.HeaderNotFoundRetryWithProject"));
             }
 
             var targetDate = (dto.FeedingDate ?? DateTime.UtcNow).Date;
@@ -261,22 +261,22 @@ namespace aqua_api.Services
             return newHeader.Id;
         }
 
-        private static string MapDbError(DbUpdateException ex)
+        private string MapDbError(DbUpdateException ex)
         {
             var message = ex.InnerException?.Message ?? ex.Message;
             if (message.Contains("CK_RII_FeedingLine_Positive", StringComparison.OrdinalIgnoreCase))
             {
-                return "Besleme satırında miktar, birim gram ve toplam gram 0'dan büyük olmalıdır.";
+                return _localizationService.GetLocalizedString("FeedingLineService.PositiveValuesRequired");
             }
 
             if (message.Contains("FK_RII_FeedingLine_Feeding", StringComparison.OrdinalIgnoreCase))
             {
-                return "Besleme başlığı bulunamadı. Bugün için proje bazlı yeni başlık oluşturmayı tekrar deneyin.";
+                return _localizationService.GetLocalizedString("FeedingLineService.HeaderCreateRetryForToday");
             }
 
             if (message.Contains("FK_RII_FeedingLine_Stock", StringComparison.OrdinalIgnoreCase))
             {
-                return "Geçersiz stok seçtiniz.";
+                return _localizationService.GetLocalizedString("FeedingLineService.InvalidStockSelection");
             }
 
             return "Besleme satırı kaydedilirken hata oluştu.";

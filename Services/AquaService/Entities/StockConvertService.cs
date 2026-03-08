@@ -190,21 +190,21 @@ namespace aqua_api.Services
                 await _unitOfWork.BeginTransaction();
 
                 var convert = await _stockConvertRepository.GetForPost(stockConvertId)
-                    ?? throw new InvalidOperationException("Stock convert not found.");
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("StockConvertService.StockConvertNotFound"));
 
                 EnsureDraftStatus(convert.Status, nameof(StockConvert));
 
                 foreach (var line in convert.Lines.Where(x => !x.IsDeleted))
                 {
                     var fromBatch = line.FromFishBatch
-                        ?? throw new InvalidOperationException("From fish batch not found.");
+                        ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("StockConvertService.FromFishBatchNotFound"));
 
                     var fromStockId = fromBatch.FishStockId;
                     long? toStockId = line.ToFishBatch?.FishStockId;
                     var fromAverageGram = line.AverageGram;
                     if (line.NewAverageGram <= 0)
                     {
-                        throw new InvalidOperationException("Gram increment must be greater than 0.");
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("StockConvertService.GramIncrementMustBeGreaterThanZero"));
                     }
                     // NewAverageGram is treated as increment gram entered by user.
                     var toAverageGram = BatchMath.CalculateIncrementedAverageGram(fromAverageGram, line.NewAverageGram);
@@ -279,10 +279,10 @@ namespace aqua_api.Services
             }
         }
 
-        private static void EnsureDraftStatus(DocumentStatus status, string documentName)
+        private void EnsureDraftStatus(DocumentStatus status, string documentName)
         {
             if (status != DocumentStatus.Draft)
-                throw new InvalidOperationException($"{documentName} must be Draft before posting.");
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", documentName));
         }
 
     }

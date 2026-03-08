@@ -190,7 +190,7 @@ namespace aqua_api.Services
                 await _unitOfWork.BeginTransaction();
 
                 var mortality = await _mortalityRepository.GetForPost(mortalityId)
-                    ?? throw new InvalidOperationException("Mortality not found.");
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.MortalityNotFound"));
 
                 EnsureDraftStatus(mortality.Status, nameof(Mortality));
 
@@ -253,10 +253,10 @@ namespace aqua_api.Services
             }
         }
 
-        private static void EnsureDraftStatus(DocumentStatus status, string documentName)
+        private void EnsureDraftStatus(DocumentStatus status, string documentName)
         {
             if (status != DocumentStatus.Draft)
-                throw new InvalidOperationException($"{documentName} must be Draft before posting.");
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", documentName));
         }
 
     }

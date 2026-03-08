@@ -190,14 +190,14 @@ namespace aqua_api.Services
                 await _unitOfWork.BeginTransaction();
 
                 var weighing = await _weighingRepository.GetForPost(weighingId)
-                    ?? throw new InvalidOperationException("Weighing not found.");
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("WeighingService.WeighingNotFound"));
 
                 EnsureDraftStatus(weighing.Status, nameof(Weighing));
 
                 foreach (var line in weighing.Lines.Where(x => !x.IsDeleted))
                 {
                     var fishBatch = line.FishBatch
-                        ?? throw new InvalidOperationException("Fish batch not found for weighing line.");
+                        ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("WeighingService.FishBatchNotFoundForWeighingLine"));
 
                     var fromAvgGram = fishBatch.CurrentAverageGram;
                     fishBatch.CurrentAverageGram = line.MeasuredAverageGram;
@@ -251,10 +251,10 @@ namespace aqua_api.Services
             }
         }
 
-        private static void EnsureDraftStatus(DocumentStatus status, string documentName)
+        private void EnsureDraftStatus(DocumentStatus status, string documentName)
         {
             if (status != DocumentStatus.Draft)
-                throw new InvalidOperationException($"{documentName} must be Draft before posting.");
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", documentName));
         }
 
     }

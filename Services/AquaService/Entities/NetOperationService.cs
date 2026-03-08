@@ -189,7 +189,7 @@ namespace aqua_api.Services
                 await _unitOfWork.BeginTransaction();
 
                 var operation = await _netOperationRepository.GetForPost(netOperationId)
-                    ?? throw new InvalidOperationException("Net operation not found.");
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("NetOperationService.NetOperationNotFound"));
 
                 EnsureDraftStatus(operation.Status, nameof(NetOperation));
 
@@ -261,10 +261,10 @@ namespace aqua_api.Services
             }
         }
 
-        private static void EnsureDraftStatus(DocumentStatus status, string documentName)
+        private void EnsureDraftStatus(DocumentStatus status, string documentName)
         {
             if (status != DocumentStatus.Draft)
-                throw new InvalidOperationException($"{documentName} must be Draft before posting.");
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", documentName));
         }
 
     }

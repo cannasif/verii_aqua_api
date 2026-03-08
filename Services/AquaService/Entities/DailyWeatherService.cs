@@ -114,7 +114,7 @@ namespace aqua_api.Services
 
                 if (alreadyExists)
                 {
-                    throw new InvalidOperationException("Bu proje için bu tarihte hava durumu kaydı zaten mevcut.");
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("DailyWeatherService.ProjectDateAlreadyExists"));
                 }
 
                 var entity = _mapper.Map<DailyWeather>(dto);
@@ -221,7 +221,7 @@ namespace aqua_api.Services
                 var exists = await _dailyWeatherRepository.ExistsByProjectAndDate(request.ProjectId, request.Date);
 
                 if (exists)
-                    throw new InvalidOperationException("Daily weather already exists for this project and date.");
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("DailyWeatherService.ProjectDateAlreadyExists"));
 
                 var entity = new DailyWeather
                 {
@@ -291,30 +291,30 @@ namespace aqua_api.Services
             }
         }
 
-        private static string MapDbError(DbUpdateException ex)
+        private string MapDbError(DbUpdateException ex)
         {
             var message = ex.InnerException?.Message ?? ex.Message;
             if (message.Contains("UX_RII_DailyWeather_ProjectDate_Active", StringComparison.OrdinalIgnoreCase))
             {
-                return "Bu proje için bu tarihte hava durumu kaydı zaten mevcut.";
+                return _localizationService.GetLocalizedString("DailyWeatherService.ProjectDateAlreadyExists");
             }
 
             if (message.Contains("FK_RII_DailyWeather_Project", StringComparison.OrdinalIgnoreCase))
             {
-                return "Geçersiz proje seçtiniz.";
+                return _localizationService.GetLocalizedString("DailyWeatherService.InvalidProjectSelection");
             }
 
             if (message.Contains("FK_RII_DailyWeather_WeatherType", StringComparison.OrdinalIgnoreCase))
             {
-                return "Geçersiz hava tipi seçtiniz.";
+                return _localizationService.GetLocalizedString("DailyWeatherService.InvalidWeatherTypeSelection");
             }
 
             if (message.Contains("FK_RII_DailyWeather_WeatherSeverity", StringComparison.OrdinalIgnoreCase))
             {
-                return "Geçersiz hava şiddeti seçtiniz.";
+                return _localizationService.GetLocalizedString("DailyWeatherService.InvalidWeatherSeveritySelection");
             }
 
-            return "Hava durumu kaydı kaydedilirken hata oluştu.";
+            return _localizationService.GetLocalizedString("DailyWeatherService.SaveFailed");
         }
     }
 }

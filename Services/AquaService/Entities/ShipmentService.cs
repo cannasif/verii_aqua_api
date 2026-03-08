@@ -190,12 +190,12 @@ namespace aqua_api.Services
                 await _unitOfWork.BeginTransaction();
 
                 var shipment = await _shipmentRepository.GetForPost(shipmentId)
-                    ?? throw new InvalidOperationException("Shipment not found.");
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("ShipmentService.ShipmentNotFound"));
 
                 EnsureDraftStatus(shipment.Status, nameof(Shipment));
                 var lines = shipment.Lines.Where(x => !x.IsDeleted).ToList();
                 if (!lines.Any())
-                    throw new InvalidOperationException("Shipment must contain lines.");
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("ShipmentService.MustContainLines"));
 
                 var sourceProjectCageIds = new HashSet<long>();
                 foreach (var line in lines)
@@ -331,10 +331,10 @@ namespace aqua_api.Services
             }
         }
 
-        private static void EnsureDraftStatus(DocumentStatus status, string documentName)
+        private void EnsureDraftStatus(DocumentStatus status, string documentName)
         {
             if (status != DocumentStatus.Draft)
-                throw new InvalidOperationException($"{documentName} must be Draft before posting.");
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", documentName));
         }
     }
 }

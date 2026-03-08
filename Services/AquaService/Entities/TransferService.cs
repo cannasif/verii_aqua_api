@@ -190,17 +190,17 @@ namespace aqua_api.Services
                 await _unitOfWork.BeginTransaction();
 
                 var transfer = await _transferRepository.GetForPost(transferId)
-                    ?? throw new InvalidOperationException("Transfer not found.");
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("TransferService.TransferNotFound"));
 
                 EnsureDraftStatus(transfer.Status, nameof(Transfer));
                 if (!transfer.Lines.Any(x => !x.IsDeleted))
-                    throw new InvalidOperationException("Transfer must contain lines.");
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("TransferService.MustContainLines"));
 
                 var sourceProjectCageIds = new HashSet<long>();
                 foreach (var line in transfer.Lines.Where(x => !x.IsDeleted))
                 {
                     if (line.FromProjectCageId == line.ToProjectCageId)
-                        throw new InvalidOperationException("From and To cage cannot be same.");
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("TransferService.SourceAndTargetCageCannotBeSame"));
                     sourceProjectCageIds.Add(line.FromProjectCageId);
 
                     await _balanceLedgerManager.ApplyDelta(
@@ -295,10 +295,10 @@ namespace aqua_api.Services
             }
         }
 
-        private static void EnsureDraftStatus(DocumentStatus status, string documentName)
+        private void EnsureDraftStatus(DocumentStatus status, string documentName)
         {
             if (status != DocumentStatus.Draft)
-                throw new InvalidOperationException($"{documentName} must be Draft before posting.");
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", documentName));
         }
 
     }
