@@ -66,7 +66,7 @@ namespace aqua_api.Controllers
             {
                 return StatusCode(401, ApiResponse<UserDto>.ErrorResult(
                     _localizationService.GetLocalizedString("AuthService.UserIdNotFound"),
-                    "Unauthorized",
+                    _localizationService.GetLocalizedString("General.Unauthorized"),
                     401));
             }
 
