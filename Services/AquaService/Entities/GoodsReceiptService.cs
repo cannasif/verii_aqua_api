@@ -105,7 +105,7 @@ namespace aqua_api.Services
                 var normalizedReceiptNo = dto.ReceiptNo?.Trim() ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(normalizedReceiptNo))
                 {
-                    throw new InvalidOperationException("Fis numarasi zorunludur.");
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.ReceiptNumberRequired"));
                 }
 
                 var duplicateReceiptNo = await _unitOfWork.GoodsReceipts
@@ -114,7 +114,7 @@ namespace aqua_api.Services
 
                 if (duplicateReceiptNo)
                 {
-                    throw new InvalidOperationException("Var olan bir mal kabul no girdiniz.");
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.DuplicateReceiptNumber"));
                 }
 
                 if (dto.ProjectId.HasValue)
@@ -125,7 +125,7 @@ namespace aqua_api.Services
 
                     if (!projectExists)
                     {
-                        throw new InvalidOperationException("Secilen proje bulunamadi.");
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.ProjectNotFound"));
                     }
 
                     var existsForProject = await _unitOfWork.GoodsReceipts
@@ -134,7 +134,7 @@ namespace aqua_api.Services
 
                     if (existsForProject)
                     {
-                        throw new InvalidOperationException("Bu proje için zaten bir mal kabul kaydı mevcut.");
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.ProjectGoodsReceiptAlreadyExists"));
                     }
                 }
 
@@ -187,7 +187,7 @@ namespace aqua_api.Services
                 var normalizedReceiptNo = dto.ReceiptNo?.Trim() ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(normalizedReceiptNo))
                 {
-                    throw new InvalidOperationException("Fis numarasi zorunludur.");
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.ReceiptNumberRequired"));
                 }
 
                 var duplicateReceiptNo = await _unitOfWork.GoodsReceipts
@@ -196,7 +196,7 @@ namespace aqua_api.Services
 
                 if (duplicateReceiptNo)
                 {
-                    throw new InvalidOperationException("Var olan bir mal kabul no girdiniz.");
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.DuplicateReceiptNumber"));
                 }
 
                 if (dto.ProjectId.HasValue)
@@ -207,7 +207,7 @@ namespace aqua_api.Services
 
                     if (!projectExists)
                     {
-                        throw new InvalidOperationException("Secilen proje bulunamadi.");
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.ProjectNotFound"));
                     }
 
                     var existsForProject = await _unitOfWork.GoodsReceipts
@@ -216,7 +216,7 @@ namespace aqua_api.Services
 
                     if (existsForProject)
                     {
-                        throw new InvalidOperationException("Bu proje icin zaten bir mal kabul kaydi mevcut.");
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.ProjectGoodsReceiptAlreadyExists"));
                     }
                 }
 
@@ -288,34 +288,34 @@ namespace aqua_api.Services
                     .Include(x => x.Lines)
                     .ThenInclude(x => x.FishDistributions)
                     .FirstOrDefaultAsync(x => x.Id == goodsReceiptId && !x.IsDeleted)
-                    ?? throw new InvalidOperationException("GoodsReceipt not found.");
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.GoodsReceiptNotFound"));
 
                 EnsureDraftStatus(receipt.Status, nameof(GoodsReceipt));
                 if (!receipt.Lines.Any())
-                    throw new InvalidOperationException("GoodsReceipt must contain at least one line.");
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.MustContainAtLeastOneLine"));
 
                 var hasFish = receipt.Lines.Any(x => x.ItemType == GoodsReceiptItemType.Fish);
                 if (hasFish && !receipt.ProjectId.HasValue)
-                    throw new InvalidOperationException("ProjectId is required when receipt contains fish lines.");
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.ProjectRequiredForFishLines"));
 
                 foreach (var line in receipt.Lines.Where(x => !x.IsDeleted))
                 {
                     if (line.ItemType == GoodsReceiptItemType.Feed)
                     {
                         if (line.QtyUnit is null || line.GramPerUnit is null || line.TotalGram is null)
-                            throw new InvalidOperationException("Feed line requires QtyUnit, GramPerUnit, TotalGram.");
+                            throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.FeedLineValuesRequired"));
                         continue;
                     }
 
                     if (line.FishCount is null || line.FishAverageGram is null || line.FishTotalGram is null)
-                        throw new InvalidOperationException("Fish line requires FishCount, FishAverageGram, FishTotalGram.");
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.FishLineValuesRequired"));
 
                     if (!line.FishDistributions.Any(x => !x.IsDeleted))
-                        throw new InvalidOperationException("Fish line requires at least one cage distribution.");
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.FishLineDistributionRequired"));
 
                     var distributedCount = line.FishDistributions.Where(x => !x.IsDeleted).Sum(x => x.FishCount);
                     if (distributedCount != line.FishCount.Value)
-                        throw new InvalidOperationException("Fish distribution total must equal FishCount.");
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.FishDistributionTotalMustEqualFishCount"));
 
                     var fishBatchId = line.FishBatchId;
                     if (!fishBatchId.HasValue)
@@ -384,25 +384,25 @@ namespace aqua_api.Services
             }
         }
 
-        private static bool IsKnownGoodsReceiptConstraintError(DbUpdateException ex, out string message)
+        private bool IsKnownGoodsReceiptConstraintError(DbUpdateException ex, out string message)
         {
             var allMessages = ex.ToString();
 
             if (allMessages.Contains("UX_RII_GoodsReceipt_ReceiptNo_Active", StringComparison.OrdinalIgnoreCase))
             {
-                message = "Var olan bir mal kabul no girdiniz.";
+                message = _localizationService.GetLocalizedString("GoodsReceiptService.DuplicateReceiptNumber");
                 return true;
             }
 
             if (allMessages.Contains("UX_RII_GoodsReceipt_Project_Active", StringComparison.OrdinalIgnoreCase))
             {
-                message = "Bu proje icin zaten bir mal kabul kaydi mevcut.";
+                message = _localizationService.GetLocalizedString("GoodsReceiptService.ProjectGoodsReceiptAlreadyExists");
                 return true;
             }
 
             if (allMessages.Contains("FK_RII_GoodsReceipt_RII_Project_ProjectId", StringComparison.OrdinalIgnoreCase))
             {
-                message = "Secilen proje bulunamadi.";
+                message = _localizationService.GetLocalizedString("GoodsReceiptService.ProjectNotFound");
                 return true;
             }
 
@@ -410,10 +410,10 @@ namespace aqua_api.Services
             return false;
         }
 
-        private static void EnsureDraftStatus(DocumentStatus status, string documentName)
+        private void EnsureDraftStatus(DocumentStatus status, string documentName)
         {
             if (status != DocumentStatus.Draft)
-                throw new InvalidOperationException($"{documentName} must be Draft before posting.");
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", documentName));
         }
 
         private async Task<BatchCageBalance> GetOrCreateBalanceAsync(long fishBatchId, long projectCageId, long userId, DateTime asOfDate)
@@ -450,7 +450,7 @@ namespace aqua_api.Services
                 var nextCount = balance.LiveCount + signedCount;
                 var nextBiomass = balance.BiomassGram + signedBiomassGram;
                 if (nextCount < 0 || nextBiomass < 0)
-                    throw new InvalidOperationException("Batch cage balance cannot go below zero.");
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.BatchCageBalanceCannotGoNegative"));
 
                 balance.LiveCount = nextCount;
                 balance.BiomassGram = nextBiomass;
