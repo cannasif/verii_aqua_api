@@ -60,7 +60,9 @@ namespace Infrastructure.BackgroundJobs
             var skippedCount = 0;
             var failedCount = 0;
             var duplicatePayloadCount = 0;
-            var processedCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var branchCode = 0;
+            var compositeKey = string.Empty;
+            var processedCodeAndBranch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var erpStock in erpResponse.Data)
             {
@@ -71,7 +73,9 @@ namespace Infrastructure.BackgroundJobs
                     continue;
                 }
 
-                if (!processedCodes.Add(code))
+                branchCode = (int)erpStock.SubeKodu;
+                compositeKey = $"{code}|{branchCode}";
+                if (!processedCodeAndBranch.Add(compositeKey))
                 {
                     duplicatePayloadCount++;
                     continue;
@@ -81,7 +85,7 @@ namespace Infrastructure.BackgroundJobs
                 {
                     var stock = await _unitOfWork.Stocks
                         .Query(tracking: true, ignoreQueryFilters: true)
-                        .FirstOrDefaultAsync(x => x.ErpStockCode == code);
+                        .FirstOrDefaultAsync(x => x.ErpStockCode == code && x.BranchCode == branchCode);
 
                     var stockName = string.IsNullOrWhiteSpace(erpStock.StokAdi) ? code : erpStock.StokAdi!;
                     var unit = erpStock.OlcuBr1 ?? string.Empty;
@@ -98,7 +102,6 @@ namespace Infrastructure.BackgroundJobs
                     var kod4Adi = erpStock.Kod4Adi ?? string.Empty;
                     var kod5 = erpStock.Kod5 ?? string.Empty;
                     var kod5Adi = erpStock.Kod5Adi ?? string.Empty;
-                    var branchCode = (int)erpStock.SubeKodu;
 
                     if (stock == null)
                     {

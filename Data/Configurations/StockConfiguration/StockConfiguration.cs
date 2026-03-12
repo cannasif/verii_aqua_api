@@ -112,9 +112,11 @@ namespace aqua_api.Data.Configurations
                 .HasForeignKey(r => r.StockId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            // Indexes
+            // Indexes (composite for sync lookup by ErpStockCode + BranchCode)
             builder.HasIndex(e => e.ErpStockCode)
                 .HasDatabaseName("IX_Stock_ErpStockCode");
+            builder.HasIndex(e => new { e.ErpStockCode, e.BranchCode })
+                .HasDatabaseName("IX_Stock_ErpStockCode_BranchCode");
 
             builder.HasIndex(e => e.StockName)
                 .HasDatabaseName("IX_Stock_StockName");
