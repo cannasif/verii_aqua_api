@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using aqua_api.Helpers;
 
 namespace aqua_api.Data;
 
@@ -31,7 +32,7 @@ public sealed class AquaDbContextFactory : IDesignTimeDbContextFactory<AquaDbCon
         var connectionString = configuration.GetConnectionString("DefaultConnection");
         if (string.IsNullOrWhiteSpace(connectionString))
         {
-            throw new InvalidOperationException("Missing connection string: ConnectionStrings:DefaultConnection");
+            throw new InvalidOperationException(LocalizationBootstrap.GetString("AquaDbContextFactory.MissingDefaultConnection"));
         }
 
         var optionsBuilder = new DbContextOptionsBuilder<AquaDbContext>();
@@ -53,6 +54,6 @@ public sealed class AquaDbContextFactory : IDesignTimeDbContextFactory<AquaDbCon
             return candidateFromAssembly;
         }
 
-        throw new InvalidOperationException("Could not resolve project root containing appsettings.json.");
+        throw new InvalidOperationException(LocalizationBootstrap.GetString("AquaDbContextFactory.ProjectRootNotFound"));
     }
 }

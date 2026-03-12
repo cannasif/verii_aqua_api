@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using aqua_api.Data;
 using Infrastructure.BackgroundJobs.Interfaces;
+using aqua_api.Interfaces;
 
 namespace aqua_api.Controllers
 {
@@ -14,11 +15,13 @@ namespace aqua_api.Controllers
     {
         private readonly AquaDbContext _db;
         private readonly IBackgroundJobClient _backgroundJobClient;
+        private readonly ILocalizationService _localizationService;
 
-        public HangfireController(AquaDbContext db, IBackgroundJobClient backgroundJobClient)
+        public HangfireController(AquaDbContext db, IBackgroundJobClient backgroundJobClient, ILocalizationService localizationService)
         {
             _db = db;
             _backgroundJobClient = backgroundJobClient;
+            _localizationService = localizationService;
         }
 
         [HttpGet("stats")]
@@ -125,7 +128,7 @@ namespace aqua_api.Controllers
             var jobId = _backgroundJobClient.Enqueue<IStockSyncJob>(job => job.ExecuteAsync());
             return Ok(new
             {
-                Message = "Stock sync job enqueued.",
+                Message = _localizationService.GetLocalizedString("HangfireController.StockSyncJobEnqueued"),
                 JobId = jobId,
                 Timestamp = DateTime.UtcNow
             });

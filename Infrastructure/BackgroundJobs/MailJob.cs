@@ -13,12 +13,14 @@ namespace Infrastructure.BackgroundJobs
         private readonly IMailService _mailService;
         private readonly ILogger<MailJob> _logger;
         private readonly IConfiguration _configuration;
+        private readonly ILocalizationService _localizationService;
 
-        public MailJob(IMailService mailService, ILogger<MailJob> logger, IConfiguration configuration)
+        public MailJob(IMailService mailService, ILogger<MailJob> logger, IConfiguration configuration, ILocalizationService localizationService)
         {
             _mailService = mailService;
             _logger = logger;
             _configuration = configuration;
+            _localizationService = localizationService;
         }
 
         public async Task SendEmailAsync(string to, string subject, string body, bool isHtml = true, string? cc = null, string? bcc = null, List<string>? attachments = null)
@@ -36,7 +38,7 @@ namespace Infrastructure.BackgroundJobs
                 else
                 {
                     _logger.LogWarning($"MailJob: Failed to send email to {to}");
-                    throw new Exception($"Failed to send email to {to}");
+                    throw new Exception(_localizationService.GetLocalizedString("MailJob.EmailSendFailedForRecipient", to));
                 }
             }
             catch (Exception ex)
@@ -61,7 +63,7 @@ namespace Infrastructure.BackgroundJobs
                 else
                 {
                     _logger.LogWarning($"MailJob: Failed to send email to {to}");
-                    throw new Exception($"Failed to send email to {to}");
+                    throw new Exception(_localizationService.GetLocalizedString("MailJob.EmailSendFailedForRecipient", to));
                 }
             }
             catch (Exception ex)
@@ -74,89 +76,89 @@ namespace Infrastructure.BackgroundJobs
         public async Task SendUserCreatedEmailAsync(string email, string username, string password, string? firstName, string? lastName, string baseUrl)
         {
             var effectiveBaseUrl = GetFrontendBaseUrl();
-            var emailSubject = "Kullanıcınız oluşturulmuştur";
+            var emailSubject = _localizationService.GetLocalizedString("MailJob.UserCreatedSubject");
             var displayName = string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(lastName) 
                 ? username 
                 : $"{firstName} {lastName}".Trim();
 
             var content = $@"
-                <p>Sayın {displayName},</p>
-                <p>Kullanıcınız başarıyla oluşturulmuştur. Giriş bilgileriniz aşağıdadır:</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DearUser", displayName)}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.UserCreatedIntro")}</p>
                 <div class=""info-box"">
-                    <p><strong>Login için E-postanız:</strong> {email}</p>
-                    <p><strong>Şifreniz:</strong> {password}</p>
+                    <p><strong>{_localizationService.GetLocalizedString("MailJob.UserCreatedLoginEmailLabel")}</strong> {email}</p>
+                    <p><strong>{_localizationService.GetLocalizedString("MailJob.UserCreatedPasswordLabel")}</strong> {password}</p>
                 </div>
-                <p>Yukarıdaki bilgilerle giriş yapıp menü üzerinden kullanıcı şifrenizi değiştirebilirsiniz.</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.UserCreatedPasswordChangeInfo")}</p>
                 <div style=""text-align: center; margin-top: 30px;"">
-                    <a href=""{effectiveBaseUrl}"" class=""btn"">Giriş Yap</a>
+                    <a href=""{effectiveBaseUrl}"" class=""btn"">{_localizationService.GetLocalizedString("MailJob.LoginButton")}</a>
                 </div>";
 
-            var emailBody = GetEmailTemplate("Kullanıcınız Oluşturuldu", content);
+            var emailBody = GetEmailTemplate(_localizationService.GetLocalizedString("MailJob.UserCreatedTitle"), content);
             await SendEmailAsync(email, emailSubject, emailBody, true);
         }
 
         public async Task SendPasswordResetEmailAsync(string email, string fullName, string resetLink, string emailSubject)
         {
             var content = $@"
-                <p>Sayın {fullName},</p>
-                <p>Şifre sıfırlama talebiniz alınmıştır. Aşağıdaki butona tıklayarak şifrenizi sıfırlayabilirsiniz:</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DearUser", fullName)}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.ResetPasswordIntro")}</p>
                 <div style=""text-align: center; margin: 30px 0;"">
-                    <a href=""{resetLink}"" class=""btn"">Şifremi Sıfırla</a>
+                    <a href=""{resetLink}"" class=""btn"">{_localizationService.GetLocalizedString("MailJob.ResetPasswordButton")}</a>
                 </div>
-                <p>Veya aşağıdaki linki tarayıcınıza kopyalayabilirsiniz:</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.ResetPasswordLinkCopyInfo")}</p>
                 <p style=""word-break: break-all; color: #fb923c; font-size: 14px;"">{resetLink}</p>
                 <div style=""margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);"">
-                    <p style=""font-size: 13px; color: #94a3b8; margin: 0;"">Bu link 30 dakika süreyle geçerlidir.</p>
-                    <p style=""font-size: 13px; color: #94a3b8; margin: 5px 0 0 0;"">Eğer şifre sıfırlama talebinde bulunmadıysanız, lütfen bu e-postayı dikkate almayınız.</p>
+                    <p style=""font-size: 13px; color: #94a3b8; margin: 0;"">{_localizationService.GetLocalizedString("MailJob.ResetPasswordLinkValidFor30Minutes")}</p>
+                    <p style=""font-size: 13px; color: #94a3b8; margin: 5px 0 0 0;"">{_localizationService.GetLocalizedString("MailJob.ResetPasswordIgnoreIfNotRequested")}</p>
                 </div>";
 
-            var emailBody = GetEmailTemplate("Şifre Sıfırlama Talebi", content);
+            var emailBody = GetEmailTemplate(_localizationService.GetLocalizedString("MailJob.ResetPasswordTitle"), content);
             await SendEmailAsync(email, emailSubject, emailBody, true);
         }
 
         public async Task SendPasswordChangedEmailAsync(string email, string displayName, string baseUrl)
         {
             var effectiveBaseUrl = GetFrontendBaseUrl();
-            var emailSubject = "Şifreniz Güncellendi";
+            var emailSubject = _localizationService.GetLocalizedString("MailJob.PasswordChangedSubject");
             var content = $@"
-                <p>Sayın {displayName},</p>
-                <p>Eski şifreniz başarılı şekilde güncellenmiştir.</p>
-                <p>Hesabınıza güvenli şekilde devam edebilirsiniz.</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DearUser", displayName)}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.PasswordChangedIntro")}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.PasswordChangedContinueSecurely")}</p>
                 <div style=""text-align: center; margin-top: 30px;"">
-                    <a href=""{effectiveBaseUrl}"" class=""btn"">Giriş Yap</a>
+                    <a href=""{effectiveBaseUrl}"" class=""btn"">{_localizationService.GetLocalizedString("MailJob.LoginButton")}</a>
                 </div>";
 
-            var emailBody = GetEmailTemplate("Şifre Güncelleme Bildirimi", content);
+            var emailBody = GetEmailTemplate(_localizationService.GetLocalizedString("MailJob.PasswordChangedTitle"), content);
             await SendEmailAsync(email, emailSubject, emailBody, true);
         }
 
         public async Task SendPasswordResetCompletedEmailAsync(string email, string displayName, string baseUrl)
         {
             var effectiveBaseUrl = GetFrontendBaseUrl();
-            var emailSubject = "Şifre Sıfırlama İşlemi Tamamlandı";
+            var emailSubject = _localizationService.GetLocalizedString("MailJob.PasswordResetCompletedSubject");
             var content = $@"
-                <p>Sayın {displayName},</p>
-                <p>Şifre resetleme işlemi başarılı şekilde tamamlanmıştır.</p>
-                <p>Yeni şifreniz ile güvenli şekilde giriş yapabilirsiniz.</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DearUser", displayName)}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.PasswordResetCompletedIntro")}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.PasswordResetCompletedLoginInfo")}</p>
                 <div style=""text-align: center; margin-top: 30px;"">
-                    <a href=""{effectiveBaseUrl}"" class=""btn"">Giriş Yap</a>
+                    <a href=""{effectiveBaseUrl}"" class=""btn"">{_localizationService.GetLocalizedString("MailJob.LoginButton")}</a>
                 </div>";
 
-            var emailBody = GetEmailTemplate("Şifre Sıfırlama Tamamlandı", content);
+            var emailBody = GetEmailTemplate(_localizationService.GetLocalizedString("MailJob.PasswordResetCompletedTitle"), content);
             await SendEmailAsync(email, emailSubject, emailBody, true);
         }
 
         public async Task SendDemandApprovalPendingEmailAsync(string email, string displayName, string subject, string approvalLink, string demandLink)
         {
             var content = $@"
-                <p>Sayın {displayName},</p>
-                <p>Onay bekleyen kaydınız bulunmaktadır. Aşağıdaki butonlarla işlemi onaylayabilir/reddedebilir veya detayları görüntüleyebilirsiniz.</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DearUser", displayName)}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DemandApprovalPendingIntro")}</p>
                 <div style=""text-align: center; margin: 30px 0;"">
-                    <a href=""{approvalLink}"" class=""btn"">Onayla / Reddet</a>
-                    <a href=""{demandLink}"" class=""btn btn-secondary"" style=""margin-left: 10px;"">Talebe Git</a>
+                    <a href=""{approvalLink}"" class=""btn"">{_localizationService.GetLocalizedString("MailJob.ApproveRejectButton")}</a>
+                    <a href=""{demandLink}"" class=""btn btn-secondary"" style=""margin-left: 10px;"">{_localizationService.GetLocalizedString("MailJob.GoToDemandButton")}</a>
                 </div>";
 
-            var body = GetEmailTemplate("Onay Bekleyen Kayıt", content);
+            var body = GetEmailTemplate(_localizationService.GetLocalizedString("MailJob.DemandApprovalPendingTitle"), content);
             await SendEmailAsync(email, subject, body, true);
         }
 
@@ -171,12 +173,12 @@ namespace Infrastructure.BackgroundJobs
             var effectiveBaseUrl = GetFrontendBaseUrl();
             var effectiveApprovalPath = GetFrontendPath("ApprovalPendingPath", "approvals/pending");
             var effectiveDemandPath = GetFrontendPath("DemandDetailPath", "demands");
-            var subject = "Onay Bekleyen Kaydınız Bulunmaktadır";
+            var subject = _localizationService.GetLocalizedString("MailJob.ApprovalPendingSubject");
             var demandLink = $"{effectiveBaseUrl}/{effectiveDemandPath}/{demandId}";
 
             foreach (var (email, fullName, uid) in usersToNotify)
             {
-                var displayName = string.IsNullOrWhiteSpace(fullName) ? "Değerli Kullanıcı" : fullName;
+                var displayName = string.IsNullOrWhiteSpace(fullName) ? _localizationService.GetLocalizedString("MailJob.DefaultDisplayName") : fullName;
                 var actionId = userIdToActionId.GetValueOrDefault(uid);
                 var approvalLink = actionId != 0
                     ? $"{effectiveBaseUrl}/{effectiveApprovalPath}?actionId={actionId}"
@@ -194,14 +196,14 @@ namespace Infrastructure.BackgroundJobs
         public async Task SendOrderApprovalPendingEmailAsync(string email, string displayName, string subject, string approvalLink, string orderLink)
         {
             var content = $@"
-                <p>Sayın {displayName},</p>
-                <p>Onay bekleyen sipariş kaydı bulunmaktadır. Aşağıdaki butonlarla işlemi onaylayabilir/reddedebilir veya detayları görüntüleyebilirsiniz.</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DearUser", displayName)}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.OrderApprovalPendingIntro")}</p>
                 <div style=""text-align: center; margin: 30px 0;"">
-                    <a href=""{approvalLink}"" class=""btn"">Onayla / Reddet</a>
-                    <a href=""{orderLink}"" class=""btn btn-secondary"" style=""margin-left: 10px;"">Siparişe Git</a>
+                    <a href=""{approvalLink}"" class=""btn"">{_localizationService.GetLocalizedString("MailJob.ApproveRejectButton")}</a>
+                    <a href=""{orderLink}"" class=""btn btn-secondary"" style=""margin-left: 10px;"">{_localizationService.GetLocalizedString("MailJob.GoToOrderButton")}</a>
                 </div>";
 
-            var body = GetEmailTemplate("Onay Bekleyen Sipariş", content);
+            var body = GetEmailTemplate(_localizationService.GetLocalizedString("MailJob.OrderApprovalPendingTitle"), content);
             await SendEmailAsync(email, subject, body, true);
         }
 
@@ -216,12 +218,12 @@ namespace Infrastructure.BackgroundJobs
             var effectiveBaseUrl = GetFrontendBaseUrl();
             var effectiveApprovalPath = GetFrontendPath("ApprovalPendingPath", "approvals/pending");
             var effectiveOrderPath = GetFrontendPath("OrderDetailPath", "orders");
-            var subject = "Onay Bekleyen Kaydınız Bulunmaktadır";
+            var subject = _localizationService.GetLocalizedString("MailJob.ApprovalPendingSubject");
             var orderLink = $"{effectiveBaseUrl}/{effectiveOrderPath}/{orderId}";
 
             foreach (var (email, fullName, uid) in usersToNotify)
             {
-                var displayName = string.IsNullOrWhiteSpace(fullName) ? "Değerli Kullanıcı" : fullName;
+                var displayName = string.IsNullOrWhiteSpace(fullName) ? _localizationService.GetLocalizedString("MailJob.DefaultDisplayName") : fullName;
                 var actionId = userIdToActionId.GetValueOrDefault(uid);
                 var approvalLink = actionId != 0
                     ? $"{effectiveBaseUrl}/{effectiveApprovalPath}?actionId={actionId}"
@@ -239,14 +241,14 @@ namespace Infrastructure.BackgroundJobs
         public async Task SendQuotationApprovalPendingEmailAsync(string email, string displayName, string subject, string approvalLink, string quotationLink)
         {
             var content = $@"
-                <p>Sayın {displayName},</p>
-                <p>Onay bekleyen teklif kaydı bulunmaktadır. Aşağıdaki butonlarla işlemi onaylayabilir/reddedebilir veya detayları görüntüleyebilirsiniz.</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DearUser", displayName)}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.QuotationApprovalPendingIntro")}</p>
                 <div style=""text-align: center; margin: 30px 0;"">
-                    <a href=""{approvalLink}"" class=""btn"">Onayla / Reddet</a>
-                    <a href=""{quotationLink}"" class=""btn btn-secondary"" style=""margin-left: 10px;"">Teklife Git</a>
+                    <a href=""{approvalLink}"" class=""btn"">{_localizationService.GetLocalizedString("MailJob.ApproveRejectButton")}</a>
+                    <a href=""{quotationLink}"" class=""btn btn-secondary"" style=""margin-left: 10px;"">{_localizationService.GetLocalizedString("MailJob.GoToQuotationButton")}</a>
                 </div>";
 
-            var body = GetEmailTemplate("Onay Bekleyen Teklif", content);
+            var body = GetEmailTemplate(_localizationService.GetLocalizedString("MailJob.QuotationApprovalPendingTitle"), content);
             await SendEmailAsync(email, subject, body, true);
         }
 
@@ -261,12 +263,12 @@ namespace Infrastructure.BackgroundJobs
             var effectiveBaseUrl = GetFrontendBaseUrl();
             var effectiveApprovalPath = GetFrontendPath("ApprovalPendingPath", "approvals/pending");
             var effectiveQuotationPath = GetFrontendPath("QuotationDetailPath", "quotations");
-            var subject = "Onay Bekleyen Kaydınız Bulunmaktadır";
+            var subject = _localizationService.GetLocalizedString("MailJob.ApprovalPendingSubject");
             var quotationLink = $"{effectiveBaseUrl}/{effectiveQuotationPath}/{quotationId}";
 
             foreach (var (email, fullName, uid) in usersToNotify)
             {
-                var displayName = string.IsNullOrWhiteSpace(fullName) ? "Değerli Kullanıcı" : fullName;
+                var displayName = string.IsNullOrWhiteSpace(fullName) ? _localizationService.GetLocalizedString("MailJob.DefaultDisplayName") : fullName;
                 var actionId = userIdToActionId.GetValueOrDefault(uid);
                 var approvalLink = actionId != 0
                     ? $"{effectiveBaseUrl}/{effectiveApprovalPath}?actionId={actionId}"
@@ -288,17 +290,17 @@ namespace Infrastructure.BackgroundJobs
             string quotationNo,
             string quotationLink)
         {
-            var subject = $"{quotationNo} Numaralı Teklifiniz Onaylanmıştır";
-            var displayName = string.IsNullOrWhiteSpace(creatorFullName) ? "Değerli Kullanıcı" : creatorFullName;
+            var subject = _localizationService.GetLocalizedString("MailJob.QuotationApprovedSubject", quotationNo);
+            var displayName = string.IsNullOrWhiteSpace(creatorFullName) ? _localizationService.GetLocalizedString("MailJob.DefaultDisplayName") : creatorFullName;
             
             var content = $@"
-                <p>Sayın {displayName},</p>
-                <p><strong>{quotationNo}</strong> numaralı teklifiniz <strong>{approverFullName}</strong> tarafından onaylanmıştır.</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DearUser", displayName)}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.QuotationApprovedIntro", quotationNo, approverFullName)}</p>
                 <div style=""text-align: center; margin: 30px 0;"">
-                    <a href=""{quotationLink}"" class=""btn"">Teklifi Görüntüle</a>
+                    <a href=""{quotationLink}"" class=""btn"">{_localizationService.GetLocalizedString("MailJob.ViewQuotationButton")}</a>
                 </div>";
 
-            var body = GetEmailTemplate("Teklif Onaylandı", content);
+            var body = GetEmailTemplate(_localizationService.GetLocalizedString("MailJob.QuotationApprovedTitle"), content);
             await SendEmailAsync(creatorEmail, subject, body, true);
         }
 
@@ -310,20 +312,20 @@ namespace Infrastructure.BackgroundJobs
             string rejectReason,
             string quotationLink)
         {
-            var subject = $"{quotationNo} Numaralı Teklifiniz Reddedilmiştir";
-            var displayName = string.IsNullOrWhiteSpace(creatorFullName) ? "Değerli Kullanıcı" : creatorFullName;
+            var subject = _localizationService.GetLocalizedString("MailJob.QuotationRejectedSubject", quotationNo);
+            var displayName = string.IsNullOrWhiteSpace(creatorFullName) ? _localizationService.GetLocalizedString("MailJob.DefaultDisplayName") : creatorFullName;
             
             var content = $@"
-                <p>Sayın {displayName},</p>
-                <p><strong>{quotationNo}</strong> numaralı teklifiniz <strong>{rejectorFullName}</strong> tarafından aşağıdaki gerekçe ile reddedilmiştir:</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DearUser", displayName)}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.QuotationRejectedIntro", quotationNo, rejectorFullName)}</p>
                 <div class=""info-box"">
-                    <p><strong>Red Nedeni:</strong> {rejectReason}</p>
+                    <p><strong>{_localizationService.GetLocalizedString("MailJob.RejectionReasonLabel")}</strong> {rejectReason}</p>
                 </div>
                 <div style=""text-align: center; margin: 30px 0;"">
-                    <a href=""{quotationLink}"" class=""btn"">Teklifi Görüntüle</a>
+                    <a href=""{quotationLink}"" class=""btn"">{_localizationService.GetLocalizedString("MailJob.ViewQuotationButton")}</a>
                 </div>";
 
-            var body = GetEmailTemplate("Teklif Reddedildi", content);
+            var body = GetEmailTemplate(_localizationService.GetLocalizedString("MailJob.QuotationRejectedTitle"), content);
             await SendEmailAsync(creatorEmail, subject, body, true);
         }
 
@@ -334,17 +336,17 @@ namespace Infrastructure.BackgroundJobs
             string demandNo,
             string demandLink)
         {
-            var subject = $"{demandNo} Numaralı Talebiniz Onaylanmıştır";
-            var displayName = string.IsNullOrWhiteSpace(creatorFullName) ? "Değerli Kullanıcı" : creatorFullName;
+            var subject = _localizationService.GetLocalizedString("MailJob.DemandApprovedSubject", demandNo);
+            var displayName = string.IsNullOrWhiteSpace(creatorFullName) ? _localizationService.GetLocalizedString("MailJob.DefaultDisplayName") : creatorFullName;
             
             var content = $@"
-                <p>Sayın {displayName},</p>
-                <p><strong>{demandNo}</strong> numaralı talebiniz <strong>{approverFullName}</strong> tarafından onaylanmıştır.</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DearUser", displayName)}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DemandApprovedIntro", demandNo, approverFullName)}</p>
                 <div style=""text-align: center; margin: 30px 0;"">
-                    <a href=""{demandLink}"" class=""btn"">Talebi Görüntüle</a>
+                    <a href=""{demandLink}"" class=""btn"">{_localizationService.GetLocalizedString("MailJob.ViewDemandButton")}</a>
                 </div>";
 
-            var body = GetEmailTemplate("Talep Onaylandı", content);
+            var body = GetEmailTemplate(_localizationService.GetLocalizedString("MailJob.DemandApprovedTitle"), content);
             await SendEmailAsync(creatorEmail, subject, body, true);
         }
 
@@ -356,20 +358,20 @@ namespace Infrastructure.BackgroundJobs
             string rejectReason,
             string demandLink)
         {
-            var subject = $"{demandNo} Numaralı Talep Reddedilmiştir";
-            var displayName = string.IsNullOrWhiteSpace(creatorFullName) ? "Değerli Kullanıcı" : creatorFullName;
+            var subject = _localizationService.GetLocalizedString("MailJob.DemandRejectedSubject", demandNo);
+            var displayName = string.IsNullOrWhiteSpace(creatorFullName) ? _localizationService.GetLocalizedString("MailJob.DefaultDisplayName") : creatorFullName;
             
             var content = $@"
-                <p>Sayın {displayName},</p>
-                <p><strong>{demandNo}</strong> numaralı talebiniz <strong>{rejectorFullName}</strong> tarafından aşağıdaki gerekçe ile reddedilmiştir:</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DearUser", displayName)}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DemandRejectedIntro", demandNo, rejectorFullName)}</p>
                 <div class=""info-box"">
-                    <p><strong>Red Nedeni:</strong> {rejectReason}</p>
+                    <p><strong>{_localizationService.GetLocalizedString("MailJob.RejectionReasonLabel")}</strong> {rejectReason}</p>
                 </div>
                 <div style=""text-align: center; margin: 30px 0;"">
-                    <a href=""{demandLink}"" class=""btn"">Talebi Görüntüle</a>
+                    <a href=""{demandLink}"" class=""btn"">{_localizationService.GetLocalizedString("MailJob.ViewDemandButton")}</a>
                 </div>";
 
-            var body = GetEmailTemplate("Talep Reddedildi", content);
+            var body = GetEmailTemplate(_localizationService.GetLocalizedString("MailJob.DemandRejectedTitle"), content);
             await SendEmailAsync(creatorEmail, subject, body, true);
         }
 
@@ -380,17 +382,17 @@ namespace Infrastructure.BackgroundJobs
             string orderNo,
             string orderLink)
         {
-            var subject = $"{orderNo} Numaralı Siparişiniz Onaylanmıştır";
-            var displayName = string.IsNullOrWhiteSpace(creatorFullName) ? "Değerli Kullanıcı" : creatorFullName;
+            var subject = _localizationService.GetLocalizedString("MailJob.OrderApprovedSubject", orderNo);
+            var displayName = string.IsNullOrWhiteSpace(creatorFullName) ? _localizationService.GetLocalizedString("MailJob.DefaultDisplayName") : creatorFullName;
             
             var content = $@"
-                <p>Sayın {displayName},</p>
-                <p><strong>{orderNo}</strong> numaralı siparişiniz <strong>{approverFullName}</strong> tarafından onaylanmıştır.</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DearUser", displayName)}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.OrderApprovedIntro", orderNo, approverFullName)}</p>
                 <div style=""text-align: center; margin: 30px 0;"">
-                    <a href=""{orderLink}"" class=""btn"">Siparişi Görüntüle</a>
+                    <a href=""{orderLink}"" class=""btn"">{_localizationService.GetLocalizedString("MailJob.ViewOrderButton")}</a>
                 </div>";
 
-            var body = GetEmailTemplate("Sipariş Onaylandı", content);
+            var body = GetEmailTemplate(_localizationService.GetLocalizedString("MailJob.OrderApprovedTitle"), content);
             await SendEmailAsync(creatorEmail, subject, body, true);
         }
 
@@ -402,20 +404,20 @@ namespace Infrastructure.BackgroundJobs
             string rejectReason,
             string orderLink)
         {
-            var subject = $"{orderNo} Numaralı Sipariş Reddedilmiştir";
-            var displayName = string.IsNullOrWhiteSpace(creatorFullName) ? "Değerli Kullanıcı" : creatorFullName;
+            var subject = _localizationService.GetLocalizedString("MailJob.OrderRejectedSubject", orderNo);
+            var displayName = string.IsNullOrWhiteSpace(creatorFullName) ? _localizationService.GetLocalizedString("MailJob.DefaultDisplayName") : creatorFullName;
             
             var content = $@"
-                <p>Sayın {displayName},</p>
-                <p><strong>{orderNo}</strong> numaralı siparişiniz <strong>{rejectorFullName}</strong> tarafından aşağıdaki gerekçe ile reddedilmiştir:</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.DearUser", displayName)}</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.OrderRejectedIntro", orderNo, rejectorFullName)}</p>
                 <div class=""info-box"">
-                    <p><strong>Red Nedeni:</strong> {rejectReason}</p>
+                    <p><strong>{_localizationService.GetLocalizedString("MailJob.RejectionReasonLabel")}</strong> {rejectReason}</p>
                 </div>
                 <div style=""text-align: center; margin: 30px 0;"">
-                    <a href=""{orderLink}"" class=""btn"">Siparişi Görüntüle</a>
+                    <a href=""{orderLink}"" class=""btn"">{_localizationService.GetLocalizedString("MailJob.ViewOrderButton")}</a>
                 </div>";
 
-            var body = GetEmailTemplate("Sipariş Reddedildi", content);
+            var body = GetEmailTemplate(_localizationService.GetLocalizedString("MailJob.OrderRejectedTitle"), content);
             await SendEmailAsync(creatorEmail, subject, body, true);
         }
 
@@ -468,8 +470,8 @@ namespace Infrastructure.BackgroundJobs
                 {content}
             </div>
             <div class=""footer"">
-                <p>Bu e-posta otomatik olarak gönderilmiştir, lütfen yanıtlamayınız.</p>
-                <p>&copy; {year} v3rii CRM</p>
+                <p>{_localizationService.GetLocalizedString("MailJob.AutomaticEmailFooter")}</p>
+                <p>&copy; {year} {_localizationService.GetLocalizedString("MailJob.BrandName")}</p>
             </div>
         </div>
         <br>

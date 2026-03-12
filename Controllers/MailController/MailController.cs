@@ -59,15 +59,15 @@ namespace aqua_api.Controllers
 
                 if (result)
                 {
-                    return Ok(new { message = "Email sent successfully", success = true });
+                    return Ok(new { message = _localizationService.GetLocalizedString("General.EmailSentSuccessfully"), success = true });
                 }
 
-                return BadRequest(new { message = "Failed to send email", success = false });
+                return BadRequest(new { message = _localizationService.GetLocalizedString("General.EmailSendFailed"), success = false });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error sending email");
-                return StatusCode(500, new { message = "An error occurred while sending email", error = ex.Message });
+                return StatusCode(500, new { message = _localizationService.GetLocalizedString("General.EmailSendFailed"), error = ex.Message });
             }
         }
 
@@ -151,8 +151,8 @@ namespace aqua_api.Controllers
                     to = user.Email;
                 }
 
-                var subject = "SMTP Test Mail";
-                var body = $"SMTP test email sent at {DateTime.UtcNow:O}";
+                var subject = _localizationService.GetLocalizedString("MailController.SmtpTestMailSubject");
+                var body = _localizationService.GetLocalizedString("MailController.SmtpTestMailBody", DateTime.UtcNow.ToString("O"));
 
                 var ok = await _mailService.SendEmailAsync(to, subject, body, false, null, null, null);
                 if (!ok)
@@ -204,7 +204,7 @@ namespace aqua_api.Controllers
 
                 return Ok(new
                 {
-                    message = "Email queued for sending",
+                    message = _localizationService.GetLocalizedString("General.EmailQueuedSuccessfully"),
                     success = true,
                     jobId = jobId
                 });
@@ -212,7 +212,7 @@ namespace aqua_api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error queuing email");
-                return StatusCode(500, new { message = "An error occurred while queuing email", error = ex.Message });
+                return StatusCode(500, new { message = _localizationService.GetLocalizedString("General.EmailQueueFailed"), error = ex.Message });
             }
         }
 
@@ -246,7 +246,7 @@ namespace aqua_api.Controllers
 
                 return Ok(new
                 {
-                    message = $"{dto.To.Count} emails queued for sending",
+                    message = _localizationService.GetLocalizedString("General.BulkEmailsQueuedSuccessfully", dto.To.Count),
                     success = true,
                     jobIds = jobIds,
                     count = jobIds.Count
@@ -255,7 +255,7 @@ namespace aqua_api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error queuing bulk emails");
-                return StatusCode(500, new { message = "An error occurred while queuing emails", error = ex.Message });
+                return StatusCode(500, new { message = _localizationService.GetLocalizedString("General.BulkEmailQueueFailed"), error = ex.Message });
             }
         }
 
@@ -269,7 +269,7 @@ namespace aqua_api.Controllers
             {
                 if (scheduleAt <= DateTime.UtcNow)
                 {
-                    return BadRequest(new { message = "Schedule time must be in the future", success = false });
+                    return BadRequest(new { message = _localizationService.GetLocalizedString("General.ScheduleTimeMustBeFuture"), success = false });
                 }
 
                 var delay = scheduleAt - DateTime.UtcNow;
@@ -290,7 +290,7 @@ namespace aqua_api.Controllers
 
                 return Ok(new
                 {
-                    message = "Email scheduled for sending",
+                    message = _localizationService.GetLocalizedString("General.EmailScheduledSuccessfully"),
                     success = true,
                     jobId = jobId,
                     scheduledAt = scheduleAt
@@ -299,7 +299,7 @@ namespace aqua_api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error scheduling email");
-                return StatusCode(500, new { message = "An error occurred while scheduling email", error = ex.Message });
+                return StatusCode(500, new { message = _localizationService.GetLocalizedString("General.EmailScheduleFailed"), error = ex.Message });
             }
         }
     }

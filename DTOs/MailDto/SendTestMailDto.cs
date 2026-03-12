@@ -5,8 +5,7 @@ namespace aqua_api.DTOs.MailDto
     public class SendTestMailDto
     {
         // Optional. If empty, email is sent to the current logged-in user's email.
-        [EmailAddress(ErrorMessage = "Invalid email address")]
+        [EmailAddress(ErrorMessage = "Validation.InvalidEmailAddress")]
         public string? To { get; set; }
     }
 }
-

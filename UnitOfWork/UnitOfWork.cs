@@ -1,4 +1,5 @@
 using aqua_api.Data;
+using aqua_api.Helpers;
 using aqua_api.Models;
 using aqua_api.Models.UserPermissions;
 using aqua_api.Repositories;
@@ -130,7 +131,7 @@ namespace aqua_api.UnitOfWork
         {
             if (_transaction != null)
             {
-                throw new InvalidOperationException("A transaction is already in progress.");
+                throw new InvalidOperationException(LocalizationBootstrap.GetString("EfUnitOfWork.TransactionAlreadyInProgress"));
             }
 
             _transaction = await _context.Database.BeginTransactionAsync();
@@ -140,7 +141,7 @@ namespace aqua_api.UnitOfWork
         {
             if (_transaction == null)
             {
-                throw new InvalidOperationException("No transaction is in progress.");
+                throw new InvalidOperationException(LocalizationBootstrap.GetString("EfUnitOfWork.TransactionNotInProgress"));
             }
 
             try

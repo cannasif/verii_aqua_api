@@ -12,10 +12,12 @@ namespace aqua_api.Controllers
     public class ErpController : ControllerBase
     {
         private readonly IErpService _IErpService;
+        private readonly ILocalizationService _localizationService;
 
-        public ErpController(IErpService erpService)
+        public ErpController(IErpService erpService, ILocalizationService localizationService)
         {
             _IErpService = erpService;
+            _localizationService = localizationService;
         }
 
         [HttpGet("getAllCustomers")]
@@ -75,7 +77,7 @@ namespace aqua_api.Controllers
         [AllowAnonymous]
         public IActionResult HealthCheckPublic()
         {
-            var healthResponse = new { Status = "Healthy", Timestamp = DateTime.UtcNow };
+            var healthResponse = new { Status = _localizationService.GetLocalizedString("General.Healthy"), Timestamp = DateTime.UtcNow };
             return StatusCode(200, healthResponse);
         }
     }

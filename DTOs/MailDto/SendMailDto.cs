@@ -4,22 +4,22 @@ namespace aqua_api.DTOs.MailDto
 {
     public class SendMailDto
     {
-        [Required(ErrorMessage = "To email address is required")]
-        [EmailAddress(ErrorMessage = "Invalid email address")]
+        [Required(ErrorMessage = "Validation.ToEmailAddressRequired")]
+        [EmailAddress(ErrorMessage = "Validation.InvalidEmailAddress")]
         public string To { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Subject is required")]
+        [Required(ErrorMessage = "Validation.SubjectRequired")]
         public string Subject { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Body is required")]
+        [Required(ErrorMessage = "Validation.BodyRequired")]
         public string Body { get; set; } = string.Empty;
 
         public bool IsHtml { get; set; } = true;
 
-        [EmailAddress(ErrorMessage = "Invalid CC email address")]
+        [EmailAddress(ErrorMessage = "Validation.InvalidCcEmailAddress")]
         public string? Cc { get; set; }
 
-        [EmailAddress(ErrorMessage = "Invalid BCC email address")]
+        [EmailAddress(ErrorMessage = "Validation.InvalidBccEmailAddress")]
         public string? Bcc { get; set; }
 
         public string? FromEmail { get; set; }

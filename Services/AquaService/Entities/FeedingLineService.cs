@@ -279,7 +279,7 @@ namespace aqua_api.Services
                 return _localizationService.GetLocalizedString("FeedingLineService.InvalidStockSelection");
             }
 
-            return "Besleme satırı kaydedilirken hata oluştu.";
+            return _localizationService.GetLocalizedString("FeedingLineService.SaveFailed");
         }
     }
 }
