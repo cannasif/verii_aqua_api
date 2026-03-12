@@ -23,6 +23,7 @@ namespace aqua_api.Data
         public DbSet<StockRelation> StockRelations { get; set; }
 
         public DbSet<SmtpSetting> SmtpSettings { get; set; }
+        public DbSet<JobFailureLog> JobFailureLogs { get; set; }
 
         public DbSet<PermissionDefinition> PermissionDefinitions { get; set; }
         public DbSet<PermissionGroup> PermissionGroups { get; set; }
