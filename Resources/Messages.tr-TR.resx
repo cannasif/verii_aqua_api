@@ -3420,4 +3420,5 @@
   <data name="WeighingService.WeighingNotFound" xml:space="preserve"><value>Tartım kaydı bulunamadı.</value></data>
   <data name="WeighingService.FishBatchNotFoundForWeighingLine" xml:space="preserve"><value>Tartım satırı için balık batch kaydı bulunamadı.</value></data>
   <data name="General.DocumentMustBeDraftBeforePosting" xml:space="preserve"><value>{0} belgesi post edilmeden önce Taslak durumda olmalıdır.</value></data>
+  <data name="StockSyncJob.ErpFetchFailed" xml:space="preserve"><value>ERP stok verisi alınamadı.</value></data>
 </root>

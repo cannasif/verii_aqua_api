@@ -3426,4 +3426,5 @@
   <data name="WeighingService.WeighingNotFound" xml:space="preserve"><value>Weighing record not found.</value></data>
   <data name="WeighingService.FishBatchNotFoundForWeighingLine" xml:space="preserve"><value>Fish batch not found for the weighing line.</value></data>
   <data name="General.DocumentMustBeDraftBeforePosting" xml:space="preserve"><value>The {0} document must be in Draft status before posting.</value></data>
+  <data name="StockSyncJob.ErpFetchFailed" xml:space="preserve"><value>ERP stock data could not be fetched.</value></data>
 </root>
