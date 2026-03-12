@@ -42,9 +42,9 @@ namespace Infrastructure.BackgroundJobs
                 return;
             }
 
-            var subject = $"[CRM][CRITICAL][Hangfire] Dead-letter: {payload.JobName}";
+            var subject = $"[AQUA][CRITICAL][Hangfire] Dead-letter: {payload.JobName}";
             var body = $@"
-                <h3>Critical Hangfire Job Failed</h3>
+                <h3>Critical Aqua Hangfire Job Failed</h3>
                 <p><b>JobId:</b> {payload.JobId}</p>
                 <p><b>JobName:</b> {payload.JobName}</p>
                 <p><b>Queue:</b> {payload.Queue}</p>
