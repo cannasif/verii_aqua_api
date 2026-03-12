@@ -14,17 +14,15 @@ namespace aqua_api.Services
 {
     public class ErpService : IErpService
     {
-        private readonly ErpAquaDbContext _erpContext;
-        private readonly AquaDbContext _cmsContext;
+        private readonly AquaDbContext _dbContext;
         private readonly ILogger<ErpService> _logger;
         private readonly ILocalizationService _localizationService;
         private readonly IMapper _mapper;
         private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public ErpService(ErpAquaDbContext erpContext, AquaDbContext cmsContext, ILogger<ErpService> logger, ILocalizationService localizationService, IMapper mapper, IHttpContextAccessor httpContextAccessor)
+        public ErpService(AquaDbContext dbContext, ILogger<ErpService> logger, ILocalizationService localizationService, IMapper mapper, IHttpContextAccessor httpContextAccessor)
         {
-            _erpContext = erpContext;
-            _cmsContext = cmsContext;
+            _dbContext = dbContext;
             _logger = logger;
             _localizationService = localizationService;
             _mapper = mapper;
@@ -57,7 +55,7 @@ namespace aqua_api.Services
                 var subeFromContext = _httpContextAccessor.HttpContext?.Items["BranchCode"] as string;
                 var subeKodu = string.IsNullOrWhiteSpace(subeFromContext) ? null : subeFromContext;
 
-                var result = await _erpContext.RII_FN_CARI
+                var result = await _dbContext.RII_FN_CARI
                     .FromSqlRaw(
                         "SELECT * FROM dbo.RII_FN_CARI({0}, {1})",
                         string.IsNullOrWhiteSpace(cariKodu) ? DBNull.Value : cariKodu,
@@ -94,7 +92,7 @@ namespace aqua_api.Services
                     ? null
                     : string.Join(",", subeFromContext.Split(',').Select(x => x.Trim()).Where(x => !string.IsNullOrWhiteSpace(x)));
 
-                var result = await _erpContext.RII_FN_CARI
+                var result = await _dbContext.RII_FN_CARI
                     .FromSqlRaw(
                         "SELECT * FROM dbo.RII_FN_CARI({0}, {1})",
                         string.IsNullOrWhiteSpace(cariParam) ? DBNull.Value : cariParam,
@@ -122,7 +120,7 @@ namespace aqua_api.Services
                 var subeFromContext = _httpContextAccessor.HttpContext?.Items["BranchCode"] as string;
                 var subeKodu = string.IsNullOrWhiteSpace(subeFromContext) ? null : subeFromContext;
 
-                var result = await _cmsContext.Set<RII_FN_STOK>()
+                var result = await _dbContext.Set<RII_FN_STOK>()
                     .FromSqlRaw(
                         "SELECT * FROM dbo.RII_FN_STOK({0}, {1})",
                         string.IsNullOrWhiteSpace(stokKodu) ? DBNull.Value : stokKodu,
@@ -147,22 +145,22 @@ namespace aqua_api.Services
         {
             try
             {
-                var connectionString = _erpContext.Database.GetConnectionString();
+                var connectionString = _dbContext.Database.GetConnectionString();
                 if (string.IsNullOrWhiteSpace(connectionString))
                 {
-                    _logger.LogWarning("GetBranchesAsync called but ErpConnection is not configured.");
+                    _logger.LogWarning("GetBranchesAsync called but DefaultConnection is not configured.");
                     return ApiResponse<List<BranchDto>>.ErrorResult(
                         _localizationService.GetLocalizedString("ErpService.InternalServerError"),
-                        "ErpConnection is not configured.",
+                        "DefaultConnection is not configured.",
                         StatusCodes.Status503ServiceUnavailable);
                 }
 
                 _logger.LogInformation(
                     "ERP branch list requested. BranchNo: {BranchNo}, ConnectionStringPresent: {HasConnectionString}",
                     branchNo,
-                    !string.IsNullOrWhiteSpace(_erpContext.Database.GetConnectionString()));
+                    !string.IsNullOrWhiteSpace(_dbContext.Database.GetConnectionString()));
 
-                var rows = await _erpContext.Set<RII_FN_BRANCHES>()
+                var rows = await _dbContext.Set<RII_FN_BRANCHES>()
                     .FromSqlRaw(
                         "SELECT * FROM dbo.RII_FN_BRANCHES({0})",
                         branchNo.HasValue ? branchNo.Value : DBNull.Value)
@@ -178,7 +176,7 @@ namespace aqua_api.Services
             {
                 try
                 {
-                    var conn = _erpContext.Database.GetDbConnection();
+                    var conn = _dbContext.Database.GetDbConnection();
                     _logger.LogError(ex,
                         "ERP branch list retrieval failed. BranchNo: {BranchNo}, ConnectionState: {ConnectionState}, DataSource: {DataSource}, Database: {Database}, InnerException: {InnerException}",
                         branchNo, conn?.State.ToString(), conn?.DataSource, conn?.Database, ex.InnerException?.Message);
@@ -197,7 +195,7 @@ namespace aqua_api.Services
             try
             {
                 string resultDate = tarih.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-                var result = await _cmsContext.Set<RII_FN_KUR>()
+                var result = await _dbContext.Set<RII_FN_KUR>()
                 .FromSqlRaw("SELECT * FROM dbo.RII_FN_KUR({0}, {1})", resultDate, fiyatTipi)
                 .AsNoTracking()
                 .ToListAsync();
@@ -217,7 +215,7 @@ namespace aqua_api.Services
         {
             try
             {   
-                var result = await _cmsContext.Set<RII_FN_2SHIPPING>()
+                var result = await _dbContext.Set<RII_FN_2SHIPPING>()
                 .FromSqlRaw("SELECT * FROM dbo.RII_FN_2SHIPPING({0})", customerCode)
                 .AsNoTracking()
                 .ToListAsync();
@@ -239,7 +237,7 @@ namespace aqua_api.Services
             {
                 var subeFromContext = _httpContextAccessor.HttpContext?.Items["BranchCode"] as string;
                 var subeKodu = string.IsNullOrWhiteSpace(subeFromContext) ? null : subeFromContext;
-                var result = await _cmsContext.Set<RII_STGROUP>()
+                var result = await _dbContext.Set<RII_STGROUP>()
                 .FromSqlRaw(
                     "SELECT * FROM dbo.RII_FN_STGRUP({0}, {1})",
                     string.IsNullOrWhiteSpace(grupKodu) ? DBNull.Value : grupKodu,
@@ -263,7 +261,7 @@ namespace aqua_api.Services
         {
             try
             {
-                var result = await _erpContext.Set<RII_FN_PROJECTCODE>()
+                var result = await _dbContext.Set<RII_FN_PROJECTCODE>()
                     .FromSqlRaw("SELECT * FROM dbo.RII_FN_PROJECTCODE()")
                     .AsNoTracking()
                     .ToListAsync();
@@ -285,9 +283,9 @@ namespace aqua_api.Services
             try
             {
                 // ERP veritabanı bağlantısını test et
-                await _erpContext.Database.CanConnectAsync();
+                await _dbContext.Database.CanConnectAsync();
 
-                return ApiResponse<object>.SuccessResult(new { Status = "Healthy", Timestamp = DateTime.UtcNow }, _localizationService.GetLocalizedString("ErpService.ErpConnectionSuccessful"));
+                return ApiResponse<object>.SuccessResult(new { Status = _localizationService.GetLocalizedString("General.Healthy"), Timestamp = DateTime.UtcNow }, _localizationService.GetLocalizedString("ErpService.ErpConnectionSuccessful"));
             }
             catch (Exception ex)
             {

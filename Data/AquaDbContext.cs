@@ -24,6 +24,10 @@ namespace aqua_api.Data
 
         public DbSet<SmtpSetting> SmtpSettings { get; set; }
         public DbSet<JobFailureLog> JobFailureLogs { get; set; }
+        public DbSet<RII_FN_CARI> RII_FN_CARI { get; set; }
+        public DbSet<RII_VW_STOK> RII_VW_STOK { get; set; }
+        public DbSet<RII_FN_BRANCHES> Branches { get; set; }
+        public DbSet<RII_FN_PROJECTCODE> RII_FN_PROJECTCODE { get; set; }
 
         public DbSet<PermissionDefinition> PermissionDefinitions { get; set; }
         public DbSet<PermissionGroup> PermissionGroups { get; set; }
@@ -100,6 +104,46 @@ namespace aqua_api.Data
                 entity.HasNoKey();
                 entity.ToTable("__EFMigrationsHistory_FN_STOK", t => t.ExcludeFromMigrations());
                 entity.ToFunction("RII_FN_STOK");
+            });
+
+            modelBuilder.Entity<RII_FN_CARI>(entity =>
+            {
+                entity.HasNoKey();
+                entity.ToTable("__EFMigrationsHistory_FN_CARI", t => t.ExcludeFromMigrations());
+                entity.ToFunction("RII_FN_CARI");
+                entity.Property(e => e.CARI_KOD).HasMaxLength(25);
+                entity.Property(e => e.CARI_ISIM).HasMaxLength(100);
+                entity.Property(e => e.CARI_TEL).HasMaxLength(20);
+                entity.Property(e => e.CARI_IL).HasMaxLength(50);
+                entity.Property(e => e.CARI_ADRES).HasMaxLength(500);
+            });
+
+            modelBuilder.Entity<RII_VW_STOK>(entity =>
+            {
+                entity.HasNoKey();
+                entity.ToTable("__EFMigrationsHistory_VW_STOK", t => t.ExcludeFromMigrations());
+                entity.ToFunction("RII_VW_STOK");
+                entity.Property(e => e.STOK_KODU).HasMaxLength(25);
+                entity.Property(e => e.STOK_ADI).HasMaxLength(50);
+                entity.Property(e => e.GRUP_KODU).HasMaxLength(10);
+                entity.Property(e => e.URETICI_KODU).HasMaxLength(25);
+            });
+
+            modelBuilder.Entity<RII_FN_BRANCHES>(entity =>
+            {
+                entity.HasNoKey();
+                entity.ToTable("__EFMigrationsHistory_FN_BRANCHES", t => t.ExcludeFromMigrations());
+                entity.ToFunction("RII_FN_BRANCHES");
+                entity.Property(e => e.UNVAN).HasMaxLength(150);
+            });
+
+            modelBuilder.Entity<RII_FN_PROJECTCODE>(entity =>
+            {
+                entity.HasNoKey();
+                entity.ToTable("__EFMigrationsHistory_FN_PROJECTCODE", t => t.ExcludeFromMigrations());
+                entity.ToFunction("RII_FN_PROJECTCODE");
+                entity.Property(e => e.PROJE_KODU).HasMaxLength(15);
+                entity.Property(e => e.PROJE_ACIKLAMA).HasMaxLength(50);
             });
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AquaDbContext).Assembly);

@@ -44,7 +44,7 @@ var configuredCorsOrigins = builder.Configuration
 
 if (configuredCorsOrigins.Length == 0)
 {
-    throw new InvalidOperationException("Cors:AllowedOrigins ayari bos birakilamaz.");
+    throw new InvalidOperationException(LocalizationBootstrap.GetString("General.CorsAllowedOriginsRequired"));
 }
 
 // Add services to the container.
@@ -56,7 +56,10 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
     options.InvalidModelStateResponseFactory = context =>
     {
         var localization = context.HttpContext.RequestServices.GetRequiredService<aqua_api.Interfaces.ILocalizationService>();
-        var errors = context.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+        var errors = context.ModelState.Values
+            .SelectMany(v => v.Errors)
+            .Select(e => localization.GetLocalizedString(e.ErrorMessage))
+            .ToList();
         var response = aqua_api.DTOs.ApiResponse<object>.ErrorResult(
             localization.GetLocalizedString("General.ValidationError"),
             localization.GetLocalizedString("General.ValidationError"),
@@ -125,16 +128,6 @@ builder.Services.AddHangfireServer(options =>
 
 // Creates the first admin user only when the DB is empty and BootstrapAdmin is configured.
 builder.Services.AddHostedService<AdminBootstrapHostedService>();
-
-// ERP Database Configuration - Using SQL Server
-builder.Services.AddDbContext<ErpAquaDbContext>(options =>
-{
-    var connectionString = builder.Configuration.GetConnectionString("ErpConnection");
-    options.UseSqlServer(connectionString, sqlOptions =>
-    {
-        sqlOptions.CommandTimeout(60);
-    });
-});
 
 // AutoMapper Configuration - Automatically discover all mapping profiles in the assembly
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
@@ -274,7 +267,7 @@ builder.Services.AddAuthentication(options =>
     var jwtSecret = builder.Configuration["JwtSettings:SecretKey"];
     if (string.IsNullOrWhiteSpace(jwtSecret))
     {
-        throw new InvalidOperationException("JwtSettings:SecretKey is required.");
+        throw new InvalidOperationException(LocalizationBootstrap.GetString("General.JwtSecretRequired"));
     }
 
     options.TokenValidationParameters = new TokenValidationParameters
@@ -315,7 +308,8 @@ builder.Services.AddAuthentication(options =>
 
             if (userId == null)
             {
-                context.Fail("Token geçersiz: eksik kullanıcı ID");
+                var localizationService = context.HttpContext.RequestServices.GetRequiredService<ILocalizationService>();
+                context.Fail(localizationService.GetLocalizedString("General.InvalidTokenMissingUserId"));
                 return;
             }
 
@@ -356,12 +350,14 @@ builder.Services.AddAuthentication(options =>
 
                 if (session == null)
                 {
-                    context.Fail("Token geçersiz veya oturum kapandı");
+                    var localizationService = context.HttpContext.RequestServices.GetRequiredService<ILocalizationService>();
+                    context.Fail(localizationService.GetLocalizedString("General.InvalidTokenOrSessionClosed"));
                 }
             }
             catch (Exception ex)
             {
-                context.Fail($"Session kontrolü sırasında hata: {ex.Message}");
+                var localizationService = context.HttpContext.RequestServices.GetRequiredService<ILocalizationService>();
+                context.Fail(localizationService.GetLocalizedString("General.SessionValidationError", ex.Message));
             }
         }
     };
@@ -511,9 +507,9 @@ app.UseExceptionHandler(errApp =>
             var isCountryPath = ctx.Request.Path.StartsWithSegments("/api/Country", StringComparison.OrdinalIgnoreCase);
             var localizedMessage = isCountryPath
                 ? (localizationService?.GetLocalizedString("CountryService.CountryNameAlreadyExists")
-                   ?? "Country already exists. Duplicate country entries are not allowed.")
+                   ?? LocalizationBootstrap.GetString("CountryService.CountryNameAlreadyExists"))
                 : (localizationService?.GetLocalizedString("General.RecordAlreadyExists")
-                   ?? "This record already exists.");
+                   ?? LocalizationBootstrap.GetString("General.RecordAlreadyExists"));
 
             var response = aqua_api.DTOs.ApiResponse<object>.ErrorResult(
                 localizedMessage,
@@ -556,8 +552,10 @@ app.UseExceptionHandler(errApp =>
                 ctx.Response.Headers.Append("Access-Control-Allow-Credentials", "true");
             }
         }
-        var message = ex?.Message ?? "An error occurred.";
-        var json = System.Text.Json.JsonSerializer.Serialize(new { error = "An error occurred.", message });
+        var fallbackMessage = localizationService?.GetLocalizedString("General.ErrorOccurred")
+            ?? LocalizationBootstrap.GetString("General.ErrorOccurred");
+        var message = ex?.Message ?? fallbackMessage;
+        var json = System.Text.Json.JsonSerializer.Serialize(new { error = fallbackMessage, message });
         await ctx.Response.WriteAsync(json);
     });
 });
