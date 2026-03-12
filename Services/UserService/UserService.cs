@@ -18,6 +18,8 @@ namespace aqua_api.Services
 {
     public class UserService : IUserService
     {
+        private const long UserRoleId = 1;
+        private const long AdminRoleId = 3;
         private readonly IUnitOfWork _uow;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _loc;
@@ -183,31 +185,20 @@ namespace aqua_api.Services
                         StatusCodes.Status400BadRequest);
                 }
 
-                if (dto.RoleId <= 0)
-                {
-                    dto.RoleId = 1;
-                }
+                var normalizedCreate = await NormalizeRoleAndPermissionGroupsAsync(
+                    dto.RoleId,
+                    dto.PermissionGroupIds);
 
-                var roleExists = await _uow.UserAuthorities.Query()
-                    .AsNoTracking()
-                    .AnyAsync(x => x.Id == dto.RoleId && !x.IsDeleted);
-
-                if (!roleExists)
+                if (!normalizedCreate.Success)
                 {
                     return ApiResponse<UserDto>.ErrorResult(
-                        _loc.GetLocalizedString("General.ValidationError"),
-                        _loc.GetLocalizedString("General.ValidationError"),
-                        StatusCodes.Status400BadRequest);
+                        normalizedCreate.Message,
+                        normalizedCreate.ExceptionMessage,
+                        normalizedCreate.StatusCode);
                 }
 
-                if (dto.PermissionGroupIds != null)
-                {
-                    var validateGroups = await ValidatePermissionGroupIdsAsync(dto.PermissionGroupIds);
-                    if (!validateGroups.Success)
-                    {
-                        return ApiResponse<UserDto>.ErrorResult(validateGroups.Message, validateGroups.ExceptionMessage, validateGroups.StatusCode);
-                    }
-                }
+                dto.RoleId = normalizedCreate.Data.RoleId;
+                dto.PermissionGroupIds = normalizedCreate.Data.PermissionGroupIds;
 
                 var plainPassword = string.IsNullOrWhiteSpace(dto.Password)
                     ? GenerateTemporaryPassword()
@@ -317,41 +308,40 @@ namespace aqua_api.Services
                     }
                 }
 
-                if (dto.RoleId.HasValue && dto.RoleId.Value > 0 && dto.RoleId.Value != entity.RoleId)
-                {
-                    var roleExists = await _uow.UserAuthorities.Query()
-                        .AsNoTracking()
-                        .AnyAsync(x => x.Id == dto.RoleId.Value && !x.IsDeleted);
+                var currentPermissionGroupIds = await _uow.UserPermissionGroups.Query()
+                    .AsNoTracking()
+                    .Where(x => x.UserId == entity.Id && !x.IsDeleted)
+                    .Select(x => x.PermissionGroupId)
+                    .ToListAsync();
 
-                    if (!roleExists)
-                    {
-                        return ApiResponse<UserDto>.ErrorResult(
-                            _loc.GetLocalizedString("General.ValidationError"),
-                            _loc.GetLocalizedString("General.ValidationError"),
-                            StatusCodes.Status400BadRequest);
-                    }
+                var requestedRoleId = dto.RoleId.HasValue && dto.RoleId.Value > 0
+                    ? dto.RoleId.Value
+                    : entity.RoleId;
+
+                var requestedPermissionGroupIds = dto.PermissionGroupIds ?? currentPermissionGroupIds;
+
+                var normalizedUpdate = await NormalizeRoleAndPermissionGroupsAsync(
+                    requestedRoleId,
+                    requestedPermissionGroupIds);
+
+                if (!normalizedUpdate.Success)
+                {
+                    return ApiResponse<UserDto>.ErrorResult(
+                        normalizedUpdate.Message,
+                        normalizedUpdate.ExceptionMessage,
+                        normalizedUpdate.StatusCode);
                 }
 
-                if (dto.PermissionGroupIds != null)
-                {
-                    var validateGroups = await ValidatePermissionGroupIdsAsync(dto.PermissionGroupIds);
-                    if (!validateGroups.Success)
-                    {
-                        return ApiResponse<UserDto>.ErrorResult(validateGroups.Message, validateGroups.ExceptionMessage, validateGroups.StatusCode);
-                    }
-                }
+                dto.RoleId = normalizedUpdate.Data.RoleId;
 
                 _mapper.Map(dto, entity);
                 await _uow.Users.UpdateAsync(entity);
                 await _uow.SaveChangesAsync();
 
-                if (dto.PermissionGroupIds != null)
+                var syncResult = await SyncUserPermissionGroupsAsync(entity.Id, normalizedUpdate.Data.PermissionGroupIds);
+                if (!syncResult.Success)
                 {
-                    var syncResult = await SyncUserPermissionGroupsAsync(entity.Id, dto.PermissionGroupIds);
-                    if (!syncResult.Success)
-                    {
-                        return ApiResponse<UserDto>.ErrorResult(syncResult.Message, syncResult.ExceptionMessage, syncResult.StatusCode);
-                    }
+                    return ApiResponse<UserDto>.ErrorResult(syncResult.Message, syncResult.ExceptionMessage, syncResult.StatusCode);
                 }
 
                 // Reload with navigation properties for mapping
@@ -462,6 +452,89 @@ namespace aqua_api.Services
         {
             var seed = Guid.NewGuid().ToString("N")[..10];
             return $"V3r!{seed}";
+        }
+
+        private async Task<ApiResponse<(long RoleId, List<long> PermissionGroupIds)>> NormalizeRoleAndPermissionGroupsAsync(
+            long requestedRoleId,
+            IEnumerable<long>? permissionGroupIds)
+        {
+            try
+            {
+                var normalizedRoleId = requestedRoleId == AdminRoleId
+                    ? AdminRoleId
+                    : UserRoleId;
+
+                if (normalizedRoleId != UserRoleId && normalizedRoleId != AdminRoleId)
+                {
+                    return ApiResponse<(long RoleId, List<long> PermissionGroupIds)>.ErrorResult(
+                        _loc.GetLocalizedString("General.ValidationError"),
+                        _loc.GetLocalizedString("General.ValidationError"),
+                        StatusCodes.Status400BadRequest);
+                }
+
+                var roleExists = await _uow.UserAuthorities.Query()
+                    .AsNoTracking()
+                    .AnyAsync(x => x.Id == normalizedRoleId && !x.IsDeleted);
+
+                if (!roleExists)
+                {
+                    return ApiResponse<(long RoleId, List<long> PermissionGroupIds)>.ErrorResult(
+                        _loc.GetLocalizedString("General.ValidationError"),
+                        _loc.GetLocalizedString("General.ValidationError"),
+                        StatusCodes.Status400BadRequest);
+                }
+
+                var normalizedPermissionGroupIds = permissionGroupIds?
+                    .Distinct()
+                    .ToList() ?? new List<long>();
+
+                var validateGroups = await ValidatePermissionGroupIdsAsync(normalizedPermissionGroupIds);
+                if (!validateGroups.Success)
+                {
+                    return ApiResponse<(long RoleId, List<long> PermissionGroupIds)>.ErrorResult(
+                        validateGroups.Message,
+                        validateGroups.ExceptionMessage,
+                        validateGroups.StatusCode);
+                }
+
+                var systemAdminGroupIds = await _uow.PermissionGroups.Query()
+                    .AsNoTracking()
+                    .Where(x => !x.IsDeleted && x.IsActive && x.IsSystemAdmin)
+                    .Select(x => x.Id)
+                    .ToListAsync();
+
+                var hasSystemAdminGroup = normalizedPermissionGroupIds.Any(groupId => systemAdminGroupIds.Contains(groupId));
+
+                if (hasSystemAdminGroup)
+                {
+                    normalizedRoleId = AdminRoleId;
+                }
+
+                if (normalizedRoleId == AdminRoleId)
+                {
+                    normalizedPermissionGroupIds = normalizedPermissionGroupIds
+                        .Union(systemAdminGroupIds)
+                        .Distinct()
+                        .ToList();
+                }
+                else
+                {
+                    normalizedPermissionGroupIds = normalizedPermissionGroupIds
+                        .Where(groupId => !systemAdminGroupIds.Contains(groupId))
+                        .ToList();
+                }
+
+                return ApiResponse<(long RoleId, List<long> PermissionGroupIds)>.SuccessResult(
+                    (normalizedRoleId, normalizedPermissionGroupIds),
+                    _loc.GetLocalizedString("General.OperationSuccessful"));
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<(long RoleId, List<long> PermissionGroupIds)>.ErrorResult(
+                    _loc.GetLocalizedString("General.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
         }
 
         private async Task<ApiResponse<bool>> ValidatePermissionGroupIdsAsync(IEnumerable<long> permissionGroupIds)
