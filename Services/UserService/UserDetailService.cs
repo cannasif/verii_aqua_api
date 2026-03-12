@@ -1,6 +1,7 @@
 using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using aqua_api.DTOs;
+using aqua_api.Infrastructure.Time;
 using aqua_api.Interfaces;
 using aqua_api.Models;
 using aqua_api.UnitOfWork;
@@ -222,7 +223,7 @@ namespace aqua_api.Services
                 }
 
                 _mapper.Map(dto, entity);
-                entity.UpdatedDate = DateTime.UtcNow;
+                entity.UpdatedDate = DateTimeProvider.Now;
                 
                 await _unitOfWork.UserDetails.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
@@ -267,7 +268,7 @@ namespace aqua_api.Services
                 }
 
                 entity.IsDeleted = true;
-                entity.DeletedDate = DateTime.UtcNow;
+                entity.DeletedDate = DateTimeProvider.Now;
                 await _unitOfWork.UserDetails.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
@@ -319,7 +320,7 @@ namespace aqua_api.Services
                     {
                         UserId = userId,
                         ProfilePictureUrl = uploadResult.Data,
-                        CreatedDate = DateTime.UtcNow,
+                        CreatedDate = DateTimeProvider.Now,
                         IsDeleted = false
                     };
                     await _unitOfWork.UserDetails.AddAsync(userDetail);
@@ -334,7 +335,7 @@ namespace aqua_api.Services
 
                     // Update existing user detail
                     userDetail.ProfilePictureUrl = uploadResult.Data;
-                    userDetail.UpdatedDate = DateTime.UtcNow;
+                    userDetail.UpdatedDate = DateTimeProvider.Now;
                     await _unitOfWork.UserDetails.UpdateAsync(userDetail);
                 }
 

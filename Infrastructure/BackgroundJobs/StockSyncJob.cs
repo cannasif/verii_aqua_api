@@ -2,6 +2,7 @@ using Hangfire;
 using Infrastructure.BackgroundJobs.Interfaces;
 using aqua_api.Interfaces;
 using aqua_api.Data;
+using aqua_api.Infrastructure.Time;
 using aqua_api.Models;
 using aqua_api.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
@@ -150,7 +151,7 @@ namespace Infrastructure.BackgroundJobs
                         continue;
                     }
 
-                    stock.UpdatedDate = DateTime.UtcNow;
+                    stock.UpdatedDate = DateTimeProvider.Now;
                     stock.UpdatedBy = null;
                     await _unitOfWork.SaveChangesAsync();
                     updatedCount++;
@@ -181,16 +182,16 @@ namespace Infrastructure.BackgroundJobs
             {
                 _db.JobFailureLogs.Add(new JobFailureLog
                 {
-                    JobId = $"{RecurringJobId}:{code}:{DateTime.UtcNow:yyyyMMddHHmmssfff}",
+                    JobId = $"{RecurringJobId}:{code}:{DateTimeProvider.Now:yyyyMMddHHmmssfff}",
                     JobName = $"{typeof(StockSyncJob).FullName}.ExecuteAsync",
-                    FailedAt = DateTime.UtcNow,
+                    FailedAt = DateTimeProvider.Now,
                     Reason = $"StockCode={code}",
                     ExceptionType = ex.GetType().FullName,
                     ExceptionMessage = ex.Message,
                     StackTrace = ex.StackTrace?.Length > 8000 ? ex.StackTrace[..8000] : ex.StackTrace,
                     Queue = "default",
                     RetryCount = 0,
-                    CreatedDate = DateTime.UtcNow,
+                    CreatedDate = DateTimeProvider.Now,
                     IsDeleted = false
                 });
                 await _db.SaveChangesAsync();

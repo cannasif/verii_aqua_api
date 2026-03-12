@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.SignalR;
 using System.Text;
 using aqua_api.DTOs;
+using aqua_api.Infrastructure.Time;
 using aqua_api.Models;
 using aqua_api.Interfaces;
 using aqua_api.UnitOfWork;
@@ -153,7 +154,7 @@ namespace aqua_api.Services
                 var activeSession = await _unitOfWork.UserSessions.Query(tracking: true).FirstOrDefaultAsync(s => s.UserId == user.Id && s.RevokedAt == null);
                 if (activeSession != null)
                 {
-                    activeSession.RevokedAt = DateTime.UtcNow;
+                    activeSession.RevokedAt = DateTimeProvider.Now;
                     await _unitOfWork.SaveChangesAsync();
                     await AuthHub.ForceLogoutUser(_hubContext, user.Id.ToString());
                 }
@@ -162,10 +163,10 @@ namespace aqua_api.Services
                 {
                     UserId = user.Id,
                     SessionId = Guid.NewGuid(),
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTimeProvider.Now,
                     Token = ComputeSha256Hash(token),
                     IsDeleted = false,
-                    CreatedDate = DateTime.UtcNow
+                    CreatedDate = DateTimeProvider.Now
                 };
                 await _unitOfWork.UserSessions.AddAsync(session);
                 await _unitOfWork.SaveChangesAsync();
@@ -300,7 +301,7 @@ namespace aqua_api.Services
                         UserId = user.Id,
                         TokenHash = tokenHash,
                         ExpiresAt = expiresAt,
-                        CreatedDate = DateTime.UtcNow,
+                        CreatedDate = DateTimeProvider.Now,
                         IsDeleted = false
                     };
                     await _unitOfWork.PasswordResetRequests.AddAsync(reset);
@@ -404,7 +405,7 @@ namespace aqua_api.Services
                 }
 
                 user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
-                user.UpdatedDate = DateTime.UtcNow;
+                user.UpdatedDate = DateTimeProvider.Now;
                 var affectedRows = await _unitOfWork.SaveChangesAsync();
                 if (affectedRows == 0 || !BCrypt.Net.BCrypt.Verify(request.NewPassword, user.PasswordHash))
                 {
@@ -428,10 +429,10 @@ namespace aqua_api.Services
                 {
                     UserId = user.Id,
                     SessionId = Guid.NewGuid(),
-                    CreatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTimeProvider.Now,
                     Token = ComputeSha256Hash(newToken),
                     IsDeleted = false,
-                    CreatedDate = DateTime.UtcNow
+                    CreatedDate = DateTimeProvider.Now
                 };
                 await _unitOfWork.UserSessions.AddAsync(session);
                 await _unitOfWork.SaveChangesAsync();

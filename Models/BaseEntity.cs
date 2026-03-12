@@ -1,4 +1,5 @@
 using System;
+using aqua_api.Infrastructure.Time;
 
 namespace aqua_api.Models
 {
@@ -6,7 +7,7 @@ namespace aqua_api.Models
     {
         public long Id { get; set; }
 
-        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedDate { get; set; } = DateTimeProvider.Now;
         public DateTime? UpdatedDate { get; set; }
         public DateTime? DeletedDate { get; set; }
 

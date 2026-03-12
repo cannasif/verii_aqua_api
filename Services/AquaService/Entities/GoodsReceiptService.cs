@@ -1,6 +1,7 @@
 using AutoMapper;
 using aqua_api.Data;
 using aqua_api.DTOs;
+using aqua_api.Infrastructure.Time;
 using aqua_api.Interfaces;
 using aqua_api.Models;
 using aqua_api.UnitOfWork;
@@ -329,7 +330,7 @@ namespace aqua_api.Services
                             StartDate = receipt.ReceiptDate,
                             SourceGoodsReceiptLineId = line.Id,
                             CreatedBy = userId,
-                            CreatedDate = DateTime.UtcNow,
+                            CreatedDate = DateTimeProvider.Now,
                             IsDeleted = false
                         };
 
@@ -357,7 +358,7 @@ namespace aqua_api.Services
 
                 receipt.Status = DocumentStatus.Posted;
                 receipt.UpdatedBy = userId;
-                receipt.UpdatedDate = DateTime.UtcNow;
+                receipt.UpdatedDate = DateTimeProvider.Now;
 
                 await _unitOfWork.SaveChanges();
                 await _unitOfWork.Commit();
@@ -433,7 +434,7 @@ namespace aqua_api.Services
                 BiomassGram = 0,
                 AsOfDate = asOfDate,
                 CreatedBy = userId,
-                CreatedDate = DateTime.UtcNow,
+                CreatedDate = DateTimeProvider.Now,
                 IsDeleted = false
             };
 
@@ -457,7 +458,7 @@ namespace aqua_api.Services
                 balance.AverageGram = nextCount == 0 ? 0 : Math.Round(nextBiomass / nextCount, 3, MidpointRounding.AwayFromZero);
                 balance.AsOfDate = movementDate;
                 balance.UpdatedBy = userId;
-                balance.UpdatedDate = DateTime.UtcNow;
+                balance.UpdatedDate = DateTimeProvider.Now;
             }
 
             await _db.BatchMovements.AddAsync(new BatchMovement
@@ -473,7 +474,7 @@ namespace aqua_api.Services
                 ReferenceTable = referenceTable,
                 ReferenceId = referenceId,
                 CreatedBy = userId,
-                CreatedDate = DateTime.UtcNow,
+                CreatedDate = DateTimeProvider.Now,
                 IsDeleted = false
             });
         }

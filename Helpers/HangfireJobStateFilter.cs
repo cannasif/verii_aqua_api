@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using aqua_api.Data;
+using aqua_api.Infrastructure.Time;
 using aqua_api.Models;
 
 namespace aqua_api.Helpers
@@ -58,7 +59,7 @@ namespace aqua_api.Helpers
                         {
                             JobId = jobId,
                             JobName = jobName,
-                            FailedAt = DateTime.UtcNow,
+                            FailedAt = DateTimeProvider.Now,
                             Reason = failedState.Reason,
                             ExceptionType = failedState.Exception?.GetType().FullName,
                             ExceptionMessage = failedState.Exception?.Message,
@@ -67,7 +68,7 @@ namespace aqua_api.Helpers
                                 : failedState.Exception?.StackTrace,
                             Queue = queue,
                             RetryCount = retryCount,
-                            CreatedDate = DateTime.UtcNow,
+                            CreatedDate = DateTimeProvider.Now,
                             IsDeleted = false
                         };
                         db.JobFailureLogs.Add(log);

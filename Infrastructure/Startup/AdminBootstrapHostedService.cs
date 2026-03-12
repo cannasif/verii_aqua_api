@@ -1,4 +1,5 @@
 using aqua_api.Data;
+using aqua_api.Infrastructure.Time;
 using aqua_api.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -68,7 +69,7 @@ namespace aqua_api.Infrastructure.Startup
                 {
                     Id = roleId,
                     Title = roleId == 3 ? "Admin" : $"Role-{roleId}",
-                    CreatedDate = DateTime.UtcNow,
+                    CreatedDate = DateTimeProvider.Now,
                     IsDeleted = false
                 };
 
@@ -95,7 +96,7 @@ namespace aqua_api.Infrastructure.Startup
                     IsEmailConfirmed = true,
                     IsActive = true,
                     IsDeleted = false,
-                    CreatedDate = DateTime.UtcNow
+                    CreatedDate = DateTimeProvider.Now
                 };
 
                 db.Set<User>().Add(user);
@@ -155,7 +156,7 @@ namespace aqua_api.Infrastructure.Startup
 
             if (changed)
             {
-                existing.UpdatedDate = DateTime.UtcNow;
+                existing.UpdatedDate = DateTimeProvider.Now;
                 await db.SaveChangesAsync(cancellationToken);
                 _logger.LogWarning(
                     "Bootstrap admin user synchronized in {Environment}.",

@@ -1,5 +1,6 @@
 using AutoMapper;
 using aqua_api.DTOs;
+using aqua_api.Infrastructure.Time;
 using aqua_api.Interfaces;
 using aqua_api.Models;
 using aqua_api.UnitOfWork;
@@ -78,7 +79,7 @@ namespace aqua_api.Services
                     entity = new SmtpSetting
                     {
                         IsDeleted = false,
-                        CreatedDate = DateTime.UtcNow,
+                        CreatedDate = DateTimeProvider.Now,
                         CreatedBy = userId
                     };
 
@@ -89,7 +90,7 @@ namespace aqua_api.Services
                     if (!string.IsNullOrWhiteSpace(dto.Password))
                         entity.PasswordEncrypted = _protector.Protect(dto.Password);
 
-                    entity.UpdatedDate = DateTime.UtcNow;
+                    entity.UpdatedDate = DateTimeProvider.Now;
                     entity.UpdatedBy = userId;
 
                     await _unitOfWork.SmtpSettings.AddAsync(entity);
@@ -112,7 +113,7 @@ namespace aqua_api.Services
                 if (!string.IsNullOrWhiteSpace(dto.Password))
                     entity.PasswordEncrypted = _protector.Protect(dto.Password);
 
-                entity.UpdatedDate = DateTime.UtcNow;
+                entity.UpdatedDate = DateTimeProvider.Now;
                 entity.UpdatedBy = userId;
 
                 await _unitOfWork.SmtpSettings.UpdateAsync(entity);
@@ -187,8 +188,8 @@ namespace aqua_api.Services
             entity = new SmtpSetting
             {
                 IsDeleted = false,
-                CreatedDate = DateTime.UtcNow,
-                UpdatedDate = DateTime.UtcNow,
+                CreatedDate = DateTimeProvider.Now,
+                UpdatedDate = DateTimeProvider.Now,
                 Host = host,
                 Port = port,
                 EnableSsl = enableSsl,

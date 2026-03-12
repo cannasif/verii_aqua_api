@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using aqua_api.Data;
+using aqua_api.Infrastructure.Time;
 using aqua_api.Interfaces;
 using aqua_api.Models;
 using Microsoft.AspNetCore.Http;
@@ -106,7 +107,7 @@ namespace aqua_api.Repositories
 
         public async Task<T> AddAsync(T entity)
         {
-            entity.CreatedDate = DateTime.UtcNow;
+            entity.CreatedDate = DateTimeProvider.Now;
             entity.CreatedBy = GetCurrentUserId();
             entity.IsDeleted = false;
             await _dbSet.AddAsync(entity);
@@ -119,7 +120,7 @@ namespace aqua_api.Repositories
         public async Task<IEnumerable<T>> AddAllAsync(IEnumerable<T> entities)
         {
             var currentUserId = GetCurrentUserId();
-            var currentDate = DateTime.UtcNow;
+            var currentDate = DateTimeProvider.Now;
             var entityList = entities.ToList();
 
             foreach (var entity in entityList)
@@ -139,7 +140,7 @@ namespace aqua_api.Repositories
         /// </summary>
         public Task<T> UpdateAsync(T entity)
         {
-            entity.UpdatedDate = DateTime.UtcNow;
+            entity.UpdatedDate = DateTimeProvider.Now;
             entity.UpdatedBy = GetCurrentUserId();
             _dbSet.Update(entity);
             return Task.FromResult(entity);
@@ -151,7 +152,7 @@ namespace aqua_api.Repositories
         public Task<IEnumerable<T>> UpdateAllAsync(IEnumerable<T> entities)
         {
             var currentUserId = GetCurrentUserId();
-            var currentDate = DateTime.UtcNow;
+            var currentDate = DateTimeProvider.Now;
             var entityList = entities.ToList();
 
             foreach (var entity in entityList)
@@ -176,7 +177,7 @@ namespace aqua_api.Repositories
                 return false;
 
             entity.IsDeleted = true;
-            entity.DeletedDate = DateTime.UtcNow;
+            entity.DeletedDate = DateTimeProvider.Now;
             entity.DeletedBy = GetCurrentUserId();
 
             return true;
