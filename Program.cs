@@ -33,6 +33,20 @@ if (builder.Environment.IsDevelopment())
     builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 }
 
+var configuredCorsOrigins = builder.Configuration
+    .GetSection("Cors:AllowedOrigins")
+    .Get<string[]>()
+    ?.Where(origin => !string.IsNullOrWhiteSpace(origin))
+    .Select(origin => origin.Trim().TrimEnd('/'))
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray()
+    ?? Array.Empty<string>();
+
+if (configuredCorsOrigins.Length == 0)
+{
+    throw new InvalidOperationException("Cors:AllowedOrigins ayari bos birakilamaz.");
+}
+
 // Add services to the container.
 builder.Services.AddControllers();
 
@@ -239,11 +253,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("DevCors", policy =>
     {
-        policy.WithOrigins(
-                "http://localhost:5173",
-                "https://aqua.v3rii.com",
-                "http://aqua.v3rii.com"
-            )
+        policy.WithOrigins(configuredCorsOrigins)
             .AllowAnyMethod()
             .AllowAnyHeader()
             .AllowCredentials();
@@ -457,12 +467,7 @@ GlobalJobFilters.Filters.Add(
 // Handles preflight (OPTIONS) requests *before* any other middleware can
 // short-circuit. For non-preflight requests it adds the CORS headers so
 // that even 500 / exception-handler responses carry them.
-var allowedCorsOrigins = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-{
-    "http://localhost:5173",
-    "https://crm.v3rii.com",
-    "http://crm.v3rii.com"
-};
+var allowedCorsOrigins = new HashSet<string>(configuredCorsOrigins, StringComparer.OrdinalIgnoreCase);
 
 app.Use(async (ctx, next) =>
 {
