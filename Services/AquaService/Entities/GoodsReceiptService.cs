@@ -323,7 +323,7 @@ namespace aqua_api.Services
                         var batch = new FishBatch
                         {
                             ProjectId = receipt.ProjectId!.Value,
-                            BatchCode = $"{receipt.ReceiptNo}-{line.Id}",
+                            BatchCode = receipt.ReceiptNo,
                             FishStockId = line.StockId,
                             CurrentAverageGram = line.FishAverageGram.Value,
                             StartDate = receipt.ReceiptDate,

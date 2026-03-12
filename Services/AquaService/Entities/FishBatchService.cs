@@ -97,6 +97,7 @@ namespace aqua_api.Services
         {
             try
             {
+                await NormalizeBatchCodeFromGoodsReceiptAsync(dto);
                 var entity = _mapper.Map<FishBatch>(dto);
                 await _unitOfWork.FishBatches.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
@@ -117,6 +118,7 @@ namespace aqua_api.Services
         {
             try
             {
+                await NormalizeBatchCodeFromGoodsReceiptAsync(dto);
                 var repo = _unitOfWork.FishBatches;
                 var entity = await repo.GetByIdForUpdateAsync(id);
 
@@ -169,6 +171,27 @@ namespace aqua_api.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private async Task NormalizeBatchCodeFromGoodsReceiptAsync(CreateFishBatchDto dto)
+        {
+            if (!dto.SourceGoodsReceiptLineId.HasValue)
+                return;
+
+            var line = await _unitOfWork.GoodsReceiptLines
+                .Query()
+                .Where(x => !x.IsDeleted && x.Id == dto.SourceGoodsReceiptLineId.Value)
+                .Select(x => new
+                {
+                    x.GoodsReceiptId,
+                    ReceiptNo = x.GoodsReceipt != null ? x.GoodsReceipt.ReceiptNo : null
+                })
+                .FirstOrDefaultAsync();
+
+            if (line == null || string.IsNullOrWhiteSpace(line.ReceiptNo))
+                return;
+
+            dto.BatchCode = line.ReceiptNo.Trim();
         }
     }
 }
