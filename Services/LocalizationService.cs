@@ -38,6 +38,16 @@ namespace aqua_api.Services
                 var culture = NormalizeCulture(CultureInfo.CurrentUICulture);
                 var localizedString = _resourceManager.GetString(key, culture);
 
+                // Background jobs (e.g. Hangfire) often run with InvariantCulture; GetString returns null and we'd expose the key. Fall back to a default culture.
+                if (string.IsNullOrWhiteSpace(localizedString))
+                {
+                    var fallbackCulture = new CultureInfo("en-US");
+                    if (!culture.Name.Equals(fallbackCulture.Name, StringComparison.OrdinalIgnoreCase))
+                    {
+                        localizedString = _resourceManager.GetString(key, fallbackCulture);
+                    }
+                }
+
                 return string.IsNullOrWhiteSpace(localizedString) ? key : localizedString;
             }
             catch (MissingManifestResourceException ex)
