@@ -28,6 +28,7 @@ namespace aqua_api.Controllers
         }
 
         [HttpGet("getAllProducts")]
+        [AllowAnonymous]
         public async Task<ActionResult<ApiResponse<List<StokDto>>>> GetStoks([FromQuery] string? stokKodu = null)
         {
             var result = await _IErpService.GetStoksAsync(stokKodu);
