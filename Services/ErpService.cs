@@ -122,14 +122,7 @@ namespace aqua_api.Services
 
                 var result = await _dbContext.Set<RII_FN_STOK>()
                     .FromSqlRaw(
-                        @"SELECT SUBE_KODU, ISLETME_KODU, STOK_KODU, OLCU_BR1, URETICI_KODU, STOK_ADI,
-                                 GRUP_KODU, GRUP_ISIM,
-                                 KOD_1, CAST(NULL AS VARCHAR(50)) AS KOD1_ADI,
-                                 KOD_2, CAST(NULL AS VARCHAR(50)) AS KOD2_ADI,
-                                 KOD_3, CAST(NULL AS VARCHAR(50)) AS KOD3_ADI,
-                                 KOD_4, CAST(NULL AS VARCHAR(50)) AS KOD4_ADI,
-                                 KOD_5, CAST(NULL AS VARCHAR(50)) AS KOD5_ADI,
-                                 INGISIM
+                        @"SELECT *
                           FROM dbo.RII_FN_STOK({0}, {1})",
                         string.IsNullOrWhiteSpace(stokKodu) ? DBNull.Value : stokKodu,
                         string.IsNullOrWhiteSpace(subeKodu) ? DBNull.Value : subeKodu)
