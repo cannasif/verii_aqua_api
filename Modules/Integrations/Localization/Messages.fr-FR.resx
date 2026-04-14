@@ -1,0 +1,175 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ErpService.BranchCodeRetrievalError" xml:space="preserve">
+    <value>Branch Code Retrieval Error.</value>
+  </data>
+  <data name="ErpService.BranchCodeRetrievalErrorMessage" xml:space="preserve">
+    <value>Branch Code Retrieval Error Message.</value>
+  </data>
+  <data name="ErpService.BranchCodeRetrieved" xml:space="preserve">
+    <value>Erp récupéré(e) avec succès.</value>
+  </data>
+  <data name="ErpService.BranchesRetrievalError" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de branch records: {0}</value>
+  </data>
+  <data name="ErpService.BranchesRetrievedSuccessfully" xml:space="preserve">
+    <value>Branch records récupéré(e) avec succès.</value>
+  </data>
+  <data name="ErpService.CariRecordsRetrieved" xml:space="preserve">
+    <value>Cari records récupéré(e) avec succès.</value>
+  </data>
+  <data name="ErpService.DepoRecordsRetrieved" xml:space="preserve">
+    <value>Depo records récupéré(e) avec succès.</value>
+  </data>
+  <data name="ErpService.ErpConnectionFailed" xml:space="preserve">
+    <value>ERP connection failed.</value>
+  </data>
+  <data name="ErpService.ErpConnectionSuccessful" xml:space="preserve">
+    <value>ERP connection successful.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingCariRecords" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Cari records.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingDepoRecords" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Depo records.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingOnHandQuantityRecords" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de OnHand Quantité records.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingProjeRecords" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Proje records.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingStokRecords" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Stok records.</value>
+  </data>
+  <data name="ErpService.ExchangeRateRecordsRetrieved" xml:space="preserve">
+    <value>Erps récupéré(e) avec succès.</value>
+  </data>
+  <data name="ErpService.GetAllCariExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Cari records: {0}</value>
+  </data>
+  <data name="ErpService.GetAllErpShippingAddressExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Erps: {0}</value>
+  </data>
+  <data name="ErpService.GetAllExchangeRateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Erps: {0}</value>
+  </data>
+  <data name="ErpService.GetAllStokExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Erps: {0}</value>
+  </data>
+  <data name="ErpService.GetAllStokGroupExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Erps: {0}</value>
+  </data>
+  <data name="ErpService.GetProductPricingExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de product pricing: {0}</value>
+  </data>
+  <data name="ErpService.GetProjectCodesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération des codes projet: {0}</value>
+  </data>
+  <data name="ErpService.HealthCheckExceptionMessage" xml:space="preserve">
+    <value>An error occurred during health check: {0}</value>
+  </data>
+  <data name="ErpService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ErpService.OnHandQuantityRetrieved" xml:space="preserve">
+    <value>OnHand Quantité records récupéré(e) avec succès.</value>
+  </data>
+  <data name="ErpService.ProductPricingRetrieved" xml:space="preserve">
+    <value>Produit pricing récupéré(e) avec succès.</value>
+  </data>
+  <data name="ErpService.ProjeRecordsRetrieved" xml:space="preserve">
+    <value>Proje records récupéré(e) avec succès.</value>
+  </data>
+  <data name="ErpService.StokGroupRecordsRetrieved" xml:space="preserve">
+    <value>Erps récupéré(e) avec succès.</value>
+  </data>
+  <data name="ErpService.StokRecordsRetrieved" xml:space="preserve">
+    <value>Stok records récupéré(e) avec succès.</value>
+  </data>
+  <data name="MailController.SmtpSettingsCannotDecryptPassword" xml:space="preserve"><value>Le mot de passe SMTP n’a pas pu être déchiffré. La clé du serveur a peut-être changé. Veuillez réenregistrer le mot de passe dans les paramètres de messagerie.</value></data><data name="MailController.SmtpSettingsIncomplete" xml:space="preserve"><value>Les paramètres SMTP sont incomplets. Veuillez renseigner Hôte, Nom d’utilisateur, Mot de passe et E-mail expéditeur.</value></data><data name="MailController.SmtpSettingsMissing" xml:space="preserve"><value>Les paramètres SMTP sont introuvables. Veuillez les configurer dans les paramètres de messagerie.</value></data><data name="MailController.SmtpTestMailBody" xml:space="preserve">
+    <value>SMTP test e-postası {0} tarihinde gönderildi.</value>
+  </data>
+<data name="MailController.SmtpTestMailSubject" xml:space="preserve">
+    <value>SMTP Test E-postası</value>
+  </data>
+  <data name="MailController.TestMailSendFailed" xml:space="preserve"><value>L’e-mail de test n’a pas pu être envoyé. Veuillez vérifier vos paramètres SMTP.</value></data><data name="SmtpSettingsService.GetExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="SmtpSettingsService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur est survenue.</value>
+  </data>
+  <data name="SmtpSettingsService.SmtpSettingsCreated" xml:space="preserve">
+    <value>Enregistrement créé avec succès.</value>
+  </data>
+  <data name="SmtpSettingsService.SmtpSettingsRetrieved" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="SmtpSettingsService.SmtpSettingsRetrievedDefault" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="SmtpSettingsService.SmtpSettingsUpdated" xml:space="preserve">
+    <value>Enregistrement mis à jour avec succès.</value>
+  </data>
+  <data name="SmtpSettingsService.UpdateExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  </root>

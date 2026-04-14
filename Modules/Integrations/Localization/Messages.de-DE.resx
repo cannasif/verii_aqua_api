@@ -1,0 +1,175 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ErpService.BranchCodeRetrievalError" xml:space="preserve">
+    <value>Branch Code Retrieval Error.</value>
+  </data>
+  <data name="ErpService.BranchCodeRetrievalErrorMessage" xml:space="preserve">
+    <value>Branch Code Retrieval Error Message.</value>
+  </data>
+  <data name="ErpService.BranchCodeRetrieved" xml:space="preserve">
+    <value>Erp erfolgreich abgerufen.</value>
+  </data>
+  <data name="ErpService.BranchesRetrievalError" xml:space="preserve">
+    <value>Fehler beim Abrufen von branch records: {0}</value>
+  </data>
+  <data name="ErpService.BranchesRetrievedSuccessfully" xml:space="preserve">
+    <value>Branch records erfolgreich abgerufen.</value>
+  </data>
+  <data name="ErpService.CariRecordsRetrieved" xml:space="preserve">
+    <value>Cari records erfolgreich abgerufen.</value>
+  </data>
+  <data name="ErpService.DepoRecordsRetrieved" xml:space="preserve">
+    <value>Depo records erfolgreich abgerufen.</value>
+  </data>
+  <data name="ErpService.ErpConnectionFailed" xml:space="preserve">
+    <value>ERP connection failed.</value>
+  </data>
+  <data name="ErpService.ErpConnectionSuccessful" xml:space="preserve">
+    <value>ERP connection successful.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingCariRecords" xml:space="preserve">
+    <value>Fehler beim Abrufen von Cari records.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingDepoRecords" xml:space="preserve">
+    <value>Fehler beim Abrufen von Depo records.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingOnHandQuantityRecords" xml:space="preserve">
+    <value>Fehler beim Abrufen von OnHand Menge records.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingProjeRecords" xml:space="preserve">
+    <value>Fehler beim Abrufen von Proje records.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingStokRecords" xml:space="preserve">
+    <value>Fehler beim Abrufen von Stok records.</value>
+  </data>
+  <data name="ErpService.ExchangeRateRecordsRetrieved" xml:space="preserve">
+    <value>Erps erfolgreich abgerufen.</value>
+  </data>
+  <data name="ErpService.GetAllCariExceptionMessage" xml:space="preserve">
+    <value>Fehler beim Abrufen von Cari records: {0}</value>
+  </data>
+  <data name="ErpService.GetAllErpShippingAddressExceptionMessage" xml:space="preserve">
+    <value>Fehler beim Abrufen von Erps: {0}</value>
+  </data>
+  <data name="ErpService.GetAllExchangeRateExceptionMessage" xml:space="preserve">
+    <value>Fehler beim Abrufen von Erps: {0}</value>
+  </data>
+  <data name="ErpService.GetAllStokExceptionMessage" xml:space="preserve">
+    <value>Fehler beim Abrufen von Erps: {0}</value>
+  </data>
+  <data name="ErpService.GetAllStokGroupExceptionMessage" xml:space="preserve">
+    <value>Fehler beim Abrufen von Erps: {0}</value>
+  </data>
+  <data name="ErpService.GetProductPricingExceptionMessage" xml:space="preserve">
+    <value>Fehler beim Abrufen von product pricing: {0}</value>
+  </data>
+  <data name="ErpService.GetProjectCodesExceptionMessage" xml:space="preserve">
+    <value>Fehler beim Abrufen der Projektcodes: {0}</value>
+  </data>
+  <data name="ErpService.HealthCheckExceptionMessage" xml:space="preserve">
+    <value>An error occurred during health check: {0}</value>
+  </data>
+  <data name="ErpService.InternalServerError" xml:space="preserve">
+    <value>Interner Serverfehler aufgetreten.</value>
+  </data>
+  <data name="ErpService.OnHandQuantityRetrieved" xml:space="preserve">
+    <value>OnHand Menge records erfolgreich abgerufen.</value>
+  </data>
+  <data name="ErpService.ProductPricingRetrieved" xml:space="preserve">
+    <value>Produkt pricing erfolgreich abgerufen.</value>
+  </data>
+  <data name="ErpService.ProjeRecordsRetrieved" xml:space="preserve">
+    <value>Proje records erfolgreich abgerufen.</value>
+  </data>
+  <data name="ErpService.StokGroupRecordsRetrieved" xml:space="preserve">
+    <value>Erps erfolgreich abgerufen.</value>
+  </data>
+  <data name="ErpService.StokRecordsRetrieved" xml:space="preserve">
+    <value>Stok records erfolgreich abgerufen.</value>
+  </data>
+  <data name="MailController.SmtpSettingsCannotDecryptPassword" xml:space="preserve"><value>Das SMTP-Passwort konnte nicht entschlüsselt werden. Der Serverschlüssel wurde möglicherweise geändert. Bitte speichern Sie das Passwort in den Mail-Einstellungen erneut.</value></data><data name="MailController.SmtpSettingsIncomplete" xml:space="preserve"><value>Die SMTP-Einstellungen sind unvollständig. Bitte füllen Sie Host, Benutzername, Passwort und Absender-E-Mail aus.</value></data><data name="MailController.SmtpSettingsMissing" xml:space="preserve"><value>SMTP-Einstellungen wurden nicht gefunden. Bitte konfigurieren Sie diese in den Mail-Einstellungen.</value></data><data name="MailController.SmtpTestMailBody" xml:space="preserve">
+    <value>SMTP test e-postası {0} tarihinde gönderildi.</value>
+  </data>
+<data name="MailController.SmtpTestMailSubject" xml:space="preserve">
+    <value>SMTP Test E-postası</value>
+  </data>
+  <data name="MailController.TestMailSendFailed" xml:space="preserve"><value>Die Test-E-Mail konnte nicht gesendet werden. Bitte prüfen Sie Ihre SMTP-Einstellungen.</value></data><data name="SmtpSettingsService.GetExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+  <data name="SmtpSettingsService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="SmtpSettingsService.SmtpSettingsCreated" xml:space="preserve">
+    <value>Datensatz erfolgreich erstellt.</value>
+  </data>
+  <data name="SmtpSettingsService.SmtpSettingsRetrieved" xml:space="preserve">
+    <value>Datensatz erfolgreich abgerufen.</value>
+  </data>
+  <data name="SmtpSettingsService.SmtpSettingsRetrievedDefault" xml:space="preserve">
+    <value>Datensatz erfolgreich abgerufen.</value>
+  </data>
+  <data name="SmtpSettingsService.SmtpSettingsUpdated" xml:space="preserve">
+    <value>Datensatz erfolgreich aktualisiert.</value>
+  </data>
+  <data name="SmtpSettingsService.UpdateExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+  </root>

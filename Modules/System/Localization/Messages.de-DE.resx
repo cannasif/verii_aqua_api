@@ -1,0 +1,253 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="StockSyncJob.Started" xml:space="preserve">
+    <value>ERP stock synchronization started.</value>
+  </data>
+  <data name="StockSyncJob.Completed" xml:space="preserve">
+    <value>ERP stock synchronization completed.</value>
+  </data>
+  <data name="StockSyncJob.Failed" xml:space="preserve">
+    <value>ERP stock synchronization failed.</value>
+  </data>
+  <data name="StockSyncJob.ErpFetchFailed" xml:space="preserve">
+    <value>ERP-Bestandsdaten konnten nicht abgerufen werden.</value>
+  </data>
+  <data name="HangfireController.StockSyncJobEnqueued" xml:space="preserve">
+    <value>Stok senkronizasyon işi kuyruğa alındı.</value>
+  </data>
+  <data name="MailJob.EmailSendFailedForRecipient" xml:space="preserve">
+    <value>{0} alıcısına e-posta gönderilemedi.</value>
+  </data>
+  <data name="MailJob.UserCreatedSubject" xml:space="preserve">
+    <value>Kullanıcınız oluşturuldu</value>
+  </data>
+  <data name="MailJob.UserCreatedTitle" xml:space="preserve">
+    <value>Kullanıcınız Oluşturuldu</value>
+  </data>
+  <data name="MailJob.DearUser" xml:space="preserve">
+    <value>Sayın {0},</value>
+  </data>
+  <data name="MailJob.UserCreatedIntro" xml:space="preserve">
+    <value>Kullanıcınız başarıyla oluşturulmuştur. Giriş bilgileriniz aşağıdadır:</value>
+  </data>
+  <data name="MailJob.UserCreatedLoginEmailLabel" xml:space="preserve">
+    <value>Giriş için e-posta adresiniz:</value>
+  </data>
+  <data name="MailJob.UserCreatedPasswordLabel" xml:space="preserve">
+    <value>Şifreniz:</value>
+  </data>
+  <data name="MailJob.UserCreatedPasswordChangeInfo" xml:space="preserve">
+    <value>Yukarıdaki bilgilerle giriş yapıp menü üzerinden şifrenizi değiştirebilirsiniz.</value>
+  </data>
+  <data name="MailJob.LoginButton" xml:space="preserve">
+    <value>Giriş Yap</value>
+  </data>
+  <data name="MailJob.ResetPasswordButton" xml:space="preserve">
+    <value>Şifremi Sıfırla</value>
+  </data>
+  <data name="MailJob.ResetPasswordTitle" xml:space="preserve">
+    <value>Şifre Sıfırlama Talebi</value>
+  </data>
+  <data name="MailJob.ResetPasswordIntro" xml:space="preserve">
+    <value>Şifre sıfırlama talebiniz alınmıştır. Aşağıdaki butona tıklayarak şifrenizi sıfırlayabilirsiniz:</value>
+  </data>
+  <data name="MailJob.ResetPasswordLinkCopyInfo" xml:space="preserve">
+    <value>İsterseniz aşağıdaki bağlantıyı tarayıcınıza kopyalayabilirsiniz:</value>
+  </data>
+  <data name="MailJob.ResetPasswordLinkValidFor30Minutes" xml:space="preserve">
+    <value>Bu bağlantı 30 dakika süreyle geçerlidir.</value>
+  </data>
+  <data name="MailJob.ResetPasswordIgnoreIfNotRequested" xml:space="preserve">
+    <value>Eğer şifre sıfırlama talebinde bulunmadıysanız, bu e-postayı dikkate almayınız.</value>
+  </data>
+  <data name="MailJob.PasswordChangedSubject" xml:space="preserve">
+    <value>Şifreniz Güncellendi</value>
+  </data>
+  <data name="MailJob.PasswordChangedTitle" xml:space="preserve">
+    <value>Şifre Güncelleme Bildirimi</value>
+  </data>
+  <data name="MailJob.PasswordChangedIntro" xml:space="preserve">
+    <value>Şifreniz başarıyla güncellenmiştir.</value>
+  </data>
+  <data name="MailJob.PasswordChangedContinueSecurely" xml:space="preserve">
+    <value>Hesabınızı güvenli şekilde kullanmaya devam edebilirsiniz.</value>
+  </data>
+  <data name="MailJob.PasswordResetCompletedSubject" xml:space="preserve">
+    <value>Şifre Sıfırlama İşlemi Tamamlandı</value>
+  </data>
+  <data name="MailJob.PasswordResetCompletedTitle" xml:space="preserve">
+    <value>Şifre Sıfırlama Tamamlandı</value>
+  </data>
+  <data name="MailJob.PasswordResetCompletedIntro" xml:space="preserve">
+    <value>Şifre sıfırlama işlemi başarıyla tamamlandı.</value>
+  </data>
+  <data name="MailJob.PasswordResetCompletedLoginInfo" xml:space="preserve">
+    <value>Yeni şifreniz ile güvenli şekilde giriş yapabilirsiniz.</value>
+  </data>
+  <data name="MailJob.ApprovalPendingSubject" xml:space="preserve">
+    <value>Onay bekleyen kaydınız bulunmaktadır.</value>
+  </data>
+  <data name="MailJob.DefaultDisplayName" xml:space="preserve">
+    <value>Değerli Kullanıcı</value>
+  </data>
+  <data name="MailJob.DemandApprovalPendingIntro" xml:space="preserve">
+    <value>Onay bekleyen kaydınız bulunmaktadır. Aşağıdaki butonlarla işlemi onaylayabilir, reddedebilir veya detayları görüntüleyebilirsiniz.</value>
+  </data>
+  <data name="MailJob.ApproveRejectButton" xml:space="preserve">
+    <value>Onayla / Reddet</value>
+  </data>
+  <data name="MailJob.GoToDemandButton" xml:space="preserve">
+    <value>Talebe Git</value>
+  </data>
+  <data name="MailJob.DemandApprovalPendingTitle" xml:space="preserve">
+    <value>Onay Bekleyen Kayıt</value>
+  </data>
+  <data name="MailJob.OrderApprovalPendingIntro" xml:space="preserve">
+    <value>Onay bekleyen sipariş kaydı bulunmaktadır. Aşağıdaki butonlarla işlemi onaylayabilir, reddedebilir veya detayları görüntüleyebilirsiniz.</value>
+  </data>
+  <data name="MailJob.GoToOrderButton" xml:space="preserve">
+    <value>Siparişe Git</value>
+  </data>
+  <data name="MailJob.OrderApprovalPendingTitle" xml:space="preserve">
+    <value>Onay Bekleyen Sipariş</value>
+  </data>
+  <data name="MailJob.QuotationApprovalPendingIntro" xml:space="preserve">
+    <value>Onay bekleyen teklif kaydı bulunmaktadır. Aşağıdaki butonlarla işlemi onaylayabilir, reddedebilir veya detayları görüntüleyebilirsiniz.</value>
+  </data>
+  <data name="MailJob.GoToQuotationButton" xml:space="preserve">
+    <value>Teklife Git</value>
+  </data>
+  <data name="MailJob.QuotationApprovalPendingTitle" xml:space="preserve">
+    <value>Onay Bekleyen Teklif</value>
+  </data>
+  <data name="MailJob.QuotationApprovedSubject" xml:space="preserve">
+    <value>{0} numaralı teklifiniz onaylandı</value>
+  </data>
+  <data name="MailJob.QuotationApprovedTitle" xml:space="preserve">
+    <value>Teklif Onaylandı</value>
+  </data>
+  <data name="MailJob.QuotationApprovedIntro" xml:space="preserve">
+    <value>{0} numaralı teklifiniz {1} tarafından onaylanmıştır.</value>
+  </data>
+  <data name="MailJob.ViewQuotationButton" xml:space="preserve">
+    <value>Teklifi Görüntüle</value>
+  </data>
+  <data name="MailJob.QuotationRejectedSubject" xml:space="preserve">
+    <value>{0} numaralı teklifiniz reddedildi</value>
+  </data>
+  <data name="MailJob.QuotationRejectedTitle" xml:space="preserve">
+    <value>Teklif Reddedildi</value>
+  </data>
+  <data name="MailJob.QuotationRejectedIntro" xml:space="preserve">
+    <value>{0} numaralı teklifiniz {1} tarafından aşağıdaki gerekçe ile reddedilmiştir:</value>
+  </data>
+  <data name="MailJob.RejectionReasonLabel" xml:space="preserve">
+    <value>Red nedeni:</value>
+  </data>
+  <data name="MailJob.DemandApprovedSubject" xml:space="preserve">
+    <value>{0} numaralı talebiniz onaylandı</value>
+  </data>
+  <data name="MailJob.DemandApprovedTitle" xml:space="preserve">
+    <value>Talep Onaylandı</value>
+  </data>
+  <data name="MailJob.DemandApprovedIntro" xml:space="preserve">
+    <value>{0} numaralı talebiniz {1} tarafından onaylanmıştır.</value>
+  </data>
+  <data name="MailJob.ViewDemandButton" xml:space="preserve">
+    <value>Talebi Görüntüle</value>
+  </data>
+  <data name="MailJob.DemandRejectedSubject" xml:space="preserve">
+    <value>{0} numaralı talebiniz reddedildi</value>
+  </data>
+  <data name="MailJob.DemandRejectedTitle" xml:space="preserve">
+    <value>Talep Reddedildi</value>
+  </data>
+  <data name="MailJob.DemandRejectedIntro" xml:space="preserve">
+    <value>{0} numaralı talebiniz {1} tarafından aşağıdaki gerekçe ile reddedilmiştir:</value>
+  </data>
+  <data name="MailJob.OrderApprovedSubject" xml:space="preserve">
+    <value>{0} numaralı siparişiniz onaylandı</value>
+  </data>
+  <data name="MailJob.OrderApprovedTitle" xml:space="preserve">
+    <value>Sipariş Onaylandı</value>
+  </data>
+  <data name="MailJob.OrderApprovedIntro" xml:space="preserve">
+    <value>{0} numaralı siparişiniz {1} tarafından onaylanmıştır.</value>
+  </data>
+  <data name="MailJob.ViewOrderButton" xml:space="preserve">
+    <value>Siparişi Görüntüle</value>
+  </data>
+  <data name="MailJob.OrderRejectedSubject" xml:space="preserve">
+    <value>{0} numaralı siparişiniz reddedildi</value>
+  </data>
+  <data name="MailJob.OrderRejectedTitle" xml:space="preserve">
+    <value>Sipariş Reddedildi</value>
+  </data>
+  <data name="MailJob.OrderRejectedIntro" xml:space="preserve">
+    <value>{0} numaralı siparişiniz {1} tarafından aşağıdaki gerekçe ile reddedilmiştir:</value>
+  </data>
+  <data name="MailJob.AutomaticEmailFooter" xml:space="preserve">
+    <value>Bu e-posta otomatik olarak gönderilmiştir, lütfen yanıtlamayınız.</value>
+  </data>
+  <data name="MailJob.BrandName" xml:space="preserve">
+    <value>V3RII AQUA</value>
+  </data>
+</root>

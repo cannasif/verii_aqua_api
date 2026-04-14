@@ -1,0 +1,205 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="StockImageService.ImageAdded" xml:space="preserve">
+    <value>Image added successfully.</value>
+  </data>
+  <data name="StockImageService.ImageDeleted" xml:space="preserve">
+    <value>Image supprimé(e) avec succès.</value>
+  </data>
+  <data name="StockImageService.PrimaryImageSet" xml:space="preserve">
+    <value>Primary image set successfully.</value>
+  </data>
+  <data name="StockImageService.ImageNotFound" xml:space="preserve">
+    <value>Image non trouvé(e).</value>
+  </data>
+  <data name="StockImageService.ImagesRetrieved" xml:space="preserve">
+    <value>Images récupéré(e) avec succès.</value>
+  </data>
+  <data name="StockImageService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="StockImageService.AddImagesExceptionMessage" xml:space="preserve">
+    <value>An error occurred while adding images: {0}</value>
+  </data>
+  <data name="StockImageService.GetByStockIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de images: {0}</value>
+  </data>
+  <data name="StockImageService.DeleteExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de image: {0}</value>
+  </data>
+  <data name="StockImageService.SetPrimaryExceptionMessage" xml:space="preserve">
+    <value>An error occurred while setting primary image: {0}</value>
+  </data>
+  <data name="StockImageService.UploadImagesExceptionMessage" xml:space="preserve">
+    <value>An error occurred while uploading images: {0}</value>
+  </data>
+  <data name="StockRelationService.RelationAdded" xml:space="preserve">
+    <value>Stock relation added successfully.</value>
+  </data>
+  <data name="StockRelationService.RelationRemoved" xml:space="preserve">
+    <value>Stock relation removed successfully.</value>
+  </data>
+  <data name="StockRelationService.DuplicateRelation" xml:space="preserve">
+    <value>This stock relation already exists.</value>
+  </data>
+  <data name="StockRelationService.RelationNotFound" xml:space="preserve">
+    <value>Stock relation non trouvé(e).</value>
+  </data>
+  <data name="StockRelationService.RelationsRetrieved" xml:space="preserve">
+    <value>Stock relations récupéré(e) avec succès.</value>
+  </data>
+  <data name="StockRelationService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="StockRelationService.CreateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de stock relation: {0}</value>
+  </data>
+  <data name="StockRelationService.GetByStockIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de stock relations: {0}</value>
+  </data>
+  <data name="StockRelationService.DeleteExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de stock relation: {0}</value>
+  </data>
+  <data name="StockService.StocksRetrieved" xml:space="preserve">
+    <value>Stocks récupéré(e) avec succès.</value>
+  </data>
+  <data name="StockService.StockRetrieved" xml:space="preserve">
+    <value>Stock récupéré(e) avec succès.</value>
+  </data>
+  <data name="StockService.StockNotFound" xml:space="preserve">
+    <value>Stock non trouvé(e).</value>
+  </data>
+  <data name="StockService.StockCreated" xml:space="preserve">
+    <value>Stock créé(e) avec succès.</value>
+  </data>
+  <data name="StockService.StockUpdated" xml:space="preserve">
+    <value>Stock mis(e) à jour avec succès.</value>
+  </data>
+  <data name="StockService.StockDeleted" xml:space="preserve">
+    <value>Stock supprimé(e) avec succès.</value>
+  </data>
+  <data name="StockService.ErpStockCodeAlreadyExists" xml:space="preserve">
+    <value>This ERP stock code already exists.</value>
+  </data>
+  <data name="StockService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="StockService.GetAllStocksExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de stocks: {0}</value>
+  </data>
+  <data name="StockService.GetStockByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de stock: {0}</value>
+  </data>
+  <data name="StockService.CreateStockExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de stock: {0}</value>
+  </data>
+  <data name="StockService.UpdateStockExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de stock: {0}</value>
+  </data>
+  <data name="StockService.DeleteStockExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de stock: {0}</value>
+  </data>
+  <data name="StockDetailService.CreateStockDetailExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Stock Detail: {0}</value>
+  </data>
+  <data name="StockDetailService.DeleteStockDetailExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Stock Detail: {0}</value>
+  </data>
+  <data name="StockDetailService.GetAllStockDetailsExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Stock Details: {0}</value>
+  </data>
+  <data name="StockDetailService.GetStockDetailByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Stock Detail: {0}</value>
+  </data>
+  <data name="StockDetailService.GetStockDetailByStockIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="StockDetailService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="StockDetailService.StockDetailAlreadyExists" xml:space="preserve">
+    <value>Stock Detail already exists.</value>
+  </data>
+  <data name="StockDetailService.StockDetailCreated" xml:space="preserve">
+    <value>Stock Detail créé(e) avec succès.</value>
+  </data>
+  <data name="StockDetailService.StockDetailDeleted" xml:space="preserve">
+    <value>Stock Detail supprimé(e) avec succès.</value>
+  </data>
+  <data name="StockDetailService.StockDetailNotFound" xml:space="preserve">
+    <value>Stock Detail non trouvé(e).</value>
+  </data>
+  <data name="StockDetailService.StockDetailRetrieved" xml:space="preserve">
+    <value>Stock Detail récupéré(e) avec succès.</value>
+  </data>
+  <data name="StockDetailService.StockDetailUpdated" xml:space="preserve">
+    <value>Stock Detail mis(e) à jour avec succès.</value>
+  </data>
+  <data name="StockDetailService.StockDetailsRetrieved" xml:space="preserve">
+    <value>Stock Details récupéré(e) avec succès.</value>
+  </data>
+  <data name="StockDetailService.StockNotFound" xml:space="preserve">
+    <value>Stock Detail non trouvé(e).</value>
+  </data>
+  <data name="StockDetailService.UpdateStockDetailExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Stock Detail: {0}</value>
+  </data>
+</root>

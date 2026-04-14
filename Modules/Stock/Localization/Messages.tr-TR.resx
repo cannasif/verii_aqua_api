@@ -1,0 +1,205 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="StockImageService.ImageAdded" xml:space="preserve">
+    <value>Görsel başarıyla eklendi.</value>
+  </data>
+  <data name="StockImageService.ImageDeleted" xml:space="preserve">
+    <value>Görsel başarıyla silindi.</value>
+  </data>
+  <data name="StockImageService.PrimaryImageSet" xml:space="preserve">
+    <value>Ana görsel başarıyla ayarlandı.</value>
+  </data>
+  <data name="StockImageService.ImageNotFound" xml:space="preserve">
+    <value>Görsel bulunamadı.</value>
+  </data>
+  <data name="StockImageService.ImagesRetrieved" xml:space="preserve">
+    <value>Görseller başarıyla getirildi.</value>
+  </data>
+  <data name="StockImageService.InternalServerError" xml:space="preserve">
+    <value>Sunucu hatası oluştu.</value>
+  </data>
+  <data name="StockImageService.AddImagesExceptionMessage" xml:space="preserve">
+    <value>Görseller eklenirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockImageService.GetByStockIdExceptionMessage" xml:space="preserve">
+    <value>Görseller getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockImageService.DeleteExceptionMessage" xml:space="preserve">
+    <value>Görsel silinirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockImageService.SetPrimaryExceptionMessage" xml:space="preserve">
+    <value>Ana görsel ayarlanırken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockImageService.UploadImagesExceptionMessage" xml:space="preserve">
+    <value>Görseller yüklenirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockRelationService.RelationAdded" xml:space="preserve">
+    <value>Ürün ilişkisi başarıyla eklendi.</value>
+  </data>
+  <data name="StockRelationService.RelationRemoved" xml:space="preserve">
+    <value>Ürün ilişkisi başarıyla kaldırıldı.</value>
+  </data>
+  <data name="StockRelationService.DuplicateRelation" xml:space="preserve">
+    <value>Bu ürün ilişkisi zaten mevcut.</value>
+  </data>
+  <data name="StockRelationService.RelationNotFound" xml:space="preserve">
+    <value>Ürün ilişkisi bulunamadı.</value>
+  </data>
+  <data name="StockRelationService.RelationsRetrieved" xml:space="preserve">
+    <value>Ürün ilişkileri başarıyla getirildi.</value>
+  </data>
+  <data name="StockRelationService.InternalServerError" xml:space="preserve">
+    <value>Sunucu hatası oluştu.</value>
+  </data>
+  <data name="StockRelationService.CreateExceptionMessage" xml:space="preserve">
+    <value>Ürün ilişkisi oluşturulurken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockRelationService.GetByStockIdExceptionMessage" xml:space="preserve">
+    <value>Ürün ilişkileri getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockRelationService.DeleteExceptionMessage" xml:space="preserve">
+    <value>Ürün ilişkisi silinirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockService.StocksRetrieved" xml:space="preserve">
+    <value>Stoklar başarıyla getirildi.</value>
+  </data>
+  <data name="StockService.StockRetrieved" xml:space="preserve">
+    <value>Stok başarıyla getirildi.</value>
+  </data>
+  <data name="StockService.StockNotFound" xml:space="preserve">
+    <value>Stok bulunamadı.</value>
+  </data>
+  <data name="StockService.StockCreated" xml:space="preserve">
+    <value>Stok başarıyla oluşturuldu.</value>
+  </data>
+  <data name="StockService.StockUpdated" xml:space="preserve">
+    <value>Stok başarıyla güncellendi.</value>
+  </data>
+  <data name="StockService.StockDeleted" xml:space="preserve">
+    <value>Stok başarıyla silindi.</value>
+  </data>
+  <data name="StockService.ErpStockCodeAlreadyExists" xml:space="preserve">
+    <value>Bu ERP stok kodu zaten mevcut.</value>
+  </data>
+  <data name="StockService.InternalServerError" xml:space="preserve">
+    <value>Sunucu hatası oluştu.</value>
+  </data>
+  <data name="StockService.GetAllStocksExceptionMessage" xml:space="preserve">
+    <value>Stoklar getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockService.GetStockByIdExceptionMessage" xml:space="preserve">
+    <value>Stok getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockService.CreateStockExceptionMessage" xml:space="preserve">
+    <value>Stok oluşturulurken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockService.UpdateStockExceptionMessage" xml:space="preserve">
+    <value>Stok güncellenirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockService.DeleteStockExceptionMessage" xml:space="preserve">
+    <value>Stok silinirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockDetailService.CreateStockDetailExceptionMessage" xml:space="preserve">
+    <value>Stock Detail oluşturulurken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockDetailService.DeleteStockDetailExceptionMessage" xml:space="preserve">
+    <value>Stock Detail silinirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockDetailService.GetAllStockDetailsExceptionMessage" xml:space="preserve">
+    <value>Stock Detailler getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockDetailService.GetStockDetailByIdExceptionMessage" xml:space="preserve">
+    <value>Stock Detail getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockDetailService.GetStockDetailByStockIdExceptionMessage" xml:space="preserve">
+    <value>Bir hata oluştu: {0}</value>
+  </data>
+  <data name="StockDetailService.InternalServerError" xml:space="preserve">
+    <value>Sunucu hatası oluştu.</value>
+  </data>
+  <data name="StockDetailService.StockDetailAlreadyExists" xml:space="preserve">
+    <value>Stock Detail zaten mevcut.</value>
+  </data>
+  <data name="StockDetailService.StockDetailCreated" xml:space="preserve">
+    <value>Stock Detail başarıyla oluşturuldu.</value>
+  </data>
+  <data name="StockDetailService.StockDetailDeleted" xml:space="preserve">
+    <value>Stock Detail başarıyla silindi.</value>
+  </data>
+  <data name="StockDetailService.StockDetailNotFound" xml:space="preserve">
+    <value>Stock Detail bulunamadı.</value>
+  </data>
+  <data name="StockDetailService.StockDetailRetrieved" xml:space="preserve">
+    <value>Stock Detail başarıyla getirildi.</value>
+  </data>
+  <data name="StockDetailService.StockDetailUpdated" xml:space="preserve">
+    <value>Stock Detail başarıyla güncellendi.</value>
+  </data>
+  <data name="StockDetailService.StockDetailsRetrieved" xml:space="preserve">
+    <value>Stock Detailler başarıyla getirildi.</value>
+  </data>
+  <data name="StockDetailService.StockNotFound" xml:space="preserve">
+    <value>Stock Detail bulunamadı.</value>
+  </data>
+  <data name="StockDetailService.UpdateStockDetailExceptionMessage" xml:space="preserve">
+    <value>Stock Detail güncellenirken bir hata oluştu: {0}</value>
+  </data>
+</root>

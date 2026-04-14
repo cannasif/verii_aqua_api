@@ -1,0 +1,334 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AuthService.InvalidCredentials" xml:space="preserve">
+    <value>Geçersiz e-posta veya şifre.</value>
+  </data>
+  <data name="AuthService.LoginSuccessful" xml:space="preserve">
+    <value>Giriş başarılı.</value>
+  </data>
+  <data name="AuthService.UserRegistered" xml:space="preserve">
+    <value>Kullanıcı başarıyla kaydedildi.</value>
+  </data>
+  <data name="AuthService.EmailAlreadyExists" xml:space="preserve">
+    <value>E-posta adresi zaten mevcut.</value>
+  </data>
+  <data name="AuthService.UsernameAlreadyExists" xml:space="preserve">
+    <value>Kullanıcı adı zaten mevcut.</value>
+  </data>
+  <data name="AuthService.AdminUserNotFound" xml:space="preserve">
+    <value>Admin kullanıcısı bulunamadı.</value>
+  </data>
+  <data name="AuthService.AdminLoginSuccessful" xml:space="preserve">
+    <value>Admin girişi başarılı.</value>
+  </data>
+  <data name="AuthService.AdminLoginFailed" xml:space="preserve">
+    <value>Admin giriş işlemi başarısız.</value>
+  </data>
+  <data name="AuthService.UserIdNotFound" xml:space="preserve">
+    <value>Kullanıcı kimliği bulunamadı.</value>
+  </data>
+  <data name="AuthService.GetProfileFailed" xml:space="preserve">
+    <value>Profil getirme işlemi başarısız.</value>
+  </data>
+  <data name="AuthService.UserRegisteredSuccessfully" xml:space="preserve">
+    <value>Kullanıcı başarıyla kaydedildi.</value>
+  </data>
+  <data name="AuthService.RegistrationFailed" xml:space="preserve">
+    <value>Kayıt işlemi başarısız.</value>
+  </data>
+  <data name="AuthService.LoginFailed" xml:space="preserve">
+    <value>Giriş işlemi başarısız.</value>
+  </data>
+  <data name="Error.User.InvalidCredentials" xml:space="preserve">
+    <value>Geçersiz kullanıcı adı veya şifre.</value>
+  </data>
+  <data name="Error.User.CurrentPasswordIncorrect" xml:space="preserve">
+    <value>Girilen eski şifre yanlış.</value>
+  </data>
+  <data name="Error.User.LoginFailed" xml:space="preserve">
+    <value>Giriş işlemi başarısız.</value>
+  </data>
+  <data name="Success.User.LoginSuccessful" xml:space="preserve">
+    <value>Giriş başarılı.</value>
+  </data>
+  <data name="UserService.UserNotFound" xml:space="preserve">
+    <value>Kullanıcı bulunamadı.</value>
+  </data>
+  <data name="UserService.UserCreated" xml:space="preserve">
+    <value>Kullanıcı başarıyla oluşturuldu.</value>
+  </data>
+  <data name="UserService.UserUpdated" xml:space="preserve">
+    <value>Kullanıcı başarıyla güncellendi.</value>
+  </data>
+  <data name="UserService.UserDeleted" xml:space="preserve">
+    <value>Kullanıcı başarıyla silindi.</value>
+  </data>
+  <data name="UserService.UserRetrieved" xml:space="preserve">
+    <value>Kullanıcı başarıyla getirildi.</value>
+  </data>
+  <data name="UserService.UsersRetrieved" xml:space="preserve">
+    <value>Kullanıcılar başarıyla getirildi.</value>
+  </data>
+  <data name="UserService.UserAlreadyExists" xml:space="preserve">
+    <value>Kullanıcı zaten mevcut.</value>
+  </data>
+  <data name="UserSessionService.UserSessionsRetrieved" xml:space="preserve">
+    <value>Kullanıcı oturumları başarıyla getirildi.</value>
+  </data>
+  <data name="UserSessionService.UserSessionNotFound" xml:space="preserve">
+    <value>Kullanıcı oturumu bulunamadı.</value>
+  </data>
+  <data name="UserSessionService.UserSessionRetrieved" xml:space="preserve">
+    <value>Kullanıcı oturumu başarıyla getirildi.</value>
+  </data>
+  <data name="UserSessionService.UserSessionCreated" xml:space="preserve">
+    <value>Kullanıcı oturumu başarıyla oluşturuldu.</value>
+  </data>
+  <data name="UserSessionService.UserSessionRevoked" xml:space="preserve">
+    <value>Kullanıcı oturumu iptal edildi.</value>
+  </data>
+  <data name="UserSessionService.UserSessionDeleted" xml:space="preserve">
+    <value>Kullanıcı oturumu başarıyla silindi.</value>
+  </data>
+  <data name="UserAuthorityService.UserAuthoritiesRetrieved" xml:space="preserve">
+    <value>Kullanıcı yetkileri başarıyla getirildi.</value>
+  </data>
+  <data name="UserAuthorityService.UserAuthorityNotFound" xml:space="preserve">
+    <value>Kullanıcı yetkisi bulunamadı.</value>
+  </data>
+  <data name="UserAuthorityService.UserAuthorityRetrieved" xml:space="preserve">
+    <value>Kullanıcı yetkisi başarıyla getirildi.</value>
+  </data>
+  <data name="UserAuthorityService.UserAuthorityCreated" xml:space="preserve">
+    <value>Kullanıcı yetkisi başarıyla oluşturuldu.</value>
+  </data>
+  <data name="UserAuthorityService.UserAuthorityUpdated" xml:space="preserve">
+    <value>Kullanıcı yetkisi başarıyla güncellendi.</value>
+  </data>
+  <data name="UserAuthorityService.UserAuthorityDeleted" xml:space="preserve">
+    <value>Kullanıcı yetkisi başarıyla silindi.</value>
+  </data>
+  <data name="UserAuthorityService.ErrorRetrievingUserAuthorities" xml:space="preserve">
+    <value>Kullanıcı yetkileri getirilirken bir hata oluştu.</value>
+  </data>
+  <data name="UserAuthorityService.ErrorRetrievingUserAuthority" xml:space="preserve">
+    <value>Kullanıcı yetkisi getirilirken bir hata oluştu.</value>
+  </data>
+  <data name="UserAuthorityService.ErrorCreatingUserAuthority" xml:space="preserve">
+    <value>Kullanıcı yetkisi oluşturulurken bir hata oluştu.</value>
+  </data>
+  <data name="UserAuthorityService.ErrorUpdatingUserAuthority" xml:space="preserve">
+    <value>Kullanıcı yetkisi güncellenirken bir hata oluştu.</value>
+  </data>
+  <data name="UserAuthorityService.ErrorDeletingUserAuthority" xml:space="preserve">
+    <value>Kullanıcı yetkisi silinirken bir hata oluştu.</value>
+  </data>
+  <data name="UserAuthorityService.ErrorCheckingExists" xml:space="preserve">
+    <value>Kullanıcı yetkisi varlığı kontrol edilirken bir hata oluştu.</value>
+  </data>
+  <data name="UserAuthorityService.CreateExceptionMessage" xml:space="preserve">
+    <value>User Authority oluşturulurken bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserAuthorityService.ExistsExceptionMessage" xml:space="preserve">
+    <value>Bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserAuthorityService.GetAllExceptionMessage" xml:space="preserve">
+    <value>User Authorityler getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserAuthorityService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>User Authority getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserAuthorityService.SoftDeleteExceptionMessage" xml:space="preserve">
+    <value>User Authority silinirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserAuthorityService.UpdateExceptionMessage" xml:space="preserve">
+    <value>User Authority güncellenirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserDetailService.UserDetailNotFound" xml:space="preserve">
+    <value>Kullanıcı detayı bulunamadı.</value>
+  </data>
+  <data name="UserDetailService.UserDetailRetrievedSuccessfully" xml:space="preserve">
+    <value>Kullanıcı detayı başarıyla getirildi.</value>
+  </data>
+  <data name="UserDetailService.UserDetailRetrievalError" xml:space="preserve">
+    <value>Kullanıcı detayı getirme hatası.</value>
+  </data>
+  <data name="UserDetailService.UserDetailRetrievalExceptionMessage" xml:space="preserve">
+    <value>Kullanıcı detayı getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserDetailService.ProfilePictureUploadError" xml:space="preserve">
+    <value>Profile Picture Upload Error.</value>
+  </data>
+  <data name="UserDetailService.ProfilePictureUploadExceptionMessage" xml:space="preserve">
+    <value>Bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserDetailService.ProfilePictureUploadedSuccessfully" xml:space="preserve">
+    <value>Profile Picture Uploaded Successfully.</value>
+  </data>
+  <data name="UserDetailService.UserDetailAlreadyExists" xml:space="preserve">
+    <value>User Detail zaten mevcut.</value>
+  </data>
+  <data name="UserDetailService.UserDetailCreatedSuccessfully" xml:space="preserve">
+    <value>User Detail başarıyla oluşturuldu.</value>
+  </data>
+  <data name="UserDetailService.UserDetailCreationError" xml:space="preserve">
+    <value>User Detail Creation Error.</value>
+  </data>
+  <data name="UserDetailService.UserDetailCreationExceptionMessage" xml:space="preserve">
+    <value>Bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserDetailService.UserDetailDeletedSuccessfully" xml:space="preserve">
+    <value>User Detail başarıyla silindi.</value>
+  </data>
+  <data name="UserDetailService.UserDetailDeletionError" xml:space="preserve">
+    <value>User Detail Deletion Error.</value>
+  </data>
+  <data name="UserDetailService.UserDetailDeletionExceptionMessage" xml:space="preserve">
+    <value>Bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserDetailService.UserDetailUpdateError" xml:space="preserve">
+    <value>User Detail Update Error.</value>
+  </data>
+  <data name="UserDetailService.UserDetailUpdateExceptionMessage" xml:space="preserve">
+    <value>User Detail güncellenirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserDetailService.UserDetailUpdatedSuccessfully" xml:space="preserve">
+    <value>User Detail başarıyla güncellendi.</value>
+  </data>
+  <data name="UserDetailService.UserNotFound" xml:space="preserve">
+    <value>User Detail bulunamadı.</value>
+  </data>
+  <data name="UserDetailController.InvalidModelState" xml:space="preserve">
+    <value>Geçersiz model durumu.</value>
+  </data>
+  <data name="UserDetailController.InvalidModelStateExceptionMessage" xml:space="preserve">
+    <value>Model doğrulama hatası: {0}</value>
+  </data>
+  <data name="JwtService.MissingSecretKeyExceptionMessage" xml:space="preserve">
+    <value>Bir hata oluştu: {0}</value>
+  </data>
+  <data name="JwtService.TokenGeneratedSuccessfully" xml:space="preserve">
+    <value>Token Generated Successfully.</value>
+  </data>
+  <data name="JwtService.TokenGenerationError" xml:space="preserve">
+    <value>Token Generation Error.</value>
+  </data>
+  <data name="JwtService.TokenGenerationExceptionMessage" xml:space="preserve">
+    <value>Bir hata oluştu: {0}</value>
+  </data>
+  <data name="PasswordResetEmailSubject" xml:space="preserve">
+    <value>Şifre Sıfırlama.</value>
+  </data>
+  <data name="Error.User.AccountInactive" xml:space="preserve">
+    <value>Kullanıcı hesabı aktif değil.</value>
+  </data>
+  <data name="UserService.CreateUserExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserService.DeleteUserExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserService.GetAllUsersExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserService.GetCurrentUserIdExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserService.GetUserByIdExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserService.GetUserProfileExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserService.InternalServerError" xml:space="preserve">
+    <value>Sunucu tarafında bir hata oluştu.</value>
+  </data>
+  <data name="UserService.InvalidUserId" xml:space="preserve">
+    <value>Geçersiz kullanıcı kimliği.</value>
+  </data>
+  <data name="UserService.UpdateUserExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserService.UserIdRetrieved" xml:space="preserve">
+    <value>Kullanıcı kimliği başarıyla alındı.</value>
+  </data>
+  <data name="UserSessionService.CreateSessionExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserSessionService.DeleteSessionExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserSessionService.GetAllSessionsExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserSessionService.GetSessionByIdExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserSessionService.InternalServerError" xml:space="preserve">
+    <value>Sunucu tarafında bir hata oluştu.</value>
+  </data>
+  <data name="UserSessionService.RevokeActiveSessionExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="UserSessionService.RevokeSessionExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+</root>

@@ -1,0 +1,334 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AuthService.InvalidCredentials" xml:space="preserve">
+    <value>Ungültige E-Mail oder Passwort.</value>
+  </data>
+  <data name="AuthService.LoginSuccessful" xml:space="preserve">
+    <value>Anmeldung erfolgreich.</value>
+  </data>
+  <data name="AuthService.UserRegistered" xml:space="preserve">
+    <value>Benutzer erfolgreich registriert.</value>
+  </data>
+  <data name="AuthService.EmailAlreadyExists" xml:space="preserve">
+    <value>E-Mail existiert bereits.</value>
+  </data>
+  <data name="AuthService.UsernameAlreadyExists" xml:space="preserve">
+    <value>Benutzername existiert bereits.</value>
+  </data>
+  <data name="AuthService.AdminUserNotFound" xml:space="preserve">
+    <value>Admin-Benutzer nicht gefunden.</value>
+  </data>
+  <data name="AuthService.AdminLoginSuccessful" xml:space="preserve">
+    <value>Admin-Anmeldung erfolgreich.</value>
+  </data>
+  <data name="AuthService.AdminLoginFailed" xml:space="preserve">
+    <value>Admin-Anmeldung fehlgeschlagen.</value>
+  </data>
+  <data name="AuthService.UserIdNotFound" xml:space="preserve">
+    <value>Benutzer ID nicht gefunden.</value>
+  </data>
+  <data name="AuthService.GetProfileFailed" xml:space="preserve">
+    <value>Fehler beim Abrufen des Profils.</value>
+  </data>
+  <data name="AuthService.UserRegisteredSuccessfully" xml:space="preserve">
+    <value>Benutzer erfolgreich registriert.</value>
+  </data>
+  <data name="AuthService.RegistrationFailed" xml:space="preserve">
+    <value>Registrierung fehlgeschlagen.</value>
+  </data>
+  <data name="AuthService.LoginFailed" xml:space="preserve">
+    <value>Anmeldung fehlgeschlagen.</value>
+  </data>
+  <data name="UserService.UserNotFound" xml:space="preserve">
+    <value>Benutzer nicht gefunden.</value>
+  </data>
+  <data name="UserService.UserCreated" xml:space="preserve">
+    <value>Benutzer erfolgreich erstellt.</value>
+  </data>
+  <data name="UserService.UserUpdated" xml:space="preserve">
+    <value>Benutzer erfolgreich aktualisiert.</value>
+  </data>
+  <data name="UserService.UserDeleted" xml:space="preserve">
+    <value>Benutzer erfolgreich gelöscht.</value>
+  </data>
+  <data name="UserService.UserRetrieved" xml:space="preserve">
+    <value>Benutzer erfolgreich abgerufen.</value>
+  </data>
+  <data name="UserService.UsersRetrieved" xml:space="preserve">
+    <value>Benutzer erfolgreich abgerufen.</value>
+  </data>
+  <data name="UserService.UserAlreadyExists" xml:space="preserve">
+    <value>User already exists.</value>
+  </data>
+  <data name="UserSessionService.UserSessionsRetrieved" xml:space="preserve">
+    <value>Benutzer sessions erfolgreich abgerufen.</value>
+  </data>
+  <data name="UserSessionService.UserSessionNotFound" xml:space="preserve">
+    <value>Benutzer session nicht gefunden.</value>
+  </data>
+  <data name="UserSessionService.UserSessionRetrieved" xml:space="preserve">
+    <value>Benutzer session erfolgreich abgerufen.</value>
+  </data>
+  <data name="UserSessionService.UserSessionCreated" xml:space="preserve">
+    <value>Benutzer session erfolgreich erstellt.</value>
+  </data>
+  <data name="UserSessionService.UserSessionRevoked" xml:space="preserve">
+    <value>User session revoked successfully.</value>
+  </data>
+  <data name="UserSessionService.UserSessionDeleted" xml:space="preserve">
+    <value>Benutzer session erfolgreich gelöscht.</value>
+  </data>
+  <data name="UserAuthorityService.UserAuthoritiesRetrieved" xml:space="preserve">
+    <value>Benutzer authorities erfolgreich abgerufen.</value>
+  </data>
+  <data name="UserAuthorityService.UserAuthorityNotFound" xml:space="preserve">
+    <value>Benutzer authority nicht gefunden.</value>
+  </data>
+  <data name="UserAuthorityService.UserAuthorityRetrieved" xml:space="preserve">
+    <value>Benutzer authority erfolgreich abgerufen.</value>
+  </data>
+  <data name="UserAuthorityService.UserAuthorityCreated" xml:space="preserve">
+    <value>Benutzer authority erfolgreich erstellt.</value>
+  </data>
+  <data name="UserAuthorityService.UserAuthorityUpdated" xml:space="preserve">
+    <value>Benutzer authority erfolgreich aktualisiert.</value>
+  </data>
+  <data name="UserAuthorityService.UserAuthorityDeleted" xml:space="preserve">
+    <value>Benutzer authority erfolgreich gelöscht.</value>
+  </data>
+  <data name="UserAuthorityService.ErrorRetrievingUserAuthorities" xml:space="preserve">
+    <value>Fehler beim Abrufen von user authorities.</value>
+  </data>
+  <data name="UserAuthorityService.ErrorRetrievingUserAuthority" xml:space="preserve">
+    <value>Fehler beim Abrufen von the user authority.</value>
+  </data>
+  <data name="UserAuthorityService.ErrorCreatingUserAuthority" xml:space="preserve">
+    <value>Fehler beim Erstellen von the user authority.</value>
+  </data>
+  <data name="UserAuthorityService.ErrorUpdatingUserAuthority" xml:space="preserve">
+    <value>Fehler beim Aktualisieren von the user authority.</value>
+  </data>
+  <data name="UserAuthorityService.ErrorDeletingUserAuthority" xml:space="preserve">
+    <value>Fehler beim Löschen von the user authority.</value>
+  </data>
+  <data name="UserAuthorityService.ErrorCheckingExists" xml:space="preserve">
+    <value>An error occurred while checking user authority existence.</value>
+  </data>
+  <data name="UserAuthorityService.CreateExceptionMessage" xml:space="preserve">
+    <value>Fehler beim Erstellen von the Benutzer Berechtigung: {0}</value>
+  </data>
+  <data name="UserAuthorityService.ExistsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="UserAuthorityService.GetAllExceptionMessage" xml:space="preserve">
+    <value>Fehler beim Abrufen von Benutzer Authoritys: {0}</value>
+  </data>
+  <data name="UserAuthorityService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>Fehler beim Abrufen von the Benutzer Berechtigung: {0}</value>
+  </data>
+  <data name="UserAuthorityService.SoftDeleteExceptionMessage" xml:space="preserve">
+    <value>Fehler beim Löschen von the Benutzer Berechtigung: {0}</value>
+  </data>
+  <data name="UserAuthorityService.UpdateExceptionMessage" xml:space="preserve">
+    <value>Fehler beim Aktualisieren von the Benutzer Berechtigung: {0}</value>
+  </data>
+  <data name="UserDetailService.UserDetailNotFound" xml:space="preserve">
+    <value>Benutzer detail nicht gefunden.</value>
+  </data>
+  <data name="UserDetailService.UserDetailRetrievedSuccessfully" xml:space="preserve">
+    <value>Benutzer detail erfolgreich abgerufen.</value>
+  </data>
+  <data name="UserDetailService.UserDetailRetrievalError" xml:space="preserve">
+    <value>User detail retrieval error.</value>
+  </data>
+  <data name="UserDetailService.UserDetailRetrievalExceptionMessage" xml:space="preserve">
+    <value>Fehler beim Abrufen von user detail: {0}</value>
+  </data>
+  <data name="UserDetailService.ProfilePictureUploadError" xml:space="preserve">
+    <value>Profile Picture Upload Error.</value>
+  </data>
+  <data name="UserDetailService.ProfilePictureUploadExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="UserDetailService.ProfilePictureUploadedSuccessfully" xml:space="preserve">
+    <value>Profile Picture Uploaded Successfully.</value>
+  </data>
+  <data name="UserDetailService.UserDetailAlreadyExists" xml:space="preserve">
+    <value>User Detail already exists.</value>
+  </data>
+  <data name="UserDetailService.UserDetailCreatedSuccessfully" xml:space="preserve">
+    <value>Benutzer Detail erfolgreich erstellt.</value>
+  </data>
+  <data name="UserDetailService.UserDetailCreationError" xml:space="preserve">
+    <value>User Detail Creation Error.</value>
+  </data>
+  <data name="UserDetailService.UserDetailCreationExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="UserDetailService.UserDetailDeletedSuccessfully" xml:space="preserve">
+    <value>Benutzer Detail erfolgreich gelöscht.</value>
+  </data>
+  <data name="UserDetailService.UserDetailDeletionError" xml:space="preserve">
+    <value>User Detail Deletion Error.</value>
+  </data>
+  <data name="UserDetailService.UserDetailDeletionExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="UserDetailService.UserDetailUpdateError" xml:space="preserve">
+    <value>User Detail Update Error.</value>
+  </data>
+  <data name="UserDetailService.UserDetailUpdateExceptionMessage" xml:space="preserve">
+    <value>Fehler beim Aktualisieren von the Benutzer Detail: {0}</value>
+  </data>
+  <data name="UserDetailService.UserDetailUpdatedSuccessfully" xml:space="preserve">
+    <value>Benutzer Detail erfolgreich aktualisiert.</value>
+  </data>
+  <data name="UserDetailService.UserNotFound" xml:space="preserve">
+    <value>Benutzer Detail nicht gefunden.</value>
+  </data>
+  <data name="UserDetailController.InvalidModelState" xml:space="preserve">
+    <value>Ungültiger Modellstatus.</value>
+  </data>
+  <data name="UserDetailController.InvalidModelStateExceptionMessage" xml:space="preserve">
+    <value>Modellvalidierungsfehler: {0}</value>
+  </data>
+  <data name="Error.User.InvalidCredentials" xml:space="preserve">
+    <value>Ungültiger Benutzername oder ungültiges Passwort.</value>
+  </data>
+  <data name="Error.User.CurrentPasswordIncorrect" xml:space="preserve">
+    <value>Das eingegebene aktuelle Passwort ist falsch.</value>
+  </data>
+  <data name="Error.User.LoginFailed" xml:space="preserve">
+    <value>Anmeldung fehlgeschlagen.</value>
+  </data>
+  <data name="JwtService.MissingSecretKeyExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="JwtService.TokenGeneratedSuccessfully" xml:space="preserve">
+    <value>Token Generated Successfully.</value>
+  </data>
+  <data name="JwtService.TokenGenerationError" xml:space="preserve">
+    <value>Token Generation Error.</value>
+  </data>
+  <data name="JwtService.TokenGenerationExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="Success.User.LoginSuccessful" xml:space="preserve">
+    <value>Anmeldung erfolgreich.</value>
+  </data>
+  <data name="PasswordResetEmailSubject" xml:space="preserve">
+    <value>Password Reset.</value>
+  </data>
+  <data name="Error.User.AccountInactive" xml:space="preserve">
+    <value>Das Benutzerkonto ist inaktiv.</value>
+  </data>
+  <data name="UserService.CreateUserExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+  <data name="UserService.DeleteUserExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+  <data name="UserService.GetAllUsersExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+  <data name="UserService.GetCurrentUserIdExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+  <data name="UserService.GetUserByIdExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+  <data name="UserService.GetUserProfileExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+  <data name="UserService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="UserService.InvalidUserId" xml:space="preserve">
+    <value>Datensatz erfolgreich abgerufen.</value>
+  </data>
+  <data name="UserService.UpdateUserExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+  <data name="UserService.UserIdRetrieved" xml:space="preserve">
+    <value>Datensatz erfolgreich abgerufen.</value>
+  </data>
+  <data name="UserSessionService.CreateSessionExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+  <data name="UserSessionService.DeleteSessionExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+  <data name="UserSessionService.GetAllSessionsExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+  <data name="UserSessionService.GetSessionByIdExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+  <data name="UserSessionService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="UserSessionService.RevokeActiveSessionExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+  <data name="UserSessionService.RevokeSessionExceptionMessage" xml:space="preserve">
+    <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
+  </data>
+</root>

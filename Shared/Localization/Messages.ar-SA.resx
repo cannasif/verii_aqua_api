@@ -1,0 +1,2875 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ActiveUsersRetrievedSuccessfully" xml:space="preserve">
+    <value>نشط users تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ActivityService.ActivitiesRetrieved" xml:space="preserve">
+    <value>أنشطة تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ActivityService.ActivityCreated" xml:space="preserve">
+    <value>نشاط تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="ActivityService.ActivityDeleted" xml:space="preserve">
+    <value>نشاط تم حذفه بنجاح.</value>
+  </data>
+  <data name="ActivityService.ActivityNotFound" xml:space="preserve">
+    <value>نشاط غير موجود.</value>
+  </data>
+  <data name="ActivityService.ActivityRetrieved" xml:space="preserve">
+    <value>نشاط تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ActivityService.ActivityUpdated" xml:space="preserve">
+    <value>نشاط تم تحديثه بنجاح.</value>
+  </data>
+  <data name="ActivityService.CreateActivityExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the نشاط: {0}</value>
+  </data>
+  <data name="ActivityService.DeleteActivityExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the نشاط: {0}</value>
+  </data>
+  <data name="ActivityService.GetActivityByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the نشاط: {0}</value>
+  </data>
+  <data name="ActivityService.GetAllActivitiesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع Activitys: {0}</value>
+  </data>
+  <data name="ActivityService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="ActivityService.UpdateActivityExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the نشاط: {0}</value>
+  </data>
+  <data name="ActivityTypeService.ActivityTypeCreated" xml:space="preserve">
+    <value>نوع النشاط تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="ActivityTypeService.ActivityTypeDeleted" xml:space="preserve">
+    <value>نوع النشاط تم حذفه بنجاح.</value>
+  </data>
+  <data name="ActivityTypeService.ActivityTypeNotFound" xml:space="preserve">
+    <value>نوع النشاط غير موجود.</value>
+  </data>
+  <data name="ActivityTypeService.ActivityTypeRetrieved" xml:space="preserve">
+    <value>نوع النشاط تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ActivityTypeService.ActivityTypeUpdated" xml:space="preserve">
+    <value>نوع النشاط تم تحديثه بنجاح.</value>
+  </data>
+  <data name="ActivityTypeService.ActivityTypesRetrieved" xml:space="preserve">
+    <value>نشاط Types تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ActivityTypeService.CreateActivityTypeExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the نشاط نوع: {0}</value>
+  </data>
+  <data name="ActivityTypeService.DeleteActivityTypeExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the نشاط نوع: {0}</value>
+  </data>
+  <data name="ActivityTypeService.GetActivityTypeByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the نشاط نوع: {0}</value>
+  </data>
+  <data name="ActivityTypeService.GetAllActivityTypesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع نشاط Types: {0}</value>
+  </data>
+  <data name="ActivityTypeService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="ActivityTypeService.UpdateActivityTypeExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the نشاط نوع: {0}</value>
+  </data>
+  <data name="ApprovalActionService.ApprovalActionCreated" xml:space="preserve">
+    <value>موافقة action تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="ApprovalActionService.ApprovalActionDeleted" xml:space="preserve">
+    <value>موافقة action تم حذفه بنجاح.</value>
+  </data>
+  <data name="ApprovalActionService.ApprovalActionNotFound" xml:space="preserve">
+    <value>موافقة action غير موجود.</value>
+  </data>
+  <data name="ApprovalActionService.ApprovalActionRetrieved" xml:space="preserve">
+    <value>موافقة action تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalActionService.ApprovalActionUpdated" xml:space="preserve">
+    <value>موافقة action تم تحديثه بنجاح.</value>
+  </data>
+  <data name="ApprovalActionService.ApprovalActionsRetrieved" xml:space="preserve">
+    <value>موافقة actions تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalActionService.CreateApprovalActionExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء approval action: {0}</value>
+  </data>
+  <data name="ApprovalActionService.DeleteApprovalActionExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف approval action: {0}</value>
+  </data>
+  <data name="ApprovalActionService.GetAllApprovalActionsExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع approval actions: {0}</value>
+  </data>
+  <data name="ApprovalActionService.GetApprovalActionByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع approval action: {0}</value>
+  </data>
+  <data name="ApprovalActionService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="ApprovalActionService.UpdateApprovalActionExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث approval action: {0}</value>
+  </data>
+  <data name="ApprovalFlowService.ApprovalFlowCreated" xml:space="preserve">
+    <value>موافقة flow تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="ApprovalFlowService.ApprovalFlowDeleted" xml:space="preserve">
+    <value>موافقة flow تم حذفه بنجاح.</value>
+  </data>
+  <data name="ApprovalFlowService.ApprovalFlowNotFound" xml:space="preserve">
+    <value>موافقة flow غير موجود.</value>
+  </data>
+  <data name="ApprovalFlowService.ApprovalFlowRetrieved" xml:space="preserve">
+    <value>موافقة flow تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalFlowService.ApprovalFlowUpdated" xml:space="preserve">
+    <value>موافقة flow تم تحديثه بنجاح.</value>
+  </data>
+  <data name="ApprovalFlowService.ApprovalFlowsRetrieved" xml:space="preserve">
+    <value>موافقة flows تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalFlowService.CreateApprovalFlowExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء approval flow: {0}</value>
+  </data>
+  <data name="ApprovalFlowService.DeleteApprovalFlowExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف approval flow: {0}</value>
+  </data>
+  <data name="ApprovalFlowService.GetAllApprovalFlowsExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع approval flows: {0}</value>
+  </data>
+  <data name="ApprovalFlowService.GetApprovalFlowByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع approval flow: {0}</value>
+  </data>
+  <data name="ApprovalFlowService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="ApprovalFlowService.UpdateApprovalFlowExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث approval flow: {0}</value>
+  </data>
+  <data name="ApprovalFlowStepService.ApprovalFlowStepCreated" xml:space="preserve">
+    <value>موافقة flow step تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="ApprovalFlowStepService.ApprovalFlowStepDeleted" xml:space="preserve">
+    <value>موافقة flow step تم حذفه بنجاح.</value>
+  </data>
+  <data name="ApprovalFlowStepService.ApprovalFlowStepNotFound" xml:space="preserve">
+    <value>موافقة flow step غير موجود.</value>
+  </data>
+  <data name="ApprovalFlowStepService.ApprovalFlowStepRetrieved" xml:space="preserve">
+    <value>موافقة flow step تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalFlowStepService.ApprovalFlowStepUpdated" xml:space="preserve">
+    <value>موافقة flow step تم تحديثه بنجاح.</value>
+  </data>
+  <data name="ApprovalFlowStepService.ApprovalFlowStepsRetrieved" xml:space="preserve">
+    <value>موافقة flow steps تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalFlowStepService.CreateApprovalFlowStepExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء approval flow step: {0}</value>
+  </data>
+  <data name="ApprovalFlowStepService.DeleteApprovalFlowStepExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف approval flow step: {0}</value>
+  </data>
+  <data name="ApprovalFlowStepService.GetAllApprovalFlowStepsExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع approval flow steps: {0}</value>
+  </data>
+  <data name="ApprovalFlowStepService.GetApprovalFlowStepByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع approval flow step: {0}</value>
+  </data>
+  <data name="ApprovalFlowStepService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="ApprovalFlowStepService.UpdateApprovalFlowStepExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث approval flow step: {0}</value>
+  </data>
+  <data name="ApprovalRequestService.ApprovalRequestCreated" xml:space="preserve">
+    <value>موافقة request تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="ApprovalRequestService.ApprovalRequestDeleted" xml:space="preserve">
+    <value>موافقة request تم حذفه بنجاح.</value>
+  </data>
+  <data name="ApprovalRequestService.ApprovalRequestNotFound" xml:space="preserve">
+    <value>موافقة request غير موجود.</value>
+  </data>
+  <data name="ApprovalRequestService.ApprovalRequestRetrieved" xml:space="preserve">
+    <value>موافقة request تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalRequestService.ApprovalRequestUpdated" xml:space="preserve">
+    <value>موافقة request تم تحديثه بنجاح.</value>
+  </data>
+  <data name="ApprovalRequestService.ApprovalRequestsRetrieved" xml:space="preserve">
+    <value>موافقة requests تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalRequestService.CreateApprovalRequestExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء approval request: {0}</value>
+  </data>
+  <data name="ApprovalRequestService.DeleteApprovalRequestExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف approval request: {0}</value>
+  </data>
+  <data name="ApprovalRequestService.GetAllApprovalRequestsExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع approval requests: {0}</value>
+  </data>
+  <data name="ApprovalRequestService.GetApprovalRequestByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع approval request: {0}</value>
+  </data>
+  <data name="ApprovalRequestService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="ApprovalRequestService.UpdateApprovalRequestExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث approval request: {0}</value>
+  </data>
+  <data name="ApprovalRoleGroupService.ApprovalRoleGroupCreated" xml:space="preserve">
+    <value>موافقة role group تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="ApprovalRoleGroupService.ApprovalRoleGroupDeleted" xml:space="preserve">
+    <value>موافقة role group تم حذفه بنجاح.</value>
+  </data>
+  <data name="ApprovalRoleGroupService.ApprovalRoleGroupNotFound" xml:space="preserve">
+    <value>موافقة role group غير موجود.</value>
+  </data>
+  <data name="ApprovalRoleGroupService.ApprovalRoleGroupRetrieved" xml:space="preserve">
+    <value>موافقة role group تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalRoleGroupService.ApprovalRoleGroupUpdated" xml:space="preserve">
+    <value>موافقة role group تم تحديثه بنجاح.</value>
+  </data>
+  <data name="ApprovalRoleGroupService.ApprovalRoleGroupsRetrieved" xml:space="preserve">
+    <value>موافقة role groups تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalRoleGroupService.CreateApprovalRoleGroupExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء approval role group: {0}</value>
+  </data>
+  <data name="ApprovalRoleGroupService.DeleteApprovalRoleGroupExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف approval role group: {0}</value>
+  </data>
+  <data name="ApprovalRoleGroupService.GetAllApprovalRoleGroupsExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع approval role groups: {0}</value>
+  </data>
+  <data name="ApprovalRoleGroupService.GetApprovalRoleGroupByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع approval role group: {0}</value>
+  </data>
+  <data name="ApprovalRoleGroupService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="ApprovalRoleGroupService.UpdateApprovalRoleGroupExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث approval role group: {0}</value>
+  </data>
+  <data name="ApprovalRoleService.ApprovalRoleCreated" xml:space="preserve">
+    <value>موافقة role تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="ApprovalRoleService.ApprovalRoleDeleted" xml:space="preserve">
+    <value>موافقة role تم حذفه بنجاح.</value>
+  </data>
+  <data name="ApprovalRoleService.ApprovalRoleNotFound" xml:space="preserve">
+    <value>موافقة role غير موجود.</value>
+  </data>
+  <data name="ApprovalRoleService.ApprovalRoleRetrieved" xml:space="preserve">
+    <value>موافقة role تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalRoleService.ApprovalRoleUpdated" xml:space="preserve">
+    <value>موافقة role تم تحديثه بنجاح.</value>
+  </data>
+  <data name="ApprovalRoleService.ApprovalRolesRetrieved" xml:space="preserve">
+    <value>موافقة roles تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalRoleService.CreateApprovalRoleExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء approval role: {0}</value>
+  </data>
+  <data name="ApprovalRoleService.DeleteApprovalRoleExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف approval role: {0}</value>
+  </data>
+  <data name="ApprovalRoleService.GetAllApprovalRolesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع approval roles: {0}</value>
+  </data>
+  <data name="ApprovalRoleService.GetApprovalRoleByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع approval role: {0}</value>
+  </data>
+  <data name="ApprovalRoleService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="ApprovalRoleService.UpdateApprovalRoleExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث approval role: {0}</value>
+  </data>
+  <data name="ApprovalUserRoleService.ApprovalUserRoleCreated" xml:space="preserve">
+    <value>موافقة user role تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="ApprovalUserRoleService.ApprovalUserRoleDeleted" xml:space="preserve">
+    <value>موافقة user role تم حذفه بنجاح.</value>
+  </data>
+  <data name="ApprovalUserRoleService.ApprovalUserRoleNotFound" xml:space="preserve">
+    <value>موافقة user role غير موجود.</value>
+  </data>
+  <data name="ApprovalUserRoleService.ApprovalUserRoleRetrieved" xml:space="preserve">
+    <value>موافقة user role تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalUserRoleService.ApprovalUserRoleUpdated" xml:space="preserve">
+    <value>موافقة user role تم تحديثه بنجاح.</value>
+  </data>
+  <data name="ApprovalUserRoleService.ApprovalUserRolesRetrieved" xml:space="preserve">
+    <value>موافقة user roles تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalUserRoleService.CreateApprovalUserRoleExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء approval user role: {0}</value>
+  </data>
+  <data name="ApprovalUserRoleService.DeleteApprovalUserRoleExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف approval user role: {0}</value>
+  </data>
+  <data name="ApprovalUserRoleService.GetAllApprovalUserRolesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع approval user roles: {0}</value>
+  </data>
+  <data name="ApprovalUserRoleService.GetApprovalUserRoleByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع approval user role: {0}</value>
+  </data>
+  <data name="ApprovalUserRoleService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="ApprovalUserRoleService.UpdateApprovalUserRoleExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث approval user role: {0}</value>
+  </data>
+  <data name="ApprovalWorkflowService.ApprovalWorkflowCreated" xml:space="preserve">
+    <value>موافقة workflow تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="ApprovalWorkflowService.ApprovalWorkflowDeleted" xml:space="preserve">
+    <value>موافقة workflow تم حذفه بنجاح.</value>
+  </data>
+  <data name="ApprovalWorkflowService.ApprovalWorkflowNotFound" xml:space="preserve">
+    <value>موافقة workflow غير موجود.</value>
+  </data>
+  <data name="ApprovalWorkflowService.ApprovalWorkflowRetrieved" xml:space="preserve">
+    <value>موافقة workflow تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ApprovalWorkflowService.ApprovalWorkflowUpdated" xml:space="preserve">
+    <value>موافقة workflow تم تحديثه بنجاح.</value>
+  </data>
+  <data name="ApprovalWorkflowService.ApprovalWorkflowsRetrieved" xml:space="preserve">
+    <value>موافقة workflows تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="AquaDbContextFactory.MissingDefaultConnection" xml:space="preserve">
+    <value>ConnectionStrings:DefaultConnection bağlantı bilgisi bulunamadı.</value>
+  </data>
+  <data name="AquaDbContextFactory.ProjectRootNotFound" xml:space="preserve">
+    <value>appsettings.json içeren proje kök dizini çözümlenemedi.</value>
+  </data>
+  <data name="AuthErrorOccurred" xml:space="preserve">
+    <value>An error occurred.</value>
+  </data>
+  <data name="AuthRegistrationFailed" xml:space="preserve">
+    <value>فشل التسجيل.</value>
+  </data>
+  <data name="AuthSessionNotFound" xml:space="preserve">
+    <value>Session غير موجود.</value>
+  </data>
+  <data name="AuthUserAlreadyExists" xml:space="preserve">
+    <value>User already exists.</value>
+  </data>
+  <data name="AuthUserNotFound" xml:space="preserve">
+    <value>مستخدم غير موجود.</value>
+  </data>
+  <data name="AuthUserRegisteredSuccessfully" xml:space="preserve">
+    <value>تم تسجيل المستخدم بنجاح.</value>
+  </data>
+  <data name="AuthUserRetrievedSuccessfully" xml:space="preserve">
+    <value>مستخدم تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="CityController.InvalidModelState" xml:space="preserve">
+    <value>حالة النموذج غير صالحة.</value>
+  </data>
+  <data name="CityController.InvalidModelStateExceptionMessage" xml:space="preserve">
+    <value>خطأ في التحقق من النموذج: {0}</value>
+  </data>
+  <data name="CityService.CitiesRetrieved" xml:space="preserve">
+    <value>مدن تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="CityService.CityCreated" xml:space="preserve">
+    <value>مدينة تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="CityService.CityDeleted" xml:space="preserve">
+    <value>مدينة تم حذفه بنجاح.</value>
+  </data>
+  <data name="CityService.CityNotFound" xml:space="preserve">
+    <value>مدينة غير موجود.</value>
+  </data>
+  <data name="CityService.CityRetrieved" xml:space="preserve">
+    <value>مدينة تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="CityService.CityUpdated" xml:space="preserve">
+    <value>مدينة تم تحديثه بنجاح.</value>
+  </data>
+  <data name="CityService.CreateCityExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the city: {0}</value>
+  </data>
+  <data name="CityService.DeleteCityExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the city: {0}</value>
+  </data>
+  <data name="CityService.ErrorCreatingCity" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the city.</value>
+  </data>
+  <data name="CityService.ErrorDeletingCity" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the city.</value>
+  </data>
+  <data name="CityService.ErrorRetrievingCities" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع cities.</value>
+  </data>
+  <data name="CityService.ErrorRetrievingCity" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the city.</value>
+  </data>
+  <data name="CityService.ErrorUpdatingCity" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the city.</value>
+  </data>
+  <data name="CityService.GetAllCitiesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع cities: {0}</value>
+  </data>
+  <data name="CityService.GetCityByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the city: {0}</value>
+  </data>
+  <data name="CityService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="CityService.UpdateCityExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the city: {0}</value>
+  </data>
+  <data name="ContactService.ContactCreated" xml:space="preserve">
+    <value>جهة اتصال تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="ContactService.ContactDeleted" xml:space="preserve">
+    <value>جهة اتصال تم حذفه بنجاح.</value>
+  </data>
+  <data name="ContactService.ContactNotFound" xml:space="preserve">
+    <value>جهة اتصال غير موجود.</value>
+  </data>
+  <data name="ContactService.ContactRetrieved" xml:space="preserve">
+    <value>جهة اتصال تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ContactService.ContactUpdated" xml:space="preserve">
+    <value>جهة اتصال تم تحديثه بنجاح.</value>
+  </data>
+  <data name="ContactService.ContactsRetrieved" xml:space="preserve">
+    <value>جهات اتصال تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ContactService.CreateContactExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the جهة اتصال: {0}</value>
+  </data>
+  <data name="ContactService.DeleteContactExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the جهة اتصال: {0}</value>
+  </data>
+  <data name="ContactService.DuplicateContact" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="ContactService.ErrorCreatingContact" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the contact.</value>
+  </data>
+  <data name="ContactService.ErrorDeletingContact" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the contact.</value>
+  </data>
+  <data name="ContactService.ErrorRetrievingContact" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the contact.</value>
+  </data>
+  <data name="ContactService.ErrorRetrievingContacts" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع contacts.</value>
+  </data>
+  <data name="ContactService.ErrorUpdatingContact" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the contact.</value>
+  </data>
+  <data name="ContactService.FullNameRequired" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="ContactService.GetAllContactsExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع جهات اتصال: {0}</value>
+  </data>
+  <data name="ContactService.GetContactByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the جهة اتصال: {0}</value>
+  </data>
+  <data name="ContactService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="ContactService.InvalidEmail" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="ContactService.UpdateContactExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the جهة اتصال: {0}</value>
+  </data>
+  <data name="CountryController.InvalidModelState" xml:space="preserve">
+    <value>حالة النموذج غير صالحة.</value>
+  </data>
+  <data name="CountryController.InvalidModelStateExceptionMessage" xml:space="preserve">
+    <value>خطأ في التحقق من النموذج: {0}</value>
+  </data>
+  <data name="CountryService.CountriesRetrieved" xml:space="preserve">
+    <value>بلدان تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="CountryService.CountryCreated" xml:space="preserve">
+    <value>بلد تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="CountryService.CountryDeleted" xml:space="preserve">
+    <value>بلد تم حذفه بنجاح.</value>
+  </data>
+  <data name="CountryService.CountryNameAlreadyExists" xml:space="preserve"><value>الدولة موجودة بالفعل. لا يمكن إضافة نفس الدولة مرة أخرى.</value></data><data name="CountryService.CountryNotFound" xml:space="preserve">
+    <value>بلد غير موجود.</value>
+  </data>
+  <data name="CountryService.CountryRetrieved" xml:space="preserve">
+    <value>بلد تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="CountryService.CountryUpdated" xml:space="preserve">
+    <value>بلد تم تحديثه بنجاح.</value>
+  </data>
+  <data name="CountryService.CreateCountryExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the country: {0}</value>
+  </data>
+  <data name="CountryService.DeleteCountryExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the country: {0}</value>
+  </data>
+  <data name="CountryService.ErrorCreatingCountry" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the country.</value>
+  </data>
+  <data name="CountryService.ErrorDeletingCountry" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the country.</value>
+  </data>
+  <data name="CountryService.ErrorRetrievingCountries" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع countries.</value>
+  </data>
+  <data name="CountryService.ErrorRetrievingCountry" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the country.</value>
+  </data>
+  <data name="CountryService.ErrorUpdatingCountry" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the country.</value>
+  </data>
+  <data name="CountryService.GetAllCountriesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع countries: {0}</value>
+  </data>
+  <data name="CountryService.GetCountryByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the country: {0}</value>
+  </data>
+  <data name="CountryService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="CountryService.UpdateCountryExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the country: {0}</value>
+  </data>
+  <data name="Customer360Service.CustomerNotFound" xml:space="preserve">
+    <value>Customer not found.</value>
+  </data>
+  <data name="Customer360Service.ExceptionMessage" xml:space="preserve">
+    <value>{0}</value>
+  </data>
+  <data name="Customer360Service.InternalServerError" xml:space="preserve">
+    <value>Internal server error occurred.</value>
+  </data>
+  <data name="Customer360Service.OverviewRetrieved" xml:space="preserve">
+    <value>Customer overview retrieved successfully.</value>
+  </data>
+  <data name="CustomerService.CreateCustomerExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the عميل: {0}</value>
+  </data>
+  <data name="CustomerService.CustomerCreated" xml:space="preserve">
+    <value>عميل تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="CustomerService.CustomerDeleted" xml:space="preserve">
+    <value>عميل تم حذفه بنجاح.</value>
+  </data>
+  <data name="CustomerService.CustomerMerged" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="CustomerService.CustomerNameRequired" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="CustomerService.CustomerNotFound" xml:space="preserve">
+    <value>عميل غير موجود.</value>
+  </data>
+  <data name="CustomerService.CustomerRetrieved" xml:space="preserve">
+    <value>عميل تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="CustomerService.CustomerUpdated" xml:space="preserve">
+    <value>عميل تم تحديثه بنجاح.</value>
+  </data>
+  <data name="CustomerService.CustomersRetrieved" xml:space="preserve">
+    <value>عملاء تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="CustomerService.DeleteCustomerExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the عميل: {0}</value>
+  </data>
+  <data name="CustomerService.DuplicateCandidatesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="CustomerService.DuplicateCandidatesRetrieved" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="CustomerService.DuplicateCustomer" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="CustomerService.ErrorCreatingCustomer" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the customer.</value>
+  </data>
+  <data name="CustomerService.ErrorDeletingCustomer" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the customer.</value>
+  </data>
+  <data name="CustomerService.ErrorRetrievingCustomer" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the customer.</value>
+  </data>
+  <data name="CustomerService.ErrorRetrievingCustomers" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع customers.</value>
+  </data>
+  <data name="CustomerService.ErrorUpdatingCustomer" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the customer.</value>
+  </data>
+  <data name="CustomerService.GetAllCustomersExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع عملاء: {0}</value>
+  </data>
+  <data name="CustomerService.GetCustomerByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the عميل: {0}</value>
+  </data>
+  <data name="CustomerService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="CustomerService.InvalidEmail" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="CustomerService.InvalidMergeRequest" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="CustomerService.InvalidTaxNumber" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="CustomerService.InvalidTcknNumber" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="CustomerService.MergeCustomersExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="CustomerService.UpdateCustomerExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the عميل: {0}</value>
+  </data>
+  <data name="CustomerSyncJob.Completed" xml:space="preserve"><value>اكتملت مزامنة العملاء.</value></data><data name="CustomerSyncJob.Started" xml:space="preserve"><value>بدأت مزامنة العملاء.</value></data><data name="CustomerTypeService.CreateCustomerTypeExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the عميل نوع: {0}</value>
+  </data>
+  <data name="CustomerTypeService.CustomerTypeCreated" xml:space="preserve">
+    <value>عميل type تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="CustomerTypeService.CustomerTypeDeleted" xml:space="preserve">
+    <value>عميل type تم حذفه بنجاح.</value>
+  </data>
+  <data name="CustomerTypeService.CustomerTypeNotFound" xml:space="preserve">
+    <value>عميل type غير موجود.</value>
+  </data>
+  <data name="CustomerTypeService.CustomerTypeRetrieved" xml:space="preserve">
+    <value>عميل type تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="CustomerTypeService.CustomerTypeUpdated" xml:space="preserve">
+    <value>عميل type تم تحديثه بنجاح.</value>
+  </data>
+  <data name="CustomerTypeService.CustomerTypesRetrieved" xml:space="preserve">
+    <value>عميل types تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="CustomerTypeService.DeleteCustomerTypeExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the عميل نوع: {0}</value>
+  </data>
+  <data name="CustomerTypeService.ErrorCreatingCustomerType" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the customer type.</value>
+  </data>
+  <data name="CustomerTypeService.ErrorDeletingCustomerType" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the customer type.</value>
+  </data>
+  <data name="CustomerTypeService.ErrorRetrievingCustomerType" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the customer type.</value>
+  </data>
+  <data name="CustomerTypeService.ErrorRetrievingCustomerTypes" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع customer types.</value>
+  </data>
+  <data name="CustomerTypeService.ErrorUpdatingCustomerType" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the customer type.</value>
+  </data>
+  <data name="CustomerTypeService.GetAllCustomerTypesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع عميل Types: {0}</value>
+  </data>
+  <data name="CustomerTypeService.GetCustomerTypeByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the عميل نوع: {0}</value>
+  </data>
+  <data name="CustomerTypeService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="CustomerTypeService.UpdateCustomerTypeExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the عميل نوع: {0}</value>
+  </data>
+  <data name="DashboardController.CurrencyRatesNotImplemented" xml:space="preserve">
+    <value>Kur bilgileri ucu henüz uygulanmadı.</value>
+  </data>
+  <data name="DashboardController.DashboardRetrieved" xml:space="preserve">
+    <value>Dashboard verileri başarıyla getirildi.</value>
+  </data>
+  <data name="DataRetrievedSuccessfully" xml:space="preserve">
+    <value>بيانات تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandApprovalService.DemandApprovalCreated" xml:space="preserve">
+    <value>عرض سعر approval تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="DemandApprovalService.DemandApprovalDeleted" xml:space="preserve">
+    <value>عرض سعر approval تم حذفه بنجاح.</value>
+  </data>
+  <data name="DemandApprovalService.DemandApprovalNotFound" xml:space="preserve">
+    <value>عرض سعر approval غير موجود.</value>
+  </data>
+  <data name="DemandApprovalService.DemandApprovalRetrieved" xml:space="preserve">
+    <value>عرض سعر approval تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandApprovalService.DemandApprovalUpdated" xml:space="preserve">
+    <value>عرض سعر approval تم تحديثه بنجاح.</value>
+  </data>
+  <data name="DemandApprovalService.DemandApprovalsRetrieved" xml:space="preserve">
+    <value>عرض سعر approvals تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandDocumentTypeService.DemandDocumentTypeCreated" xml:space="preserve">
+    <value>عرض سعر document type تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="DemandDocumentTypeService.DemandDocumentTypeDeleted" xml:space="preserve">
+    <value>عرض سعر document type تم حذفه بنجاح.</value>
+  </data>
+  <data name="DemandDocumentTypeService.DemandDocumentTypeNotFound" xml:space="preserve">
+    <value>عرض سعر document type غير موجود.</value>
+  </data>
+  <data name="DemandDocumentTypeService.DemandDocumentTypeRetrieved" xml:space="preserve">
+    <value>عرض سعر document type تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandDocumentTypeService.DemandDocumentTypeUpdated" xml:space="preserve">
+    <value>عرض سعر document type تم تحديثه بنجاح.</value>
+  </data>
+  <data name="DemandDocumentTypeService.DemandDocumentTypesRetrieved" xml:space="preserve">
+    <value>عرض سعر document types تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandDocumentTypeService.DemandNumberGenerated" xml:space="preserve">
+    <value>Demand number generated successfully.</value>
+  </data>
+  <data name="DemandExchangeRateService.CreateRateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the طلب Exchange Rate: {0}</value>
+  </data>
+  <data name="DemandExchangeRateService.DeleteRateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the طلب Exchange Rate: {0}</value>
+  </data>
+  <data name="DemandExchangeRateService.ExchangeRateNotFound" xml:space="preserve">
+    <value>لم يتم العثور على السجل.</value>
+  </data>
+  <data name="DemandExchangeRateService.ExchangeRateUpdated" xml:space="preserve">
+    <value>تم تحديث السجل بنجاح.</value>
+  </data>
+  <data name="DemandExchangeRateService.GetAllRatesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع طلب Exchange Rates: {0}</value>
+  </data>
+  <data name="DemandExchangeRateService.GetRateByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the طلب Exchange Rate: {0}</value>
+  </data>
+  <data name="DemandExchangeRateService.GetRatesByDemandIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandExchangeRateService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="DemandExchangeRateService.RateCreated" xml:space="preserve">
+    <value>طلب Exchange Rate تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="DemandExchangeRateService.RateDeleted" xml:space="preserve">
+    <value>طلب Exchange Rate تم حذفه بنجاح.</value>
+  </data>
+  <data name="DemandExchangeRateService.RateNotFound" xml:space="preserve">
+    <value>طلب Exchange Rate غير موجود.</value>
+  </data>
+  <data name="DemandExchangeRateService.RateRetrieved" xml:space="preserve">
+    <value>طلب Exchange Rate تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandExchangeRateService.RateUpdated" xml:space="preserve">
+    <value>طلب Exchange Rate تم تحديثه بنجاح.</value>
+  </data>
+  <data name="DemandExchangeRateService.RatesRetrieved" xml:space="preserve">
+    <value>طلب Exchange Rates تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandExchangeRateService.UpdateExchangeRateInDemandExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="DemandExchangeRateService.UpdateRateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the طلب Exchange Rate: {0}</value>
+  </data>
+  <data name="DemandLineApprovalService.DemandLineApprovalCreated" xml:space="preserve">
+    <value>عرض سعر line approval تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="DemandLineApprovalService.DemandLineApprovalDeleted" xml:space="preserve">
+    <value>عرض سعر line approval تم حذفه بنجاح.</value>
+  </data>
+  <data name="DemandLineApprovalService.DemandLineApprovalNotFound" xml:space="preserve">
+    <value>عرض سعر line approval غير موجود.</value>
+  </data>
+  <data name="DemandLineApprovalService.DemandLineApprovalRetrieved" xml:space="preserve">
+    <value>عرض سعر line approval تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandLineApprovalService.DemandLineApprovalUpdated" xml:space="preserve">
+    <value>عرض سعر line approval تم تحديثه بنجاح.</value>
+  </data>
+  <data name="DemandLineApprovalService.DemandLineApprovalsRetrieved" xml:space="preserve">
+    <value>عرض سعر line approvals تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandLineService.CreateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the طلب Line: {0}</value>
+  </data>
+  <data name="DemandLineService.DeleteExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the طلب Line: {0}</value>
+  </data>
+  <data name="DemandLineService.DemandLineCreated" xml:space="preserve">
+    <value>طلب line تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="DemandLineService.DemandLineDeleted" xml:space="preserve">
+    <value>طلب line تم حذفه بنجاح.</value>
+  </data>
+  <data name="DemandLineService.DemandLineNotDeleted" xml:space="preserve">
+    <value>تعذر حذف السجل.</value>
+  </data>
+  <data name="DemandLineService.DemandLineNotFound" xml:space="preserve">
+    <value>طلب line غير موجود.</value>
+  </data>
+  <data name="DemandLineService.DemandLineRetrieved" xml:space="preserve">
+    <value>طلب line تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandLineService.DemandLineUpdated" xml:space="preserve">
+    <value>طلب line تم تحديثه بنجاح.</value>
+  </data>
+  <data name="DemandLineService.DemandLinesByDemandRetrieved" xml:space="preserve">
+    <value>طلب lines by quotation تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandLineService.DemandLinesCreated" xml:space="preserve">
+    <value>تم إنشاء السجل بنجاح.</value>
+  </data>
+  <data name="DemandLineService.DemandLinesRetrieved" xml:space="preserve">
+    <value>طلب lines تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandLineService.DemandLinesUpdated" xml:space="preserve">
+    <value>تم تحديث السجل بنجاح.</value>
+  </data>
+  <data name="DemandLineService.ErrorCreatingDemandLine" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the quotation line.</value>
+  </data>
+  <data name="DemandLineService.ErrorDeletingDemandLine" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the quotation line.</value>
+  </data>
+  <data name="DemandLineService.ErrorRetrievingDemandLine" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the quotation line.</value>
+  </data>
+  <data name="DemandLineService.ErrorRetrievingDemandLines" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع quotation lines.</value>
+  </data>
+  <data name="DemandLineService.ErrorUpdatingDemandLine" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the quotation line.</value>
+  </data>
+  <data name="DemandLineService.GetAllExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع طلب Lines: {0}</value>
+  </data>
+  <data name="DemandLineService.GetByDemandIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandLineService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the طلب Line: {0}</value>
+  </data>
+  <data name="DemandLineService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="DemandLineService.UpdateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the طلب Line: {0}</value>
+  </data>
+  <data name="DemandNotFound" xml:space="preserve">
+    <value>عرض سعر غير موجود.</value>
+  </data>
+  <data name="DemandService.ApprovalActionApproved" xml:space="preserve">
+    <value>Approval Action Approved.</value>
+  </data>
+  <data name="DemandService.ApprovalActionApprovedAndNextStepStarted" xml:space="preserve">
+    <value>Approval Action Approved And Next Step Started.</value>
+  </data>
+  <data name="DemandService.ApprovalActionNotFound" xml:space="preserve">
+    <value>طلب غير موجود.</value>
+  </data>
+  <data name="DemandService.ApprovalActionRejected" xml:space="preserve">
+    <value>Approval Action Rejected.</value>
+  </data>
+  <data name="DemandService.ApprovalFlowAlreadyExists" xml:space="preserve">
+    <value>Demand already exists.</value>
+  </data>
+  <data name="DemandService.ApprovalFlowCompleted" xml:space="preserve">
+    <value>Approval Flow Completed.</value>
+  </data>
+  <data name="DemandService.ApprovalFlowNotFound" xml:space="preserve">
+    <value>طلب غير موجود.</value>
+  </data>
+  <data name="DemandService.ApprovalFlowReportExceptionMessage" xml:space="preserve">
+    <value>Onay akışı raporu getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="DemandService.ApprovalFlowReportRetrieved" xml:space="preserve">
+    <value>Onay akışı raporu başarıyla getirildi.</value>
+  </data>
+  <data name="DemandService.ApprovalFlowStarted" xml:space="preserve">
+    <value>Approval Flow Started.</value>
+  </data>
+  <data name="DemandService.ApprovalFlowStepsNotFound" xml:space="preserve">
+    <value>طلب غير موجود.</value>
+  </data>
+  <data name="DemandService.ApprovalRequestNotFound" xml:space="preserve">
+    <value>طلب غير موجود.</value>
+  </data>
+  <data name="DemandService.ApprovalRoleNotFound" xml:space="preserve">
+    <value>طلب غير موجود.</value>
+  </data>
+  <data name="DemandService.ApprovalUsersNotFound" xml:space="preserve">
+    <value>طلب غير موجود.</value>
+  </data>
+  <data name="DemandService.ApproveExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.ConvertToQuotationExceptionMessage" xml:space="preserve">
+    <value>Talep teklife dönüştürülürken bir hata oluştu: {0}</value>
+  </data>
+  <data name="DemandService.CreateDemandBulkExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the طلب: {0}</value>
+  </data>
+  <data name="DemandService.CreateDemandExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the طلب: {0}</value>
+  </data>
+  <data name="DemandService.CreateRevisionExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="DemandService.CreateRevisionOfDemandExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the طلب: {0}</value>
+  </data>
+  <data name="DemandService.DeleteDemandExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the طلب: {0}</value>
+  </data>
+  <data name="DemandService.DemandApproverUsersRetrieved" xml:space="preserve">
+    <value>تم استرجاع مستخدمي الموافقة على الطلبات بنجاح.</value>
+  </data>
+  <data name="DemandService.DemandCreated" xml:space="preserve">
+    <value>طلب تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="DemandService.DemandDeleted" xml:space="preserve">
+    <value>طلب تم حذفه بنجاح.</value>
+  </data>
+  <data name="DemandService.DemandExchangeRatesNotFound" xml:space="preserve">
+    <value>Talep döviz kurları bulunamadı.</value>
+  </data>
+  <data name="DemandService.DemandExistsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.DemandLinesNotFound" xml:space="preserve">
+    <value>Talep satırları bulunamadı.</value>
+  </data>
+  <data name="DemandService.DemandNotFound" xml:space="preserve">
+    <value>طلب غير موجود.</value>
+  </data>
+  <data name="DemandService.DemandRetrieved" xml:space="preserve">
+    <value>طلب تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandService.DemandRevisionCreated" xml:space="preserve">
+    <value>طلب تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="DemandService.DemandUpdated" xml:space="preserve">
+    <value>طلب تم تحديثه بنجاح.</value>
+  </data>
+  <data name="DemandService.DemandsByPotentialCustomerRetrieved" xml:space="preserve">
+    <value>عروض أسعار by potential customer تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandService.DemandsByRepresentativeRetrieved" xml:space="preserve">
+    <value>عروض أسعار by representative تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandService.DemandsByStatusRetrieved" xml:space="preserve">
+    <value>عروض أسعار by status تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandService.DemandsRetrieved" xml:space="preserve">
+    <value>عروض أسعار تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandService.DocumentSerialTypeGenerationError" xml:space="preserve">
+    <value>Document Serial Type Generation Error.</value>
+  </data>
+  <data name="DemandService.GetAllDemandsExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع عروض أسعار: {0}</value>
+  </data>
+  <data name="DemandService.GetDemandByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the طلب: {0}</value>
+  </data>
+  <data name="DemandService.GetDemandsByPotentialCustomerExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.GetDemandsByRepresentativeExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.GetDemandsByStatusExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.GetPriceOfProductExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.GetPriceRuleOfDemandExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.GetWaitingApprovalsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="DemandService.PendingApprovalEmailSubject" xml:space="preserve">
+    <value>You Have a Record Pending Approval</value>
+  </data>
+  <data name="DemandService.PriceOfProductRetrieved" xml:space="preserve">
+    <value>طلب تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DemandService.PriceRuleNotFound" xml:space="preserve">
+    <value>لم يتم العثور على السجل.</value>
+  </data>
+  <data name="DemandService.PriceRuleOfDemandRetrieved" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="DemandService.QuotationConvertedSuccessfully" xml:space="preserve">
+    <value>Teklif başarıyla oluşturuldu.</value>
+  </data>
+  <data name="DemandService.QuotationDocumentSerialTypeNotFound" xml:space="preserve">
+    <value>Teklif belge seri tipi bulunamadı.</value>
+  </data>
+  <data name="DemandService.RejectExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.RevisionCreated" xml:space="preserve">
+    <value>تم إنشاء السجل بنجاح.</value>
+  </data>
+  <data name="DemandService.StartApprovalFlowExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.UpdateDemandExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the طلب: {0}</value>
+  </data>
+  <data name="DemandService.UserNotFound" xml:space="preserve">
+    <value>طلب غير موجود.</value>
+  </data>
+  <data name="DemandService.WaitingApprovalsRetrieved" xml:space="preserve">
+    <value>عروض أسعار تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DistrictController.InvalidModelState" xml:space="preserve">
+    <value>حالة النموذج غير صالحة.</value>
+  </data>
+  <data name="DistrictController.InvalidModelStateExceptionMessage" xml:space="preserve">
+    <value>خطأ في التحقق من النموذج: {0}</value>
+  </data>
+  <data name="DistrictService.CreateDistrictExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the district: {0}</value>
+  </data>
+  <data name="DistrictService.DeleteDistrictExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the district: {0}</value>
+  </data>
+  <data name="DistrictService.DistrictCreated" xml:space="preserve">
+    <value>منطقة تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="DistrictService.DistrictDeleted" xml:space="preserve">
+    <value>منطقة تم حذفه بنجاح.</value>
+  </data>
+  <data name="DistrictService.DistrictNotFound" xml:space="preserve">
+    <value>منطقة غير موجود.</value>
+  </data>
+  <data name="DistrictService.DistrictRetrieved" xml:space="preserve">
+    <value>منطقة تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DistrictService.DistrictUpdated" xml:space="preserve">
+    <value>منطقة تم تحديثه بنجاح.</value>
+  </data>
+  <data name="DistrictService.DistrictsRetrieved" xml:space="preserve">
+    <value>مناطق تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DistrictService.ErrorCreatingDistrict" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the district.</value>
+  </data>
+  <data name="DistrictService.ErrorDeletingDistrict" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the district.</value>
+  </data>
+  <data name="DistrictService.ErrorRetrievingDistrict" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the district.</value>
+  </data>
+  <data name="DistrictService.ErrorRetrievingDistricts" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع districts.</value>
+  </data>
+  <data name="DistrictService.ErrorUpdatingDistrict" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the district.</value>
+  </data>
+  <data name="DistrictService.GetAllDistrictsExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع districts: {0}</value>
+  </data>
+  <data name="DistrictService.GetDistrictByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the district: {0}</value>
+  </data>
+  <data name="DistrictService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="DistrictService.UpdateDistrictExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the district: {0}</value>
+  </data>
+  <data name="DocumentSerialTypeService.CreateTypeExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the مستند تسلسل نوع: {0}</value>
+  </data>
+  <data name="DocumentSerialTypeService.DeleteTypeExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the مستند تسلسل نوع: {0}</value>
+  </data>
+  <data name="DocumentSerialTypeService.DocumentSerialGenerated" xml:space="preserve">
+    <value>Document Serial Generated.</value>
+  </data>
+  <data name="DocumentSerialTypeService.DocumentSerialTypeNotFound" xml:space="preserve">
+    <value>نوع تسلسل المستند غير موجود.</value>
+  </data>
+  <data name="DocumentSerialTypeService.DocumentSerialTypesRetrieved" xml:space="preserve">
+    <value>مستند تسلسل Types تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DocumentSerialTypeService.GenerateDocumentSerialExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DocumentSerialTypeService.GetAllTypesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع مستند تسلسل Types: {0}</value>
+  </data>
+  <data name="DocumentSerialTypeService.GetAvaibleDocumentSerialTypesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="DocumentSerialTypeService.GetTypeByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the مستند تسلسل نوع: {0}</value>
+  </data>
+  <data name="DocumentSerialTypeService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="DocumentSerialTypeService.TypeCreated" xml:space="preserve">
+    <value>نوع تسلسل المستند تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="DocumentSerialTypeService.TypeDeleted" xml:space="preserve">
+    <value>نوع تسلسل المستند تم حذفه بنجاح.</value>
+  </data>
+  <data name="DocumentSerialTypeService.TypeNotFound" xml:space="preserve">
+    <value>نوع تسلسل المستند غير موجود.</value>
+  </data>
+  <data name="DocumentSerialTypeService.TypeRetrieved" xml:space="preserve">
+    <value>نوع تسلسل المستند تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DocumentSerialTypeService.TypeUpdated" xml:space="preserve">
+    <value>نوع تسلسل المستند تم تحديثه بنجاح.</value>
+  </data>
+  <data name="DocumentSerialTypeService.TypesRetrieved" xml:space="preserve">
+    <value>مستند تسلسل Types تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="DocumentSerialTypeService.UpdateTypeExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the مستند تسلسل نوع: {0}</value>
+  </data>
+  <data name="EfUnitOfWork.TransactionAlreadyInProgress" xml:space="preserve">
+    <value>Zaten açık bir transaction var.</value>
+  </data>
+  <data name="EfUnitOfWork.TransactionNotInProgress" xml:space="preserve">
+    <value>Aktif bir transaction yok.</value>
+  </data>
+  <data name="FileUploadService.FileDeletedSuccessfully" xml:space="preserve">
+    <value>ملف تم حذفه بنجاح.</value>
+  </data>
+  <data name="FileUploadService.FileDeletionError" xml:space="preserve">
+    <value>File deletion error.</value>
+  </data>
+  <data name="FileUploadService.FileDeletionExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the file: {0}</value>
+  </data>
+  <data name="FileUploadService.FileRequired" xml:space="preserve">
+    <value>File is required.</value>
+  </data>
+  <data name="FileUploadService.FileSizeExceeded" xml:space="preserve">
+    <value>File size cannot exceed {0} MB.</value>
+  </data>
+  <data name="FileUploadService.FileUploadError" xml:space="preserve">
+    <value>File upload error.</value>
+  </data>
+  <data name="FileUploadService.FileUploadExceptionMessage" xml:space="preserve">
+    <value>An error occurred while uploading the file: {0}</value>
+  </data>
+  <data name="FileUploadService.FileUploadedSuccessfully" xml:space="preserve">
+    <value>File uploaded successfully.</value>
+  </data>
+  <data name="FileUploadService.InvalidFileFormat" xml:space="preserve">
+    <value>Invalid file format. Allowed formats: {0}</value>
+  </data>
+  <data name="FileUploadService.InvalidFileUrl" xml:space="preserve">
+    <value>Invalid file URL. Expected format: {0}, Received: {1}</value>
+  </data>
+  <data name="FileUploadService.NoFileToDelete" xml:space="preserve">
+    <value>No file to delete.</value>
+  </data>
+  <data name="General.AccountInactive" xml:space="preserve">
+    <value>حسابك غير نشط.</value>
+  </data>
+  <data name="General.BulkEmailQueueFailed" xml:space="preserve">
+    <value>Toplu e-postalar kuyruğa alınamadı.</value>
+  </data>
+  <data name="General.BulkEmailsQueuedSuccessfully" xml:space="preserve">
+    <value>{0} adet e-posta gönderim kuyruğuna alındı.</value>
+  </data>
+  <data name="General.CorsAllowedOriginsRequired" xml:space="preserve">
+    <value>Cors:AllowedOrigins ayarı boş bırakılamaz.</value>
+  </data>
+  <data name="General.DocumentMustBeDraftBeforePosting" xml:space="preserve">
+    <value>يجب أن يكون المستند {0} في حالة مسودة قبل الترحيل.</value>
+  </data>
+  <data name="General.EmailQueueFailed" xml:space="preserve">
+    <value>E-posta kuyruğa alınamadı.</value>
+  </data>
+  <data name="General.EmailQueuedSuccessfully" xml:space="preserve">
+    <value>E-posta gönderim kuyruğuna alındı.</value>
+  </data>
+  <data name="General.EmailScheduleFailed" xml:space="preserve">
+    <value>E-posta zamanlanamadı.</value>
+  </data>
+  <data name="General.EmailScheduledSuccessfully" xml:space="preserve">
+    <value>E-posta gönderimi zamanlandı.</value>
+  </data>
+  <data name="General.EmailSendFailed" xml:space="preserve">
+    <value>E-posta gönderilemedi.</value>
+  </data>
+  <data name="General.EmailSentSuccessfully" xml:space="preserve">
+    <value>E-posta başarıyla gönderildi.</value>
+  </data>
+  <data name="General.ErrorOccurred" xml:space="preserve">
+    <value>Bir hata oluştu.</value>
+  </data>
+  <data name="General.Forbidden" xml:space="preserve">
+    <value>الوصول ممنوع.</value>
+  </data>
+  <data name="General.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="General.InvalidTokenMissingUserId" xml:space="preserve">
+    <value>Token geçersiz: kullanıcı kimliği eksik.</value>
+  </data>
+  <data name="General.InvalidTokenOrSessionClosed" xml:space="preserve">
+    <value>Token geçersiz veya oturum kapandı.</value>
+  </data>
+  <data name="General.JwtSecretRequired" xml:space="preserve">
+    <value>JwtSettings:SecretKey zorunludur.</value>
+  </data>
+  <data name="General.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="General.RecordAlreadyExists" xml:space="preserve"><value>هذا السجل موجود بالفعل.</value></data><data name="General.ScheduleTimeMustBeFuture" xml:space="preserve">
+    <value>Zamanlama tarihi gelecekte olmalıdır.</value>
+  </data>
+  <data name="General.SessionValidationError" xml:space="preserve">
+    <value>Oturum doğrulanırken hata oluştu: {0}</value>
+  </data>
+  <data name="General.Unauthorized" xml:space="preserve">
+    <value>دخول غير مصرح به.</value>
+  </data>
+  <data name="General.ValidationError" xml:space="preserve">
+    <value>حدث خطأ في التحقق.</value>
+  </data>
+  <data name="Notification.DemandApproval.Message" xml:space="preserve">
+    <value>{0} numaralı talep onay beklemektedir.</value>
+  </data>
+  <data name="Notification.DemandApproval.Title" xml:space="preserve">
+    <value>Onay Bekleyen Talep</value>
+  </data>
+  <data name="Notification.DemandApproved.Message" xml:space="preserve">
+    <value>{0} numaralı talep onaylandı.</value>
+  </data>
+  <data name="Notification.DemandApproved.Title" xml:space="preserve">
+    <value>Talep Onaylandı</value>
+  </data>
+  <data name="Notification.OrderApproval.Message" xml:space="preserve">
+    <value>{0} numaralı sipariş onay beklemektedir.</value>
+  </data>
+  <data name="Notification.OrderApproval.Title" xml:space="preserve">
+    <value>Onay Bekleyen Sipariş</value>
+  </data>
+  <data name="Notification.OrderApproved.Message" xml:space="preserve">
+    <value>{0} numaralı sipariş onaylandı.</value>
+  </data>
+  <data name="Notification.OrderApproved.Title" xml:space="preserve">
+    <value>Sipariş Onaylandı</value>
+  </data>
+  <data name="Notification.QuotationApproval.Message" xml:space="preserve">
+    <value>{0} numaralı teklif onay beklemektedir.</value>
+  </data>
+  <data name="Notification.QuotationApproval.Title" xml:space="preserve">
+    <value>Onay Bekleyen Teklif</value>
+  </data>
+  <data name="Notification.QuotationApproved.Message" xml:space="preserve">
+    <value>{0} numaralı teklif onaylandı.</value>
+  </data>
+  <data name="Notification.QuotationApproved.Title" xml:space="preserve">
+    <value>Teklif Onaylandı</value>
+  </data>
+  <data name="NotificationService.AllNotificationsMarkedAsRead" xml:space="preserve">
+    <value>Tüm bildirimler okundu olarak işaretlendi.</value>
+  </data>
+  <data name="NotificationService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="NotificationService.NotificationCreated" xml:space="preserve">
+    <value>Bildirim oluşturuldu.</value>
+  </data>
+  <data name="NotificationService.NotificationDeleted" xml:space="preserve">
+    <value>Bildirim silindi.</value>
+  </data>
+  <data name="NotificationService.NotificationMarkedAsRead" xml:space="preserve">
+    <value>Bildirim okundu olarak işaretlendi.</value>
+  </data>
+  <data name="NotificationService.NotificationNotFound" xml:space="preserve">
+    <value>Bildirim bulunamadı.</value>
+  </data>
+  <data name="NotificationService.NotificationsRetrieved" xml:space="preserve">
+    <value>Bildirimler başarıyla getirildi.</value>
+  </data>
+  <data name="NotificationService.UnreadCountRetrieved" xml:space="preserve">
+    <value>Okunmamış bildirim sayısı getirildi.</value>
+  </data>
+  <data name="OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="OrderApprovalService.OrderApprovalCreated" xml:space="preserve">
+    <value>عرض سعر approval تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="OrderApprovalService.OrderApprovalDeleted" xml:space="preserve">
+    <value>عرض سعر approval تم حذفه بنجاح.</value>
+  </data>
+  <data name="OrderApprovalService.OrderApprovalNotFound" xml:space="preserve">
+    <value>عرض سعر approval غير موجود.</value>
+  </data>
+  <data name="OrderApprovalService.OrderApprovalRetrieved" xml:space="preserve">
+    <value>عرض سعر approval تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderApprovalService.OrderApprovalUpdated" xml:space="preserve">
+    <value>عرض سعر approval تم تحديثه بنجاح.</value>
+  </data>
+  <data name="OrderApprovalService.OrderApprovalsRetrieved" xml:space="preserve">
+    <value>عرض سعر approvals تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderDocumentTypeService.OrderDocumentTypeCreated" xml:space="preserve">
+    <value>عرض سعر document type تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="OrderDocumentTypeService.OrderDocumentTypeDeleted" xml:space="preserve">
+    <value>عرض سعر document type تم حذفه بنجاح.</value>
+  </data>
+  <data name="OrderDocumentTypeService.OrderDocumentTypeNotFound" xml:space="preserve">
+    <value>عرض سعر document type غير موجود.</value>
+  </data>
+  <data name="OrderDocumentTypeService.OrderDocumentTypeRetrieved" xml:space="preserve">
+    <value>عرض سعر document type تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderDocumentTypeService.OrderDocumentTypeUpdated" xml:space="preserve">
+    <value>عرض سعر document type تم تحديثه بنجاح.</value>
+  </data>
+  <data name="OrderDocumentTypeService.OrderDocumentTypesRetrieved" xml:space="preserve">
+    <value>عرض سعر document types تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderDocumentTypeService.OrderNumberGenerated" xml:space="preserve">
+    <value>Order number generated successfully.</value>
+  </data>
+  <data name="OrderExchangeRateService.CreateRateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the أمر Exchange Rate: {0}</value>
+  </data>
+  <data name="OrderExchangeRateService.DeleteRateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the أمر Exchange Rate: {0}</value>
+  </data>
+  <data name="OrderExchangeRateService.ExchangeRateNotFound" xml:space="preserve">
+    <value>لم يتم العثور على السجل.</value>
+  </data>
+  <data name="OrderExchangeRateService.ExchangeRateUpdated" xml:space="preserve">
+    <value>تم تحديث السجل بنجاح.</value>
+  </data>
+  <data name="OrderExchangeRateService.GetAllRatesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع أمر Exchange Rates: {0}</value>
+  </data>
+  <data name="OrderExchangeRateService.GetRateByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the أمر Exchange Rate: {0}</value>
+  </data>
+  <data name="OrderExchangeRateService.GetRatesByOrderIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderExchangeRateService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="OrderExchangeRateService.RateCreated" xml:space="preserve">
+    <value>أمر Exchange Rate تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="OrderExchangeRateService.RateDeleted" xml:space="preserve">
+    <value>أمر Exchange Rate تم حذفه بنجاح.</value>
+  </data>
+  <data name="OrderExchangeRateService.RateNotFound" xml:space="preserve">
+    <value>أمر Exchange Rate غير موجود.</value>
+  </data>
+  <data name="OrderExchangeRateService.RateRetrieved" xml:space="preserve">
+    <value>أمر Exchange Rate تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderExchangeRateService.RateUpdated" xml:space="preserve">
+    <value>أمر Exchange Rate تم تحديثه بنجاح.</value>
+  </data>
+  <data name="OrderExchangeRateService.RatesRetrieved" xml:space="preserve">
+    <value>أمر Exchange Rates تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderExchangeRateService.UpdateExchangeRateInOrderExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="OrderExchangeRateService.UpdateRateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the أمر Exchange Rate: {0}</value>
+  </data>
+  <data name="OrderLineApprovalService.OrderLineApprovalCreated" xml:space="preserve">
+    <value>عرض سعر line approval تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="OrderLineApprovalService.OrderLineApprovalDeleted" xml:space="preserve">
+    <value>عرض سعر line approval تم حذفه بنجاح.</value>
+  </data>
+  <data name="OrderLineApprovalService.OrderLineApprovalNotFound" xml:space="preserve">
+    <value>عرض سعر line approval غير موجود.</value>
+  </data>
+  <data name="OrderLineApprovalService.OrderLineApprovalRetrieved" xml:space="preserve">
+    <value>عرض سعر line approval تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderLineApprovalService.OrderLineApprovalUpdated" xml:space="preserve">
+    <value>عرض سعر line approval تم تحديثه بنجاح.</value>
+  </data>
+  <data name="OrderLineApprovalService.OrderLineApprovalsRetrieved" xml:space="preserve">
+    <value>عرض سعر line approvals تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderLineService.CreateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the أمر Line: {0}</value>
+  </data>
+  <data name="OrderLineService.DeleteExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the أمر Line: {0}</value>
+  </data>
+  <data name="OrderLineService.ErrorCreatingOrderLine" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the quotation line.</value>
+  </data>
+  <data name="OrderLineService.ErrorDeletingOrderLine" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the quotation line.</value>
+  </data>
+  <data name="OrderLineService.ErrorRetrievingOrderLine" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the quotation line.</value>
+  </data>
+  <data name="OrderLineService.ErrorRetrievingOrderLines" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع quotation lines.</value>
+  </data>
+  <data name="OrderLineService.ErrorUpdatingOrderLine" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the quotation line.</value>
+  </data>
+  <data name="OrderLineService.GetAllExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع أمر Lines: {0}</value>
+  </data>
+  <data name="OrderLineService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the أمر Line: {0}</value>
+  </data>
+  <data name="OrderLineService.GetByOrderIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderLineService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="OrderLineService.OrderLineCreated" xml:space="preserve">
+    <value>أمر line تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="OrderLineService.OrderLineDeleted" xml:space="preserve">
+    <value>أمر line تم حذفه بنجاح.</value>
+  </data>
+  <data name="OrderLineService.OrderLineNotDeleted" xml:space="preserve">
+    <value>تعذر حذف السجل.</value>
+  </data>
+  <data name="OrderLineService.OrderLineNotFound" xml:space="preserve">
+    <value>أمر line غير موجود.</value>
+  </data>
+  <data name="OrderLineService.OrderLineRetrieved" xml:space="preserve">
+    <value>أمر line تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderLineService.OrderLineUpdated" xml:space="preserve">
+    <value>أمر line تم تحديثه بنجاح.</value>
+  </data>
+  <data name="OrderLineService.OrderLinesByOrderRetrieved" xml:space="preserve">
+    <value>أمر lines by quotation تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderLineService.OrderLinesCreated" xml:space="preserve">
+    <value>تم إنشاء السجل بنجاح.</value>
+  </data>
+  <data name="OrderLineService.OrderLinesRetrieved" xml:space="preserve">
+    <value>أمر lines تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderLineService.OrderLinesUpdated" xml:space="preserve">
+    <value>تم تحديث السجل بنجاح.</value>
+  </data>
+  <data name="OrderLineService.UpdateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the أمر Line: {0}</value>
+  </data>
+  <data name="OrderNotFound" xml:space="preserve">
+    <value>عرض سعر غير موجود.</value>
+  </data>
+  <data name="OrderService.ApprovalActionApproved" xml:space="preserve">
+    <value>Approval Action Approved.</value>
+  </data>
+  <data name="OrderService.ApprovalActionApprovedAndNextStepStarted" xml:space="preserve">
+    <value>Approval Action Approved And Next Step Started.</value>
+  </data>
+  <data name="OrderService.ApprovalActionNotFound" xml:space="preserve">
+    <value>أمر غير موجود.</value>
+  </data>
+  <data name="OrderService.ApprovalActionRejected" xml:space="preserve">
+    <value>Approval Action Rejected.</value>
+  </data>
+  <data name="OrderService.ApprovalFlowAlreadyExists" xml:space="preserve">
+    <value>Order already exists.</value>
+  </data>
+  <data name="OrderService.ApprovalFlowCompleted" xml:space="preserve">
+    <value>Approval Flow Completed.</value>
+  </data>
+  <data name="OrderService.ApprovalFlowNotFound" xml:space="preserve">
+    <value>أمر غير موجود.</value>
+  </data>
+  <data name="OrderService.ApprovalFlowReportExceptionMessage" xml:space="preserve">
+    <value>Onay akışı raporu getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="OrderService.ApprovalFlowReportRetrieved" xml:space="preserve">
+    <value>Onay akışı raporu başarıyla getirildi.</value>
+  </data>
+  <data name="OrderService.ApprovalFlowStarted" xml:space="preserve">
+    <value>Approval Flow Started.</value>
+  </data>
+  <data name="OrderService.ApprovalFlowStepsNotFound" xml:space="preserve">
+    <value>أمر غير موجود.</value>
+  </data>
+  <data name="OrderService.ApprovalRequestNotFound" xml:space="preserve">
+    <value>أمر غير موجود.</value>
+  </data>
+  <data name="OrderService.ApprovalRoleNotFound" xml:space="preserve">
+    <value>أمر غير موجود.</value>
+  </data>
+  <data name="OrderService.ApprovalUsersNotFound" xml:space="preserve">
+    <value>أمر غير موجود.</value>
+  </data>
+  <data name="OrderService.ApproveExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.CreateOrderBulkExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the أمر: {0}</value>
+  </data>
+  <data name="OrderService.CreateOrderExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the أمر: {0}</value>
+  </data>
+  <data name="OrderService.CreateRevisionExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="OrderService.CreateRevisionOfOrderExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the أمر: {0}</value>
+  </data>
+  <data name="OrderService.DeleteOrderExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the أمر: {0}</value>
+  </data>
+  <data name="OrderService.DocumentSerialTypeGenerationError" xml:space="preserve">
+    <value>Document Serial Type Generation Error.</value>
+  </data>
+  <data name="OrderService.GetAllOrdersExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع عروض أسعار: {0}</value>
+  </data>
+  <data name="OrderService.GetOrderByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the أمر: {0}</value>
+  </data>
+  <data name="OrderService.GetOrdersByPotentialCustomerExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.GetOrdersByRepresentativeExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.GetOrdersByStatusExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.GetPriceOfProductExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.GetPriceRuleOfOrderExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.GetWaitingApprovalsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="OrderService.OrderApproverUsersRetrieved" xml:space="preserve">
+    <value>تم استرجاع مستخدمي الموافقة على الطلبات بنجاح.</value>
+  </data>
+  <data name="OrderService.OrderCreated" xml:space="preserve">
+    <value>أمر تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="OrderService.OrderDeleted" xml:space="preserve">
+    <value>أمر تم حذفه بنجاح.</value>
+  </data>
+  <data name="OrderService.OrderExistsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.OrderNotFound" xml:space="preserve">
+    <value>أمر غير موجود.</value>
+  </data>
+  <data name="OrderService.OrderRetrieved" xml:space="preserve">
+    <value>أمر تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderService.OrderRevisionCreated" xml:space="preserve">
+    <value>أمر تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="OrderService.OrderUpdated" xml:space="preserve">
+    <value>أمر تم تحديثه بنجاح.</value>
+  </data>
+  <data name="OrderService.OrdersByPotentialCustomerRetrieved" xml:space="preserve">
+    <value>عروض أسعار by potential customer تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderService.OrdersByRepresentativeRetrieved" xml:space="preserve">
+    <value>عروض أسعار by representative تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderService.OrdersByStatusRetrieved" xml:space="preserve">
+    <value>عروض أسعار by status تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderService.OrdersRetrieved" xml:space="preserve">
+    <value>عروض أسعار تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderService.PendingApprovalEmailSubject" xml:space="preserve">
+    <value>You Have a Record Pending Approval</value>
+  </data>
+  <data name="OrderService.PriceOfProductRetrieved" xml:space="preserve">
+    <value>أمر تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="OrderService.PriceRuleNotFound" xml:space="preserve">
+    <value>لم يتم العثور على السجل.</value>
+  </data>
+  <data name="OrderService.PriceRuleOfOrderRetrieved" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="OrderService.RejectExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.RevisionCreated" xml:space="preserve">
+    <value>تم إنشاء السجل بنجاح.</value>
+  </data>
+  <data name="OrderService.StartApprovalFlowExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.UpdateOrderExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the أمر: {0}</value>
+  </data>
+  <data name="OrderService.UserNotFound" xml:space="preserve">
+    <value>أمر غير موجود.</value>
+  </data>
+  <data name="OrderService.WaitingApprovalsRetrieved" xml:space="preserve">
+    <value>عروض أسعار تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="PaymentTypeService.CreatePaymentTypeExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the دفعة نوع: {0}</value>
+  </data>
+  <data name="PaymentTypeService.DeletePaymentTypeExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the دفعة نوع: {0}</value>
+  </data>
+  <data name="PaymentTypeService.GetAllPaymentTypesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع دفعة Types: {0}</value>
+  </data>
+  <data name="PaymentTypeService.GetPaymentTypeByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the دفعة نوع: {0}</value>
+  </data>
+  <data name="PaymentTypeService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="PaymentTypeService.PaymentTypeCreated" xml:space="preserve">
+    <value>دفعة type تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="PaymentTypeService.PaymentTypeDeleted" xml:space="preserve">
+    <value>دفعة type تم حذفه بنجاح.</value>
+  </data>
+  <data name="PaymentTypeService.PaymentTypeNotFound" xml:space="preserve">
+    <value>دفعة type غير موجود.</value>
+  </data>
+  <data name="PaymentTypeService.PaymentTypeRetrieved" xml:space="preserve">
+    <value>دفعة type تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="PaymentTypeService.PaymentTypeUpdated" xml:space="preserve">
+    <value>دفعة type تم تحديثه بنجاح.</value>
+  </data>
+  <data name="PaymentTypeService.PaymentTypesRetrieved" xml:space="preserve">
+    <value>دفعة types تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="PaymentTypeService.UpdatePaymentTypeExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the دفعة نوع: {0}</value>
+  </data>
+  <data name="PowerBIConfigurationService.AlreadyExists" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIConfigurationService.Created" xml:space="preserve">
+    <value>تم إنشاء السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIConfigurationService.Deleted" xml:space="preserve">
+    <value>تم حذف السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIConfigurationService.ExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIConfigurationService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="PowerBIConfigurationService.NotFound" xml:space="preserve">
+    <value>لم يتم العثور على السجل.</value>
+  </data>
+  <data name="PowerBIConfigurationService.Retrieved" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIConfigurationService.Updated" xml:space="preserve">
+    <value>تم تحديث السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIEmbedService.AccessDenied" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIEmbedService.ClientSecretMissing" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIEmbedService.ConfigurationMissing" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIEmbedService.DatasetRequired" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIEmbedService.EmbedConfigRetrieved" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIEmbedService.EmbedTokenFailed" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIEmbedService.ExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIEmbedService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="PowerBIEmbedService.ReportInactive" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIEmbedService.ReportNotFound" xml:space="preserve">
+    <value>لم يتم العثور على السجل.</value>
+  </data>
+  <data name="PowerBIEmbedService.TokenAcquisitionFailed" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIEmbedService.WorkspaceRequired" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.CreateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.DeleteExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.GetAllExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.ItemCreated" xml:space="preserve">
+    <value>تم إنشاء السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.ItemDeleted" xml:space="preserve">
+    <value>تم حذف السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.ItemNotFound" xml:space="preserve">
+    <value>لم يتم العثور على السجل.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.ItemRetrieved" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.ItemUpdated" xml:space="preserve">
+    <value>تم تحديث السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.ItemsRetrieved" xml:space="preserve">
+    <value>تم جلب السجلات بنجاح.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.UpdateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIGroupService.CreateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIGroupService.DeleteExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIGroupService.GetAllExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIGroupService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIGroupService.GroupCreated" xml:space="preserve">
+    <value>تم إنشاء السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIGroupService.GroupDeleted" xml:space="preserve">
+    <value>تم حذف السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIGroupService.GroupNotFound" xml:space="preserve">
+    <value>لم يتم العثور على السجل.</value>
+  </data>
+  <data name="PowerBIGroupService.GroupRetrieved" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIGroupService.GroupUpdated" xml:space="preserve">
+    <value>تم تحديث السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIGroupService.GroupsRetrieved" xml:space="preserve">
+    <value>تم جلب السجلات بنجاح.</value>
+  </data>
+  <data name="PowerBIGroupService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="PowerBIGroupService.UpdateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.CreateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.DeleteExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.GetAllExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.ReportDefinitionCreated" xml:space="preserve">
+    <value>تم إنشاء السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.ReportDefinitionDeleted" xml:space="preserve">
+    <value>تم حذف السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.ReportDefinitionNotFound" xml:space="preserve">
+    <value>لم يتم العثور على السجل.</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.ReportDefinitionRetrieved" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.ReportDefinitionUpdated" xml:space="preserve">
+    <value>تم تحديث السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.ReportDefinitionsRetrieved" xml:space="preserve">
+    <value>تم جلب السجلات بنجاح.</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.UpdateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.CreateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.DeleteExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.Duplicate" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.GetAllExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.ItemCreated" xml:space="preserve">
+    <value>تم إنشاء السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.ItemDeleted" xml:space="preserve">
+    <value>تم حذف السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.ItemNotFound" xml:space="preserve">
+    <value>لم يتم العثور على السجل.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.ItemRetrieved" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.ItemUpdated" xml:space="preserve">
+    <value>تم تحديث السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.ItemsRetrieved" xml:space="preserve">
+    <value>تم جلب السجلات بنجاح.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.UpdateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIReportSyncService.ClientSecretMissing" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIReportSyncService.ConfigurationMissing" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIReportSyncService.ExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="PowerBIReportSyncService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="PowerBIReportSyncService.SyncCompleted" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIReportSyncService.SyncFailed" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIReportSyncService.TokenAcquisitionFailed" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PowerBIReportSyncService.WorkspaceRequired" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="PricingRuleHeaderService.CreateHeaderExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the تسعير Rule Header: {0}</value>
+  </data>
+  <data name="PricingRuleHeaderService.DeleteHeaderExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the تسعير Rule Header: {0}</value>
+  </data>
+  <data name="PricingRuleHeaderService.GetAllHeadersExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع تسعير Rule Headers: {0}</value>
+  </data>
+  <data name="PricingRuleHeaderService.GetHeaderByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the تسعير Rule Header: {0}</value>
+  </data>
+  <data name="PricingRuleHeaderService.HeaderCreated" xml:space="preserve">
+    <value>تسعير Rule Header تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="PricingRuleHeaderService.HeaderDeleted" xml:space="preserve">
+    <value>تسعير Rule Header تم حذفه بنجاح.</value>
+  </data>
+  <data name="PricingRuleHeaderService.HeaderNotFound" xml:space="preserve">
+    <value>تسعير Rule Header غير موجود.</value>
+  </data>
+  <data name="PricingRuleHeaderService.HeaderRetrieved" xml:space="preserve">
+    <value>تسعير Rule Header تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="PricingRuleHeaderService.HeaderUpdated" xml:space="preserve">
+    <value>تسعير Rule Header تم تحديثه بنجاح.</value>
+  </data>
+  <data name="PricingRuleHeaderService.HeadersRetrieved" xml:space="preserve">
+    <value>تسعير Rule Headers تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="PricingRuleHeaderService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="PricingRuleHeaderService.UpdateHeaderExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the تسعير Rule Header: {0}</value>
+  </data>
+  <data name="PricingRuleLineService.CreateLineExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the تسعير Rule Line: {0}</value>
+  </data>
+  <data name="PricingRuleLineService.DeleteLineExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the تسعير Rule Line: {0}</value>
+  </data>
+  <data name="PricingRuleLineService.GetAllLinesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع تسعير Rule Lines: {0}</value>
+  </data>
+  <data name="PricingRuleLineService.GetLineByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the تسعير Rule Line: {0}</value>
+  </data>
+  <data name="PricingRuleLineService.GetLinesByHeaderIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="PricingRuleLineService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="PricingRuleLineService.LineCreated" xml:space="preserve">
+    <value>تسعير Rule Line تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="PricingRuleLineService.LineDeleted" xml:space="preserve">
+    <value>تسعير Rule Line تم حذفه بنجاح.</value>
+  </data>
+  <data name="PricingRuleLineService.LineNotFound" xml:space="preserve">
+    <value>تسعير Rule Line غير موجود.</value>
+  </data>
+  <data name="PricingRuleLineService.LineRetrieved" xml:space="preserve">
+    <value>تسعير Rule Line تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="PricingRuleLineService.LineUpdated" xml:space="preserve">
+    <value>تسعير Rule Line تم تحديثه بنجاح.</value>
+  </data>
+  <data name="PricingRuleLineService.LinesRetrieved" xml:space="preserve">
+    <value>تسعير Rule Lines تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="PricingRuleLineService.UpdateLineExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the تسعير Rule Line: {0}</value>
+  </data>
+  <data name="PricingRuleSalesmanService.CreateSalesmanExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the تسعير Rule Salesman: {0}</value>
+  </data>
+  <data name="PricingRuleSalesmanService.DeleteSalesmanExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the تسعير Rule Salesman: {0}</value>
+  </data>
+  <data name="PricingRuleSalesmanService.GetAllSalesmenExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع تسعير Rule Salesmans: {0}</value>
+  </data>
+  <data name="PricingRuleSalesmanService.GetSalesmanByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the تسعير Rule Salesman: {0}</value>
+  </data>
+  <data name="PricingRuleSalesmanService.GetSalesmenByHeaderIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="PricingRuleSalesmanService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="PricingRuleSalesmanService.SalesmanCreated" xml:space="preserve">
+    <value>تسعير Rule Salesman تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="PricingRuleSalesmanService.SalesmanDeleted" xml:space="preserve">
+    <value>تسعير Rule Salesman تم حذفه بنجاح.</value>
+  </data>
+  <data name="PricingRuleSalesmanService.SalesmanNotFound" xml:space="preserve">
+    <value>تسعير Rule Salesman غير موجود.</value>
+  </data>
+  <data name="PricingRuleSalesmanService.SalesmanRetrieved" xml:space="preserve">
+    <value>تسعير Rule Salesman تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="PricingRuleSalesmanService.SalesmanUpdated" xml:space="preserve">
+    <value>تسعير Rule Salesman تم تحديثه بنجاح.</value>
+  </data>
+  <data name="PricingRuleSalesmanService.SalesmenRetrieved" xml:space="preserve">
+    <value>تسعير Rule Salesman تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="PricingRuleSalesmanService.UpdateSalesmanExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the تسعير Rule Salesman: {0}</value>
+  </data>
+  <data name="ProductPricingGroupByService.CreateProductPricingGroupByExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the منتج تسعير مجموعة By: {0}</value>
+  </data>
+  <data name="ProductPricingGroupByService.DeleteProductPricingGroupByExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the منتج تسعير مجموعة By: {0}</value>
+  </data>
+  <data name="ProductPricingGroupByService.GetAllProductPricingGroupBysExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع منتج تسعير مجموعة Bys: {0}</value>
+  </data>
+  <data name="ProductPricingGroupByService.GetProductPricingGroupByByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the منتج تسعير مجموعة By: {0}</value>
+  </data>
+  <data name="ProductPricingGroupByService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="ProductPricingGroupByService.ProductPricingGroupByCreated" xml:space="preserve">
+    <value>منتج pricing group by تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="ProductPricingGroupByService.ProductPricingGroupByDeleted" xml:space="preserve">
+    <value>منتج pricing group by تم حذفه بنجاح.</value>
+  </data>
+  <data name="ProductPricingGroupByService.ProductPricingGroupByNotFound" xml:space="preserve">
+    <value>منتج pricing group by غير موجود.</value>
+  </data>
+  <data name="ProductPricingGroupByService.ProductPricingGroupByRetrieved" xml:space="preserve">
+    <value>منتج pricing group by تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ProductPricingGroupByService.ProductPricingGroupByUpdated" xml:space="preserve">
+    <value>منتج pricing group by تم تحديثه بنجاح.</value>
+  </data>
+  <data name="ProductPricingGroupByService.ProductPricingGroupBysRetrieved" xml:space="preserve">
+    <value>منتج pricing group bys تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ProductPricingGroupByService.UpdateProductPricingGroupByExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the منتج تسعير مجموعة By: {0}</value>
+  </data>
+  <data name="ProductPricingService.CreateProductPricingExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the منتج تسعير: {0}</value>
+  </data>
+  <data name="ProductPricingService.DeleteProductPricingExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the منتج تسعير: {0}</value>
+  </data>
+  <data name="ProductPricingService.GetAllProductPricingsExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع منتج Pricings: {0}</value>
+  </data>
+  <data name="ProductPricingService.GetProductPricingByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the منتج تسعير: {0}</value>
+  </data>
+  <data name="ProductPricingService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="ProductPricingService.ProductPricingCreated" xml:space="preserve">
+    <value>منتج pricing تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="ProductPricingService.ProductPricingDeleted" xml:space="preserve">
+    <value>منتج pricing تم حذفه بنجاح.</value>
+  </data>
+  <data name="ProductPricingService.ProductPricingNotFound" xml:space="preserve">
+    <value>منتج pricing غير موجود.</value>
+  </data>
+  <data name="ProductPricingService.ProductPricingRetrieved" xml:space="preserve">
+    <value>منتج pricing تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ProductPricingService.ProductPricingUpdated" xml:space="preserve">
+    <value>منتج pricing تم تحديثه بنجاح.</value>
+  </data>
+  <data name="ProductPricingService.ProductPricingsRetrieved" xml:space="preserve">
+    <value>منتج pricings تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ProductPricingService.UpdateProductPricingExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the منتج تسعير: {0}</value>
+  </data>
+  <data name="QuotationApprovalService.QuotationApprovalCreated" xml:space="preserve">
+    <value>عرض سعر approval تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="QuotationApprovalService.QuotationApprovalDeleted" xml:space="preserve">
+    <value>عرض سعر approval تم حذفه بنجاح.</value>
+  </data>
+  <data name="QuotationApprovalService.QuotationApprovalNotFound" xml:space="preserve">
+    <value>عرض سعر approval غير موجود.</value>
+  </data>
+  <data name="QuotationApprovalService.QuotationApprovalRetrieved" xml:space="preserve">
+    <value>عرض سعر approval تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationApprovalService.QuotationApprovalUpdated" xml:space="preserve">
+    <value>عرض سعر approval تم تحديثه بنجاح.</value>
+  </data>
+  <data name="QuotationApprovalService.QuotationApprovalsRetrieved" xml:space="preserve">
+    <value>عرض سعر approvals تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationDocumentTypeService.QuotationDocumentTypeCreated" xml:space="preserve">
+    <value>عرض سعر document type تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="QuotationDocumentTypeService.QuotationDocumentTypeDeleted" xml:space="preserve">
+    <value>عرض سعر document type تم حذفه بنجاح.</value>
+  </data>
+  <data name="QuotationDocumentTypeService.QuotationDocumentTypeNotFound" xml:space="preserve">
+    <value>عرض سعر document type غير موجود.</value>
+  </data>
+  <data name="QuotationDocumentTypeService.QuotationDocumentTypeRetrieved" xml:space="preserve">
+    <value>عرض سعر document type تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationDocumentTypeService.QuotationDocumentTypeUpdated" xml:space="preserve">
+    <value>عرض سعر document type تم تحديثه بنجاح.</value>
+  </data>
+  <data name="QuotationDocumentTypeService.QuotationDocumentTypesRetrieved" xml:space="preserve">
+    <value>عرض سعر document types تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationDocumentTypeService.QuotationNumberGenerated" xml:space="preserve">
+    <value>Quotation number generated successfully.</value>
+  </data>
+  <data name="QuotationExchangeRateService.CreateRateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the عرض سعر Exchange Rate: {0}</value>
+  </data>
+  <data name="QuotationExchangeRateService.DeleteRateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the عرض سعر Exchange Rate: {0}</value>
+  </data>
+  <data name="QuotationExchangeRateService.ExchangeRateNotFound" xml:space="preserve">
+    <value>لم يتم العثور على السجل.</value>
+  </data>
+  <data name="QuotationExchangeRateService.ExchangeRateUpdated" xml:space="preserve">
+    <value>تم تحديث السجل بنجاح.</value>
+  </data>
+  <data name="QuotationExchangeRateService.GetAllRatesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع عرض سعر Exchange Rates: {0}</value>
+  </data>
+  <data name="QuotationExchangeRateService.GetRateByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the عرض سعر Exchange Rate: {0}</value>
+  </data>
+  <data name="QuotationExchangeRateService.GetRatesByQuotationIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationExchangeRateService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="QuotationExchangeRateService.RateCreated" xml:space="preserve">
+    <value>عرض سعر Exchange Rate تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="QuotationExchangeRateService.RateDeleted" xml:space="preserve">
+    <value>عرض سعر Exchange Rate تم حذفه بنجاح.</value>
+  </data>
+  <data name="QuotationExchangeRateService.RateNotFound" xml:space="preserve">
+    <value>عرض سعر Exchange Rate غير موجود.</value>
+  </data>
+  <data name="QuotationExchangeRateService.RateRetrieved" xml:space="preserve">
+    <value>عرض سعر Exchange Rate تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationExchangeRateService.RateUpdated" xml:space="preserve">
+    <value>عرض سعر Exchange Rate تم تحديثه بنجاح.</value>
+  </data>
+  <data name="QuotationExchangeRateService.RatesRetrieved" xml:space="preserve">
+    <value>عرض سعر Exchange Rates تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationExchangeRateService.UpdateExchangeRateInQuotationExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="QuotationExchangeRateService.UpdateRateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the عرض سعر Exchange Rate: {0}</value>
+  </data>
+  <data name="QuotationLineApprovalService.QuotationLineApprovalCreated" xml:space="preserve">
+    <value>عرض سعر line approval تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="QuotationLineApprovalService.QuotationLineApprovalDeleted" xml:space="preserve">
+    <value>عرض سعر line approval تم حذفه بنجاح.</value>
+  </data>
+  <data name="QuotationLineApprovalService.QuotationLineApprovalNotFound" xml:space="preserve">
+    <value>عرض سعر line approval غير موجود.</value>
+  </data>
+  <data name="QuotationLineApprovalService.QuotationLineApprovalRetrieved" xml:space="preserve">
+    <value>عرض سعر line approval تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationLineApprovalService.QuotationLineApprovalUpdated" xml:space="preserve">
+    <value>عرض سعر line approval تم تحديثه بنجاح.</value>
+  </data>
+  <data name="QuotationLineApprovalService.QuotationLineApprovalsRetrieved" xml:space="preserve">
+    <value>عرض سعر line approvals تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationLineService.CreateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the عرض سعر Line: {0}</value>
+  </data>
+  <data name="QuotationLineService.DeleteExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the عرض سعر Line: {0}</value>
+  </data>
+  <data name="QuotationLineService.ErrorCreatingQuotationLine" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the quotation line.</value>
+  </data>
+  <data name="QuotationLineService.ErrorDeletingQuotationLine" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the quotation line.</value>
+  </data>
+  <data name="QuotationLineService.ErrorRetrievingQuotationLine" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the quotation line.</value>
+  </data>
+  <data name="QuotationLineService.ErrorRetrievingQuotationLines" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع quotation lines.</value>
+  </data>
+  <data name="QuotationLineService.ErrorUpdatingQuotationLine" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the quotation line.</value>
+  </data>
+  <data name="QuotationLineService.GetAllExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع عرض سعر Lines: {0}</value>
+  </data>
+  <data name="QuotationLineService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the عرض سعر Line: {0}</value>
+  </data>
+  <data name="QuotationLineService.GetByQuotationIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationLineService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLineCreated" xml:space="preserve">
+    <value>عرض سعر line تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLineDeleted" xml:space="preserve">
+    <value>عرض سعر line تم حذفه بنجاح.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLineNotDeleted" xml:space="preserve">
+    <value>تعذر حذف السجل.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLineNotFound" xml:space="preserve">
+    <value>عرض سعر line غير موجود.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLineRetrieved" xml:space="preserve">
+    <value>عرض سعر line تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLineUpdated" xml:space="preserve">
+    <value>عرض سعر line تم تحديثه بنجاح.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLinesByQuotationRetrieved" xml:space="preserve">
+    <value>عرض سعر lines by quotation تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLinesCreated" xml:space="preserve">
+    <value>تم إنشاء السجل بنجاح.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLinesRetrieved" xml:space="preserve">
+    <value>عرض سعر lines تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLinesUpdated" xml:space="preserve">
+    <value>تم تحديث السجل بنجاح.</value>
+  </data>
+  <data name="QuotationLineService.UpdateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the عرض سعر Line: {0}</value>
+  </data>
+  <data name="QuotationNotFound" xml:space="preserve">
+    <value>عرض سعر غير موجود.</value>
+  </data>
+  <data name="QuotationService.ApprovalActionApproved" xml:space="preserve">
+    <value>Approval Action Approved.</value>
+  </data>
+  <data name="QuotationService.ApprovalActionApprovedAndNextStepStarted" xml:space="preserve">
+    <value>Approval Action Approved And Next Step Started.</value>
+  </data>
+  <data name="QuotationService.ApprovalActionNotFound" xml:space="preserve">
+    <value>عرض سعر غير موجود.</value>
+  </data>
+  <data name="QuotationService.ApprovalActionRejected" xml:space="preserve">
+    <value>Approval Action Rejected.</value>
+  </data>
+  <data name="QuotationService.ApprovalFlowAlreadyExists" xml:space="preserve">
+    <value>Quotation already exists.</value>
+  </data>
+  <data name="QuotationService.ApprovalFlowCompleted" xml:space="preserve">
+    <value>Approval Flow Completed.</value>
+  </data>
+  <data name="QuotationService.ApprovalFlowNotFound" xml:space="preserve">
+    <value>عرض سعر غير موجود.</value>
+  </data>
+  <data name="QuotationService.ApprovalFlowReportExceptionMessage" xml:space="preserve">
+    <value>Onay akışı raporu getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="QuotationService.ApprovalFlowReportRetrieved" xml:space="preserve">
+    <value>Onay akışı raporu başarıyla getirildi.</value>
+  </data>
+  <data name="QuotationService.ApprovalFlowStarted" xml:space="preserve">
+    <value>Approval Flow Started.</value>
+  </data>
+  <data name="QuotationService.ApprovalFlowStepsNotFound" xml:space="preserve">
+    <value>عرض سعر غير موجود.</value>
+  </data>
+  <data name="QuotationService.ApprovalRequestNotFound" xml:space="preserve">
+    <value>عرض سعر غير موجود.</value>
+  </data>
+  <data name="QuotationService.ApprovalRoleNotFound" xml:space="preserve">
+    <value>عرض سعر غير موجود.</value>
+  </data>
+  <data name="QuotationService.ApprovalUsersNotFound" xml:space="preserve">
+    <value>عرض سعر غير موجود.</value>
+  </data>
+  <data name="QuotationService.ApproveExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.ConvertToOrderExceptionMessage" xml:space="preserve">
+    <value>Teklif siparişe dönüştürülürken bir hata oluştu: {0}</value>
+  </data>
+  <data name="QuotationService.CreateQuotationBulkExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the عرض سعر: {0}</value>
+  </data>
+  <data name="QuotationService.CreateQuotationExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the عرض سعر: {0}</value>
+  </data>
+  <data name="QuotationService.CreateRevisionOfQuotationExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the عرض سعر: {0}</value>
+  </data>
+  <data name="QuotationService.DeleteQuotationExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the عرض سعر: {0}</value>
+  </data>
+  <data name="QuotationService.DocumentSerialTypeGenerationError" xml:space="preserve">
+    <value>Document Serial Type Generation Error.</value>
+  </data>
+  <data name="QuotationService.GetAllQuotationsExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع عروض أسعار: {0}</value>
+  </data>
+  <data name="QuotationService.GetPriceOfProductExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.GetPriceRuleOfQuotationExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.GetQuotationByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the عرض سعر: {0}</value>
+  </data>
+  <data name="QuotationService.GetQuotationsByPotentialCustomerExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.GetQuotationsByRepresentativeExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.GetQuotationsByStatusExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.GetWaitingApprovalsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="QuotationService.OrderConvertedSuccessfully" xml:space="preserve">
+    <value>Sipariş başarıyla oluşturuldu.</value>
+  </data>
+  <data name="QuotationService.OrderDocumentSerialTypeNotFound" xml:space="preserve">
+    <value>Sipariş belge seri tipi bulunamadı.</value>
+  </data>
+  <data name="QuotationService.PendingApprovalEmailSubject" xml:space="preserve">
+    <value>You Have a Record Pending Approval</value>
+  </data>
+  <data name="QuotationService.PriceOfProductRetrieved" xml:space="preserve">
+    <value>عرض سعر تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationService.PriceRuleNotFound" xml:space="preserve">
+    <value>لم يتم العثور على السجل.</value>
+  </data>
+  <data name="QuotationService.PriceRuleOfQuotationRetrieved" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="QuotationService.QuotationApproverUsersRetrieved" xml:space="preserve">
+    <value>تم استرجاع مستخدمي الموافقة على عروض الأسعار بنجاح.</value>
+  </data>
+  <data name="QuotationService.QuotationCreated" xml:space="preserve">
+    <value>عرض سعر تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="QuotationService.QuotationDeleted" xml:space="preserve">
+    <value>عرض سعر تم حذفه بنجاح.</value>
+  </data>
+  <data name="QuotationService.QuotationExchangeRatesNotFound" xml:space="preserve">
+    <value>Teklif döviz kurları bulunamadı.</value>
+  </data>
+  <data name="QuotationService.QuotationExistsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.QuotationLinesNotFound" xml:space="preserve">
+    <value>Teklif satırları bulunamadı.</value>
+  </data>
+  <data name="QuotationService.QuotationNotFound" xml:space="preserve">
+    <value>عرض سعر غير موجود.</value>
+  </data>
+  <data name="QuotationService.QuotationRetrieved" xml:space="preserve">
+    <value>عرض سعر تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationService.QuotationRevisionCreated" xml:space="preserve">
+    <value>عرض سعر تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="QuotationService.QuotationUpdated" xml:space="preserve">
+    <value>عرض سعر تم تحديثه بنجاح.</value>
+  </data>
+  <data name="QuotationService.QuotationsByPotentialCustomerRetrieved" xml:space="preserve">
+    <value>عروض أسعار by potential customer تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationService.QuotationsByRepresentativeRetrieved" xml:space="preserve">
+    <value>عروض أسعار by representative تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationService.QuotationsByStatusRetrieved" xml:space="preserve">
+    <value>عروض أسعار by status تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationService.QuotationsRetrieved" xml:space="preserve">
+    <value>عروض أسعار تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="QuotationService.RejectExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.StartApprovalFlowExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.UpdateQuotationExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the عرض سعر: {0}</value>
+  </data>
+  <data name="QuotationService.UserNotFound" xml:space="preserve">
+    <value>عرض سعر غير موجود.</value>
+  </data>
+  <data name="QuotationService.WaitingApprovalsRetrieved" xml:space="preserve">
+    <value>عروض أسعار تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ReportPreviewService.ChartRequiresAxisLegendAndValue" xml:space="preserve">
+    <value>Grafik için axis veya legend ve en az bir value gerekir.</value>
+  </data>
+  <data name="ReportPreviewService.DatasourceNotFoundOrEmpty" xml:space="preserve">
+    <value>Veri kaynağı bulunamadı veya sütun yok.</value>
+  </data>
+  <data name="ReportPreviewService.FieldNotInSchema" xml:space="preserve">
+    <value>'{0}' alanı veri kaynağı şemasında yok.</value>
+  </data>
+  <data name="ReportPreviewService.InvalidConfigJson" xml:space="preserve">
+    <value>Geçersiz ConfigJson.</value>
+  </data>
+  <data name="ReportPreviewService.InvalidConnection" xml:space="preserve">
+    <value>Geçersiz bağlantı.</value>
+  </data>
+  <data name="ReportPreviewService.PreviewFailed" xml:space="preserve">
+    <value>Önizleme çalıştırma başarısız.</value>
+  </data>
+  <data name="ReportPreviewService.PreviewOk" xml:space="preserve">
+    <value>Önizleme başarılı.</value>
+  </data>
+  <data name="ReportPreviewService.SchemaNotFound" xml:space="preserve">
+    <value>Şema bulunamadı.</value>
+  </data>
+  <data name="ReportService.CatalogError" xml:space="preserve">
+    <value>Katalog hatası.</value>
+  </data>
+  <data name="ReportService.DatasourceNotFoundOrEmpty" xml:space="preserve">
+    <value>Veri kaynağı bulunamadı veya boş.</value>
+  </data>
+  <data name="ReportService.ErrorCreatingReport" xml:space="preserve">
+    <value>Rapor oluşturulurken hata oluştu.</value>
+  </data>
+  <data name="ReportService.ErrorListingReports" xml:space="preserve">
+    <value>Raporlar listelenirken hata oluştu.</value>
+  </data>
+  <data name="ReportService.ErrorRetrievingReport" xml:space="preserve">
+    <value>Rapor getirilirken hata oluştu.</value>
+  </data>
+  <data name="ReportService.ErrorUpdatingReport" xml:space="preserve">
+    <value>Rapor güncellenirken hata oluştu.</value>
+  </data>
+  <data name="ReportService.InvalidConfigJson" xml:space="preserve">
+    <value>Geçersiz ConfigJson.</value>
+  </data>
+  <data name="ReportService.InvalidConfigJsonFormat" xml:space="preserve">
+    <value>Geçersiz ConfigJson formatı.</value>
+  </data>
+  <data name="ReportService.InvalidConnection" xml:space="preserve">
+    <value>Geçersiz bağlantı.</value>
+  </data>
+  <data name="ReportService.ReportConfigInvalidAggregation" xml:space="preserve">
+    <value>Geçersiz aggregation; none, sum, count, avg, min, max kullanılmalıdır.</value>
+  </data>
+  <data name="ReportService.ReportConfigInvalidChartType" xml:space="preserve">
+    <value>chartType değeri table, bar, line veya pie olmalıdır.</value>
+  </data>
+  <data name="ReportService.ReportConfigValueFieldRequired" xml:space="preserve">
+    <value>Her değer için bir alan belirtilmelidir.</value>
+  </data>
+  <data name="ReportService.ReportConfigValueRequired" xml:space="preserve">
+    <value>En az bir değer alanı zorunludur.</value>
+  </data>
+  <data name="ReportService.ReportCreated" xml:space="preserve">
+    <value>Rapor başarıyla oluşturuldu.</value>
+  </data>
+  <data name="ReportService.ReportDeleted" xml:space="preserve">
+    <value>Rapor başarıyla silindi.</value>
+  </data>
+  <data name="ReportService.ReportListRetrieved" xml:space="preserve">
+    <value>Rapor listesi başarıyla getirildi.</value>
+  </data>
+  <data name="ReportService.ReportNotFound" xml:space="preserve">
+    <value>Rapor bulunamadı.</value>
+  </data>
+  <data name="ReportService.ReportRetrieved" xml:space="preserve">
+    <value>Rapor başarıyla getirildi.</value>
+  </data>
+  <data name="ReportService.ReportUpdated" xml:space="preserve">
+    <value>Rapor başarıyla güncellendi.</value>
+  </data>
+  <data name="ReportTemplateController.AvailableFieldsRetrieved" xml:space="preserve">
+    <value>Kullanılabilir alanlar başarıyla getirildi.</value>
+  </data>
+  <data name="ReportTemplateService.ErrorCreatingReportTemplate" xml:space="preserve">
+    <value>Rapor şablonu oluşturulurken hata oluştu.</value>
+  </data>
+  <data name="ReportTemplateService.ErrorDeletingReportTemplate" xml:space="preserve">
+    <value>Rapor şablonu silinirken hata oluştu.</value>
+  </data>
+  <data name="ReportTemplateService.ErrorGeneratingPdf" xml:space="preserve">
+    <value>PDF oluşturulurken hata oluştu.</value>
+  </data>
+  <data name="ReportTemplateService.ErrorRetrievingReportTemplate" xml:space="preserve">
+    <value>Rapor şablonu getirilirken hata oluştu.</value>
+  </data>
+  <data name="ReportTemplateService.ErrorRetrievingReportTemplates" xml:space="preserve">
+    <value>Rapor şablonları getirilirken hata oluştu.</value>
+  </data>
+  <data name="ReportTemplateService.ErrorUpdatingReportTemplate" xml:space="preserve">
+    <value>Rapor şablonu güncellenirken hata oluştu.</value>
+  </data>
+  <data name="ReportTemplateService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="ReportTemplateService.InvalidTemplateData" xml:space="preserve">
+    <value>Geçersiz şablon verisi.</value>
+  </data>
+  <data name="ReportTemplateService.PdfGenerated" xml:space="preserve">
+    <value>PDF başarıyla oluşturuldu.</value>
+  </data>
+  <data name="ReportTemplateService.ReportTemplateCreated" xml:space="preserve">
+    <value>Rapor şablonu başarıyla oluşturuldu.</value>
+  </data>
+  <data name="ReportTemplateService.ReportTemplateDeleted" xml:space="preserve">
+    <value>Rapor şablonu başarıyla silindi.</value>
+  </data>
+  <data name="ReportTemplateService.ReportTemplateNotFound" xml:space="preserve">
+    <value>Rapor şablonu bulunamadı.</value>
+  </data>
+  <data name="ReportTemplateService.ReportTemplateNotFoundOrInactive" xml:space="preserve">
+    <value>Rapor şablonu bulunamadı veya pasif.</value>
+  </data>
+  <data name="ReportTemplateService.ReportTemplateRetrieved" xml:space="preserve">
+    <value>Rapor şablonu başarıyla getirildi.</value>
+  </data>
+  <data name="ReportTemplateService.ReportTemplateUpdated" xml:space="preserve">
+    <value>Rapor şablonu başarıyla güncellendi.</value>
+  </data>
+  <data name="ReportTemplateService.ReportTemplatesRetrieved" xml:space="preserve">
+    <value>Rapor şablonları başarıyla getirildi.</value>
+  </data>
+  <data name="ReportTemplateService.UnauthorizedGenerate" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="ReportingConnectionService.ConnectionKeyRequired" xml:space="preserve">
+    <value>Bağlantı anahtarı zorunludur.</value>
+  </data>
+  <data name="ReportingConnectionService.ConnectionStringNotFound" xml:space="preserve">
+    <value>'{0}' bağlantı dizesi bulunamadı.</value>
+  </data>
+  <data name="ReportingConnectionService.ConnectionsRetrieved" xml:space="preserve">
+    <value>Bağlantılar başarıyla getirildi.</value>
+  </data>
+  <data name="ReportingConnectionService.InvalidConnectionKey" xml:space="preserve">
+    <value>Geçersiz bağlantı anahtarı. CRM veya ERP kullanın.</value>
+  </data>
+  <data name="ReportingConnectionService.Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="ShippingAddressService.CreateShippingAddressExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the Shipping عنوان: {0}</value>
+  </data>
+  <data name="ShippingAddressService.DeleteShippingAddressExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the Shipping عنوان: {0}</value>
+  </data>
+  <data name="ShippingAddressService.GetAllShippingAddressesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع Shipping Addresss: {0}</value>
+  </data>
+  <data name="ShippingAddressService.GetShippingAddressByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the Shipping عنوان: {0}</value>
+  </data>
+  <data name="ShippingAddressService.GetShippingAddressesByCustomerIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="ShippingAddressService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="ShippingAddressService.ShippingAddressCreated" xml:space="preserve">
+    <value>Shipping address تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="ShippingAddressService.ShippingAddressDeleted" xml:space="preserve">
+    <value>Shipping address تم حذفه بنجاح.</value>
+  </data>
+  <data name="ShippingAddressService.ShippingAddressNotFound" xml:space="preserve">
+    <value>Shipping address غير موجود.</value>
+  </data>
+  <data name="ShippingAddressService.ShippingAddressRetrieved" xml:space="preserve">
+    <value>Shipping address تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ShippingAddressService.ShippingAddressUpdated" xml:space="preserve">
+    <value>Shipping address تم تحديثه بنجاح.</value>
+  </data>
+  <data name="ShippingAddressService.ShippingAddressesByCustomerRetrieved" xml:space="preserve">
+    <value>عميل shipping addresses تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ShippingAddressService.ShippingAddressesRetrieved" xml:space="preserve">
+    <value>Shipping addresses تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="ShippingAddressService.UpdateShippingAddressExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the Shipping عنوان: {0}</value>
+  </data>
+  <data name="TitleController.InvalidModelState" xml:space="preserve">
+    <value>حالة النموذج غير صالحة.</value>
+  </data>
+  <data name="TitleController.InvalidModelStateExceptionMessage" xml:space="preserve">
+    <value>خطأ في التحقق من النموذج: {0}</value>
+  </data>
+  <data name="TitleService.CreateTitleExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the title: {0}</value>
+  </data>
+  <data name="TitleService.DeleteTitleExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the title: {0}</value>
+  </data>
+  <data name="TitleService.ErrorCreatingTitle" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the title.</value>
+  </data>
+  <data name="TitleService.ErrorDeletingTitle" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the title.</value>
+  </data>
+  <data name="TitleService.ErrorRetrievingTitle" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the title.</value>
+  </data>
+  <data name="TitleService.ErrorRetrievingTitles" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع titles.</value>
+  </data>
+  <data name="TitleService.ErrorUpdatingTitle" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the title.</value>
+  </data>
+  <data name="TitleService.GetAllTitlesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع titles: {0}</value>
+  </data>
+  <data name="TitleService.GetTitleByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the title: {0}</value>
+  </data>
+  <data name="TitleService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="TitleService.TitleCreated" xml:space="preserve">
+    <value>Title تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="TitleService.TitleDeleted" xml:space="preserve">
+    <value>Title تم حذفه بنجاح.</value>
+  </data>
+  <data name="TitleService.TitleNotFound" xml:space="preserve">
+    <value>Title غير موجود.</value>
+  </data>
+  <data name="TitleService.TitleRetrieved" xml:space="preserve">
+    <value>Title تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="TitleService.TitleUpdated" xml:space="preserve">
+    <value>Title تم تحديثه بنجاح.</value>
+  </data>
+  <data name="TitleService.TitlesRetrieved" xml:space="preserve">
+    <value>Titles تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="TitleService.UpdateTitleExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the title: {0}</value>
+  </data>
+  <data name="UserDiscountLimitRetrieved" xml:space="preserve">
+    <value>User discount limit retrieved.</value>
+  </data>
+  <data name="UserDiscountLimitService.AlreadyExists" xml:space="preserve">
+    <value>UserDiscountLimit for salesperson {0} and group {1} already exists.</value>
+  </data>
+  <data name="UserDiscountLimitService.CreateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء إنشاء the مستخدم خصم Limit: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.DeleteExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء حذف the مستخدم خصم Limit: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.ExistsBySalespersonAndGroupExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.ExistsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.GetAllExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع مستخدم خصم Limits: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.GetByErpProductGroupCodeExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع the مستخدم خصم Limit: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.GetBySalespersonAndGroupExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.GetBySalespersonIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="UserDiscountLimitService.UpdateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء تحديث the مستخدم خصم Limit: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.UserDiscountLimitCreated" xml:space="preserve">
+    <value>مستخدم discount limit تم إنشاؤه بنجاح.</value>
+  </data>
+  <data name="UserDiscountLimitService.UserDiscountLimitDeleted" xml:space="preserve">
+    <value>مستخدم discount limit تم حذفه بنجاح.</value>
+  </data>
+  <data name="UserDiscountLimitService.UserDiscountLimitExistsChecked" xml:space="preserve">
+    <value>User discount limit existence checked successfully.</value>
+  </data>
+  <data name="UserDiscountLimitService.UserDiscountLimitNotFound" xml:space="preserve">
+    <value>مستخدم discount limit غير موجود.</value>
+  </data>
+  <data name="UserDiscountLimitService.UserDiscountLimitRetrieved" xml:space="preserve">
+    <value>مستخدم discount limit تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="UserDiscountLimitService.UserDiscountLimitUpdated" xml:space="preserve">
+    <value>مستخدم discount limit تم تحديثه بنجاح.</value>
+  </data>
+  <data name="UserDiscountLimitService.UserDiscountLimitsRetrieved" xml:space="preserve">
+    <value>مستخدم discount limits تم استرجاعه بنجاح.</value>
+  </data>
+  <data name="UserPowerBIGroupService.CreateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="UserPowerBIGroupService.DeleteExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="UserPowerBIGroupService.GetAllExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="UserPowerBIGroupService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="UserPowerBIGroupService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="UserPowerBIGroupService.ItemCreated" xml:space="preserve">
+    <value>تم إنشاء السجل بنجاح.</value>
+  </data>
+  <data name="UserPowerBIGroupService.ItemDeleted" xml:space="preserve">
+    <value>تم حذف السجل بنجاح.</value>
+  </data>
+  <data name="UserPowerBIGroupService.ItemNotFound" xml:space="preserve">
+    <value>لم يتم العثور على السجل.</value>
+  </data>
+  <data name="UserPowerBIGroupService.ItemRetrieved" xml:space="preserve">
+    <value>تم جلب السجل بنجاح.</value>
+  </data>
+  <data name="UserPowerBIGroupService.ItemUpdated" xml:space="preserve">
+    <value>تم تحديث السجل بنجاح.</value>
+  </data>
+  <data name="UserPowerBIGroupService.ItemsRetrieved" xml:space="preserve">
+    <value>تم جلب السجلات بنجاح.</value>
+  </data>
+  <data name="UserPowerBIGroupService.UpdateExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء العملية: {0}</value>
+  </data>
+  <data name="Validation.AtLeastOneRecipientRequired" xml:space="preserve">
+    <value>En az bir alıcı zorunludur.</value>
+  </data>
+<data name="Validation.BodyRequired" xml:space="preserve">
+    <value>İçerik zorunludur.</value>
+  </data>
+  <data name="Validation.InvalidBccEmailAddress" xml:space="preserve">
+    <value>Geçersiz BCC e-posta adresi.</value>
+  </data>
+  <data name="Validation.InvalidCcEmailAddress" xml:space="preserve">
+    <value>Geçersiz CC e-posta adresi.</value>
+  </data>
+  <data name="Validation.InvalidEmailAddress" xml:space="preserve">
+    <value>Geçersiz e-posta adresi.</value>
+  </data>
+  <data name="Validation.SubjectRequired" xml:space="preserve">
+    <value>Konu zorunludur.</value>
+  </data>
+  <data name="Validation.ToEmailAddressRequired" xml:space="preserve">
+    <value>Alıcı e-posta adresi zorunludur.</value>
+  </data>
+  <data name="Validation.ToEmailAddressesRequired" xml:space="preserve">
+    <value>Alıcı e-posta adresleri zorunludur.</value>
+  </data>
+  <data name="ValidationError" xml:space="preserve">
+    <value>Validation error.</value>
+  </data>
+  </root>

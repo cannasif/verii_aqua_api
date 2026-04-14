@@ -1,0 +1,2875 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ActiveUsersRetrievedSuccessfully" xml:space="preserve">
+    <value>Actif users récupéré(e) avec succès.</value>
+  </data>
+  <data name="ActivityService.ActivitiesRetrieved" xml:space="preserve">
+    <value>Activités récupéré(e) avec succès.</value>
+  </data>
+  <data name="ActivityService.ActivityCreated" xml:space="preserve">
+    <value>Activité créé(e) avec succès.</value>
+  </data>
+  <data name="ActivityService.ActivityDeleted" xml:space="preserve">
+    <value>Activité supprimé(e) avec succès.</value>
+  </data>
+  <data name="ActivityService.ActivityNotFound" xml:space="preserve">
+    <value>Activité non trouvé(e).</value>
+  </data>
+  <data name="ActivityService.ActivityRetrieved" xml:space="preserve">
+    <value>Activité récupéré(e) avec succès.</value>
+  </data>
+  <data name="ActivityService.ActivityUpdated" xml:space="preserve">
+    <value>Activité mis(e) à jour avec succès.</value>
+  </data>
+  <data name="ActivityService.CreateActivityExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Activité: {0}</value>
+  </data>
+  <data name="ActivityService.DeleteActivityExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Activité: {0}</value>
+  </data>
+  <data name="ActivityService.GetActivityByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Activité: {0}</value>
+  </data>
+  <data name="ActivityService.GetAllActivitiesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Activitys: {0}</value>
+  </data>
+  <data name="ActivityService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ActivityService.UpdateActivityExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Activité: {0}</value>
+  </data>
+  <data name="ActivityTypeService.ActivityTypeCreated" xml:space="preserve">
+    <value>Type d'activité créé(e) avec succès.</value>
+  </data>
+  <data name="ActivityTypeService.ActivityTypeDeleted" xml:space="preserve">
+    <value>Type d'activité supprimé(e) avec succès.</value>
+  </data>
+  <data name="ActivityTypeService.ActivityTypeNotFound" xml:space="preserve">
+    <value>Type d'activité non trouvé(e).</value>
+  </data>
+  <data name="ActivityTypeService.ActivityTypeRetrieved" xml:space="preserve">
+    <value>Type d'activité récupéré(e) avec succès.</value>
+  </data>
+  <data name="ActivityTypeService.ActivityTypeUpdated" xml:space="preserve">
+    <value>Type d'activité mis(e) à jour avec succès.</value>
+  </data>
+  <data name="ActivityTypeService.ActivityTypesRetrieved" xml:space="preserve">
+    <value>Activité Types récupéré(e) avec succès.</value>
+  </data>
+  <data name="ActivityTypeService.CreateActivityTypeExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Activité Type: {0}</value>
+  </data>
+  <data name="ActivityTypeService.DeleteActivityTypeExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Activité Type: {0}</value>
+  </data>
+  <data name="ActivityTypeService.GetActivityTypeByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Activité Type: {0}</value>
+  </data>
+  <data name="ActivityTypeService.GetAllActivityTypesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Activité Types: {0}</value>
+  </data>
+  <data name="ActivityTypeService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ActivityTypeService.UpdateActivityTypeExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Activité Type: {0}</value>
+  </data>
+  <data name="ApprovalActionService.ApprovalActionCreated" xml:space="preserve">
+    <value>Approbation action créé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalActionService.ApprovalActionDeleted" xml:space="preserve">
+    <value>Approbation action supprimé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalActionService.ApprovalActionNotFound" xml:space="preserve">
+    <value>Approbation action non trouvé(e).</value>
+  </data>
+  <data name="ApprovalActionService.ApprovalActionRetrieved" xml:space="preserve">
+    <value>Approbation action récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalActionService.ApprovalActionUpdated" xml:space="preserve">
+    <value>Approbation action mis(e) à jour avec succès.</value>
+  </data>
+  <data name="ApprovalActionService.ApprovalActionsRetrieved" xml:space="preserve">
+    <value>Approbation actions récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalActionService.CreateApprovalActionExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de approval action: {0}</value>
+  </data>
+  <data name="ApprovalActionService.DeleteApprovalActionExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de approval action: {0}</value>
+  </data>
+  <data name="ApprovalActionService.GetAllApprovalActionsExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de approval actions: {0}</value>
+  </data>
+  <data name="ApprovalActionService.GetApprovalActionByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de approval action: {0}</value>
+  </data>
+  <data name="ApprovalActionService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ApprovalActionService.UpdateApprovalActionExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de approval action: {0}</value>
+  </data>
+  <data name="ApprovalFlowService.ApprovalFlowCreated" xml:space="preserve">
+    <value>Approbation flow créé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalFlowService.ApprovalFlowDeleted" xml:space="preserve">
+    <value>Approbation flow supprimé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalFlowService.ApprovalFlowNotFound" xml:space="preserve">
+    <value>Approbation flow non trouvé(e).</value>
+  </data>
+  <data name="ApprovalFlowService.ApprovalFlowRetrieved" xml:space="preserve">
+    <value>Approbation flow récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalFlowService.ApprovalFlowUpdated" xml:space="preserve">
+    <value>Approbation flow mis(e) à jour avec succès.</value>
+  </data>
+  <data name="ApprovalFlowService.ApprovalFlowsRetrieved" xml:space="preserve">
+    <value>Approbation flows récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalFlowService.CreateApprovalFlowExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de approval flow: {0}</value>
+  </data>
+  <data name="ApprovalFlowService.DeleteApprovalFlowExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de approval flow: {0}</value>
+  </data>
+  <data name="ApprovalFlowService.GetAllApprovalFlowsExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de approval flows: {0}</value>
+  </data>
+  <data name="ApprovalFlowService.GetApprovalFlowByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de approval flow: {0}</value>
+  </data>
+  <data name="ApprovalFlowService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ApprovalFlowService.UpdateApprovalFlowExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de approval flow: {0}</value>
+  </data>
+  <data name="ApprovalFlowStepService.ApprovalFlowStepCreated" xml:space="preserve">
+    <value>Approbation flow step créé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalFlowStepService.ApprovalFlowStepDeleted" xml:space="preserve">
+    <value>Approbation flow step supprimé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalFlowStepService.ApprovalFlowStepNotFound" xml:space="preserve">
+    <value>Approbation flow step non trouvé(e).</value>
+  </data>
+  <data name="ApprovalFlowStepService.ApprovalFlowStepRetrieved" xml:space="preserve">
+    <value>Approbation flow step récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalFlowStepService.ApprovalFlowStepUpdated" xml:space="preserve">
+    <value>Approbation flow step mis(e) à jour avec succès.</value>
+  </data>
+  <data name="ApprovalFlowStepService.ApprovalFlowStepsRetrieved" xml:space="preserve">
+    <value>Approbation flow steps récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalFlowStepService.CreateApprovalFlowStepExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de approval flow step: {0}</value>
+  </data>
+  <data name="ApprovalFlowStepService.DeleteApprovalFlowStepExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de approval flow step: {0}</value>
+  </data>
+  <data name="ApprovalFlowStepService.GetAllApprovalFlowStepsExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de approval flow steps: {0}</value>
+  </data>
+  <data name="ApprovalFlowStepService.GetApprovalFlowStepByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de approval flow step: {0}</value>
+  </data>
+  <data name="ApprovalFlowStepService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ApprovalFlowStepService.UpdateApprovalFlowStepExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de approval flow step: {0}</value>
+  </data>
+  <data name="ApprovalRequestService.ApprovalRequestCreated" xml:space="preserve">
+    <value>Approbation request créé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalRequestService.ApprovalRequestDeleted" xml:space="preserve">
+    <value>Approbation request supprimé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalRequestService.ApprovalRequestNotFound" xml:space="preserve">
+    <value>Approbation request non trouvé(e).</value>
+  </data>
+  <data name="ApprovalRequestService.ApprovalRequestRetrieved" xml:space="preserve">
+    <value>Approbation request récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalRequestService.ApprovalRequestUpdated" xml:space="preserve">
+    <value>Approbation request mis(e) à jour avec succès.</value>
+  </data>
+  <data name="ApprovalRequestService.ApprovalRequestsRetrieved" xml:space="preserve">
+    <value>Approbation requests récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalRequestService.CreateApprovalRequestExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de approval request: {0}</value>
+  </data>
+  <data name="ApprovalRequestService.DeleteApprovalRequestExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de approval request: {0}</value>
+  </data>
+  <data name="ApprovalRequestService.GetAllApprovalRequestsExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de approval requests: {0}</value>
+  </data>
+  <data name="ApprovalRequestService.GetApprovalRequestByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de approval request: {0}</value>
+  </data>
+  <data name="ApprovalRequestService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ApprovalRequestService.UpdateApprovalRequestExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de approval request: {0}</value>
+  </data>
+  <data name="ApprovalRoleGroupService.ApprovalRoleGroupCreated" xml:space="preserve">
+    <value>Approbation role group créé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalRoleGroupService.ApprovalRoleGroupDeleted" xml:space="preserve">
+    <value>Approbation role group supprimé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalRoleGroupService.ApprovalRoleGroupNotFound" xml:space="preserve">
+    <value>Approbation role group non trouvé(e).</value>
+  </data>
+  <data name="ApprovalRoleGroupService.ApprovalRoleGroupRetrieved" xml:space="preserve">
+    <value>Approbation role group récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalRoleGroupService.ApprovalRoleGroupUpdated" xml:space="preserve">
+    <value>Approbation role group mis(e) à jour avec succès.</value>
+  </data>
+  <data name="ApprovalRoleGroupService.ApprovalRoleGroupsRetrieved" xml:space="preserve">
+    <value>Approbation role groups récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalRoleGroupService.CreateApprovalRoleGroupExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de approval role group: {0}</value>
+  </data>
+  <data name="ApprovalRoleGroupService.DeleteApprovalRoleGroupExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de approval role group: {0}</value>
+  </data>
+  <data name="ApprovalRoleGroupService.GetAllApprovalRoleGroupsExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de approval role groups: {0}</value>
+  </data>
+  <data name="ApprovalRoleGroupService.GetApprovalRoleGroupByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de approval role group: {0}</value>
+  </data>
+  <data name="ApprovalRoleGroupService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ApprovalRoleGroupService.UpdateApprovalRoleGroupExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de approval role group: {0}</value>
+  </data>
+  <data name="ApprovalRoleService.ApprovalRoleCreated" xml:space="preserve">
+    <value>Approbation role créé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalRoleService.ApprovalRoleDeleted" xml:space="preserve">
+    <value>Approbation role supprimé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalRoleService.ApprovalRoleNotFound" xml:space="preserve">
+    <value>Approbation role non trouvé(e).</value>
+  </data>
+  <data name="ApprovalRoleService.ApprovalRoleRetrieved" xml:space="preserve">
+    <value>Approbation role récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalRoleService.ApprovalRoleUpdated" xml:space="preserve">
+    <value>Approbation role mis(e) à jour avec succès.</value>
+  </data>
+  <data name="ApprovalRoleService.ApprovalRolesRetrieved" xml:space="preserve">
+    <value>Approbation roles récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalRoleService.CreateApprovalRoleExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de approval role: {0}</value>
+  </data>
+  <data name="ApprovalRoleService.DeleteApprovalRoleExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de approval role: {0}</value>
+  </data>
+  <data name="ApprovalRoleService.GetAllApprovalRolesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de approval roles: {0}</value>
+  </data>
+  <data name="ApprovalRoleService.GetApprovalRoleByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de approval role: {0}</value>
+  </data>
+  <data name="ApprovalRoleService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ApprovalRoleService.UpdateApprovalRoleExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de approval role: {0}</value>
+  </data>
+  <data name="ApprovalUserRoleService.ApprovalUserRoleCreated" xml:space="preserve">
+    <value>Approbation user role créé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalUserRoleService.ApprovalUserRoleDeleted" xml:space="preserve">
+    <value>Approbation user role supprimé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalUserRoleService.ApprovalUserRoleNotFound" xml:space="preserve">
+    <value>Approbation user role non trouvé(e).</value>
+  </data>
+  <data name="ApprovalUserRoleService.ApprovalUserRoleRetrieved" xml:space="preserve">
+    <value>Approbation user role récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalUserRoleService.ApprovalUserRoleUpdated" xml:space="preserve">
+    <value>Approbation user role mis(e) à jour avec succès.</value>
+  </data>
+  <data name="ApprovalUserRoleService.ApprovalUserRolesRetrieved" xml:space="preserve">
+    <value>Approbation user roles récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalUserRoleService.CreateApprovalUserRoleExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de approval user role: {0}</value>
+  </data>
+  <data name="ApprovalUserRoleService.DeleteApprovalUserRoleExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de approval user role: {0}</value>
+  </data>
+  <data name="ApprovalUserRoleService.GetAllApprovalUserRolesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de approval user roles: {0}</value>
+  </data>
+  <data name="ApprovalUserRoleService.GetApprovalUserRoleByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de approval user role: {0}</value>
+  </data>
+  <data name="ApprovalUserRoleService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ApprovalUserRoleService.UpdateApprovalUserRoleExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de approval user role: {0}</value>
+  </data>
+  <data name="ApprovalWorkflowService.ApprovalWorkflowCreated" xml:space="preserve">
+    <value>Approbation workflow créé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalWorkflowService.ApprovalWorkflowDeleted" xml:space="preserve">
+    <value>Approbation workflow supprimé(e) avec succès.</value>
+  </data>
+  <data name="ApprovalWorkflowService.ApprovalWorkflowNotFound" xml:space="preserve">
+    <value>Approbation workflow non trouvé(e).</value>
+  </data>
+  <data name="ApprovalWorkflowService.ApprovalWorkflowRetrieved" xml:space="preserve">
+    <value>Approbation workflow récupéré(e) avec succès.</value>
+  </data>
+  <data name="ApprovalWorkflowService.ApprovalWorkflowUpdated" xml:space="preserve">
+    <value>Approbation workflow mis(e) à jour avec succès.</value>
+  </data>
+  <data name="ApprovalWorkflowService.ApprovalWorkflowsRetrieved" xml:space="preserve">
+    <value>Approbation workflows récupéré(e) avec succès.</value>
+  </data>
+  <data name="AquaDbContextFactory.MissingDefaultConnection" xml:space="preserve">
+    <value>ConnectionStrings:DefaultConnection bağlantı bilgisi bulunamadı.</value>
+  </data>
+  <data name="AquaDbContextFactory.ProjectRootNotFound" xml:space="preserve">
+    <value>appsettings.json içeren proje kök dizini çözümlenemedi.</value>
+  </data>
+  <data name="AuthErrorOccurred" xml:space="preserve">
+    <value>An error occurred.</value>
+  </data>
+  <data name="AuthRegistrationFailed" xml:space="preserve">
+    <value>Inscription échouée.</value>
+  </data>
+  <data name="AuthSessionNotFound" xml:space="preserve">
+    <value>Session non trouvé(e).</value>
+  </data>
+  <data name="AuthUserAlreadyExists" xml:space="preserve">
+    <value>User already exists.</value>
+  </data>
+  <data name="AuthUserNotFound" xml:space="preserve">
+    <value>Utilisateur non trouvé(e).</value>
+  </data>
+  <data name="AuthUserRegisteredSuccessfully" xml:space="preserve">
+    <value>Utilisateur inscrit avec succès.</value>
+  </data>
+  <data name="AuthUserRetrievedSuccessfully" xml:space="preserve">
+    <value>Utilisateur récupéré(e) avec succès.</value>
+  </data>
+  <data name="CityController.InvalidModelState" xml:space="preserve">
+    <value>État du modèle invalide.</value>
+  </data>
+  <data name="CityController.InvalidModelStateExceptionMessage" xml:space="preserve">
+    <value>Erreur de validation du modèle: {0}</value>
+  </data>
+  <data name="CityService.CitiesRetrieved" xml:space="preserve">
+    <value>Villes récupéré(e) avec succès.</value>
+  </data>
+  <data name="CityService.CityCreated" xml:space="preserve">
+    <value>Ville créé(e) avec succès.</value>
+  </data>
+  <data name="CityService.CityDeleted" xml:space="preserve">
+    <value>Ville supprimé(e) avec succès.</value>
+  </data>
+  <data name="CityService.CityNotFound" xml:space="preserve">
+    <value>Ville non trouvé(e).</value>
+  </data>
+  <data name="CityService.CityRetrieved" xml:space="preserve">
+    <value>Ville récupéré(e) avec succès.</value>
+  </data>
+  <data name="CityService.CityUpdated" xml:space="preserve">
+    <value>Ville mis(e) à jour avec succès.</value>
+  </data>
+  <data name="CityService.CreateCityExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the city: {0}</value>
+  </data>
+  <data name="CityService.DeleteCityExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the city: {0}</value>
+  </data>
+  <data name="CityService.ErrorCreatingCity" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the city.</value>
+  </data>
+  <data name="CityService.ErrorDeletingCity" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the city.</value>
+  </data>
+  <data name="CityService.ErrorRetrievingCities" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de cities.</value>
+  </data>
+  <data name="CityService.ErrorRetrievingCity" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the city.</value>
+  </data>
+  <data name="CityService.ErrorUpdatingCity" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the city.</value>
+  </data>
+  <data name="CityService.GetAllCitiesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de cities: {0}</value>
+  </data>
+  <data name="CityService.GetCityByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the city: {0}</value>
+  </data>
+  <data name="CityService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="CityService.UpdateCityExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the city: {0}</value>
+  </data>
+  <data name="ContactService.ContactCreated" xml:space="preserve">
+    <value>Contact créé(e) avec succès.</value>
+  </data>
+  <data name="ContactService.ContactDeleted" xml:space="preserve">
+    <value>Contact supprimé(e) avec succès.</value>
+  </data>
+  <data name="ContactService.ContactNotFound" xml:space="preserve">
+    <value>Contact non trouvé(e).</value>
+  </data>
+  <data name="ContactService.ContactRetrieved" xml:space="preserve">
+    <value>Contact récupéré(e) avec succès.</value>
+  </data>
+  <data name="ContactService.ContactUpdated" xml:space="preserve">
+    <value>Contact mis(e) à jour avec succès.</value>
+  </data>
+  <data name="ContactService.ContactsRetrieved" xml:space="preserve">
+    <value>Contacts récupéré(e) avec succès.</value>
+  </data>
+  <data name="ContactService.CreateContactExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Contact: {0}</value>
+  </data>
+  <data name="ContactService.DeleteContactExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Contact: {0}</value>
+  </data>
+  <data name="ContactService.DuplicateContact" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="ContactService.ErrorCreatingContact" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the contact.</value>
+  </data>
+  <data name="ContactService.ErrorDeletingContact" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the contact.</value>
+  </data>
+  <data name="ContactService.ErrorRetrievingContact" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the contact.</value>
+  </data>
+  <data name="ContactService.ErrorRetrievingContacts" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de contacts.</value>
+  </data>
+  <data name="ContactService.ErrorUpdatingContact" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the contact.</value>
+  </data>
+  <data name="ContactService.FullNameRequired" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="ContactService.GetAllContactsExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Contacts: {0}</value>
+  </data>
+  <data name="ContactService.GetContactByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Contact: {0}</value>
+  </data>
+  <data name="ContactService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ContactService.InvalidEmail" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="ContactService.UpdateContactExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Contact: {0}</value>
+  </data>
+  <data name="CountryController.InvalidModelState" xml:space="preserve">
+    <value>État du modèle invalide.</value>
+  </data>
+  <data name="CountryController.InvalidModelStateExceptionMessage" xml:space="preserve">
+    <value>Erreur de validation du modèle: {0}</value>
+  </data>
+  <data name="CountryService.CountriesRetrieved" xml:space="preserve">
+    <value>Pays récupéré(e) avec succès.</value>
+  </data>
+  <data name="CountryService.CountryCreated" xml:space="preserve">
+    <value>Pays créé(e) avec succès.</value>
+  </data>
+  <data name="CountryService.CountryDeleted" xml:space="preserve">
+    <value>Pays supprimé(e) avec succès.</value>
+  </data>
+  <data name="CountryService.CountryNameAlreadyExists" xml:space="preserve"><value>Le pays existe déjà. Les entrées de pays en double ne sont pas autorisées.</value></data><data name="CountryService.CountryNotFound" xml:space="preserve">
+    <value>Pays non trouvé(e).</value>
+  </data>
+  <data name="CountryService.CountryRetrieved" xml:space="preserve">
+    <value>Pays récupéré(e) avec succès.</value>
+  </data>
+  <data name="CountryService.CountryUpdated" xml:space="preserve">
+    <value>Pays mis(e) à jour avec succès.</value>
+  </data>
+  <data name="CountryService.CreateCountryExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the country: {0}</value>
+  </data>
+  <data name="CountryService.DeleteCountryExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the country: {0}</value>
+  </data>
+  <data name="CountryService.ErrorCreatingCountry" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the country.</value>
+  </data>
+  <data name="CountryService.ErrorDeletingCountry" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the country.</value>
+  </data>
+  <data name="CountryService.ErrorRetrievingCountries" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de countries.</value>
+  </data>
+  <data name="CountryService.ErrorRetrievingCountry" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the country.</value>
+  </data>
+  <data name="CountryService.ErrorUpdatingCountry" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the country.</value>
+  </data>
+  <data name="CountryService.GetAllCountriesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de countries: {0}</value>
+  </data>
+  <data name="CountryService.GetCountryByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the country: {0}</value>
+  </data>
+  <data name="CountryService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="CountryService.UpdateCountryExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the country: {0}</value>
+  </data>
+  <data name="Customer360Service.CustomerNotFound" xml:space="preserve">
+    <value>Client non trouvé.</value>
+  </data>
+  <data name="Customer360Service.ExceptionMessage" xml:space="preserve">
+    <value>{0}</value>
+  </data>
+  <data name="Customer360Service.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="Customer360Service.OverviewRetrieved" xml:space="preserve">
+    <value>Vue d'ensemble du client récupérée avec succès.</value>
+  </data>
+  <data name="CustomerService.CreateCustomerExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Client: {0}</value>
+  </data>
+  <data name="CustomerService.CustomerCreated" xml:space="preserve">
+    <value>Client créé(e) avec succès.</value>
+  </data>
+  <data name="CustomerService.CustomerDeleted" xml:space="preserve">
+    <value>Client supprimé(e) avec succès.</value>
+  </data>
+  <data name="CustomerService.CustomerMerged" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="CustomerService.CustomerNameRequired" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="CustomerService.CustomerNotFound" xml:space="preserve">
+    <value>Client non trouvé(e).</value>
+  </data>
+  <data name="CustomerService.CustomerRetrieved" xml:space="preserve">
+    <value>Client récupéré(e) avec succès.</value>
+  </data>
+  <data name="CustomerService.CustomerUpdated" xml:space="preserve">
+    <value>Client mis(e) à jour avec succès.</value>
+  </data>
+  <data name="CustomerService.CustomersRetrieved" xml:space="preserve">
+    <value>Clients récupéré(e) avec succès.</value>
+  </data>
+  <data name="CustomerService.DeleteCustomerExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Client: {0}</value>
+  </data>
+  <data name="CustomerService.DuplicateCandidatesExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="CustomerService.DuplicateCandidatesRetrieved" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="CustomerService.DuplicateCustomer" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="CustomerService.ErrorCreatingCustomer" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the customer.</value>
+  </data>
+  <data name="CustomerService.ErrorDeletingCustomer" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the customer.</value>
+  </data>
+  <data name="CustomerService.ErrorRetrievingCustomer" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the customer.</value>
+  </data>
+  <data name="CustomerService.ErrorRetrievingCustomers" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de customers.</value>
+  </data>
+  <data name="CustomerService.ErrorUpdatingCustomer" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the customer.</value>
+  </data>
+  <data name="CustomerService.GetAllCustomersExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Clients: {0}</value>
+  </data>
+  <data name="CustomerService.GetCustomerByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Client: {0}</value>
+  </data>
+  <data name="CustomerService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="CustomerService.InvalidEmail" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="CustomerService.InvalidMergeRequest" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="CustomerService.InvalidTaxNumber" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="CustomerService.InvalidTcknNumber" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="CustomerService.MergeCustomersExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="CustomerService.UpdateCustomerExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Client: {0}</value>
+  </data>
+  <data name="CustomerSyncJob.Completed" xml:space="preserve"><value>La synchronisation des clients est terminée.</value></data><data name="CustomerSyncJob.Started" xml:space="preserve"><value>La synchronisation des clients a démarré.</value></data><data name="CustomerTypeService.CreateCustomerTypeExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Client Type: {0}</value>
+  </data>
+  <data name="CustomerTypeService.CustomerTypeCreated" xml:space="preserve">
+    <value>Client type créé(e) avec succès.</value>
+  </data>
+  <data name="CustomerTypeService.CustomerTypeDeleted" xml:space="preserve">
+    <value>Client type supprimé(e) avec succès.</value>
+  </data>
+  <data name="CustomerTypeService.CustomerTypeNotFound" xml:space="preserve">
+    <value>Client type non trouvé(e).</value>
+  </data>
+  <data name="CustomerTypeService.CustomerTypeRetrieved" xml:space="preserve">
+    <value>Client type récupéré(e) avec succès.</value>
+  </data>
+  <data name="CustomerTypeService.CustomerTypeUpdated" xml:space="preserve">
+    <value>Client type mis(e) à jour avec succès.</value>
+  </data>
+  <data name="CustomerTypeService.CustomerTypesRetrieved" xml:space="preserve">
+    <value>Client types récupéré(e) avec succès.</value>
+  </data>
+  <data name="CustomerTypeService.DeleteCustomerTypeExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Client Type: {0}</value>
+  </data>
+  <data name="CustomerTypeService.ErrorCreatingCustomerType" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the customer type.</value>
+  </data>
+  <data name="CustomerTypeService.ErrorDeletingCustomerType" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the customer type.</value>
+  </data>
+  <data name="CustomerTypeService.ErrorRetrievingCustomerType" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the customer type.</value>
+  </data>
+  <data name="CustomerTypeService.ErrorRetrievingCustomerTypes" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de customer types.</value>
+  </data>
+  <data name="CustomerTypeService.ErrorUpdatingCustomerType" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the customer type.</value>
+  </data>
+  <data name="CustomerTypeService.GetAllCustomerTypesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Client Types: {0}</value>
+  </data>
+  <data name="CustomerTypeService.GetCustomerTypeByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Client Type: {0}</value>
+  </data>
+  <data name="CustomerTypeService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="CustomerTypeService.UpdateCustomerTypeExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Client Type: {0}</value>
+  </data>
+  <data name="DashboardController.CurrencyRatesNotImplemented" xml:space="preserve">
+    <value>Kur bilgileri ucu henüz uygulanmadı.</value>
+  </data>
+  <data name="DashboardController.DashboardRetrieved" xml:space="preserve">
+    <value>Dashboard verileri başarıyla getirildi.</value>
+  </data>
+  <data name="DataRetrievedSuccessfully" xml:space="preserve">
+    <value>Données récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandApprovalService.DemandApprovalCreated" xml:space="preserve">
+    <value>Devis approval créé(e) avec succès.</value>
+  </data>
+  <data name="DemandApprovalService.DemandApprovalDeleted" xml:space="preserve">
+    <value>Devis approval supprimé(e) avec succès.</value>
+  </data>
+  <data name="DemandApprovalService.DemandApprovalNotFound" xml:space="preserve">
+    <value>Devis approval non trouvé(e).</value>
+  </data>
+  <data name="DemandApprovalService.DemandApprovalRetrieved" xml:space="preserve">
+    <value>Devis approval récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandApprovalService.DemandApprovalUpdated" xml:space="preserve">
+    <value>Devis approval mis(e) à jour avec succès.</value>
+  </data>
+  <data name="DemandApprovalService.DemandApprovalsRetrieved" xml:space="preserve">
+    <value>Devis approvals récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandDocumentTypeService.DemandDocumentTypeCreated" xml:space="preserve">
+    <value>Devis document type créé(e) avec succès.</value>
+  </data>
+  <data name="DemandDocumentTypeService.DemandDocumentTypeDeleted" xml:space="preserve">
+    <value>Devis document type supprimé(e) avec succès.</value>
+  </data>
+  <data name="DemandDocumentTypeService.DemandDocumentTypeNotFound" xml:space="preserve">
+    <value>Devis document type non trouvé(e).</value>
+  </data>
+  <data name="DemandDocumentTypeService.DemandDocumentTypeRetrieved" xml:space="preserve">
+    <value>Devis document type récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandDocumentTypeService.DemandDocumentTypeUpdated" xml:space="preserve">
+    <value>Devis document type mis(e) à jour avec succès.</value>
+  </data>
+  <data name="DemandDocumentTypeService.DemandDocumentTypesRetrieved" xml:space="preserve">
+    <value>Devis document types récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandDocumentTypeService.DemandNumberGenerated" xml:space="preserve">
+    <value>Demand number generated successfully.</value>
+  </data>
+  <data name="DemandExchangeRateService.CreateRateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Demande Exchange Rate: {0}</value>
+  </data>
+  <data name="DemandExchangeRateService.DeleteRateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Demande Exchange Rate: {0}</value>
+  </data>
+  <data name="DemandExchangeRateService.ExchangeRateNotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="DemandExchangeRateService.ExchangeRateUpdated" xml:space="preserve">
+    <value>Enregistrement mis à jour avec succès.</value>
+  </data>
+  <data name="DemandExchangeRateService.GetAllRatesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Demande Exchange Rates: {0}</value>
+  </data>
+  <data name="DemandExchangeRateService.GetRateByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Demande Exchange Rate: {0}</value>
+  </data>
+  <data name="DemandExchangeRateService.GetRatesByDemandIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandExchangeRateService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="DemandExchangeRateService.RateCreated" xml:space="preserve">
+    <value>Demande Exchange Rate créé(e) avec succès.</value>
+  </data>
+  <data name="DemandExchangeRateService.RateDeleted" xml:space="preserve">
+    <value>Demande Exchange Rate supprimé(e) avec succès.</value>
+  </data>
+  <data name="DemandExchangeRateService.RateNotFound" xml:space="preserve">
+    <value>Demande Exchange Rate non trouvé(e).</value>
+  </data>
+  <data name="DemandExchangeRateService.RateRetrieved" xml:space="preserve">
+    <value>Demande Exchange Rate récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandExchangeRateService.RateUpdated" xml:space="preserve">
+    <value>Demande Exchange Rate mis(e) à jour avec succès.</value>
+  </data>
+  <data name="DemandExchangeRateService.RatesRetrieved" xml:space="preserve">
+    <value>Demande Exchange Rates récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandExchangeRateService.UpdateExchangeRateInDemandExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="DemandExchangeRateService.UpdateRateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Demande Exchange Rate: {0}</value>
+  </data>
+  <data name="DemandLineApprovalService.DemandLineApprovalCreated" xml:space="preserve">
+    <value>Devis line approval créé(e) avec succès.</value>
+  </data>
+  <data name="DemandLineApprovalService.DemandLineApprovalDeleted" xml:space="preserve">
+    <value>Devis line approval supprimé(e) avec succès.</value>
+  </data>
+  <data name="DemandLineApprovalService.DemandLineApprovalNotFound" xml:space="preserve">
+    <value>Devis line approval non trouvé(e).</value>
+  </data>
+  <data name="DemandLineApprovalService.DemandLineApprovalRetrieved" xml:space="preserve">
+    <value>Devis line approval récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandLineApprovalService.DemandLineApprovalUpdated" xml:space="preserve">
+    <value>Devis line approval mis(e) à jour avec succès.</value>
+  </data>
+  <data name="DemandLineApprovalService.DemandLineApprovalsRetrieved" xml:space="preserve">
+    <value>Devis line approvals récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandLineService.CreateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Demande Line: {0}</value>
+  </data>
+  <data name="DemandLineService.DeleteExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Demande Line: {0}</value>
+  </data>
+  <data name="DemandLineService.DemandLineCreated" xml:space="preserve">
+    <value>Demande line créé(e) avec succès.</value>
+  </data>
+  <data name="DemandLineService.DemandLineDeleted" xml:space="preserve">
+    <value>Demande line supprimé(e) avec succès.</value>
+  </data>
+  <data name="DemandLineService.DemandLineNotDeleted" xml:space="preserve">
+    <value>L'enregistrement n'a pas pu être supprimé.</value>
+  </data>
+  <data name="DemandLineService.DemandLineNotFound" xml:space="preserve">
+    <value>Demande line non trouvé(e).</value>
+  </data>
+  <data name="DemandLineService.DemandLineRetrieved" xml:space="preserve">
+    <value>Demande line récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandLineService.DemandLineUpdated" xml:space="preserve">
+    <value>Demande line mis(e) à jour avec succès.</value>
+  </data>
+  <data name="DemandLineService.DemandLinesByDemandRetrieved" xml:space="preserve">
+    <value>Demande lines by quotation récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandLineService.DemandLinesCreated" xml:space="preserve">
+    <value>Enregistrement créé avec succès.</value>
+  </data>
+  <data name="DemandLineService.DemandLinesRetrieved" xml:space="preserve">
+    <value>Demande lines récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandLineService.DemandLinesUpdated" xml:space="preserve">
+    <value>Enregistrement mis à jour avec succès.</value>
+  </data>
+  <data name="DemandLineService.ErrorCreatingDemandLine" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the quotation line.</value>
+  </data>
+  <data name="DemandLineService.ErrorDeletingDemandLine" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the quotation line.</value>
+  </data>
+  <data name="DemandLineService.ErrorRetrievingDemandLine" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the quotation line.</value>
+  </data>
+  <data name="DemandLineService.ErrorRetrievingDemandLines" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de quotation lines.</value>
+  </data>
+  <data name="DemandLineService.ErrorUpdatingDemandLine" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the quotation line.</value>
+  </data>
+  <data name="DemandLineService.GetAllExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Demande Lines: {0}</value>
+  </data>
+  <data name="DemandLineService.GetByDemandIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandLineService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Demande Line: {0}</value>
+  </data>
+  <data name="DemandLineService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="DemandLineService.UpdateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Demande Line: {0}</value>
+  </data>
+  <data name="DemandNotFound" xml:space="preserve">
+    <value>Devis non trouvé(e).</value>
+  </data>
+  <data name="DemandService.ApprovalActionApproved" xml:space="preserve">
+    <value>Approval Action Approved.</value>
+  </data>
+  <data name="DemandService.ApprovalActionApprovedAndNextStepStarted" xml:space="preserve">
+    <value>Approval Action Approved And Next Step Started.</value>
+  </data>
+  <data name="DemandService.ApprovalActionNotFound" xml:space="preserve">
+    <value>Demande non trouvé(e).</value>
+  </data>
+  <data name="DemandService.ApprovalActionRejected" xml:space="preserve">
+    <value>Approval Action Rejected.</value>
+  </data>
+  <data name="DemandService.ApprovalFlowAlreadyExists" xml:space="preserve">
+    <value>Demand already exists.</value>
+  </data>
+  <data name="DemandService.ApprovalFlowCompleted" xml:space="preserve">
+    <value>Approval Flow Completed.</value>
+  </data>
+  <data name="DemandService.ApprovalFlowNotFound" xml:space="preserve">
+    <value>Demande non trouvé(e).</value>
+  </data>
+  <data name="DemandService.ApprovalFlowReportExceptionMessage" xml:space="preserve">
+    <value>Onay akışı raporu getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="DemandService.ApprovalFlowReportRetrieved" xml:space="preserve">
+    <value>Onay akışı raporu başarıyla getirildi.</value>
+  </data>
+  <data name="DemandService.ApprovalFlowStarted" xml:space="preserve">
+    <value>Approval Flow Started.</value>
+  </data>
+  <data name="DemandService.ApprovalFlowStepsNotFound" xml:space="preserve">
+    <value>Demande non trouvé(e).</value>
+  </data>
+  <data name="DemandService.ApprovalRequestNotFound" xml:space="preserve">
+    <value>Demande non trouvé(e).</value>
+  </data>
+  <data name="DemandService.ApprovalRoleNotFound" xml:space="preserve">
+    <value>Demande non trouvé(e).</value>
+  </data>
+  <data name="DemandService.ApprovalUsersNotFound" xml:space="preserve">
+    <value>Demande non trouvé(e).</value>
+  </data>
+  <data name="DemandService.ApproveExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.ConvertToQuotationExceptionMessage" xml:space="preserve">
+    <value>Talep teklife dönüştürülürken bir hata oluştu: {0}</value>
+  </data>
+  <data name="DemandService.CreateDemandBulkExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Demande: {0}</value>
+  </data>
+  <data name="DemandService.CreateDemandExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Demande: {0}</value>
+  </data>
+  <data name="DemandService.CreateRevisionExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="DemandService.CreateRevisionOfDemandExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Demande: {0}</value>
+  </data>
+  <data name="DemandService.DeleteDemandExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Demande: {0}</value>
+  </data>
+  <data name="DemandService.DemandApproverUsersRetrieved" xml:space="preserve">
+    <value>Talep onaylayıcı kullanıcıları başarıyla getirildi.</value>
+  </data>
+  <data name="DemandService.DemandCreated" xml:space="preserve">
+    <value>Demande créé(e) avec succès.</value>
+  </data>
+  <data name="DemandService.DemandDeleted" xml:space="preserve">
+    <value>Demande supprimé(e) avec succès.</value>
+  </data>
+  <data name="DemandService.DemandExchangeRatesNotFound" xml:space="preserve">
+    <value>Talep döviz kurları bulunamadı.</value>
+  </data>
+  <data name="DemandService.DemandExistsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.DemandLinesNotFound" xml:space="preserve">
+    <value>Talep satırları bulunamadı.</value>
+  </data>
+  <data name="DemandService.DemandNotFound" xml:space="preserve">
+    <value>Demande non trouvé(e).</value>
+  </data>
+  <data name="DemandService.DemandRetrieved" xml:space="preserve">
+    <value>Demande récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandService.DemandRevisionCreated" xml:space="preserve">
+    <value>Demande créé(e) avec succès.</value>
+  </data>
+  <data name="DemandService.DemandUpdated" xml:space="preserve">
+    <value>Demande mis(e) à jour avec succès.</value>
+  </data>
+  <data name="DemandService.DemandsByPotentialCustomerRetrieved" xml:space="preserve">
+    <value>Demande by potential customer récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandService.DemandsByRepresentativeRetrieved" xml:space="preserve">
+    <value>Demande by representative récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandService.DemandsByStatusRetrieved" xml:space="preserve">
+    <value>Demande by status récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandService.DemandsRetrieved" xml:space="preserve">
+    <value>Demande récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandService.DocumentSerialTypeGenerationError" xml:space="preserve">
+    <value>Document Serial Type Generation Error.</value>
+  </data>
+  <data name="DemandService.GetAllDemandsExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Demande: {0}</value>
+  </data>
+  <data name="DemandService.GetDemandByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Demande: {0}</value>
+  </data>
+  <data name="DemandService.GetDemandsByPotentialCustomerExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.GetDemandsByRepresentativeExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.GetDemandsByStatusExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.GetPriceOfProductExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.GetPriceRuleOfDemandExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.GetWaitingApprovalsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="DemandService.PendingApprovalEmailSubject" xml:space="preserve">
+    <value>You Have a Record Pending Approval</value>
+  </data>
+  <data name="DemandService.PriceOfProductRetrieved" xml:space="preserve">
+    <value>Demande récupéré(e) avec succès.</value>
+  </data>
+  <data name="DemandService.PriceRuleNotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="DemandService.PriceRuleOfDemandRetrieved" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="DemandService.QuotationConvertedSuccessfully" xml:space="preserve">
+    <value>Teklif başarıyla oluşturuldu.</value>
+  </data>
+  <data name="DemandService.QuotationDocumentSerialTypeNotFound" xml:space="preserve">
+    <value>Teklif belge seri tipi bulunamadı.</value>
+  </data>
+  <data name="DemandService.RejectExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.RevisionCreated" xml:space="preserve">
+    <value>Enregistrement créé avec succès.</value>
+  </data>
+  <data name="DemandService.StartApprovalFlowExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DemandService.UpdateDemandExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Demande: {0}</value>
+  </data>
+  <data name="DemandService.UserNotFound" xml:space="preserve">
+    <value>Demande non trouvé(e).</value>
+  </data>
+  <data name="DemandService.WaitingApprovalsRetrieved" xml:space="preserve">
+    <value>Demande récupéré(e) avec succès.</value>
+  </data>
+  <data name="DistrictController.InvalidModelState" xml:space="preserve">
+    <value>État du modèle invalide.</value>
+  </data>
+  <data name="DistrictController.InvalidModelStateExceptionMessage" xml:space="preserve">
+    <value>Erreur de validation du modèle: {0}</value>
+  </data>
+  <data name="DistrictService.CreateDistrictExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the district: {0}</value>
+  </data>
+  <data name="DistrictService.DeleteDistrictExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the district: {0}</value>
+  </data>
+  <data name="DistrictService.DistrictCreated" xml:space="preserve">
+    <value>District créé(e) avec succès.</value>
+  </data>
+  <data name="DistrictService.DistrictDeleted" xml:space="preserve">
+    <value>District supprimé(e) avec succès.</value>
+  </data>
+  <data name="DistrictService.DistrictNotFound" xml:space="preserve">
+    <value>District non trouvé(e).</value>
+  </data>
+  <data name="DistrictService.DistrictRetrieved" xml:space="preserve">
+    <value>District récupéré(e) avec succès.</value>
+  </data>
+  <data name="DistrictService.DistrictUpdated" xml:space="preserve">
+    <value>District mis(e) à jour avec succès.</value>
+  </data>
+  <data name="DistrictService.DistrictsRetrieved" xml:space="preserve">
+    <value>Districts récupéré(e) avec succès.</value>
+  </data>
+  <data name="DistrictService.ErrorCreatingDistrict" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the district.</value>
+  </data>
+  <data name="DistrictService.ErrorDeletingDistrict" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the district.</value>
+  </data>
+  <data name="DistrictService.ErrorRetrievingDistrict" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the district.</value>
+  </data>
+  <data name="DistrictService.ErrorRetrievingDistricts" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de districts.</value>
+  </data>
+  <data name="DistrictService.ErrorUpdatingDistrict" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the district.</value>
+  </data>
+  <data name="DistrictService.GetAllDistrictsExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de districts: {0}</value>
+  </data>
+  <data name="DistrictService.GetDistrictByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the district: {0}</value>
+  </data>
+  <data name="DistrictService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="DistrictService.UpdateDistrictExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the district: {0}</value>
+  </data>
+  <data name="DocumentSerialTypeService.CreateTypeExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Document Série Type: {0}</value>
+  </data>
+  <data name="DocumentSerialTypeService.DeleteTypeExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Document Série Type: {0}</value>
+  </data>
+  <data name="DocumentSerialTypeService.DocumentSerialGenerated" xml:space="preserve">
+    <value>Document Serial Generated.</value>
+  </data>
+  <data name="DocumentSerialTypeService.DocumentSerialTypeNotFound" xml:space="preserve">
+    <value>Type de série de document non trouvé(e).</value>
+  </data>
+  <data name="DocumentSerialTypeService.DocumentSerialTypesRetrieved" xml:space="preserve">
+    <value>Document Série Types récupéré(e) avec succès.</value>
+  </data>
+  <data name="DocumentSerialTypeService.GenerateDocumentSerialExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="DocumentSerialTypeService.GetAllTypesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Document Série Types: {0}</value>
+  </data>
+  <data name="DocumentSerialTypeService.GetAvaibleDocumentSerialTypesExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="DocumentSerialTypeService.GetTypeByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Document Série Type: {0}</value>
+  </data>
+  <data name="DocumentSerialTypeService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="DocumentSerialTypeService.TypeCreated" xml:space="preserve">
+    <value>Type de série de document créé(e) avec succès.</value>
+  </data>
+  <data name="DocumentSerialTypeService.TypeDeleted" xml:space="preserve">
+    <value>Type de série de document supprimé(e) avec succès.</value>
+  </data>
+  <data name="DocumentSerialTypeService.TypeNotFound" xml:space="preserve">
+    <value>Type de série de document non trouvé(e).</value>
+  </data>
+  <data name="DocumentSerialTypeService.TypeRetrieved" xml:space="preserve">
+    <value>Type de série de document récupéré(e) avec succès.</value>
+  </data>
+  <data name="DocumentSerialTypeService.TypeUpdated" xml:space="preserve">
+    <value>Type de série de document mis(e) à jour avec succès.</value>
+  </data>
+  <data name="DocumentSerialTypeService.TypesRetrieved" xml:space="preserve">
+    <value>Document Série Types récupéré(e) avec succès.</value>
+  </data>
+  <data name="DocumentSerialTypeService.UpdateTypeExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Document Série Type: {0}</value>
+  </data>
+  <data name="EfUnitOfWork.TransactionAlreadyInProgress" xml:space="preserve">
+    <value>Zaten açık bir transaction var.</value>
+  </data>
+  <data name="EfUnitOfWork.TransactionNotInProgress" xml:space="preserve">
+    <value>Aktif bir transaction yok.</value>
+  </data>
+  <data name="FileUploadService.FileDeletedSuccessfully" xml:space="preserve">
+    <value>Fichier supprimé(e) avec succès.</value>
+  </data>
+  <data name="FileUploadService.FileDeletionError" xml:space="preserve">
+    <value>File deletion error.</value>
+  </data>
+  <data name="FileUploadService.FileDeletionExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the file: {0}</value>
+  </data>
+  <data name="FileUploadService.FileRequired" xml:space="preserve">
+    <value>File is required.</value>
+  </data>
+  <data name="FileUploadService.FileSizeExceeded" xml:space="preserve">
+    <value>File size cannot exceed {0} MB.</value>
+  </data>
+  <data name="FileUploadService.FileUploadError" xml:space="preserve">
+    <value>File upload error.</value>
+  </data>
+  <data name="FileUploadService.FileUploadExceptionMessage" xml:space="preserve">
+    <value>An error occurred while uploading the file: {0}</value>
+  </data>
+  <data name="FileUploadService.FileUploadedSuccessfully" xml:space="preserve">
+    <value>File uploaded successfully.</value>
+  </data>
+  <data name="FileUploadService.InvalidFileFormat" xml:space="preserve">
+    <value>Invalid file format. Allowed formats: {0}</value>
+  </data>
+  <data name="FileUploadService.InvalidFileUrl" xml:space="preserve">
+    <value>Invalid file URL. Expected format: {0}, Received: {1}</value>
+  </data>
+  <data name="FileUploadService.NoFileToDelete" xml:space="preserve">
+    <value>No file to delete.</value>
+  </data>
+  <data name="General.AccountInactive" xml:space="preserve">
+    <value>Votre compte n'est pas actif.</value>
+  </data>
+  <data name="General.BulkEmailQueueFailed" xml:space="preserve">
+    <value>Toplu e-postalar kuyruğa alınamadı.</value>
+  </data>
+  <data name="General.BulkEmailsQueuedSuccessfully" xml:space="preserve">
+    <value>{0} adet e-posta gönderim kuyruğuna alındı.</value>
+  </data>
+  <data name="General.CorsAllowedOriginsRequired" xml:space="preserve">
+    <value>Cors:AllowedOrigins ayarı boş bırakılamaz.</value>
+  </data>
+  <data name="General.DocumentMustBeDraftBeforePosting" xml:space="preserve">
+    <value>Le document {0} doit être à l'état Brouillon avant validation.</value>
+  </data>
+  <data name="General.EmailQueueFailed" xml:space="preserve">
+    <value>E-posta kuyruğa alınamadı.</value>
+  </data>
+  <data name="General.EmailQueuedSuccessfully" xml:space="preserve">
+    <value>E-posta gönderim kuyruğuna alındı.</value>
+  </data>
+  <data name="General.EmailScheduleFailed" xml:space="preserve">
+    <value>E-posta zamanlanamadı.</value>
+  </data>
+  <data name="General.EmailScheduledSuccessfully" xml:space="preserve">
+    <value>E-posta gönderimi zamanlandı.</value>
+  </data>
+  <data name="General.EmailSendFailed" xml:space="preserve">
+    <value>E-posta gönderilemedi.</value>
+  </data>
+  <data name="General.EmailSentSuccessfully" xml:space="preserve">
+    <value>E-posta başarıyla gönderildi.</value>
+  </data>
+  <data name="General.ErrorOccurred" xml:space="preserve">
+    <value>Bir hata oluştu.</value>
+  </data>
+  <data name="General.Forbidden" xml:space="preserve">
+    <value>Accès interdit.</value>
+  </data>
+  <data name="General.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="General.InvalidTokenMissingUserId" xml:space="preserve">
+    <value>Token geçersiz: kullanıcı kimliği eksik.</value>
+  </data>
+  <data name="General.InvalidTokenOrSessionClosed" xml:space="preserve">
+    <value>Token geçersiz veya oturum kapandı.</value>
+  </data>
+  <data name="General.JwtSecretRequired" xml:space="preserve">
+    <value>JwtSettings:SecretKey zorunludur.</value>
+  </data>
+  <data name="General.OperationSuccessful" xml:space="preserve">
+    <value>Opération réussie.</value>
+  </data>
+  <data name="General.RecordAlreadyExists" xml:space="preserve"><value>Cet enregistrement existe déjà.</value></data><data name="General.ScheduleTimeMustBeFuture" xml:space="preserve">
+    <value>Zamanlama tarihi gelecekte olmalıdır.</value>
+  </data>
+  <data name="General.SessionValidationError" xml:space="preserve">
+    <value>Oturum doğrulanırken hata oluştu: {0}</value>
+  </data>
+  <data name="General.Unauthorized" xml:space="preserve">
+    <value>Accès non autorisé.</value>
+  </data>
+  <data name="General.ValidationError" xml:space="preserve">
+    <value>Une erreur de validation s'est produite.</value>
+  </data>
+  <data name="Notification.DemandApproval.Message" xml:space="preserve">
+    <value>{0} numaralı talep onay beklemektedir.</value>
+  </data>
+  <data name="Notification.DemandApproval.Title" xml:space="preserve">
+    <value>Onay Bekleyen Talep</value>
+  </data>
+  <data name="Notification.DemandApproved.Message" xml:space="preserve">
+    <value>{0} numaralı talep onaylandı.</value>
+  </data>
+  <data name="Notification.DemandApproved.Title" xml:space="preserve">
+    <value>Talep Onaylandı</value>
+  </data>
+  <data name="Notification.OrderApproval.Message" xml:space="preserve">
+    <value>{0} numaralı sipariş onay beklemektedir.</value>
+  </data>
+  <data name="Notification.OrderApproval.Title" xml:space="preserve">
+    <value>Onay Bekleyen Sipariş</value>
+  </data>
+  <data name="Notification.OrderApproved.Message" xml:space="preserve">
+    <value>{0} numaralı sipariş onaylandı.</value>
+  </data>
+  <data name="Notification.OrderApproved.Title" xml:space="preserve">
+    <value>Sipariş Onaylandı</value>
+  </data>
+  <data name="Notification.QuotationApproval.Message" xml:space="preserve">
+    <value>{0} numaralı teklif onay beklemektedir.</value>
+  </data>
+  <data name="Notification.QuotationApproval.Title" xml:space="preserve">
+    <value>Onay Bekleyen Teklif</value>
+  </data>
+  <data name="Notification.QuotationApproved.Message" xml:space="preserve">
+    <value>{0} numaralı teklif onaylandı.</value>
+  </data>
+  <data name="Notification.QuotationApproved.Title" xml:space="preserve">
+    <value>Teklif Onaylandı</value>
+  </data>
+  <data name="NotificationService.AllNotificationsMarkedAsRead" xml:space="preserve">
+    <value>Tüm bildirimler okundu olarak işaretlendi.</value>
+  </data>
+  <data name="NotificationService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="NotificationService.NotificationCreated" xml:space="preserve">
+    <value>Bildirim oluşturuldu.</value>
+  </data>
+  <data name="NotificationService.NotificationDeleted" xml:space="preserve">
+    <value>Bildirim silindi.</value>
+  </data>
+  <data name="NotificationService.NotificationMarkedAsRead" xml:space="preserve">
+    <value>Bildirim okundu olarak işaretlendi.</value>
+  </data>
+  <data name="NotificationService.NotificationNotFound" xml:space="preserve">
+    <value>Bildirim bulunamadı.</value>
+  </data>
+  <data name="NotificationService.NotificationsRetrieved" xml:space="preserve">
+    <value>Bildirimler başarıyla getirildi.</value>
+  </data>
+  <data name="NotificationService.UnreadCountRetrieved" xml:space="preserve">
+    <value>Okunmamış bildirim sayısı getirildi.</value>
+  </data>
+  <data name="OperationSuccessful" xml:space="preserve">
+    <value>Opération réussie.</value>
+  </data>
+  <data name="OrderApprovalService.OrderApprovalCreated" xml:space="preserve">
+    <value>Devis approval créé(e) avec succès.</value>
+  </data>
+  <data name="OrderApprovalService.OrderApprovalDeleted" xml:space="preserve">
+    <value>Devis approval supprimé(e) avec succès.</value>
+  </data>
+  <data name="OrderApprovalService.OrderApprovalNotFound" xml:space="preserve">
+    <value>Devis approval non trouvé(e).</value>
+  </data>
+  <data name="OrderApprovalService.OrderApprovalRetrieved" xml:space="preserve">
+    <value>Devis approval récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderApprovalService.OrderApprovalUpdated" xml:space="preserve">
+    <value>Devis approval mis(e) à jour avec succès.</value>
+  </data>
+  <data name="OrderApprovalService.OrderApprovalsRetrieved" xml:space="preserve">
+    <value>Devis approvals récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderDocumentTypeService.OrderDocumentTypeCreated" xml:space="preserve">
+    <value>Devis document type créé(e) avec succès.</value>
+  </data>
+  <data name="OrderDocumentTypeService.OrderDocumentTypeDeleted" xml:space="preserve">
+    <value>Devis document type supprimé(e) avec succès.</value>
+  </data>
+  <data name="OrderDocumentTypeService.OrderDocumentTypeNotFound" xml:space="preserve">
+    <value>Devis document type non trouvé(e).</value>
+  </data>
+  <data name="OrderDocumentTypeService.OrderDocumentTypeRetrieved" xml:space="preserve">
+    <value>Devis document type récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderDocumentTypeService.OrderDocumentTypeUpdated" xml:space="preserve">
+    <value>Devis document type mis(e) à jour avec succès.</value>
+  </data>
+  <data name="OrderDocumentTypeService.OrderDocumentTypesRetrieved" xml:space="preserve">
+    <value>Devis document types récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderDocumentTypeService.OrderNumberGenerated" xml:space="preserve">
+    <value>Order number generated successfully.</value>
+  </data>
+  <data name="OrderExchangeRateService.CreateRateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Commande Exchange Rate: {0}</value>
+  </data>
+  <data name="OrderExchangeRateService.DeleteRateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Commande Exchange Rate: {0}</value>
+  </data>
+  <data name="OrderExchangeRateService.ExchangeRateNotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="OrderExchangeRateService.ExchangeRateUpdated" xml:space="preserve">
+    <value>Enregistrement mis à jour avec succès.</value>
+  </data>
+  <data name="OrderExchangeRateService.GetAllRatesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Commande Exchange Rates: {0}</value>
+  </data>
+  <data name="OrderExchangeRateService.GetRateByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Commande Exchange Rate: {0}</value>
+  </data>
+  <data name="OrderExchangeRateService.GetRatesByOrderIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderExchangeRateService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="OrderExchangeRateService.RateCreated" xml:space="preserve">
+    <value>Commande Exchange Rate créé(e) avec succès.</value>
+  </data>
+  <data name="OrderExchangeRateService.RateDeleted" xml:space="preserve">
+    <value>Commande Exchange Rate supprimé(e) avec succès.</value>
+  </data>
+  <data name="OrderExchangeRateService.RateNotFound" xml:space="preserve">
+    <value>Commande Exchange Rate non trouvé(e).</value>
+  </data>
+  <data name="OrderExchangeRateService.RateRetrieved" xml:space="preserve">
+    <value>Commande Exchange Rate récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderExchangeRateService.RateUpdated" xml:space="preserve">
+    <value>Commande Exchange Rate mis(e) à jour avec succès.</value>
+  </data>
+  <data name="OrderExchangeRateService.RatesRetrieved" xml:space="preserve">
+    <value>Commande Exchange Rates récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderExchangeRateService.UpdateExchangeRateInOrderExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="OrderExchangeRateService.UpdateRateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Commande Exchange Rate: {0}</value>
+  </data>
+  <data name="OrderLineApprovalService.OrderLineApprovalCreated" xml:space="preserve">
+    <value>Devis line approval créé(e) avec succès.</value>
+  </data>
+  <data name="OrderLineApprovalService.OrderLineApprovalDeleted" xml:space="preserve">
+    <value>Devis line approval supprimé(e) avec succès.</value>
+  </data>
+  <data name="OrderLineApprovalService.OrderLineApprovalNotFound" xml:space="preserve">
+    <value>Devis line approval non trouvé(e).</value>
+  </data>
+  <data name="OrderLineApprovalService.OrderLineApprovalRetrieved" xml:space="preserve">
+    <value>Devis line approval récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderLineApprovalService.OrderLineApprovalUpdated" xml:space="preserve">
+    <value>Devis line approval mis(e) à jour avec succès.</value>
+  </data>
+  <data name="OrderLineApprovalService.OrderLineApprovalsRetrieved" xml:space="preserve">
+    <value>Devis line approvals récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderLineService.CreateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Commande Line: {0}</value>
+  </data>
+  <data name="OrderLineService.DeleteExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Commande Line: {0}</value>
+  </data>
+  <data name="OrderLineService.ErrorCreatingOrderLine" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the quotation line.</value>
+  </data>
+  <data name="OrderLineService.ErrorDeletingOrderLine" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the quotation line.</value>
+  </data>
+  <data name="OrderLineService.ErrorRetrievingOrderLine" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the quotation line.</value>
+  </data>
+  <data name="OrderLineService.ErrorRetrievingOrderLines" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de quotation lines.</value>
+  </data>
+  <data name="OrderLineService.ErrorUpdatingOrderLine" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the quotation line.</value>
+  </data>
+  <data name="OrderLineService.GetAllExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Commande Lines: {0}</value>
+  </data>
+  <data name="OrderLineService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Commande Line: {0}</value>
+  </data>
+  <data name="OrderLineService.GetByOrderIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderLineService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="OrderLineService.OrderLineCreated" xml:space="preserve">
+    <value>Commande line créé(e) avec succès.</value>
+  </data>
+  <data name="OrderLineService.OrderLineDeleted" xml:space="preserve">
+    <value>Commande line supprimé(e) avec succès.</value>
+  </data>
+  <data name="OrderLineService.OrderLineNotDeleted" xml:space="preserve">
+    <value>L'enregistrement n'a pas pu être supprimé.</value>
+  </data>
+  <data name="OrderLineService.OrderLineNotFound" xml:space="preserve">
+    <value>Commande line non trouvé(e).</value>
+  </data>
+  <data name="OrderLineService.OrderLineRetrieved" xml:space="preserve">
+    <value>Commande line récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderLineService.OrderLineUpdated" xml:space="preserve">
+    <value>Commande line mis(e) à jour avec succès.</value>
+  </data>
+  <data name="OrderLineService.OrderLinesByOrderRetrieved" xml:space="preserve">
+    <value>Commande lines by quotation récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderLineService.OrderLinesCreated" xml:space="preserve">
+    <value>Enregistrement créé avec succès.</value>
+  </data>
+  <data name="OrderLineService.OrderLinesRetrieved" xml:space="preserve">
+    <value>Commande lines récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderLineService.OrderLinesUpdated" xml:space="preserve">
+    <value>Enregistrement mis à jour avec succès.</value>
+  </data>
+  <data name="OrderLineService.UpdateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Commande Line: {0}</value>
+  </data>
+  <data name="OrderNotFound" xml:space="preserve">
+    <value>Devis non trouvé(e).</value>
+  </data>
+  <data name="OrderService.ApprovalActionApproved" xml:space="preserve">
+    <value>Approval Action Approved.</value>
+  </data>
+  <data name="OrderService.ApprovalActionApprovedAndNextStepStarted" xml:space="preserve">
+    <value>Approval Action Approved And Next Step Started.</value>
+  </data>
+  <data name="OrderService.ApprovalActionNotFound" xml:space="preserve">
+    <value>Commande non trouvé(e).</value>
+  </data>
+  <data name="OrderService.ApprovalActionRejected" xml:space="preserve">
+    <value>Approval Action Rejected.</value>
+  </data>
+  <data name="OrderService.ApprovalFlowAlreadyExists" xml:space="preserve">
+    <value>Order already exists.</value>
+  </data>
+  <data name="OrderService.ApprovalFlowCompleted" xml:space="preserve">
+    <value>Approval Flow Completed.</value>
+  </data>
+  <data name="OrderService.ApprovalFlowNotFound" xml:space="preserve">
+    <value>Commande non trouvé(e).</value>
+  </data>
+  <data name="OrderService.ApprovalFlowReportExceptionMessage" xml:space="preserve">
+    <value>Onay akışı raporu getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="OrderService.ApprovalFlowReportRetrieved" xml:space="preserve">
+    <value>Onay akışı raporu başarıyla getirildi.</value>
+  </data>
+  <data name="OrderService.ApprovalFlowStarted" xml:space="preserve">
+    <value>Approval Flow Started.</value>
+  </data>
+  <data name="OrderService.ApprovalFlowStepsNotFound" xml:space="preserve">
+    <value>Commande non trouvé(e).</value>
+  </data>
+  <data name="OrderService.ApprovalRequestNotFound" xml:space="preserve">
+    <value>Commande non trouvé(e).</value>
+  </data>
+  <data name="OrderService.ApprovalRoleNotFound" xml:space="preserve">
+    <value>Commande non trouvé(e).</value>
+  </data>
+  <data name="OrderService.ApprovalUsersNotFound" xml:space="preserve">
+    <value>Commande non trouvé(e).</value>
+  </data>
+  <data name="OrderService.ApproveExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.CreateOrderBulkExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Commande: {0}</value>
+  </data>
+  <data name="OrderService.CreateOrderExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Commande: {0}</value>
+  </data>
+  <data name="OrderService.CreateRevisionExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="OrderService.CreateRevisionOfOrderExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Commande: {0}</value>
+  </data>
+  <data name="OrderService.DeleteOrderExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Commande: {0}</value>
+  </data>
+  <data name="OrderService.DocumentSerialTypeGenerationError" xml:space="preserve">
+    <value>Document Serial Type Generation Error.</value>
+  </data>
+  <data name="OrderService.GetAllOrdersExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Commande: {0}</value>
+  </data>
+  <data name="OrderService.GetOrderByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Commande: {0}</value>
+  </data>
+  <data name="OrderService.GetOrdersByPotentialCustomerExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.GetOrdersByRepresentativeExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.GetOrdersByStatusExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.GetPriceOfProductExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.GetPriceRuleOfOrderExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.GetWaitingApprovalsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="OrderService.OrderApproverUsersRetrieved" xml:space="preserve">
+    <value>Utilisateurs approbateurs de commandes récupérés avec succès.</value>
+  </data>
+  <data name="OrderService.OrderCreated" xml:space="preserve">
+    <value>Commande créé(e) avec succès.</value>
+  </data>
+  <data name="OrderService.OrderDeleted" xml:space="preserve">
+    <value>Commande supprimé(e) avec succès.</value>
+  </data>
+  <data name="OrderService.OrderExistsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.OrderNotFound" xml:space="preserve">
+    <value>Commande non trouvé(e).</value>
+  </data>
+  <data name="OrderService.OrderRetrieved" xml:space="preserve">
+    <value>Commande récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderService.OrderRevisionCreated" xml:space="preserve">
+    <value>Commande créé(e) avec succès.</value>
+  </data>
+  <data name="OrderService.OrderUpdated" xml:space="preserve">
+    <value>Commande mis(e) à jour avec succès.</value>
+  </data>
+  <data name="OrderService.OrdersByPotentialCustomerRetrieved" xml:space="preserve">
+    <value>Commande by potential customer récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderService.OrdersByRepresentativeRetrieved" xml:space="preserve">
+    <value>Commande by representative récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderService.OrdersByStatusRetrieved" xml:space="preserve">
+    <value>Commande by status récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderService.OrdersRetrieved" xml:space="preserve">
+    <value>Commande récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderService.PendingApprovalEmailSubject" xml:space="preserve">
+    <value>You Have a Record Pending Approval</value>
+  </data>
+  <data name="OrderService.PriceOfProductRetrieved" xml:space="preserve">
+    <value>Commande récupéré(e) avec succès.</value>
+  </data>
+  <data name="OrderService.PriceRuleNotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="OrderService.PriceRuleOfOrderRetrieved" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="OrderService.RejectExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.RevisionCreated" xml:space="preserve">
+    <value>Enregistrement créé avec succès.</value>
+  </data>
+  <data name="OrderService.StartApprovalFlowExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="OrderService.UpdateOrderExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Commande: {0}</value>
+  </data>
+  <data name="OrderService.UserNotFound" xml:space="preserve">
+    <value>Commande non trouvé(e).</value>
+  </data>
+  <data name="OrderService.WaitingApprovalsRetrieved" xml:space="preserve">
+    <value>Commande récupéré(e) avec succès.</value>
+  </data>
+  <data name="PaymentTypeService.CreatePaymentTypeExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Paiement Type: {0}</value>
+  </data>
+  <data name="PaymentTypeService.DeletePaymentTypeExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Paiement Type: {0}</value>
+  </data>
+  <data name="PaymentTypeService.GetAllPaymentTypesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Paiement Types: {0}</value>
+  </data>
+  <data name="PaymentTypeService.GetPaymentTypeByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Paiement Type: {0}</value>
+  </data>
+  <data name="PaymentTypeService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="PaymentTypeService.PaymentTypeCreated" xml:space="preserve">
+    <value>Paiement type créé(e) avec succès.</value>
+  </data>
+  <data name="PaymentTypeService.PaymentTypeDeleted" xml:space="preserve">
+    <value>Paiement type supprimé(e) avec succès.</value>
+  </data>
+  <data name="PaymentTypeService.PaymentTypeNotFound" xml:space="preserve">
+    <value>Paiement type non trouvé(e).</value>
+  </data>
+  <data name="PaymentTypeService.PaymentTypeRetrieved" xml:space="preserve">
+    <value>Paiement type récupéré(e) avec succès.</value>
+  </data>
+  <data name="PaymentTypeService.PaymentTypeUpdated" xml:space="preserve">
+    <value>Paiement type mis(e) à jour avec succès.</value>
+  </data>
+  <data name="PaymentTypeService.PaymentTypesRetrieved" xml:space="preserve">
+    <value>Paiement types récupéré(e) avec succès.</value>
+  </data>
+  <data name="PaymentTypeService.UpdatePaymentTypeExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Paiement Type: {0}</value>
+  </data>
+  <data name="PowerBIConfigurationService.AlreadyExists" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIConfigurationService.Created" xml:space="preserve">
+    <value>Enregistrement créé avec succès.</value>
+  </data>
+  <data name="PowerBIConfigurationService.Deleted" xml:space="preserve">
+    <value>Enregistrement supprimé avec succès.</value>
+  </data>
+  <data name="PowerBIConfigurationService.ExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIConfigurationService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur est survenue.</value>
+  </data>
+  <data name="PowerBIConfigurationService.NotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="PowerBIConfigurationService.Retrieved" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIConfigurationService.Updated" xml:space="preserve">
+    <value>Enregistrement mis à jour avec succès.</value>
+  </data>
+  <data name="PowerBIEmbedService.AccessDenied" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIEmbedService.ClientSecretMissing" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIEmbedService.ConfigurationMissing" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIEmbedService.DatasetRequired" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIEmbedService.EmbedConfigRetrieved" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIEmbedService.EmbedTokenFailed" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIEmbedService.ExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIEmbedService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur est survenue.</value>
+  </data>
+  <data name="PowerBIEmbedService.ReportInactive" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIEmbedService.ReportNotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="PowerBIEmbedService.TokenAcquisitionFailed" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIEmbedService.WorkspaceRequired" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.CreateExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.DeleteExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.GetAllExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur est survenue.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.ItemCreated" xml:space="preserve">
+    <value>Enregistrement créé avec succès.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.ItemDeleted" xml:space="preserve">
+    <value>Enregistrement supprimé avec succès.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.ItemNotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.ItemRetrieved" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.ItemUpdated" xml:space="preserve">
+    <value>Enregistrement mis à jour avec succès.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.ItemsRetrieved" xml:space="preserve">
+    <value>Enregistrements récupérés avec succès.</value>
+  </data>
+  <data name="PowerBIGroupReportDefinitionService.UpdateExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIGroupService.CreateExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIGroupService.DeleteExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIGroupService.GetAllExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIGroupService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIGroupService.GroupCreated" xml:space="preserve">
+    <value>Enregistrement créé avec succès.</value>
+  </data>
+  <data name="PowerBIGroupService.GroupDeleted" xml:space="preserve">
+    <value>Enregistrement supprimé avec succès.</value>
+  </data>
+  <data name="PowerBIGroupService.GroupNotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="PowerBIGroupService.GroupRetrieved" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIGroupService.GroupUpdated" xml:space="preserve">
+    <value>Enregistrement mis à jour avec succès.</value>
+  </data>
+  <data name="PowerBIGroupService.GroupsRetrieved" xml:space="preserve">
+    <value>Enregistrements récupérés avec succès.</value>
+  </data>
+  <data name="PowerBIGroupService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur est survenue.</value>
+  </data>
+  <data name="PowerBIGroupService.UpdateExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.CreateExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.DeleteExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.GetAllExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur est survenue.</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.ReportDefinitionCreated" xml:space="preserve">
+    <value>Enregistrement créé avec succès.</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.ReportDefinitionDeleted" xml:space="preserve">
+    <value>Enregistrement supprimé avec succès.</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.ReportDefinitionNotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.ReportDefinitionRetrieved" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.ReportDefinitionUpdated" xml:space="preserve">
+    <value>Enregistrement mis à jour avec succès.</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.ReportDefinitionsRetrieved" xml:space="preserve">
+    <value>Enregistrements récupérés avec succès.</value>
+  </data>
+  <data name="PowerBIReportDefinitionService.UpdateExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.CreateExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.DeleteExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.Duplicate" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.GetAllExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur est survenue.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.ItemCreated" xml:space="preserve">
+    <value>Enregistrement créé avec succès.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.ItemDeleted" xml:space="preserve">
+    <value>Enregistrement supprimé avec succès.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.ItemNotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.ItemRetrieved" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.ItemUpdated" xml:space="preserve">
+    <value>Enregistrement mis à jour avec succès.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.ItemsRetrieved" xml:space="preserve">
+    <value>Enregistrements récupérés avec succès.</value>
+  </data>
+  <data name="PowerBIReportRoleMappingService.UpdateExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIReportSyncService.ClientSecretMissing" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIReportSyncService.ConfigurationMissing" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIReportSyncService.ExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="PowerBIReportSyncService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur est survenue.</value>
+  </data>
+  <data name="PowerBIReportSyncService.SyncCompleted" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIReportSyncService.SyncFailed" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIReportSyncService.TokenAcquisitionFailed" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PowerBIReportSyncService.WorkspaceRequired" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="PricingRuleHeaderService.CreateHeaderExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Tarification Rule Header: {0}</value>
+  </data>
+  <data name="PricingRuleHeaderService.DeleteHeaderExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Tarification Rule Header: {0}</value>
+  </data>
+  <data name="PricingRuleHeaderService.GetAllHeadersExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Tarification Rule Headers: {0}</value>
+  </data>
+  <data name="PricingRuleHeaderService.GetHeaderByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Tarification Rule Header: {0}</value>
+  </data>
+  <data name="PricingRuleHeaderService.HeaderCreated" xml:space="preserve">
+    <value>Tarification Rule Header créé(e) avec succès.</value>
+  </data>
+  <data name="PricingRuleHeaderService.HeaderDeleted" xml:space="preserve">
+    <value>Tarification Rule Header supprimé(e) avec succès.</value>
+  </data>
+  <data name="PricingRuleHeaderService.HeaderNotFound" xml:space="preserve">
+    <value>Tarification Rule Header non trouvé(e).</value>
+  </data>
+  <data name="PricingRuleHeaderService.HeaderRetrieved" xml:space="preserve">
+    <value>Tarification Rule Header récupéré(e) avec succès.</value>
+  </data>
+  <data name="PricingRuleHeaderService.HeaderUpdated" xml:space="preserve">
+    <value>Tarification Rule Header mis(e) à jour avec succès.</value>
+  </data>
+  <data name="PricingRuleHeaderService.HeadersRetrieved" xml:space="preserve">
+    <value>Tarification Rule Headers récupéré(e) avec succès.</value>
+  </data>
+  <data name="PricingRuleHeaderService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="PricingRuleHeaderService.UpdateHeaderExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Tarification Rule Header: {0}</value>
+  </data>
+  <data name="PricingRuleLineService.CreateLineExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Tarification Rule Line: {0}</value>
+  </data>
+  <data name="PricingRuleLineService.DeleteLineExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Tarification Rule Line: {0}</value>
+  </data>
+  <data name="PricingRuleLineService.GetAllLinesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Tarification Rule Lines: {0}</value>
+  </data>
+  <data name="PricingRuleLineService.GetLineByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Tarification Rule Line: {0}</value>
+  </data>
+  <data name="PricingRuleLineService.GetLinesByHeaderIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="PricingRuleLineService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="PricingRuleLineService.LineCreated" xml:space="preserve">
+    <value>Tarification Rule Line créé(e) avec succès.</value>
+  </data>
+  <data name="PricingRuleLineService.LineDeleted" xml:space="preserve">
+    <value>Tarification Rule Line supprimé(e) avec succès.</value>
+  </data>
+  <data name="PricingRuleLineService.LineNotFound" xml:space="preserve">
+    <value>Tarification Rule Line non trouvé(e).</value>
+  </data>
+  <data name="PricingRuleLineService.LineRetrieved" xml:space="preserve">
+    <value>Tarification Rule Line récupéré(e) avec succès.</value>
+  </data>
+  <data name="PricingRuleLineService.LineUpdated" xml:space="preserve">
+    <value>Tarification Rule Line mis(e) à jour avec succès.</value>
+  </data>
+  <data name="PricingRuleLineService.LinesRetrieved" xml:space="preserve">
+    <value>Tarification Rule Lines récupéré(e) avec succès.</value>
+  </data>
+  <data name="PricingRuleLineService.UpdateLineExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Tarification Rule Line: {0}</value>
+  </data>
+  <data name="PricingRuleSalesmanService.CreateSalesmanExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Tarification Rule Salesman: {0}</value>
+  </data>
+  <data name="PricingRuleSalesmanService.DeleteSalesmanExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Tarification Rule Salesman: {0}</value>
+  </data>
+  <data name="PricingRuleSalesmanService.GetAllSalesmenExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Tarification Rule Salesmans: {0}</value>
+  </data>
+  <data name="PricingRuleSalesmanService.GetSalesmanByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Tarification Rule Salesman: {0}</value>
+  </data>
+  <data name="PricingRuleSalesmanService.GetSalesmenByHeaderIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="PricingRuleSalesmanService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="PricingRuleSalesmanService.SalesmanCreated" xml:space="preserve">
+    <value>Tarification Rule Salesman créé(e) avec succès.</value>
+  </data>
+  <data name="PricingRuleSalesmanService.SalesmanDeleted" xml:space="preserve">
+    <value>Tarification Rule Salesman supprimé(e) avec succès.</value>
+  </data>
+  <data name="PricingRuleSalesmanService.SalesmanNotFound" xml:space="preserve">
+    <value>Tarification Rule Salesman non trouvé(e).</value>
+  </data>
+  <data name="PricingRuleSalesmanService.SalesmanRetrieved" xml:space="preserve">
+    <value>Tarification Rule Salesman récupéré(e) avec succès.</value>
+  </data>
+  <data name="PricingRuleSalesmanService.SalesmanUpdated" xml:space="preserve">
+    <value>Tarification Rule Salesman mis(e) à jour avec succès.</value>
+  </data>
+  <data name="PricingRuleSalesmanService.SalesmenRetrieved" xml:space="preserve">
+    <value>Tarification Rule Salesman récupéré(e) avec succès.</value>
+  </data>
+  <data name="PricingRuleSalesmanService.UpdateSalesmanExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Tarification Rule Salesman: {0}</value>
+  </data>
+  <data name="ProductPricingGroupByService.CreateProductPricingGroupByExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Produit Tarification Groupe By: {0}</value>
+  </data>
+  <data name="ProductPricingGroupByService.DeleteProductPricingGroupByExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Produit Tarification Groupe By: {0}</value>
+  </data>
+  <data name="ProductPricingGroupByService.GetAllProductPricingGroupBysExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Produit Tarification Groupe Bys: {0}</value>
+  </data>
+  <data name="ProductPricingGroupByService.GetProductPricingGroupByByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Produit Tarification Groupe By: {0}</value>
+  </data>
+  <data name="ProductPricingGroupByService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ProductPricingGroupByService.ProductPricingGroupByCreated" xml:space="preserve">
+    <value>Produit pricing group by créé(e) avec succès.</value>
+  </data>
+  <data name="ProductPricingGroupByService.ProductPricingGroupByDeleted" xml:space="preserve">
+    <value>Produit pricing group by supprimé(e) avec succès.</value>
+  </data>
+  <data name="ProductPricingGroupByService.ProductPricingGroupByNotFound" xml:space="preserve">
+    <value>Produit pricing group by non trouvé(e).</value>
+  </data>
+  <data name="ProductPricingGroupByService.ProductPricingGroupByRetrieved" xml:space="preserve">
+    <value>Produit pricing group by récupéré(e) avec succès.</value>
+  </data>
+  <data name="ProductPricingGroupByService.ProductPricingGroupByUpdated" xml:space="preserve">
+    <value>Produit pricing group by mis(e) à jour avec succès.</value>
+  </data>
+  <data name="ProductPricingGroupByService.ProductPricingGroupBysRetrieved" xml:space="preserve">
+    <value>Produit pricing group bys récupéré(e) avec succès.</value>
+  </data>
+  <data name="ProductPricingGroupByService.UpdateProductPricingGroupByExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Produit Tarification Groupe By: {0}</value>
+  </data>
+  <data name="ProductPricingService.CreateProductPricingExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Produit Tarification: {0}</value>
+  </data>
+  <data name="ProductPricingService.DeleteProductPricingExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Produit Tarification: {0}</value>
+  </data>
+  <data name="ProductPricingService.GetAllProductPricingsExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Produit Pricings: {0}</value>
+  </data>
+  <data name="ProductPricingService.GetProductPricingByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Produit Tarification: {0}</value>
+  </data>
+  <data name="ProductPricingService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ProductPricingService.ProductPricingCreated" xml:space="preserve">
+    <value>Produit pricing créé(e) avec succès.</value>
+  </data>
+  <data name="ProductPricingService.ProductPricingDeleted" xml:space="preserve">
+    <value>Produit pricing supprimé(e) avec succès.</value>
+  </data>
+  <data name="ProductPricingService.ProductPricingNotFound" xml:space="preserve">
+    <value>Produit pricing non trouvé(e).</value>
+  </data>
+  <data name="ProductPricingService.ProductPricingRetrieved" xml:space="preserve">
+    <value>Produit pricing récupéré(e) avec succès.</value>
+  </data>
+  <data name="ProductPricingService.ProductPricingUpdated" xml:space="preserve">
+    <value>Produit pricing mis(e) à jour avec succès.</value>
+  </data>
+  <data name="ProductPricingService.ProductPricingsRetrieved" xml:space="preserve">
+    <value>Produit pricings récupéré(e) avec succès.</value>
+  </data>
+  <data name="ProductPricingService.UpdateProductPricingExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Produit Tarification: {0}</value>
+  </data>
+  <data name="QuotationApprovalService.QuotationApprovalCreated" xml:space="preserve">
+    <value>Devis approval créé(e) avec succès.</value>
+  </data>
+  <data name="QuotationApprovalService.QuotationApprovalDeleted" xml:space="preserve">
+    <value>Devis approval supprimé(e) avec succès.</value>
+  </data>
+  <data name="QuotationApprovalService.QuotationApprovalNotFound" xml:space="preserve">
+    <value>Devis approval non trouvé(e).</value>
+  </data>
+  <data name="QuotationApprovalService.QuotationApprovalRetrieved" xml:space="preserve">
+    <value>Devis approval récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationApprovalService.QuotationApprovalUpdated" xml:space="preserve">
+    <value>Devis approval mis(e) à jour avec succès.</value>
+  </data>
+  <data name="QuotationApprovalService.QuotationApprovalsRetrieved" xml:space="preserve">
+    <value>Devis approvals récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationDocumentTypeService.QuotationDocumentTypeCreated" xml:space="preserve">
+    <value>Devis document type créé(e) avec succès.</value>
+  </data>
+  <data name="QuotationDocumentTypeService.QuotationDocumentTypeDeleted" xml:space="preserve">
+    <value>Devis document type supprimé(e) avec succès.</value>
+  </data>
+  <data name="QuotationDocumentTypeService.QuotationDocumentTypeNotFound" xml:space="preserve">
+    <value>Devis document type non trouvé(e).</value>
+  </data>
+  <data name="QuotationDocumentTypeService.QuotationDocumentTypeRetrieved" xml:space="preserve">
+    <value>Devis document type récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationDocumentTypeService.QuotationDocumentTypeUpdated" xml:space="preserve">
+    <value>Devis document type mis(e) à jour avec succès.</value>
+  </data>
+  <data name="QuotationDocumentTypeService.QuotationDocumentTypesRetrieved" xml:space="preserve">
+    <value>Devis document types récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationDocumentTypeService.QuotationNumberGenerated" xml:space="preserve">
+    <value>Quotation number generated successfully.</value>
+  </data>
+  <data name="QuotationExchangeRateService.CreateRateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Devis Exchange Rate: {0}</value>
+  </data>
+  <data name="QuotationExchangeRateService.DeleteRateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Devis Exchange Rate: {0}</value>
+  </data>
+  <data name="QuotationExchangeRateService.ExchangeRateNotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="QuotationExchangeRateService.ExchangeRateUpdated" xml:space="preserve">
+    <value>Enregistrement mis à jour avec succès.</value>
+  </data>
+  <data name="QuotationExchangeRateService.GetAllRatesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Devis Exchange Rates: {0}</value>
+  </data>
+  <data name="QuotationExchangeRateService.GetRateByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Devis Exchange Rate: {0}</value>
+  </data>
+  <data name="QuotationExchangeRateService.GetRatesByQuotationIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationExchangeRateService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="QuotationExchangeRateService.RateCreated" xml:space="preserve">
+    <value>Devis Exchange Rate créé(e) avec succès.</value>
+  </data>
+  <data name="QuotationExchangeRateService.RateDeleted" xml:space="preserve">
+    <value>Devis Exchange Rate supprimé(e) avec succès.</value>
+  </data>
+  <data name="QuotationExchangeRateService.RateNotFound" xml:space="preserve">
+    <value>Devis Exchange Rate non trouvé(e).</value>
+  </data>
+  <data name="QuotationExchangeRateService.RateRetrieved" xml:space="preserve">
+    <value>Devis Exchange Rate récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationExchangeRateService.RateUpdated" xml:space="preserve">
+    <value>Devis Exchange Rate mis(e) à jour avec succès.</value>
+  </data>
+  <data name="QuotationExchangeRateService.RatesRetrieved" xml:space="preserve">
+    <value>Devis Exchange Rates récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationExchangeRateService.UpdateExchangeRateInQuotationExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="QuotationExchangeRateService.UpdateRateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Devis Exchange Rate: {0}</value>
+  </data>
+  <data name="QuotationLineApprovalService.QuotationLineApprovalCreated" xml:space="preserve">
+    <value>Devis line approval créé(e) avec succès.</value>
+  </data>
+  <data name="QuotationLineApprovalService.QuotationLineApprovalDeleted" xml:space="preserve">
+    <value>Devis line approval supprimé(e) avec succès.</value>
+  </data>
+  <data name="QuotationLineApprovalService.QuotationLineApprovalNotFound" xml:space="preserve">
+    <value>Devis line approval non trouvé(e).</value>
+  </data>
+  <data name="QuotationLineApprovalService.QuotationLineApprovalRetrieved" xml:space="preserve">
+    <value>Devis line approval récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationLineApprovalService.QuotationLineApprovalUpdated" xml:space="preserve">
+    <value>Devis line approval mis(e) à jour avec succès.</value>
+  </data>
+  <data name="QuotationLineApprovalService.QuotationLineApprovalsRetrieved" xml:space="preserve">
+    <value>Devis line approvals récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationLineService.CreateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Devis Line: {0}</value>
+  </data>
+  <data name="QuotationLineService.DeleteExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Devis Line: {0}</value>
+  </data>
+  <data name="QuotationLineService.ErrorCreatingQuotationLine" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the quotation line.</value>
+  </data>
+  <data name="QuotationLineService.ErrorDeletingQuotationLine" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the quotation line.</value>
+  </data>
+  <data name="QuotationLineService.ErrorRetrievingQuotationLine" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the quotation line.</value>
+  </data>
+  <data name="QuotationLineService.ErrorRetrievingQuotationLines" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de quotation lines.</value>
+  </data>
+  <data name="QuotationLineService.ErrorUpdatingQuotationLine" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the quotation line.</value>
+  </data>
+  <data name="QuotationLineService.GetAllExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Devis Lines: {0}</value>
+  </data>
+  <data name="QuotationLineService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Devis Line: {0}</value>
+  </data>
+  <data name="QuotationLineService.GetByQuotationIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationLineService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLineCreated" xml:space="preserve">
+    <value>Devis line créé(e) avec succès.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLineDeleted" xml:space="preserve">
+    <value>Devis line supprimé(e) avec succès.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLineNotDeleted" xml:space="preserve">
+    <value>L'enregistrement n'a pas pu être supprimé.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLineNotFound" xml:space="preserve">
+    <value>Devis line non trouvé(e).</value>
+  </data>
+  <data name="QuotationLineService.QuotationLineRetrieved" xml:space="preserve">
+    <value>Devis line récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLineUpdated" xml:space="preserve">
+    <value>Devis line mis(e) à jour avec succès.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLinesByQuotationRetrieved" xml:space="preserve">
+    <value>Devis lines by quotation récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLinesCreated" xml:space="preserve">
+    <value>Enregistrement créé avec succès.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLinesRetrieved" xml:space="preserve">
+    <value>Devis lines récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationLineService.QuotationLinesUpdated" xml:space="preserve">
+    <value>Enregistrement mis à jour avec succès.</value>
+  </data>
+  <data name="QuotationLineService.UpdateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Devis Line: {0}</value>
+  </data>
+  <data name="QuotationNotFound" xml:space="preserve">
+    <value>Devis non trouvé(e).</value>
+  </data>
+  <data name="QuotationService.ApprovalActionApproved" xml:space="preserve">
+    <value>Approval Action Approved.</value>
+  </data>
+  <data name="QuotationService.ApprovalActionApprovedAndNextStepStarted" xml:space="preserve">
+    <value>Approval Action Approved And Next Step Started.</value>
+  </data>
+  <data name="QuotationService.ApprovalActionNotFound" xml:space="preserve">
+    <value>Devis non trouvé(e).</value>
+  </data>
+  <data name="QuotationService.ApprovalActionRejected" xml:space="preserve">
+    <value>Approval Action Rejected.</value>
+  </data>
+  <data name="QuotationService.ApprovalFlowAlreadyExists" xml:space="preserve">
+    <value>Quotation already exists.</value>
+  </data>
+  <data name="QuotationService.ApprovalFlowCompleted" xml:space="preserve">
+    <value>Approval Flow Completed.</value>
+  </data>
+  <data name="QuotationService.ApprovalFlowNotFound" xml:space="preserve">
+    <value>Devis non trouvé(e).</value>
+  </data>
+  <data name="QuotationService.ApprovalFlowReportExceptionMessage" xml:space="preserve">
+    <value>Onay akışı raporu getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="QuotationService.ApprovalFlowReportRetrieved" xml:space="preserve">
+    <value>Onay akışı raporu başarıyla getirildi.</value>
+  </data>
+  <data name="QuotationService.ApprovalFlowStarted" xml:space="preserve">
+    <value>Approval Flow Started.</value>
+  </data>
+  <data name="QuotationService.ApprovalFlowStepsNotFound" xml:space="preserve">
+    <value>Devis non trouvé(e).</value>
+  </data>
+  <data name="QuotationService.ApprovalRequestNotFound" xml:space="preserve">
+    <value>Devis non trouvé(e).</value>
+  </data>
+  <data name="QuotationService.ApprovalRoleNotFound" xml:space="preserve">
+    <value>Devis non trouvé(e).</value>
+  </data>
+  <data name="QuotationService.ApprovalUsersNotFound" xml:space="preserve">
+    <value>Devis non trouvé(e).</value>
+  </data>
+  <data name="QuotationService.ApproveExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.ConvertToOrderExceptionMessage" xml:space="preserve">
+    <value>Teklif siparişe dönüştürülürken bir hata oluştu: {0}</value>
+  </data>
+  <data name="QuotationService.CreateQuotationBulkExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Devis: {0}</value>
+  </data>
+  <data name="QuotationService.CreateQuotationExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Devis: {0}</value>
+  </data>
+  <data name="QuotationService.CreateRevisionOfQuotationExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Devis: {0}</value>
+  </data>
+  <data name="QuotationService.DeleteQuotationExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Devis: {0}</value>
+  </data>
+  <data name="QuotationService.DocumentSerialTypeGenerationError" xml:space="preserve">
+    <value>Document Serial Type Generation Error.</value>
+  </data>
+  <data name="QuotationService.GetAllQuotationsExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Devis: {0}</value>
+  </data>
+  <data name="QuotationService.GetPriceOfProductExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.GetPriceRuleOfQuotationExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.GetQuotationByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Devis: {0}</value>
+  </data>
+  <data name="QuotationService.GetQuotationsByPotentialCustomerExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.GetQuotationsByRepresentativeExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.GetQuotationsByStatusExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.GetWaitingApprovalsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="QuotationService.OrderConvertedSuccessfully" xml:space="preserve">
+    <value>Sipariş başarıyla oluşturuldu.</value>
+  </data>
+  <data name="QuotationService.OrderDocumentSerialTypeNotFound" xml:space="preserve">
+    <value>Sipariş belge seri tipi bulunamadı.</value>
+  </data>
+  <data name="QuotationService.PendingApprovalEmailSubject" xml:space="preserve">
+    <value>You Have a Record Pending Approval</value>
+  </data>
+  <data name="QuotationService.PriceOfProductRetrieved" xml:space="preserve">
+    <value>Devis récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationService.PriceRuleNotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="QuotationService.PriceRuleOfQuotationRetrieved" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="QuotationService.QuotationApproverUsersRetrieved" xml:space="preserve">
+    <value>Utilisateurs approbateurs de devis récupérés avec succès.</value>
+  </data>
+  <data name="QuotationService.QuotationCreated" xml:space="preserve">
+    <value>Devis créé(e) avec succès.</value>
+  </data>
+  <data name="QuotationService.QuotationDeleted" xml:space="preserve">
+    <value>Devis supprimé(e) avec succès.</value>
+  </data>
+  <data name="QuotationService.QuotationExchangeRatesNotFound" xml:space="preserve">
+    <value>Teklif döviz kurları bulunamadı.</value>
+  </data>
+  <data name="QuotationService.QuotationExistsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.QuotationLinesNotFound" xml:space="preserve">
+    <value>Teklif satırları bulunamadı.</value>
+  </data>
+  <data name="QuotationService.QuotationNotFound" xml:space="preserve">
+    <value>Devis non trouvé(e).</value>
+  </data>
+  <data name="QuotationService.QuotationRetrieved" xml:space="preserve">
+    <value>Devis récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationService.QuotationRevisionCreated" xml:space="preserve">
+    <value>Devis créé(e) avec succès.</value>
+  </data>
+  <data name="QuotationService.QuotationUpdated" xml:space="preserve">
+    <value>Devis mis(e) à jour avec succès.</value>
+  </data>
+  <data name="QuotationService.QuotationsByPotentialCustomerRetrieved" xml:space="preserve">
+    <value>Devis by potential customer récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationService.QuotationsByRepresentativeRetrieved" xml:space="preserve">
+    <value>Devis by representative récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationService.QuotationsByStatusRetrieved" xml:space="preserve">
+    <value>Devis by status récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationService.QuotationsRetrieved" xml:space="preserve">
+    <value>Devis récupéré(e) avec succès.</value>
+  </data>
+  <data name="QuotationService.RejectExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.StartApprovalFlowExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="QuotationService.UpdateQuotationExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Devis: {0}</value>
+  </data>
+  <data name="QuotationService.UserNotFound" xml:space="preserve">
+    <value>Devis non trouvé(e).</value>
+  </data>
+  <data name="QuotationService.WaitingApprovalsRetrieved" xml:space="preserve">
+    <value>Devis récupéré(e) avec succès.</value>
+  </data>
+  <data name="ReportPreviewService.ChartRequiresAxisLegendAndValue" xml:space="preserve">
+    <value>Grafik için axis veya legend ve en az bir value gerekir.</value>
+  </data>
+  <data name="ReportPreviewService.DatasourceNotFoundOrEmpty" xml:space="preserve">
+    <value>Veri kaynağı bulunamadı veya sütun yok.</value>
+  </data>
+  <data name="ReportPreviewService.FieldNotInSchema" xml:space="preserve">
+    <value>'{0}' alanı veri kaynağı şemasında yok.</value>
+  </data>
+  <data name="ReportPreviewService.InvalidConfigJson" xml:space="preserve">
+    <value>Geçersiz ConfigJson.</value>
+  </data>
+  <data name="ReportPreviewService.InvalidConnection" xml:space="preserve">
+    <value>Geçersiz bağlantı.</value>
+  </data>
+  <data name="ReportPreviewService.PreviewFailed" xml:space="preserve">
+    <value>Önizleme çalıştırma başarısız.</value>
+  </data>
+  <data name="ReportPreviewService.PreviewOk" xml:space="preserve">
+    <value>Önizleme başarılı.</value>
+  </data>
+  <data name="ReportPreviewService.SchemaNotFound" xml:space="preserve">
+    <value>Şema bulunamadı.</value>
+  </data>
+  <data name="ReportService.CatalogError" xml:space="preserve">
+    <value>Katalog hatası.</value>
+  </data>
+  <data name="ReportService.DatasourceNotFoundOrEmpty" xml:space="preserve">
+    <value>Veri kaynağı bulunamadı veya boş.</value>
+  </data>
+  <data name="ReportService.ErrorCreatingReport" xml:space="preserve">
+    <value>Rapor oluşturulurken hata oluştu.</value>
+  </data>
+  <data name="ReportService.ErrorListingReports" xml:space="preserve">
+    <value>Raporlar listelenirken hata oluştu.</value>
+  </data>
+  <data name="ReportService.ErrorRetrievingReport" xml:space="preserve">
+    <value>Rapor getirilirken hata oluştu.</value>
+  </data>
+  <data name="ReportService.ErrorUpdatingReport" xml:space="preserve">
+    <value>Rapor güncellenirken hata oluştu.</value>
+  </data>
+  <data name="ReportService.InvalidConfigJson" xml:space="preserve">
+    <value>Geçersiz ConfigJson.</value>
+  </data>
+  <data name="ReportService.InvalidConfigJsonFormat" xml:space="preserve">
+    <value>Geçersiz ConfigJson formatı.</value>
+  </data>
+  <data name="ReportService.InvalidConnection" xml:space="preserve">
+    <value>Geçersiz bağlantı.</value>
+  </data>
+  <data name="ReportService.ReportConfigInvalidAggregation" xml:space="preserve">
+    <value>Geçersiz aggregation; none, sum, count, avg, min, max kullanılmalıdır.</value>
+  </data>
+  <data name="ReportService.ReportConfigInvalidChartType" xml:space="preserve">
+    <value>chartType değeri table, bar, line veya pie olmalıdır.</value>
+  </data>
+  <data name="ReportService.ReportConfigValueFieldRequired" xml:space="preserve">
+    <value>Her değer için bir alan belirtilmelidir.</value>
+  </data>
+  <data name="ReportService.ReportConfigValueRequired" xml:space="preserve">
+    <value>En az bir değer alanı zorunludur.</value>
+  </data>
+  <data name="ReportService.ReportCreated" xml:space="preserve">
+    <value>Rapor başarıyla oluşturuldu.</value>
+  </data>
+  <data name="ReportService.ReportDeleted" xml:space="preserve">
+    <value>Rapor başarıyla silindi.</value>
+  </data>
+  <data name="ReportService.ReportListRetrieved" xml:space="preserve">
+    <value>Rapor listesi başarıyla getirildi.</value>
+  </data>
+  <data name="ReportService.ReportNotFound" xml:space="preserve">
+    <value>Rapor bulunamadı.</value>
+  </data>
+  <data name="ReportService.ReportRetrieved" xml:space="preserve">
+    <value>Rapor başarıyla getirildi.</value>
+  </data>
+  <data name="ReportService.ReportUpdated" xml:space="preserve">
+    <value>Rapor başarıyla güncellendi.</value>
+  </data>
+  <data name="ReportTemplateController.AvailableFieldsRetrieved" xml:space="preserve">
+    <value>Kullanılabilir alanlar başarıyla getirildi.</value>
+  </data>
+  <data name="ReportTemplateService.ErrorCreatingReportTemplate" xml:space="preserve">
+    <value>Rapor şablonu oluşturulurken hata oluştu.</value>
+  </data>
+  <data name="ReportTemplateService.ErrorDeletingReportTemplate" xml:space="preserve">
+    <value>Rapor şablonu silinirken hata oluştu.</value>
+  </data>
+  <data name="ReportTemplateService.ErrorGeneratingPdf" xml:space="preserve">
+    <value>PDF oluşturulurken hata oluştu.</value>
+  </data>
+  <data name="ReportTemplateService.ErrorRetrievingReportTemplate" xml:space="preserve">
+    <value>Rapor şablonu getirilirken hata oluştu.</value>
+  </data>
+  <data name="ReportTemplateService.ErrorRetrievingReportTemplates" xml:space="preserve">
+    <value>Rapor şablonları getirilirken hata oluştu.</value>
+  </data>
+  <data name="ReportTemplateService.ErrorUpdatingReportTemplate" xml:space="preserve">
+    <value>Rapor şablonu güncellenirken hata oluştu.</value>
+  </data>
+  <data name="ReportTemplateService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="ReportTemplateService.InvalidTemplateData" xml:space="preserve">
+    <value>Geçersiz şablon verisi.</value>
+  </data>
+  <data name="ReportTemplateService.PdfGenerated" xml:space="preserve">
+    <value>PDF başarıyla oluşturuldu.</value>
+  </data>
+  <data name="ReportTemplateService.ReportTemplateCreated" xml:space="preserve">
+    <value>Rapor şablonu başarıyla oluşturuldu.</value>
+  </data>
+  <data name="ReportTemplateService.ReportTemplateDeleted" xml:space="preserve">
+    <value>Rapor şablonu başarıyla silindi.</value>
+  </data>
+  <data name="ReportTemplateService.ReportTemplateNotFound" xml:space="preserve">
+    <value>Rapor şablonu bulunamadı.</value>
+  </data>
+  <data name="ReportTemplateService.ReportTemplateNotFoundOrInactive" xml:space="preserve">
+    <value>Rapor şablonu bulunamadı veya pasif.</value>
+  </data>
+  <data name="ReportTemplateService.ReportTemplateRetrieved" xml:space="preserve">
+    <value>Rapor şablonu başarıyla getirildi.</value>
+  </data>
+  <data name="ReportTemplateService.ReportTemplateUpdated" xml:space="preserve">
+    <value>Rapor şablonu başarıyla güncellendi.</value>
+  </data>
+  <data name="ReportTemplateService.ReportTemplatesRetrieved" xml:space="preserve">
+    <value>Rapor şablonları başarıyla getirildi.</value>
+  </data>
+  <data name="ReportTemplateService.UnauthorizedGenerate" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="ReportingConnectionService.ConnectionKeyRequired" xml:space="preserve">
+    <value>Bağlantı anahtarı zorunludur.</value>
+  </data>
+  <data name="ReportingConnectionService.ConnectionStringNotFound" xml:space="preserve">
+    <value>'{0}' bağlantı dizesi bulunamadı.</value>
+  </data>
+  <data name="ReportingConnectionService.ConnectionsRetrieved" xml:space="preserve">
+    <value>Bağlantılar başarıyla getirildi.</value>
+  </data>
+  <data name="ReportingConnectionService.InvalidConnectionKey" xml:space="preserve">
+    <value>Geçersiz bağlantı anahtarı. CRM veya ERP kullanın.</value>
+  </data>
+  <data name="ReportingConnectionService.Ok" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="ShippingAddressService.CreateShippingAddressExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Shipping Adresse: {0}</value>
+  </data>
+  <data name="ShippingAddressService.DeleteShippingAddressExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Shipping Adresse: {0}</value>
+  </data>
+  <data name="ShippingAddressService.GetAllShippingAddressesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Shipping Addresss: {0}</value>
+  </data>
+  <data name="ShippingAddressService.GetShippingAddressByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Shipping Adresse: {0}</value>
+  </data>
+  <data name="ShippingAddressService.GetShippingAddressesByCustomerIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="ShippingAddressService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ShippingAddressService.ShippingAddressCreated" xml:space="preserve">
+    <value>Shipping address créé(e) avec succès.</value>
+  </data>
+  <data name="ShippingAddressService.ShippingAddressDeleted" xml:space="preserve">
+    <value>Shipping address supprimé(e) avec succès.</value>
+  </data>
+  <data name="ShippingAddressService.ShippingAddressNotFound" xml:space="preserve">
+    <value>Shipping address non trouvé(e).</value>
+  </data>
+  <data name="ShippingAddressService.ShippingAddressRetrieved" xml:space="preserve">
+    <value>Shipping address récupéré(e) avec succès.</value>
+  </data>
+  <data name="ShippingAddressService.ShippingAddressUpdated" xml:space="preserve">
+    <value>Shipping address mis(e) à jour avec succès.</value>
+  </data>
+  <data name="ShippingAddressService.ShippingAddressesByCustomerRetrieved" xml:space="preserve">
+    <value>Client shipping addresses récupéré(e) avec succès.</value>
+  </data>
+  <data name="ShippingAddressService.ShippingAddressesRetrieved" xml:space="preserve">
+    <value>Shipping addresses récupéré(e) avec succès.</value>
+  </data>
+  <data name="ShippingAddressService.UpdateShippingAddressExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Shipping Adresse: {0}</value>
+  </data>
+  <data name="TitleController.InvalidModelState" xml:space="preserve">
+    <value>État du modèle invalide.</value>
+  </data>
+  <data name="TitleController.InvalidModelStateExceptionMessage" xml:space="preserve">
+    <value>Erreur de validation du modèle: {0}</value>
+  </data>
+  <data name="TitleService.CreateTitleExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the title: {0}</value>
+  </data>
+  <data name="TitleService.DeleteTitleExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the title: {0}</value>
+  </data>
+  <data name="TitleService.ErrorCreatingTitle" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the title.</value>
+  </data>
+  <data name="TitleService.ErrorDeletingTitle" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the title.</value>
+  </data>
+  <data name="TitleService.ErrorRetrievingTitle" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the title.</value>
+  </data>
+  <data name="TitleService.ErrorRetrievingTitles" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de titles.</value>
+  </data>
+  <data name="TitleService.ErrorUpdatingTitle" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the title.</value>
+  </data>
+  <data name="TitleService.GetAllTitlesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de titles: {0}</value>
+  </data>
+  <data name="TitleService.GetTitleByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the title: {0}</value>
+  </data>
+  <data name="TitleService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="TitleService.TitleCreated" xml:space="preserve">
+    <value>Title créé(e) avec succès.</value>
+  </data>
+  <data name="TitleService.TitleDeleted" xml:space="preserve">
+    <value>Title supprimé(e) avec succès.</value>
+  </data>
+  <data name="TitleService.TitleNotFound" xml:space="preserve">
+    <value>Title non trouvé(e).</value>
+  </data>
+  <data name="TitleService.TitleRetrieved" xml:space="preserve">
+    <value>Title récupéré(e) avec succès.</value>
+  </data>
+  <data name="TitleService.TitleUpdated" xml:space="preserve">
+    <value>Title mis(e) à jour avec succès.</value>
+  </data>
+  <data name="TitleService.TitlesRetrieved" xml:space="preserve">
+    <value>Titles récupéré(e) avec succès.</value>
+  </data>
+  <data name="TitleService.UpdateTitleExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the title: {0}</value>
+  </data>
+  <data name="UserDiscountLimitRetrieved" xml:space="preserve">
+    <value>User discount limit retrieved.</value>
+  </data>
+  <data name="UserDiscountLimitService.AlreadyExists" xml:space="preserve">
+    <value>UserDiscountLimit for salesperson {0} and group {1} already exists.</value>
+  </data>
+  <data name="UserDiscountLimitService.CreateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la création de the Utilisateur Remise Limit: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.DeleteExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la suppression de the Utilisateur Remise Limit: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.ExistsBySalespersonAndGroupExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.ExistsExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.GetAllExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de Utilisateur Remise Limits: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.GetByErpProductGroupCodeExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de the Utilisateur Remise Limit: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.GetBySalespersonAndGroupExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.GetBySalespersonIdExceptionMessage" xml:space="preserve">
+    <value>An error occurred: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="UserDiscountLimitService.UpdateExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la mise à jour de the Utilisateur Remise Limit: {0}</value>
+  </data>
+  <data name="UserDiscountLimitService.UserDiscountLimitCreated" xml:space="preserve">
+    <value>Utilisateur discount limit créé(e) avec succès.</value>
+  </data>
+  <data name="UserDiscountLimitService.UserDiscountLimitDeleted" xml:space="preserve">
+    <value>Utilisateur discount limit supprimé(e) avec succès.</value>
+  </data>
+  <data name="UserDiscountLimitService.UserDiscountLimitExistsChecked" xml:space="preserve">
+    <value>User discount limit existence checked successfully.</value>
+  </data>
+  <data name="UserDiscountLimitService.UserDiscountLimitNotFound" xml:space="preserve">
+    <value>Utilisateur discount limit non trouvé(e).</value>
+  </data>
+  <data name="UserDiscountLimitService.UserDiscountLimitRetrieved" xml:space="preserve">
+    <value>Utilisateur discount limit récupéré(e) avec succès.</value>
+  </data>
+  <data name="UserDiscountLimitService.UserDiscountLimitUpdated" xml:space="preserve">
+    <value>Utilisateur discount limit mis(e) à jour avec succès.</value>
+  </data>
+  <data name="UserDiscountLimitService.UserDiscountLimitsRetrieved" xml:space="preserve">
+    <value>Utilisateur discount limits récupéré(e) avec succès.</value>
+  </data>
+  <data name="UserPowerBIGroupService.CreateExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="UserPowerBIGroupService.DeleteExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="UserPowerBIGroupService.GetAllExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="UserPowerBIGroupService.GetByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="UserPowerBIGroupService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur est survenue.</value>
+  </data>
+  <data name="UserPowerBIGroupService.ItemCreated" xml:space="preserve">
+    <value>Enregistrement créé avec succès.</value>
+  </data>
+  <data name="UserPowerBIGroupService.ItemDeleted" xml:space="preserve">
+    <value>Enregistrement supprimé avec succès.</value>
+  </data>
+  <data name="UserPowerBIGroupService.ItemNotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="UserPowerBIGroupService.ItemRetrieved" xml:space="preserve">
+    <value>Enregistrement récupéré avec succès.</value>
+  </data>
+  <data name="UserPowerBIGroupService.ItemUpdated" xml:space="preserve">
+    <value>Enregistrement mis à jour avec succès.</value>
+  </data>
+  <data name="UserPowerBIGroupService.ItemsRetrieved" xml:space="preserve">
+    <value>Enregistrements récupérés avec succès.</value>
+  </data>
+  <data name="UserPowerBIGroupService.UpdateExceptionMessage" xml:space="preserve">
+    <value>Une erreur s'est produite pendant l'opération : {0}</value>
+  </data>
+  <data name="Validation.AtLeastOneRecipientRequired" xml:space="preserve">
+    <value>En az bir alıcı zorunludur.</value>
+  </data>
+<data name="Validation.BodyRequired" xml:space="preserve">
+    <value>İçerik zorunludur.</value>
+  </data>
+  <data name="Validation.InvalidBccEmailAddress" xml:space="preserve">
+    <value>Geçersiz BCC e-posta adresi.</value>
+  </data>
+  <data name="Validation.InvalidCcEmailAddress" xml:space="preserve">
+    <value>Geçersiz CC e-posta adresi.</value>
+  </data>
+  <data name="Validation.InvalidEmailAddress" xml:space="preserve">
+    <value>Geçersiz e-posta adresi.</value>
+  </data>
+  <data name="Validation.SubjectRequired" xml:space="preserve">
+    <value>Konu zorunludur.</value>
+  </data>
+  <data name="Validation.ToEmailAddressRequired" xml:space="preserve">
+    <value>Alıcı e-posta adresi zorunludur.</value>
+  </data>
+  <data name="Validation.ToEmailAddressesRequired" xml:space="preserve">
+    <value>Alıcı e-posta adresleri zorunludur.</value>
+  </data>
+  <data name="ValidationError" xml:space="preserve">
+    <value>Validation error.</value>
+  </data>
+  </root>

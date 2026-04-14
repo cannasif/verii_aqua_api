@@ -1,0 +1,187 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root xmlns:ns1="urn:schemas-microsoft-com:xml-msdata" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:schema id="root">
+    <xs:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xs:element name="root" ns1:IsDataSet="true">
+      <xs:complexType>
+        <xs:choice maxOccurs="unbounded">
+          <xs:element name="metadata">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="assembly">
+            <xs:complexType>
+              <xs:attribute name="alias" type="xsd:string" />
+              <xs:attribute name="name" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="data">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+                <xs:element name="comment" type="xsd:string" minOccurs="0" ns1:Ordinal="2" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+              <xs:attribute name="type" type="xsd:string" />
+              <xs:attribute name="mimetype" type="xsd:string" />
+              <xs:attribute ref="xml:space" />
+            </xs:complexType>
+          </xs:element>
+          <xs:element name="resheader">
+            <xs:complexType>
+              <xs:sequence>
+                <xs:element name="value" type="xsd:string" minOccurs="0" ns1:Ordinal="1" />
+              </xs:sequence>
+              <xs:attribute name="name" use="required" type="xsd:string" />
+            </xs:complexType>
+          </xs:element>
+        </xs:choice>
+      </xs:complexType>
+    </xs:element>
+  </xs:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="MailController.SmtpSettingsMissing" xml:space="preserve">
+    <value>SMTP ayarları bulunamadı. Lütfen Mail Ayarları ekranından yapılandırın.</value>
+  </data>
+  <data name="MailController.SmtpSettingsIncomplete" xml:space="preserve">
+    <value>SMTP ayarları eksik. Host, Kullanıcı Adı, Şifre ve Gönderen E-posta alanlarını doldurun.</value>
+  </data>
+  <data name="MailController.TestMailSendFailed" xml:space="preserve">
+    <value>Test maili gönderilemedi. SMTP ayarlarınızı kontrol edin.</value>
+  </data>
+  <data name="MailController.SmtpSettingsCannotDecryptPassword" xml:space="preserve">
+    <value>SMTP şifresi çözümlenemedi (sunucu anahtarı değişmiş olabilir). Lütfen Mail Ayarları ekranından şifreyi tekrar kaydedin.</value>
+  </data>
+  <data name="ErpService.CariRecordsRetrieved" xml:space="preserve">
+    <value>Cari kayıtları başarıyla getirildi.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingCariRecords" xml:space="preserve">
+    <value>Cari kayıtları getirilirken bir hata oluştu.</value>
+  </data>
+  <data name="ErpService.DepoRecordsRetrieved" xml:space="preserve">
+    <value>Depo kayıtları başarıyla getirildi.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingDepoRecords" xml:space="preserve">
+    <value>Depo kayıtları getirilirken bir hata oluştu.</value>
+  </data>
+  <data name="ErpService.StokRecordsRetrieved" xml:space="preserve">
+    <value>Stok kayıtları başarıyla getirildi.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingStokRecords" xml:space="preserve">
+    <value>Stok kayıtları getirilirken bir hata oluştu.</value>
+  </data>
+  <data name="ErpService.ProjeRecordsRetrieved" xml:space="preserve">
+    <value>Proje kayıtları başarıyla getirildi.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingProjeRecords" xml:space="preserve">
+    <value>Proje kayıtları getirilirken bir hata oluştu.</value>
+  </data>
+  <data name="ErpService.OnHandQuantityRetrieved" xml:space="preserve">
+    <value>Eldeki miktar kayıtları başarıyla getirildi.</value>
+  </data>
+  <data name="ErpService.ErrorRetrievingOnHandQuantityRecords" xml:space="preserve">
+    <value>Eldeki miktar kayıtları getirilirken bir hata oluştu.</value>
+  </data>
+  <data name="ErpService.ProductPricingRetrieved" xml:space="preserve">
+    <value>Ürün fiyatlandırması başarıyla getirildi.</value>
+  </data>
+  <data name="ErpService.ErpConnectionSuccessful" xml:space="preserve">
+    <value>ERP bağlantısı başarılı.</value>
+  </data>
+  <data name="ErpService.ErpConnectionFailed" xml:space="preserve">
+    <value>ERP bağlantısı başarısız.</value>
+  </data>
+  <data name="ErpService.BranchCodeRetrievalError" xml:space="preserve">
+    <value>Branch Code Retrieval Error.</value>
+  </data>
+  <data name="ErpService.BranchCodeRetrievalErrorMessage" xml:space="preserve">
+    <value>Branch Code Retrieval Error Message.</value>
+  </data>
+  <data name="ErpService.BranchCodeRetrieved" xml:space="preserve">
+    <value>Erp başarıyla getirildi.</value>
+  </data>
+  <data name="ErpService.ExchangeRateRecordsRetrieved" xml:space="preserve">
+    <value>Erpler başarıyla getirildi.</value>
+  </data>
+  <data name="ErpService.GetAllErpShippingAddressExceptionMessage" xml:space="preserve">
+    <value>Erpler getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="ErpService.GetAllExchangeRateExceptionMessage" xml:space="preserve">
+    <value>Erpler getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="ErpService.GetAllStokExceptionMessage" xml:space="preserve">
+    <value>Erpler getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="ErpService.GetAllStokGroupExceptionMessage" xml:space="preserve">
+    <value>Erpler getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="ErpService.GetProjectCodesExceptionMessage" xml:space="preserve">
+    <value>Proje kodları getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="ErpService.InternalServerError" xml:space="preserve">
+    <value>Sunucu hatası oluştu.</value>
+  </data>
+  <data name="ErpService.StokGroupRecordsRetrieved" xml:space="preserve">
+    <value>Erpler başarıyla getirildi.</value>
+  </data>
+  <data name="ErpService.GetAllCariExceptionMessage" xml:space="preserve">
+    <value>Cari kayıtları getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="ErpService.GetProductPricingExceptionMessage" xml:space="preserve">
+    <value>Ürün fiyatlandırması getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="ErpService.HealthCheckExceptionMessage" xml:space="preserve">
+    <value>Sağlık kontrolü sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="ErpService.BranchesRetrievedSuccessfully" xml:space="preserve">
+    <value>Şube kayıtları başarıyla getirildi.</value>
+  </data>
+  <data name="ErpService.BranchesRetrievalError" xml:space="preserve">
+    <value>Şube kayıtları getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="SmtpSettingsService.GetExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="SmtpSettingsService.InternalServerError" xml:space="preserve">
+    <value>Sunucu tarafında bir hata oluştu.</value>
+  </data>
+  <data name="SmtpSettingsService.SmtpSettingsCreated" xml:space="preserve">
+    <value>SMTP ayarları başarıyla oluşturuldu.</value>
+  </data>
+  <data name="SmtpSettingsService.SmtpSettingsRetrieved" xml:space="preserve">
+    <value>SMTP ayarları başarıyla getirildi.</value>
+  </data>
+  <data name="SmtpSettingsService.SmtpSettingsRetrievedDefault" xml:space="preserve">
+    <value>SMTP ayarları bulunamadı, varsayılan değerler getirildi.</value>
+  </data>
+  <data name="SmtpSettingsService.SmtpSettingsUpdated" xml:space="preserve">
+    <value>SMTP ayarları başarıyla güncellendi.</value>
+  </data>
+  <data name="SmtpSettingsService.UpdateExceptionMessage" xml:space="preserve">
+    <value>İşlem sırasında bir hata oluştu: {0}</value>
+  </data>
+  <data name="MailController.SmtpTestMailSubject" xml:space="preserve">
+    <value>SMTP Test E-postası</value>
+  </data>
+  <data name="MailController.SmtpTestMailBody" xml:space="preserve">
+    <value>SMTP test e-postası {0} tarihinde gönderildi.</value>
+  </data>
+</root>
