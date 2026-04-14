@@ -1,4 +1,4 @@
-using aqua_api.Helpers;
+using aqua_api.Shared.Common.Helpers;
 using Xunit;
 
 namespace aqua_api.Tests;

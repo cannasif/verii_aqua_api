@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 
@@ -11,9 +12,11 @@ using aqua_api.Shared.Infrastructure.Persistence.Data;
 namespace aqua_api.Migrations
 {
     [DbContext(typeof(AquaDbContext))]
-    partial class AquaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260414131238_AllowProjectMerge_RequireFullTransfer_AppSettings")]
+    partial class AllowProjectMerge_RequireFullTransfer_AppSettings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1386,207 +1389,6 @@ namespace aqua_api.Migrations
                         {
                             t.HasCheckConstraint("CK_RII_ProjectCage_AssignRelease", "[ReleasedDate] IS NULL OR [ReleasedDate] >= [AssignedDate]");
                         });
-                });
-
-            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ProjectMerge", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<long?>("CreatedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<long?>("DeletedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("DeletedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("MergeDate")
-                        .HasColumnType("date");
-
-                    b.Property<byte>("SourceProjectStateAfterMerge")
-                        .HasColumnType("tinyint");
-
-                    b.Property<string>("TargetProjectCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<long>("TargetProjectId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("TargetProjectName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<long?>("UpdatedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("UpdatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedBy");
-
-                    b.HasIndex("DeletedBy");
-
-                    b.HasIndex("TargetProjectId");
-
-                    b.HasIndex("UpdatedBy");
-
-                    b.ToTable("RII_ProjectMerge", (string)null);
-                });
-
-            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ProjectMergeCage", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("CageCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<long>("CageId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("CageName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<long?>("CreatedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<long?>("DeletedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("DeletedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<long>("ProjectCageId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("ProjectMergeId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("SourceProjectId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long?>("UpdatedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("UpdatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CageId");
-
-                    b.HasIndex("CreatedBy");
-
-                    b.HasIndex("DeletedBy");
-
-                    b.HasIndex("ProjectCageId");
-
-                    b.HasIndex("ProjectMergeId");
-
-                    b.HasIndex("SourceProjectId");
-
-                    b.HasIndex("UpdatedBy");
-
-                    b.ToTable("RII_ProjectMergeCage", (string)null);
-                });
-
-            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ProjectMergeSource", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<long?>("CreatedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<long?>("DeletedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("DeletedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<long>("ProjectMergeId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("SourceProjectCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<long>("SourceProjectId")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("SourceProjectName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<long?>("UpdatedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("UpdatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CreatedBy");
-
-                    b.HasIndex("DeletedBy");
-
-                    b.HasIndex("ProjectMergeId");
-
-                    b.HasIndex("SourceProjectId");
-
-                    b.HasIndex("UpdatedBy");
-
-                    b.ToTable("RII_ProjectMergeSource", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.Shipment", b =>
@@ -5104,134 +4906,6 @@ namespace aqua_api.Migrations
                     b.Navigation("UpdatedByUser");
                 });
 
-            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ProjectMerge", b =>
-                {
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "DeletedByUser")
-                        .WithMany()
-                        .HasForeignKey("DeletedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.Project", "TargetProject")
-                        .WithMany()
-                        .HasForeignKey("TargetProjectId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("DeletedByUser");
-
-                    b.Navigation("TargetProject");
-
-                    b.Navigation("UpdatedByUser");
-                });
-
-            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ProjectMergeCage", b =>
-                {
-                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.Cage", "Cage")
-                        .WithMany()
-                        .HasForeignKey("CageId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "DeletedByUser")
-                        .WithMany()
-                        .HasForeignKey("DeletedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.ProjectCage", "ProjectCage")
-                        .WithMany()
-                        .HasForeignKey("ProjectCageId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.ProjectMerge", "ProjectMerge")
-                        .WithMany("Cages")
-                        .HasForeignKey("ProjectMergeId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.Project", "SourceProject")
-                        .WithMany()
-                        .HasForeignKey("SourceProjectId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.Navigation("Cage");
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("DeletedByUser");
-
-                    b.Navigation("ProjectCage");
-
-                    b.Navigation("ProjectMerge");
-
-                    b.Navigation("SourceProject");
-
-                    b.Navigation("UpdatedByUser");
-                });
-
-            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ProjectMergeSource", b =>
-                {
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "DeletedByUser")
-                        .WithMany()
-                        .HasForeignKey("DeletedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.ProjectMerge", "ProjectMerge")
-                        .WithMany("SourceProjects")
-                        .HasForeignKey("ProjectMergeId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.Project", "SourceProject")
-                        .WithMany()
-                        .HasForeignKey("SourceProjectId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("DeletedByUser");
-
-                    b.Navigation("ProjectMerge");
-
-                    b.Navigation("SourceProject");
-
-                    b.Navigation("UpdatedByUser");
-                });
-
             modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.Shipment", b =>
                 {
                     b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
@@ -6178,13 +5852,6 @@ namespace aqua_api.Migrations
             modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ProjectCage", b =>
                 {
                     b.Navigation("BatchCageBalances");
-                });
-
-            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ProjectMerge", b =>
-                {
-                    b.Navigation("Cages");
-
-                    b.Navigation("SourceProjects");
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.Shipment", b =>

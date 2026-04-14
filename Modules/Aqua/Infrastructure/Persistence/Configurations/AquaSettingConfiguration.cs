@@ -18,6 +18,14 @@ namespace aqua_api.Modules.Aqua.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasDefaultValue(0);
 
+            builder.Property(x => x.RequireFullTransfer)
+                .IsRequired()
+                .HasDefaultValue(true);
+
+            builder.Property(x => x.AllowProjectMerge)
+                .IsRequired()
+                .HasDefaultValue(false);
+
             builder.HasQueryFilter(x => !x.IsDeleted);
         }
     }

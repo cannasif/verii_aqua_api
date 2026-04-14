@@ -37,4 +37,10 @@ namespace aqua_api.Modules.Aqua.Domain.Enums
         Planned = 1,
         Auto = 2
     }
+
+    public enum ProjectMergeSourceState : byte
+    {
+        Passive = 0,
+        Archived = 1
+    }
 }

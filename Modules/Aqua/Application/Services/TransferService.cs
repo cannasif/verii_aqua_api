@@ -192,6 +192,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 if (!transfer.Lines.Any(x => !x.IsDeleted))
                     throw new InvalidOperationException(_localizationService.GetLocalizedString("TransferService.MustContainLines"));
 
+                await EnsureTransferProjectCagesAsync(transfer);
                 await EnsureTransferSettingsAsync(transfer);
 
                 var sourceProjectCageIds = new HashSet<long>();
@@ -307,11 +308,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 .OrderBy(x => x.Id)
                 .FirstOrDefaultAsync();
 
+            var requireFullTransfer = settings?.RequireFullTransfer ?? true;
             var mode = settings?.PartialTransferOccupiedCageMode ?? 0;
-            if (mode == 2)
-            {
-                return;
-            }
 
             var activeLines = transfer.Lines.Where(x => !x.IsDeleted).ToList();
             var sourceGroups = activeLines
@@ -338,6 +336,16 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     continue;
                 }
 
+                if (requireFullTransfer)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("TransferService.FullTransferRequired"));
+                }
+
+                if (mode == 2)
+                {
+                    continue;
+                }
+
                 foreach (var line in group)
                 {
                     var targetLiveBalances = await _unitOfWork.Db.BatchCageBalances
@@ -352,14 +360,58 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
                     if (mode == 0)
                     {
-                        throw new InvalidOperationException("Dolu kafese kismi transfer yapilamaz.");
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("TransferService.PartialTransferToOccupiedCageNotAllowed"));
                     }
 
                     var onlySameBatchExists = targetLiveBalances.All(x => x.FishBatchId == line.FishBatchId);
                     if (!onlySameBatchExists)
                     {
-                        throw new InvalidOperationException("Dolu kafese kismi transfer yalnizca ayni batch icin yapilabilir.");
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("TransferService.PartialTransferToOccupiedCageOnlySameBatchAllowed"));
                     }
+                }
+            }
+        }
+
+        private async Task EnsureTransferProjectCagesAsync(Transfer transfer)
+        {
+            var activeLines = transfer.Lines.Where(x => !x.IsDeleted).ToList();
+            var sourceProjectCageIds = activeLines.Select(x => x.FromProjectCageId).Distinct().ToList();
+            var targetProjectCageIds = activeLines.Select(x => x.ToProjectCageId).Distinct().ToList();
+
+            var projectCages = await _unitOfWork.Db.ProjectCages
+                .AsNoTracking()
+                .Where(x =>
+                    (sourceProjectCageIds.Contains(x.Id) || targetProjectCageIds.Contains(x.Id)) &&
+                    !x.IsDeleted)
+                .ToListAsync();
+
+            var projectCageById = projectCages.ToDictionary(x => x.Id);
+
+            foreach (var line in activeLines)
+            {
+                if (!projectCageById.TryGetValue(line.FromProjectCageId, out var sourceProjectCage))
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("TransferService.SourceProjectCageNotFound"));
+                }
+
+                if (sourceProjectCage.ReleasedDate != null)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("TransferService.SourceProjectCageInactive"));
+                }
+
+                if (sourceProjectCage.ProjectId != transfer.ProjectId)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("TransferService.SourceProjectCageMustBelongToTransferProject"));
+                }
+
+                if (!projectCageById.TryGetValue(line.ToProjectCageId, out var targetProjectCage))
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("TransferService.TargetProjectCageNotFound"));
+                }
+
+                if (targetProjectCage.ReleasedDate != null)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("TransferService.TargetProjectCageInactive"));
                 }
             }
         }

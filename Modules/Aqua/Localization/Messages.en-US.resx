@@ -175,6 +175,15 @@
   <data name="TransferService.InternalServerError" xml:space="preserve">
     <value>An internal server error occurred.</value>
   </data>
+  <data name="TransferService.FullTransferRequired" xml:space="preserve">
+    <value>No remainder can be left during transfer. All fish must be moved.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageNotAllowed" xml:space="preserve">
+    <value>Partial transfer to an occupied cage is not allowed.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageOnlySameBatchAllowed" xml:space="preserve">
+    <value>Partial transfer to an occupied cage is allowed only for the same batch.</value>
+  </data>
   <data name="NetOperationTypeService.OperationSuccessful" xml:space="preserve">
     <value>Operation successful.</value>
   </data>
@@ -413,6 +422,48 @@
     <value>Fish batch not found for the weighing line.</value>
   </data>
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
-    <value>Besleme satırı kaydedilirken hata oluştu.</value>
+    <value>An error occurred while saving the feeding line.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageNotFound" xml:space="preserve">
+    <value>Source project cage not found.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageInactive" xml:space="preserve">
+    <value>Source project cage is not active.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageMustBelongToTransferProject" xml:space="preserve">
+    <value>Source project cage must belong to the transfer project.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageNotFound" xml:space="preserve">
+    <value>Target project cage not found.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageInactive" xml:space="preserve">
+    <value>Target project cage is not active.</value>
+  </data>
+  <data name="ProjectMergeService.OperationSuccessful" xml:space="preserve">
+    <value>Operation successful.</value>
+  </data>
+  <data name="ProjectMergeService.NotFound" xml:space="preserve">
+    <value>Project merge record not found.</value>
+  </data>
+  <data name="ProjectMergeService.InternalServerError" xml:space="preserve">
+    <value>An internal server error occurred.</value>
+  </data>
+  <data name="ProjectMergeService.MergeDisabled" xml:space="preserve">
+    <value>Project merge is disabled in settings.</value>
+  </data>
+  <data name="ProjectMergeService.TargetProjectRequired" xml:space="preserve">
+    <value>Target project selection is required.</value>
+  </data>
+  <data name="ProjectMergeService.SourceProjectsRequired" xml:space="preserve">
+    <value>At least one source project must be selected.</value>
+  </data>
+  <data name="ProjectMergeService.TargetProjectCannotBeSource" xml:space="preserve">
+    <value>The target project cannot also be a source project.</value>
+  </data>
+  <data name="ProjectMergeService.TargetProjectNotFound" xml:space="preserve">
+    <value>Target project not found.</value>
+  </data>
+  <data name="ProjectMergeService.SourceProjectNotFound" xml:space="preserve">
+    <value>One of the source projects could not be found.</value>
   </data>
 </root>

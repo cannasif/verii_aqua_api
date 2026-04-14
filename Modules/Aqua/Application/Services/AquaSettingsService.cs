@@ -73,6 +73,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
             entity = new AquaSetting
             {
+                RequireFullTransfer = true,
+                AllowProjectMerge = false,
                 PartialTransferOccupiedCageMode = 0,
                 CreatedDate = DateTimeProvider.Now,
                 UpdatedDate = DateTimeProvider.Now,

@@ -175,6 +175,15 @@
   <data name="TransferService.InternalServerError" xml:space="preserve">
     <value>Dahili sunucu hatası oluştu.</value>
   </data>
+  <data name="TransferService.FullTransferRequired" xml:space="preserve">
+    <value>Transfer işlemlerinde kalan miktar bırakılamaz. Tüm balıklar taşınmalıdır.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageNotAllowed" xml:space="preserve">
+    <value>Dolu kafese kısmi transfer yapılamaz.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageOnlySameBatchAllowed" xml:space="preserve">
+    <value>Dolu kafese kısmi transfer yalnızca aynı batch için yapılabilir.</value>
+  </data>
   <data name="NetOperationTypeService.OperationSuccessful" xml:space="preserve">
     <value>İşlem başarılı.</value>
   </data>
@@ -329,13 +338,13 @@
     <value>Miktar 0'dan büyük olmalıdır.</value>
   </data>
   <data name="FeedingLineService.HeaderNotFoundRetryWithProject" xml:space="preserve">
-    <value>Besleme başlığı bulunamadı. Lütfen proje seçerek tekrar deneyin.</value>
+    <value>Yemleme başlığı bulunamadı. Lütfen proje seçerek tekrar deneyin.</value>
   </data>
   <data name="FeedingLineService.PositiveValuesRequired" xml:space="preserve">
-    <value>Besleme satırında miktar, birim gram ve toplam gram 0'dan büyük olmalıdır.</value>
+    <value>Yemleme satırında miktar, birim gram ve toplam gram 0'dan büyük olmalıdır.</value>
   </data>
   <data name="FeedingLineService.HeaderCreateRetryForToday" xml:space="preserve">
-    <value>Besleme başlığı bulunamadı. Bugün için proje bazlı yeni başlık oluşturmayı tekrar deneyin.</value>
+    <value>Yemleme başlığı bulunamadı. Bugün için proje bazlı yeni başlık oluşturmayı tekrar deneyin.</value>
   </data>
   <data name="FeedingLineService.InvalidStockSelection" xml:space="preserve">
     <value>Geçersiz stok seçtiniz.</value>
@@ -413,6 +422,48 @@
     <value>Tartım satırı için balık batch kaydı bulunamadı.</value>
   </data>
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
-    <value>Besleme satırı kaydedilirken hata oluştu.</value>
+    <value>Yemleme satırı kaydedilirken hata oluştu.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageNotFound" xml:space="preserve">
+    <value>Kaynak proje kafesi bulunamadı.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageInactive" xml:space="preserve">
+    <value>Kaynak proje kafesi aktif değil.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageMustBelongToTransferProject" xml:space="preserve">
+    <value>Kaynak proje kafesi transfer başlığındaki projeye ait olmalıdır.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageNotFound" xml:space="preserve">
+    <value>Hedef proje kafesi bulunamadı.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageInactive" xml:space="preserve">
+    <value>Hedef proje kafesi aktif değil.</value>
+  </data>
+  <data name="ProjectMergeService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="ProjectMergeService.NotFound" xml:space="preserve">
+    <value>Proje birleştirme kaydı bulunamadı.</value>
+  </data>
+  <data name="ProjectMergeService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="ProjectMergeService.MergeDisabled" xml:space="preserve">
+    <value>Proje birleştirme ayarlardan kapalıdır.</value>
+  </data>
+  <data name="ProjectMergeService.TargetProjectRequired" xml:space="preserve">
+    <value>Hedef proje seçimi zorunludur.</value>
+  </data>
+  <data name="ProjectMergeService.SourceProjectsRequired" xml:space="preserve">
+    <value>En az bir kaynak proje seçilmelidir.</value>
+  </data>
+  <data name="ProjectMergeService.TargetProjectCannotBeSource" xml:space="preserve">
+    <value>Hedef proje kaynak projeler arasında yer alamaz.</value>
+  </data>
+  <data name="ProjectMergeService.TargetProjectNotFound" xml:space="preserve">
+    <value>Hedef proje bulunamadı.</value>
+  </data>
+  <data name="ProjectMergeService.SourceProjectNotFound" xml:space="preserve">
+    <value>Kaynak projelerden biri bulunamadı.</value>
   </data>
 </root>
