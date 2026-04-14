@@ -23,6 +23,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
             {
                 var entity = await _unitOfWork.WeatherSeverities
                     .Query()
+                    .Include(x => x.WeatherType)
                     .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
@@ -55,6 +56,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 var query = _unitOfWork.WeatherSeverities
                     .Query()
                     .Where(x => !x.IsDeleted)
+                    .Include(x => x.WeatherType)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(WeatherSeverity.Id) : request.SortBy;
@@ -93,6 +95,18 @@ namespace aqua_api.Modules.Aqua.Application.Services
         {
             try
             {
+                var weatherTypeExists = await _unitOfWork.WeatherTypes
+                    .Query()
+                    .AnyAsync(x => x.Id == dto.WeatherTypeId && !x.IsDeleted);
+
+                if (!weatherTypeExists)
+                {
+                    return ApiResponse<WeatherSeverityDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("WeatherTypeService.NotFound"),
+                        _localizationService.GetLocalizedString("WeatherTypeService.NotFound"),
+                        StatusCodes.Status400BadRequest);
+                }
+
                 var entity = _mapper.Map<WeatherSeverity>(dto);
                 await _unitOfWork.WeatherSeverities.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
@@ -122,6 +136,18 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         _localizationService.GetLocalizedString("WeatherSeverityService.NotFound"),
                         _localizationService.GetLocalizedString("WeatherSeverityService.NotFound"),
                         StatusCodes.Status404NotFound);
+                }
+
+                var weatherTypeExists = await _unitOfWork.WeatherTypes
+                    .Query()
+                    .AnyAsync(x => x.Id == dto.WeatherTypeId && !x.IsDeleted);
+
+                if (!weatherTypeExists)
+                {
+                    return ApiResponse<WeatherSeverityDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("WeatherTypeService.NotFound"),
+                        _localizationService.GetLocalizedString("WeatherTypeService.NotFound"),
+                        StatusCodes.Status400BadRequest);
                 }
 
                 _mapper.Map(dto, entity);

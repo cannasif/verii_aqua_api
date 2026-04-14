@@ -8,6 +8,7 @@ namespace aqua_api.Modules.Aqua.Domain.Entities
         public string Code { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
 
+        public ICollection<WeatherSeverity> WeatherSeverities { get; set; } = new List<WeatherSeverity>();
         public ICollection<DailyWeather> DailyWeathers { get; set; } = new List<DailyWeather>();
     }
 }

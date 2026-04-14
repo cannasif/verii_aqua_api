@@ -101,6 +101,12 @@ namespace aqua_api.Modules.Aqua.Application.Services
         {
             try
             {
+                var isValidWeatherSelection = await IsValidWeatherSelectionAsync(dto.WeatherTypeId, dto.WeatherSeverityId);
+                if (!isValidWeatherSelection)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("DailyWeatherService.InvalidWeatherSeveritySelection"));
+                }
+
                 var weatherDate = dto.WeatherDate.Date;
                 var alreadyExists = await _unitOfWork.DailyWeathers
                     .Query()
@@ -159,12 +165,25 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                var isValidWeatherSelection = await IsValidWeatherSelectionAsync(dto.WeatherTypeId, dto.WeatherSeverityId);
+                if (!isValidWeatherSelection)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("DailyWeatherService.InvalidWeatherSeveritySelection"));
+                }
+
                 _mapper.Map(dto, entity);
                 await repo.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
                 var result = _mapper.Map<DailyWeatherDto>(entity);
                 return ApiResponse<DailyWeatherDto>.SuccessResult(result, _localizationService.GetLocalizedString("DailyWeatherService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResponse<DailyWeatherDto>.ErrorResult(
+                    ex.Message,
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
             }
             catch (DbUpdateException ex)
             {
@@ -218,6 +237,10 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
                 if (exists)
                     throw new InvalidOperationException(_localizationService.GetLocalizedString("DailyWeatherService.ProjectDateAlreadyExists"));
+
+                var isValidWeatherSelection = await IsValidWeatherSelectionAsync(request.TypeId, request.SeverityId);
+                if (!isValidWeatherSelection)
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("DailyWeatherService.InvalidWeatherSeveritySelection"));
 
                 var entity = new DailyWeather
                 {
@@ -311,6 +334,16 @@ namespace aqua_api.Modules.Aqua.Application.Services
             }
 
             return _localizationService.GetLocalizedString("DailyWeatherService.SaveFailed");
+        }
+
+        private async Task<bool> IsValidWeatherSelectionAsync(long weatherTypeId, long weatherSeverityId)
+        {
+            return await _unitOfWork.WeatherSeverities
+                .Query()
+                .AnyAsync(x =>
+                    x.Id == weatherSeverityId &&
+                    !x.IsDeleted &&
+                    x.WeatherTypeId == weatherTypeId);
         }
     }
 }

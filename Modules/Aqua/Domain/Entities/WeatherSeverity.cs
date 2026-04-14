@@ -8,7 +8,9 @@ namespace aqua_api.Modules.Aqua.Domain.Entities
         public string Code { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public int Score { get; set; }
+        public long? WeatherTypeId { get; set; }
 
+        public WeatherType? WeatherType { get; set; }
         public ICollection<DailyWeather> DailyWeathers { get; set; } = new List<DailyWeather>();
     }
 }
