@@ -13,7 +13,7 @@ namespace aqua_api.Modules.Aqua.Infrastructure.Persistence.Configurations
             });
             builder.Property(x => x.ShipmentNo).HasMaxLength(50).IsRequired();
             builder.Property(x => x.ShipmentDate).HasPrecision(3).IsRequired();
-            builder.Property(x => x.TargetWarehouse).HasMaxLength(100);
+            builder.Property(x => x.TargetWarehouseId).IsRequired(false);
             builder.Property(x => x.Status).HasConversion<byte>().IsRequired();
             builder.Property(x => x.Note).HasMaxLength(500);
 
@@ -26,6 +26,9 @@ namespace aqua_api.Modules.Aqua.Infrastructure.Persistence.Configurations
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
                 .HasDatabaseName("UX_RII_Shipment_ShipmentNo_Active");
+
+            builder.HasIndex(x => x.TargetWarehouseId)
+                .HasDatabaseName("IX_RII_Shipment_TargetWarehouseId");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

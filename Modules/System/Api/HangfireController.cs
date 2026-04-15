@@ -132,5 +132,17 @@ namespace aqua_api.Modules.System.Api
                 Timestamp = DateTime.UtcNow
             });
         }
+
+        [HttpPost("warehouse-sync/run-now")]
+        public IActionResult RunWarehouseSyncNow()
+        {
+            var jobId = _backgroundJobClient.Enqueue<IWarehouseSyncJob>(job => job.ExecuteAsync());
+            return Ok(new
+            {
+                Message = _localizationService.GetLocalizedString("HangfireController.WarehouseSyncJobEnqueued"),
+                JobId = jobId,
+                Timestamp = DateTime.UtcNow
+            });
+        }
     }
 }

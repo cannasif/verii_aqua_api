@@ -2,6 +2,7 @@ using AutoMapper;
 using aqua_api.Shared.Infrastructure.Time;
 using aqua_api.Shared.Infrastructure.Persistence.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
+using WarehouseEntity = aqua_api.Modules.Warehouse.Domain.Entities.Warehouse;
 
 namespace aqua_api.Modules.Aqua.Application.Services
 {
@@ -18,7 +19,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
             IShipmentRepository shipmentRepository,
             IBalanceLedgerManager balanceLedgerManager,
             IMapper mapper,
-            ILocalizationService localizationService)
+            ILocalizationService localizationService,
+            IErpService erpService)
         {
             _unitOfWork = unitOfWork;
             _shipmentRepository = shipmentRepository;
@@ -44,7 +46,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
-                var dto = _mapper.Map<ShipmentDto>(entity);
+                var dto = await MapShipmentDtoAsync(entity);
                 return ApiResponse<ShipmentDto>.SuccessResult(dto, _localizationService.GetLocalizedString("ShipmentService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -78,7 +80,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     .ApplyPagination(request.PageNumber, request.PageSize)
                     .ToListAsync();
 
-                var items = entities.Select(x => _mapper.Map<ShipmentDto>(x)).ToList();
+                var items = new List<ShipmentDto>(entities.Count);
+                foreach (var entity in entities)
+                {
+                    items.Add(await MapShipmentDtoAsync(entity));
+                }
 
                 var pagedResponse = new PagedResponse<ShipmentDto>
                 {
@@ -105,11 +111,16 @@ namespace aqua_api.Modules.Aqua.Application.Services
         {
             try
             {
+                if (dto.TargetWarehouseId.HasValue)
+                {
+                    dto.TargetWarehouseId = await ValidateAndResolveWarehouseIdAsync(dto.TargetWarehouseId.Value);
+                }
+
                 var entity = _mapper.Map<Shipment>(dto);
                 await _unitOfWork.Shipments.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
-                var result = _mapper.Map<ShipmentDto>(entity);
+                var result = await MapShipmentDtoAsync(entity);
                 return ApiResponse<ShipmentDto>.SuccessResult(result, _localizationService.GetLocalizedString("ShipmentService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -136,11 +147,16 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                if (dto.TargetWarehouseId.HasValue)
+                {
+                    dto.TargetWarehouseId = await ValidateAndResolveWarehouseIdAsync(dto.TargetWarehouseId.Value);
+                }
+
                 _mapper.Map(dto, entity);
                 await repo.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
-                var result = _mapper.Map<ShipmentDto>(entity);
+                var result = await MapShipmentDtoAsync(entity);
                 return ApiResponse<ShipmentDto>.SuccessResult(result, _localizationService.GetLocalizedString("ShipmentService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -216,6 +232,28 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         line.AverageGram,
                         null,
                         userId);
+
+                    if (shipment.TargetWarehouseId.HasValue)
+                    {
+                        await _balanceLedgerManager.ApplyWarehouseDelta(
+                            shipment.ProjectId,
+                            line.FishBatchId,
+                            shipment.TargetWarehouseId.Value,
+                            line.FishCount,
+                            line.BiomassGram,
+                            BatchMovementType.Shipment,
+                            shipment.ShipmentDate,
+                            "Shipment in to warehouse",
+                            "RII_Shipment",
+                            shipment.Id,
+                            null,
+                            shipment.TargetWarehouseId,
+                            null,
+                            null,
+                            null,
+                            line.AverageGram,
+                            userId);
+                    }
                 }
 
                 // Persist balance deltas first so release/close checks query the latest DB state.
@@ -331,6 +369,43 @@ namespace aqua_api.Modules.Aqua.Application.Services
         {
             if (status != DocumentStatus.Draft)
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", documentName));
+        }
+
+        private async Task<long> ValidateAndResolveWarehouseIdAsync(long warehouseId)
+        {
+            var warehouseExists = await _unitOfWork.Repository<WarehouseEntity>()
+                .Query()
+                .AnyAsync(x =>
+                    !x.IsDeleted &&
+                    x.Id == warehouseId);
+
+            if (!warehouseExists)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("ShipmentService.WarehouseNotFound"));
+            }
+
+            return warehouseId;
+        }
+
+        private async Task<ShipmentDto> MapShipmentDtoAsync(Shipment entity)
+        {
+            var dto = _mapper.Map<ShipmentDto>(entity);
+
+            if (!dto.TargetWarehouseId.HasValue)
+            {
+                return dto;
+            }
+
+            var warehouse = await _unitOfWork.Repository<WarehouseEntity>()
+                .Query()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x =>
+                    !x.IsDeleted &&
+                    x.Id == dto.TargetWarehouseId.Value);
+
+            dto.TargetWarehouseCode = warehouse?.ErpWarehouseCode;
+            dto.TargetWarehouseName = warehouse?.WarehouseName;
+            return dto;
         }
     }
 }

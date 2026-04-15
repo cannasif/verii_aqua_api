@@ -38,6 +38,12 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IStockConvertLineService, StockConvertLineService>();
         services.AddScoped<ITransferService, TransferService>();
         services.AddScoped<ITransferLineService, TransferLineService>();
+        services.AddScoped<IWarehouseTransferService, WarehouseTransferService>();
+        services.AddScoped<IWarehouseTransferLineService, WarehouseTransferLineService>();
+        services.AddScoped<ICageWarehouseTransferService, CageWarehouseTransferService>();
+        services.AddScoped<ICageWarehouseTransferLineService, CageWarehouseTransferLineService>();
+        services.AddScoped<IWarehouseCageTransferService, WarehouseCageTransferService>();
+        services.AddScoped<IWarehouseCageTransferLineService, WarehouseCageTransferLineService>();
         services.AddScoped<IShipmentService, ShipmentService>();
         services.AddScoped<IShipmentLineService, ShipmentLineService>();
         services.AddScoped<IWeatherSeverityService, WeatherSeverityService>();

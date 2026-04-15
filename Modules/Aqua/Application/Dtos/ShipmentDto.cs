@@ -9,7 +9,9 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
         public string? ProjectName { get; set; }
         public string ShipmentNo { get; set; } = string.Empty;
         public DateTime ShipmentDate { get; set; }
-        public string? TargetWarehouse { get; set; }
+        public long? TargetWarehouseId { get; set; }
+        public short? TargetWarehouseCode { get; set; }
+        public string? TargetWarehouseName { get; set; }
         public DocumentStatus Status { get; set; }
         public string? Note { get; set; }
     }
@@ -19,7 +21,7 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
         public long ProjectId { get; set; }
         public string ShipmentNo { get; set; } = string.Empty;
         public DateTime ShipmentDate { get; set; }
-        public string? TargetWarehouse { get; set; }
+        public long? TargetWarehouseId { get; set; }
         public DocumentStatus Status { get; set; }
         public string? Note { get; set; }
     }

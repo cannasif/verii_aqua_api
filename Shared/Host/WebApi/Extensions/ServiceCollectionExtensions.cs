@@ -115,6 +115,7 @@ public static class ServiceCollectionExtensions
         services.AddAquaSharedInfrastructure();
         services.AddIdentityModule();
         services.AddStockModule();
+        services.AddWarehouseModule();
         services.AddAquaModule();
         services.AddIntegrationsModule();
         services.AddSystemModule();

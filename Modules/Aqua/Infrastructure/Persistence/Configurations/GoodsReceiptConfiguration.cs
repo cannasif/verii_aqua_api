@@ -14,6 +14,7 @@ namespace aqua_api.Modules.Aqua.Infrastructure.Persistence.Configurations
             builder.Property(x => x.ReceiptNo).HasMaxLength(50).IsRequired();
             builder.Property(x => x.ReceiptDate).HasPrecision(3).IsRequired();
             builder.Property(x => x.Status).HasConversion<byte>().IsRequired();
+            builder.Property(x => x.WarehouseId).IsRequired(false);
             builder.Property(x => x.Note).HasMaxLength(500);
 
             builder.HasOne(x => x.Project)
@@ -30,6 +31,9 @@ namespace aqua_api.Modules.Aqua.Infrastructure.Persistence.Configurations
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0 AND [ProjectId] IS NOT NULL")
                 .HasDatabaseName("UX_RII_GoodsReceipt_Project_Active");
+
+            builder.HasIndex(x => x.WarehouseId)
+                .HasDatabaseName("IX_RII_GoodsReceipt_WarehouseId");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

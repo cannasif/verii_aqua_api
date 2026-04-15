@@ -16,6 +16,7 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<PasswordResetRequest> PasswordResetRequests { get; set; }
 
         public DbSet<Stock> Stocks { get; set; }
+        public DbSet<Warehouse> Warehouses { get; set; }
         public DbSet<StockDetail> StockDetails { get; set; }
         public DbSet<StockImage> StockImages { get; set; }
         public DbSet<StockRelation> StockRelations { get; set; }
@@ -25,6 +26,7 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<JobFailureLog> JobFailureLogs { get; set; }
         public DbSet<RII_FN_CARI> RII_FN_CARI { get; set; }
         public DbSet<RII_VW_STOK> RII_VW_STOK { get; set; }
+        public DbSet<RII_FN_DEPO> RII_FN_DEPO { get; set; }
         public DbSet<RII_FN_BRANCHES> Branches { get; set; }
         public DbSet<RII_FN_PROJECTCODE> RII_FN_PROJECTCODE { get; set; }
 
@@ -41,6 +43,7 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<ProjectCage> ProjectCages { get; set; }
         public DbSet<FishBatch> FishBatches { get; set; }
         public DbSet<BatchCageBalance> BatchCageBalances { get; set; }
+        public DbSet<BatchWarehouseBalance> BatchWarehouseBalances { get; set; }
         public DbSet<GoodsReceipt> GoodsReceipts { get; set; }
         public DbSet<GoodsReceiptLine> GoodsReceiptLines { get; set; }
         public DbSet<GoodsReceiptFishDistribution> GoodsReceiptFishDistributions { get; set; }
@@ -51,6 +54,12 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<MortalityLine> MortalityLines { get; set; }
         public DbSet<Transfer> Transfers { get; set; }
         public DbSet<TransferLine> TransferLines { get; set; }
+        public DbSet<WarehouseTransfer> WarehouseTransfers { get; set; }
+        public DbSet<WarehouseTransferLine> WarehouseTransferLines { get; set; }
+        public DbSet<CageWarehouseTransfer> CageWarehouseTransfers { get; set; }
+        public DbSet<CageWarehouseTransferLine> CageWarehouseTransferLines { get; set; }
+        public DbSet<WarehouseCageTransfer> WarehouseCageTransfers { get; set; }
+        public DbSet<WarehouseCageTransferLine> WarehouseCageTransferLines { get; set; }
         public DbSet<Shipment> Shipments { get; set; }
         public DbSet<ShipmentLine> ShipmentLines { get; set; }
         public DbSet<Weighing> Weighings { get; set; }
@@ -131,6 +140,15 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
                 entity.Property(e => e.KOD_5).IsRequired(false).HasMaxLength(20);
                 entity.Property(e => e.KOD5_ADI).IsRequired(false).HasMaxLength(50);
                 entity.Property(e => e.INGISIM).IsRequired(false).HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<RII_FN_DEPO>(entity =>
+            {
+                entity.HasNoKey();
+                entity.ToTable("__EFMigrationsHistory_FN_DEPO", t => t.ExcludeFromMigrations());
+                entity.ToFunction("RII_FN_DEPO");
+                entity.Property(e => e.DEPO_ISMI).HasMaxLength(100);
+                entity.Property(e => e.CARI_KODU).HasMaxLength(25);
             });
 
             modelBuilder.Entity<RII_FN_CARI>(entity =>

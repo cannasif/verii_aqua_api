@@ -168,10 +168,15 @@ public static class WebApplicationExtensions
                 "erp-stock-sync-job",
                 job => job.ExecuteAsync(),
                 Cron.MinuteInterval(30));
+            RecurringJob.AddOrUpdate<IWarehouseSyncJob>(
+                "erp-warehouse-sync-job",
+                job => job.ExecuteAsync(),
+                Cron.MinuteInterval(30));
         }
         else
         {
             RecurringJob.RemoveIfExists("erp-stock-sync-job");
+            RecurringJob.RemoveIfExists("erp-warehouse-sync-job");
             app.Logger.LogInformation("Skipping recurring ERP sync jobs in Development environment. Set Hangfire:StockSync:EnableInDevelopment=true to enable.");
         }
 

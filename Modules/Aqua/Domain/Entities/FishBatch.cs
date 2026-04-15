@@ -33,6 +33,7 @@ namespace aqua_api.Modules.Aqua.Domain.Entities
         public GoodsReceiptLine? SourceGoodsReceiptLine { get; set; }
 
         public ICollection<BatchCageBalance> BatchCageBalances { get; set; } = new List<BatchCageBalance>();
+        public ICollection<BatchWarehouseBalance> BatchWarehouseBalances { get; set; } = new List<BatchWarehouseBalance>();
         public ICollection<GoodsReceiptLine> GoodsReceiptLines { get; set; } = new List<GoodsReceiptLine>();
         public ICollection<GoodsReceiptFishDistribution> GoodsReceiptFishDistributions { get; set; } = new List<GoodsReceiptFishDistribution>();
         public ICollection<FeedingDistribution> FeedingDistributions { get; set; } = new List<FeedingDistribution>();

@@ -30,6 +30,7 @@ namespace aqua_api.Shared.Infrastructure.Persistence.UnitOfWork
         IGenericRepository<ProjectCage> ProjectCages { get; }
         IGenericRepository<FishBatch> FishBatches { get; }
         IGenericRepository<BatchCageBalance> BatchCageBalances { get; }
+        IGenericRepository<BatchWarehouseBalance> BatchWarehouseBalances { get; }
         IGenericRepository<GoodsReceipt> GoodsReceipts { get; }
         IGenericRepository<GoodsReceiptLine> GoodsReceiptLines { get; }
         IGenericRepository<GoodsReceiptFishDistribution> GoodsReceiptFishDistributions { get; }
@@ -40,6 +41,12 @@ namespace aqua_api.Shared.Infrastructure.Persistence.UnitOfWork
         IGenericRepository<MortalityLine> MortalityLines { get; }
         IGenericRepository<Transfer> Transfers { get; }
         IGenericRepository<TransferLine> TransferLines { get; }
+        IGenericRepository<WarehouseTransfer> WarehouseTransfers { get; }
+        IGenericRepository<WarehouseTransferLine> WarehouseTransferLines { get; }
+        IGenericRepository<CageWarehouseTransfer> CageWarehouseTransfers { get; }
+        IGenericRepository<CageWarehouseTransferLine> CageWarehouseTransferLines { get; }
+        IGenericRepository<WarehouseCageTransfer> WarehouseCageTransfers { get; }
+        IGenericRepository<WarehouseCageTransferLine> WarehouseCageTransferLines { get; }
         IGenericRepository<Shipment> Shipments { get; }
         IGenericRepository<ShipmentLine> ShipmentLines { get; }
         IGenericRepository<Weighing> Weighings { get; }

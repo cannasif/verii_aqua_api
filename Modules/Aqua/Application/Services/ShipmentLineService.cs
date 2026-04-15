@@ -2,6 +2,7 @@ using AutoMapper;
 using aqua_api.Shared.Infrastructure.Persistence.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using aqua_api.Shared.Common.Helpers;
+using WarehouseEntity = aqua_api.Modules.Warehouse.Domain.Entities.Warehouse;
 
 namespace aqua_api.Modules.Aqua.Application.Services
 {
@@ -14,7 +15,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
         public ShipmentLineService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
-            ILocalizationService localizationService)
+            ILocalizationService localizationService,
+            IErpService erpService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
@@ -163,15 +165,28 @@ namespace aqua_api.Modules.Aqua.Application.Services
                             StatusCodes.Status404NotFound);
                     }
 
+                    if (dto.TargetWarehouseId.HasValue)
+                    {
+                        dto.TargetWarehouseId = await ValidateAndResolveWarehouseIdAsync(dto.TargetWarehouseId.Value);
+                    }
+
                     shipment = new Shipment
                     {
                         ProjectId = dto.ProjectId,
                         ShipmentDate = dto.ShipmentDate,
                         Status = DocumentStatus.Draft,
                         ShipmentNo = BuildDocumentNo(project.ProjectCode, project.ProjectName),
+                        TargetWarehouseId = dto.TargetWarehouseId,
                     };
 
                     await _unitOfWork.Shipments.AddAsync(shipment);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+                else if (dto.TargetWarehouseId.HasValue)
+                {
+                    dto.TargetWarehouseId = await ValidateAndResolveWarehouseIdAsync(dto.TargetWarehouseId.Value);
+                    shipment.TargetWarehouseId = dto.TargetWarehouseId;
+                    await _unitOfWork.Shipments.UpdateAsync(shipment);
                     await _unitOfWork.SaveChangesAsync();
                 }
 
@@ -275,6 +290,22 @@ namespace aqua_api.Modules.Aqua.Application.Services
             var baseValue = !string.IsNullOrWhiteSpace(projectCode) ? projectCode : projectName;
             var normalized = string.IsNullOrWhiteSpace(baseValue) ? "DOC" : baseValue.Trim();
             return $"{normalized}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+        }
+
+        private async Task<long> ValidateAndResolveWarehouseIdAsync(long warehouseId)
+        {
+            var warehouseExists = await _unitOfWork.Repository<WarehouseEntity>()
+                .Query()
+                .AnyAsync(x =>
+                    !x.IsDeleted &&
+                    x.Id == warehouseId);
+
+            if (!warehouseExists)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("ShipmentService.WarehouseNotFound"));
+            }
+
+            return warehouseId;
         }
     }
 }

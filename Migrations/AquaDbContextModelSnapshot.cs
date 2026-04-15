@@ -331,13 +331,25 @@ namespace aqua_api.Migrations
                     b.ToTable("RII_Cage", (string)null);
                 });
 
-            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.DailyWeather", b =>
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ComplianceAudit", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("AuditDate")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<string>("AuditorName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("ChecklistCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<long?>("CreatedBy")
                         .HasColumnType("bigint");
@@ -353,17 +365,217 @@ namespace aqua_api.Migrations
                     b.Property<DateTime?>("DeletedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("FindingCount")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("FishBatchId")
+                        .HasColumnType("bigint");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<DateTime?>("NextAuditDate")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<long?>("ProjectCageId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ProjectId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("StandardCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("Summary")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("DeletedBy");
+
+                    b.HasIndex("FishBatchId");
+
+                    b.HasIndex("ProjectCageId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.ToTable("RII_ComplianceAudit", (string)null);
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ComplianceCorrectiveAction", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ActionCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("ClosedDate")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<string>("ClosureNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<long>("ComplianceAuditId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<long?>("DeletedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("DeletedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OwnerName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ComplianceAuditId");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("DeletedBy");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.ToTable("RII_ComplianceCorrectiveAction", (string)null);
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.DailyWeather", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal?>("AlgalBloomIndex")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal?>("AmmoniaMgL")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<decimal?>("CurrentSpeedKn")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<string>("DataSource")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<long?>("DeletedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("DeletedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("DissolvedOxygenMgL")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal?>("NitriteMgL")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
 
                     b.Property<string>("Note")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<decimal?>("Ph")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
                     b.Property<long>("ProjectId")
                         .HasColumnType("bigint");
 
+                    b.Property<decimal?>("SalinityPpt")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal?>("SensorHealthScore")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<DateTime?>("SensorRecordedAt")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
                     b.Property<decimal?>("TemperatureC")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal?>("TurbidityNtu")
                         .HasPrecision(18, 3)
                         .HasColumnType("decimal(18,6)");
 
@@ -372,6 +584,18 @@ namespace aqua_api.Migrations
 
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("WaterTemperatureDepthC")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal?>("WaterTemperatureSurfaceC")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal?>("WaveHeightM")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
 
                     b.Property<DateTime>("WeatherDate")
                         .HasColumnType("date");
@@ -637,6 +861,10 @@ namespace aqua_api.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("BroodstockCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<long?>("CreatedBy")
                         .HasColumnType("bigint");
 
@@ -658,11 +886,30 @@ namespace aqua_api.Migrations
                     b.Property<long>("FishStockId")
                         .HasColumnType("bigint");
 
+                    b.Property<string>("GenerationCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("HatcheryName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsVaccinated")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("OriginCountryCode")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
                     b.Property<long>("ProjectId")
                         .HasColumnType("bigint");
+
+                    b.Property<string>("QualityGrade")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<long?>("SourceGoodsReceiptLineId")
                         .HasColumnType("bigint");
@@ -671,11 +918,46 @@ namespace aqua_api.Migrations
                         .HasPrecision(3)
                         .HasColumnType("datetime2(3)");
 
+                    b.Property<string>("StrainCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<long?>("SupplierId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("SupplierLotCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("TargetHarvestAverageGram")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<string>("TargetHarvestClass")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("TargetHarvestDate")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<string>("TreatmentHistoryNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<long?>("UpdatedBy")
                         .HasColumnType("bigint");
 
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("VaccinationDate")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<string>("VaccinationNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.HasKey("Id");
 
@@ -698,6 +980,389 @@ namespace aqua_api.Migrations
                         {
                             t.HasCheckConstraint("CK_RII_FishBatch_CurrentAverageGram", "[CurrentAverageGram] > 0");
                         });
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.FishHealthEvent", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int?>("AffectedFishCount")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("AffectedRatioPct")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<long?>("DeletedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("DeletedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("EventDate")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<string>("EventType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<long?>("FishBatchId")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("MortalityCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Observation")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<long?>("ProjectCageId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ProjectId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("RecommendedAction")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("RequiresVeterinaryReview")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Severity")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VeterinarianName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("DeletedBy");
+
+                    b.HasIndex("FishBatchId");
+
+                    b.HasIndex("ProjectCageId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.ToTable("RII_FishHealthEvent", (string)null);
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.FishLabResult", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<long?>("DeletedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("DeletedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long>("FishLabSampleId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Interpretation")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsPositive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("PathogenName")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("RecommendedAction")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("ResultDate")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<string>("ResultType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("ResultValue")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Unit")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("DeletedBy");
+
+                    b.HasIndex("FishLabSampleId");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.ToTable("RII_FishLabResult", (string)null);
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.FishLabSample", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<long?>("DeletedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("DeletedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("FishBatchId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("FishHealthEventId")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LaboratoryName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<long?>("ProjectCageId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ProjectId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("RequestedBy")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("SampleCode")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTime>("SampleDate")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<string>("SampleType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("DeletedBy");
+
+                    b.HasIndex("FishBatchId");
+
+                    b.HasIndex("FishHealthEventId");
+
+                    b.HasIndex("ProjectCageId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.ToTable("RII_FishLabSample", (string)null);
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.FishTreatment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("ActiveIngredient")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<long?>("DeletedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("DeletedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DoseUnit")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<decimal?>("DoseValue")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<int?>("DurationDays")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("FishBatchId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("FishHealthEventId")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("MedicationName")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<long?>("ProjectCageId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ProjectId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<DateTime>("TreatmentDate")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<string>("TreatmentReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("TreatmentType")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VeterinarianName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime?>("WithdrawalEndDate")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("DeletedBy");
+
+                    b.HasIndex("FishBatchId");
+
+                    b.HasIndex("FishHealthEventId");
+
+                    b.HasIndex("ProjectCageId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.ToTable("RII_FishTreatment", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.GoodsReceipt", b =>
@@ -753,8 +1418,11 @@ namespace aqua_api.Migrations
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<long?>("WarehouseId")
-                        .HasColumnType("bigint");
+                    b.Property<int?>("WarehouseBranchCode")
+                        .HasColumnType("int");
+
+                    b.Property<short?>("WarehouseCode")
+                        .HasColumnType("smallint");
 
                     b.HasKey("Id");
 
@@ -773,6 +1441,9 @@ namespace aqua_api.Migrations
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("UpdatedBy");
+
+                    b.HasIndex("WarehouseCode", "WarehouseBranchCode")
+                        .HasDatabaseName("IX_RII_GoodsReceipt_WarehouseCode_BranchCode");
 
                     b.ToTable("RII_GoodsReceipt", null, t =>
                         {
@@ -1414,6 +2085,131 @@ namespace aqua_api.Migrations
                         {
                             t.HasCheckConstraint("CK_RII_ProjectCage_AssignRelease", "[ReleasedDate] IS NULL OR [ReleasedDate] >= [AssignedDate]");
                         });
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ProjectCageDailyKpiSnapshot", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal>("Adg")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal>("AverageGram")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal>("BiomassGainKgPeriod")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal>("BiomassKg")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal>("CapacityUsagePct")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<decimal>("DataQualityScore")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<int>("DeadCountPeriod")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("DeletedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("DeletedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Fcr")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal>("FeedKgPeriod")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<long>("FishBatchId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("ForecastBiomassKg30Days")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<string>("FormulaNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<decimal>("HarvestReadinessScore")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<int>("InitialCount")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LiveCount")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("MortalityPctPeriod")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<long>("ProjectCageId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ProjectId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal>("Sgr")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<DateTime>("SnapshotDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("SurvivalPct")
+                        .HasPrecision(9, 2)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("DeletedBy");
+
+                    b.HasIndex("FishBatchId");
+
+                    b.HasIndex("ProjectCageId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.ToTable("RII_ProjectCageDailyKpiSnapshot", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ProjectMerge", b =>
@@ -2356,6 +3152,103 @@ namespace aqua_api.Migrations
                         {
                             t.HasCheckConstraint("CK_RII_WeighingLine_Positive", "[MeasuredCount] > 0 AND [MeasuredAverageGram] > 0 AND [MeasuredBiomassGram] > 0");
                         });
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.WelfareAssessment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<decimal?>("AppetiteScore")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<string>("AssessedBy")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("AssessmentDate")
+                        .HasPrecision(3)
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<decimal?>("BehaviorScore")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<long?>("DeletedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("DeletedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("FinScore")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<long?>("FishBatchId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal?>("GillScore")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Observation")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<long?>("ProjectCageId")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("ProjectId")
+                        .HasColumnType("bigint");
+
+                    b.Property<decimal?>("SkinScore")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<decimal?>("StockingDensityKgM3")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("WelfareScore")
+                        .HasPrecision(18, 3)
+                        .HasColumnType("decimal(18,6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("DeletedBy");
+
+                    b.HasIndex("FishBatchId");
+
+                    b.HasIndex("ProjectCageId");
+
+                    b.HasIndex("ProjectId");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.ToTable("RII_WelfareAssessment", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Identity.Domain.Entities.PasswordResetRequest", b =>
@@ -3459,6 +4352,36 @@ namespace aqua_api.Migrations
                     b.ToFunction("RII_FN_CARI");
                 });
 
+            modelBuilder.Entity("aqua_api.Modules.Integrations.Domain.Erp.RII_FN_DEPO", b =>
+                {
+                    b.Property<string>("CARI_KODU")
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
+
+                    b.Property<string>("DEPO_ISMI")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("DEPO_KILITLE")
+                        .HasColumnType("nvarchar(1)");
+
+                    b.Property<short>("DEPO_KODU")
+                        .HasColumnType("smallint");
+
+                    b.Property<string>("EKSIBAKIYE")
+                        .HasColumnType("nvarchar(1)");
+
+                    b.Property<short>("SUBE_KODU")
+                        .HasColumnType("smallint");
+
+                    b.ToTable("__EFMigrationsHistory_FN_DEPO", null, t =>
+                        {
+                            t.ExcludeFromMigrations();
+                        });
+
+                    b.ToFunction("RII_FN_DEPO");
+                });
+
             modelBuilder.Entity("aqua_api.Modules.Integrations.Domain.Erp.RII_FN_KUR", b =>
                 {
                     b.Property<string>("DOVIZ_ISMI")
@@ -4434,6 +5357,79 @@ namespace aqua_api.Migrations
                     b.ToTable("RII_JOB_FAILURE_LOG", (string)null);
                 });
 
+            modelBuilder.Entity("aqua_api.Modules.Warehouse.Domain.Entities.Warehouse", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<bool>("AllowNegativeBalance")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("BranchCode")
+                        .HasColumnType("int");
+
+                    b.Property<long?>("CreatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETDATE()");
+
+                    b.Property<string>("CustomerCode")
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
+
+                    b.Property<long?>("DeletedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("DeletedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<short>("ErpWarehouseCode")
+                        .HasColumnType("smallint");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastSyncedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<long?>("UpdatedBy")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("WarehouseName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("DeletedBy");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.HasIndex("WarehouseName")
+                        .HasDatabaseName("IX_RII_Warehouse_WarehouseName");
+
+                    b.HasIndex("ErpWarehouseCode", "BranchCode")
+                        .IsUnique()
+                        .HasDatabaseName("UX_RII_Warehouse_ErpWarehouseCode_BranchCode");
+
+                    b.ToTable("RII_Warehouse", (string)null);
+                });
+
             modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.AquaSetting", b =>
                 {
                     b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
@@ -4553,6 +5549,84 @@ namespace aqua_api.Migrations
                         .WithMany()
                         .HasForeignKey("UpdatedBy")
                         .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("DeletedByUser");
+
+                    b.Navigation("UpdatedByUser");
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ComplianceAudit", b =>
+                {
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "DeletedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeletedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.FishBatch", "FishBatch")
+                        .WithMany("ComplianceAudits")
+                        .HasForeignKey("FishBatchId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.ProjectCage", "ProjectCage")
+                        .WithMany("ComplianceAudits")
+                        .HasForeignKey("ProjectCageId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.Project", "Project")
+                        .WithMany("ComplianceAudits")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("DeletedByUser");
+
+                    b.Navigation("FishBatch");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("ProjectCage");
+
+                    b.Navigation("UpdatedByUser");
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ComplianceCorrectiveAction", b =>
+                {
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.ComplianceAudit", "ComplianceAudit")
+                        .WithMany("CorrectiveActions")
+                        .HasForeignKey("ComplianceAuditId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "DeletedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeletedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("ComplianceAudit");
 
                     b.Navigation("CreatedByUser");
 
@@ -4772,6 +5846,190 @@ namespace aqua_api.Migrations
                     b.Navigation("Project");
 
                     b.Navigation("SourceGoodsReceiptLine");
+
+                    b.Navigation("UpdatedByUser");
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.FishHealthEvent", b =>
+                {
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "DeletedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeletedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.FishBatch", "FishBatch")
+                        .WithMany("FishHealthEvents")
+                        .HasForeignKey("FishBatchId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.ProjectCage", "ProjectCage")
+                        .WithMany("FishHealthEvents")
+                        .HasForeignKey("ProjectCageId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.Project", "Project")
+                        .WithMany("FishHealthEvents")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("DeletedByUser");
+
+                    b.Navigation("FishBatch");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("ProjectCage");
+
+                    b.Navigation("UpdatedByUser");
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.FishLabResult", b =>
+                {
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "DeletedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeletedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.FishLabSample", "FishLabSample")
+                        .WithMany("Results")
+                        .HasForeignKey("FishLabSampleId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("DeletedByUser");
+
+                    b.Navigation("FishLabSample");
+
+                    b.Navigation("UpdatedByUser");
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.FishLabSample", b =>
+                {
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "DeletedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeletedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.FishBatch", "FishBatch")
+                        .WithMany("FishLabSamples")
+                        .HasForeignKey("FishBatchId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.FishHealthEvent", "FishHealthEvent")
+                        .WithMany()
+                        .HasForeignKey("FishHealthEventId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.ProjectCage", "ProjectCage")
+                        .WithMany("FishLabSamples")
+                        .HasForeignKey("ProjectCageId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.Project", "Project")
+                        .WithMany("FishLabSamples")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("DeletedByUser");
+
+                    b.Navigation("FishBatch");
+
+                    b.Navigation("FishHealthEvent");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("ProjectCage");
+
+                    b.Navigation("UpdatedByUser");
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.FishTreatment", b =>
+                {
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "DeletedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeletedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.FishBatch", "FishBatch")
+                        .WithMany("FishTreatments")
+                        .HasForeignKey("FishBatchId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.FishHealthEvent", "FishHealthEvent")
+                        .WithMany()
+                        .HasForeignKey("FishHealthEventId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.ProjectCage", "ProjectCage")
+                        .WithMany("FishTreatments")
+                        .HasForeignKey("ProjectCageId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.Project", "Project")
+                        .WithMany("FishTreatments")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("DeletedByUser");
+
+                    b.Navigation("FishBatch");
+
+                    b.Navigation("FishHealthEvent");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("ProjectCage");
 
                     b.Navigation("UpdatedByUser");
                 });
@@ -5153,6 +6411,54 @@ namespace aqua_api.Migrations
                     b.Navigation("DeletedByUser");
 
                     b.Navigation("Project");
+
+                    b.Navigation("UpdatedByUser");
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ProjectCageDailyKpiSnapshot", b =>
+                {
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "DeletedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeletedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.FishBatch", "FishBatch")
+                        .WithMany()
+                        .HasForeignKey("FishBatchId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.ProjectCage", "ProjectCage")
+                        .WithMany()
+                        .HasForeignKey("ProjectCageId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.Project", "Project")
+                        .WithMany()
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("DeletedByUser");
+
+                    b.Navigation("FishBatch");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("ProjectCage");
 
                     b.Navigation("UpdatedByUser");
                 });
@@ -5685,6 +6991,52 @@ namespace aqua_api.Migrations
                     b.Navigation("Weighing");
                 });
 
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.WelfareAssessment", b =>
+                {
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "DeletedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeletedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.FishBatch", "FishBatch")
+                        .WithMany("WelfareAssessments")
+                        .HasForeignKey("FishBatchId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.ProjectCage", "ProjectCage")
+                        .WithMany("WelfareAssessments")
+                        .HasForeignKey("ProjectCageId")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Aqua.Domain.Entities.Project", "Project")
+                        .WithMany("WelfareAssessments")
+                        .HasForeignKey("ProjectId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("DeletedByUser");
+
+                    b.Navigation("FishBatch");
+
+                    b.Navigation("Project");
+
+                    b.Navigation("ProjectCage");
+
+                    b.Navigation("UpdatedByUser");
+                });
+
             modelBuilder.Entity("aqua_api.Modules.Identity.Domain.Entities.PasswordResetRequest", b =>
                 {
                     b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
@@ -6138,9 +7490,38 @@ namespace aqua_api.Migrations
                     b.Navigation("UpdatedByUser");
                 });
 
+            modelBuilder.Entity("aqua_api.Modules.Warehouse.Domain.Entities.Warehouse", b =>
+                {
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "DeletedByUser")
+                        .WithMany()
+                        .HasForeignKey("DeletedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "UpdatedByUser")
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("DeletedByUser");
+
+                    b.Navigation("UpdatedByUser");
+                });
+
             modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.Cage", b =>
                 {
                     b.Navigation("ProjectCages");
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ComplianceAudit", b =>
+                {
+                    b.Navigation("CorrectiveActions");
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.Feeding", b =>
@@ -6159,7 +7540,15 @@ namespace aqua_api.Migrations
 
                     b.Navigation("BatchMovements");
 
+                    b.Navigation("ComplianceAudits");
+
                     b.Navigation("FeedingDistributions");
+
+                    b.Navigation("FishHealthEvents");
+
+                    b.Navigation("FishLabSamples");
+
+                    b.Navigation("FishTreatments");
 
                     b.Navigation("GoodsReceiptFishDistributions");
 
@@ -6176,6 +7565,13 @@ namespace aqua_api.Migrations
                     b.Navigation("TransferLines");
 
                     b.Navigation("WeighingLines");
+
+                    b.Navigation("WelfareAssessments");
+                });
+
+            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.FishLabSample", b =>
+                {
+                    b.Navigation("Results");
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.GoodsReceipt", b =>
@@ -6205,11 +7601,19 @@ namespace aqua_api.Migrations
 
             modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.Project", b =>
                 {
+                    b.Navigation("ComplianceAudits");
+
                     b.Navigation("DailyWeathers");
 
                     b.Navigation("Feedings");
 
                     b.Navigation("FishBatches");
+
+                    b.Navigation("FishHealthEvents");
+
+                    b.Navigation("FishLabSamples");
+
+                    b.Navigation("FishTreatments");
 
                     b.Navigation("GoodsReceipts");
 
@@ -6226,11 +7630,23 @@ namespace aqua_api.Migrations
                     b.Navigation("Transfers");
 
                     b.Navigation("Weighings");
+
+                    b.Navigation("WelfareAssessments");
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ProjectCage", b =>
                 {
                     b.Navigation("BatchCageBalances");
+
+                    b.Navigation("ComplianceAudits");
+
+                    b.Navigation("FishHealthEvents");
+
+                    b.Navigation("FishLabSamples");
+
+                    b.Navigation("FishTreatments");
+
+                    b.Navigation("WelfareAssessments");
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.ProjectMerge", b =>

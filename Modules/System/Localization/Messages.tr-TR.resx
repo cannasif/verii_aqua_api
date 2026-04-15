@@ -73,6 +73,18 @@
   <data name="HangfireController.StockSyncJobEnqueued" xml:space="preserve">
     <value>Stok senkronizasyon işi kuyruğa alındı.</value>
   </data>
+  <data name="WarehouseSyncJob.Started" xml:space="preserve">
+    <value>ERP depo senkronizasyonu başlatıldı.</value>
+  </data>
+  <data name="WarehouseSyncJob.Completed" xml:space="preserve">
+    <value>ERP depo senkronizasyonu tamamlandı.</value>
+  </data>
+  <data name="WarehouseSyncJob.ErpFetchFailed" xml:space="preserve">
+    <value>ERP depo verisi alınamadı.</value>
+  </data>
+  <data name="HangfireController.WarehouseSyncJobEnqueued" xml:space="preserve">
+    <value>Depo senkronizasyon işi kuyruğa alındı.</value>
+  </data>
   <data name="MailJob.EmailSendFailedForRecipient" xml:space="preserve">
     <value>{0} alıcısına e-posta gönderilemedi.</value>
   </data>

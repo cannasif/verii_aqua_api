@@ -157,6 +157,24 @@
   <data name="StockService.DeleteStockExceptionMessage" xml:space="preserve">
     <value>Stok silinirken bir hata oluştu: {0}</value>
   </data>
+  <data name="WarehouseService.WarehousesRetrieved" xml:space="preserve">
+    <value>Depolar başarıyla getirildi.</value>
+  </data>
+  <data name="WarehouseService.WarehouseRetrieved" xml:space="preserve">
+    <value>Depo başarıyla getirildi.</value>
+  </data>
+  <data name="WarehouseService.WarehouseNotFound" xml:space="preserve">
+    <value>Depo bulunamadı.</value>
+  </data>
+  <data name="WarehouseService.InternalServerError" xml:space="preserve">
+    <value>Sunucu hatası oluştu.</value>
+  </data>
+  <data name="WarehouseService.GetAllWarehousesExceptionMessage" xml:space="preserve">
+    <value>Depolar getirilirken bir hata oluştu: {0}</value>
+  </data>
+  <data name="WarehouseService.GetWarehouseByIdExceptionMessage" xml:space="preserve">
+    <value>Depo getirilirken bir hata oluştu: {0}</value>
+  </data>
   <data name="StockDetailService.CreateStockDetailExceptionMessage" xml:space="preserve">
     <value>Stock Detail oluşturulurken bir hata oluştu: {0}</value>
   </data>

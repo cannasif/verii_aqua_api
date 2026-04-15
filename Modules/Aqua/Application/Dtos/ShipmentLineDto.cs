@@ -41,6 +41,7 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
     {
         public long ProjectId { get; set; }
         public DateTime ShipmentDate { get; set; }
+        public long? TargetWarehouseId { get; set; }
         public long FishBatchId { get; set; }
         public long FromProjectCageId { get; set; }
         public int FishCount { get; set; }

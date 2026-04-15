@@ -15,6 +15,9 @@ namespace aqua_api.Modules.Aqua.Api
         private readonly IWeighingService _weighingService;
         private readonly IStockConvertService _stockConvertService;
         private readonly IShipmentService _shipmentService;
+        private readonly IWarehouseTransferService _warehouseTransferService;
+        private readonly ICageWarehouseTransferService _cageWarehouseTransferService;
+        private readonly IWarehouseCageTransferService _warehouseCageTransferService;
         private readonly INetOperationService _netOperationService;
         private readonly IDailyWeatherService _dailyWeatherService;
 
@@ -25,6 +28,9 @@ namespace aqua_api.Modules.Aqua.Api
             IWeighingService weighingService,
             IStockConvertService stockConvertService,
             IShipmentService shipmentService,
+            IWarehouseTransferService warehouseTransferService,
+            ICageWarehouseTransferService cageWarehouseTransferService,
+            IWarehouseCageTransferService warehouseCageTransferService,
             INetOperationService netOperationService,
             IDailyWeatherService dailyWeatherService)
         {
@@ -34,6 +40,9 @@ namespace aqua_api.Modules.Aqua.Api
             _weighingService = weighingService;
             _stockConvertService = stockConvertService;
             _shipmentService = shipmentService;
+            _warehouseTransferService = warehouseTransferService;
+            _cageWarehouseTransferService = cageWarehouseTransferService;
+            _warehouseCageTransferService = warehouseCageTransferService;
             _netOperationService = netOperationService;
             _dailyWeatherService = dailyWeatherService;
         }
@@ -77,6 +86,27 @@ namespace aqua_api.Modules.Aqua.Api
         public async Task<IActionResult> PostShipment(long id)
         {
             var result = await _shipmentService.Post(id, GetUserId());
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost("warehouse-transfer/{id:long}")]
+        public async Task<IActionResult> PostWarehouseTransfer(long id)
+        {
+            var result = await _warehouseTransferService.Post(id, GetUserId());
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost("cage-warehouse-transfer/{id:long}")]
+        public async Task<IActionResult> PostCageWarehouseTransfer(long id)
+        {
+            var result = await _cageWarehouseTransferService.Post(id, GetUserId());
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost("warehouse-cage-transfer/{id:long}")]
+        public async Task<IActionResult> PostWarehouseCageTransfer(long id)
+        {
+            var result = await _warehouseCageTransferService.Post(id, GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 

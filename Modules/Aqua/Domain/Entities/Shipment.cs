@@ -8,7 +8,7 @@ namespace aqua_api.Modules.Aqua.Domain.Entities
         public long ProjectId { get; set; }
         public string ShipmentNo { get; set; } = string.Empty;
         public DateTime ShipmentDate { get; set; }
-        public string? TargetWarehouse { get; set; }
+        public long? TargetWarehouseId { get; set; }
         public DocumentStatus Status { get; set; } = DocumentStatus.Draft;
         public string? Note { get; set; }
 

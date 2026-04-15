@@ -32,6 +32,14 @@ namespace aqua_api.Modules.Integrations.Api
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpGet("getWarehouses")]
+        [AllowAnonymous]
+        public async Task<ActionResult<ApiResponse<List<DepoDto>>>> GetWarehouses([FromQuery] short? depoKodu = null)
+        {
+            var result = await _IErpService.GetDeposAsync(depoKodu);
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpGet("getBranches")]
         [AllowAnonymous]
         public async Task<ActionResult<ApiResponse<List<BranchDto>>>> GetBranches([FromQuery] int? branchNo = null)

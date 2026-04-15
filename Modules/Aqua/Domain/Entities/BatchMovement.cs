@@ -9,6 +9,9 @@ namespace aqua_api.Modules.Aqua.Domain.Entities
         public long? ProjectCageId { get; set; }
         public long? FromProjectCageId { get; set; }
         public long? ToProjectCageId { get; set; }
+        public long? WarehouseId { get; set; }
+        public long? FromWarehouseId { get; set; }
+        public long? ToWarehouseId { get; set; }
         public long? FromStockId { get; set; }
         public long? ToStockId { get; set; }
         public decimal? FromAverageGram { get; set; }

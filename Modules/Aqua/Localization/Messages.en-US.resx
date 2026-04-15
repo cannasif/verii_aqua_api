@@ -169,6 +169,63 @@
   <data name="TransferService.OperationSuccessful" xml:space="preserve">
     <value>Operation successful.</value>
   </data>
+  <data name="WarehouseTransferService.OperationSuccessful" xml:space="preserve">
+    <value>Operation successful.</value>
+  </data>
+  <data name="WarehouseTransferService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="WarehouseTransferService.InternalServerError" xml:space="preserve">
+    <value>An internal server error occurred.</value>
+  </data>
+  <data name="WarehouseTransferService.MustContainLines" xml:space="preserve">
+    <value>The warehouse transfer document must contain at least one line.</value>
+  </data>
+  <data name="WarehouseTransferService.BusinessRuleError" xml:space="preserve">
+    <value>A warehouse transfer business rule error occurred.</value>
+  </data>
+  <data name="WarehouseTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operation successful.</value>
+  </data>
+  <data name="WarehouseTransferLineService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="WarehouseTransferLineService.InternalServerError" xml:space="preserve">
+    <value>An internal server error occurred.</value>
+  </data>
+  <data name="WarehouseTransferLineService.WarehouseNotFound" xml:space="preserve">
+    <value>The selected warehouse code could not be found.</value>
+  </data>
+  <data name="WarehouseTransferLineService.BranchCodeNotFound" xml:space="preserve">
+    <value>The branch context could not be resolved.</value>
+  </data>
+  <data name="WarehouseTransferLineService.SourceAndTargetWarehouseCannotBeSame" xml:space="preserve">
+    <value>Source and target warehouses cannot be the same.</value>
+  </data>
+  <data name="WarehouseCageTransferService.OperationSuccessful" xml:space="preserve">
+    <value>Operation successful.</value>
+  </data>
+  <data name="WarehouseCageTransferService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="WarehouseCageTransferService.InternalServerError" xml:space="preserve">
+    <value>An internal server error occurred.</value>
+  </data>
+  <data name="WarehouseCageTransferService.MustContainLines" xml:space="preserve">
+    <value>The warehouse to cage transfer document must contain at least one line.</value>
+  </data>
+  <data name="WarehouseCageTransferService.BusinessRuleError" xml:space="preserve">
+    <value>A warehouse to cage transfer business rule error occurred.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operation successful.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.InternalServerError" xml:space="preserve">
+    <value>An internal server error occurred.</value>
+  </data>
   <data name="TransferService.NotFound" xml:space="preserve">
     <value>Record not found.</value>
   </data>
@@ -319,6 +376,12 @@
   <data name="BalanceLedgerManager.BatchCageBiomassCannotGoNegative" xml:space="preserve">
     <value>Batch cage biomass balance cannot go below zero.</value>
   </data>
+  <data name="BalanceLedgerManager.BatchWarehouseCountCannotGoNegative" xml:space="preserve">
+    <value>Warehouse fish count balance cannot go below zero.</value>
+  </data>
+  <data name="BalanceLedgerManager.BatchWarehouseBiomassCannotGoNegative" xml:space="preserve">
+    <value>Warehouse biomass balance cannot go below zero.</value>
+  </data>
   <data name="DailyWeatherService.ProjectDateAlreadyExists" xml:space="preserve">
     <value>A daily weather record already exists for this project on this date.</value>
   </data>
@@ -360,6 +423,18 @@
   </data>
   <data name="GoodsReceiptService.ProjectGoodsReceiptAlreadyExists" xml:space="preserve">
     <value>A goods receipt record already exists for this project.</value>
+  </data>
+  <data name="GoodsReceiptService.WarehouseNotFound" xml:space="preserve">
+    <value>The selected warehouse code could not be found.</value>
+  </data>
+  <data name="GoodsReceiptService.BranchCodeNotFound" xml:space="preserve">
+    <value>The branch context could not be resolved.</value>
+  </data>
+  <data name="ShipmentService.WarehouseNotFound" xml:space="preserve">
+    <value>The selected warehouse code could not be found.</value>
+  </data>
+  <data name="ShipmentService.BranchCodeNotFound" xml:space="preserve">
+    <value>The branch context could not be resolved.</value>
   </data>
   <data name="GoodsReceiptService.GoodsReceiptNotFound" xml:space="preserve">
     <value>Goods receipt record not found.</value>

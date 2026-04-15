@@ -169,6 +169,63 @@
   <data name="TransferService.OperationSuccessful" xml:space="preserve">
     <value>İşlem başarılı.</value>
   </data>
+  <data name="WarehouseTransferService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="WarehouseTransferService.NotFound" xml:space="preserve">
+    <value>Kayıt bulunamadı.</value>
+  </data>
+  <data name="WarehouseTransferService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="WarehouseTransferService.MustContainLines" xml:space="preserve">
+    <value>Depo transfer belgesi en az bir satır içermelidir.</value>
+  </data>
+  <data name="WarehouseTransferService.BusinessRuleError" xml:space="preserve">
+    <value>Depo transferi iş kuralı hatası oluştu.</value>
+  </data>
+  <data name="WarehouseTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="WarehouseTransferLineService.NotFound" xml:space="preserve">
+    <value>Kayıt bulunamadı.</value>
+  </data>
+  <data name="WarehouseTransferLineService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="WarehouseTransferLineService.WarehouseNotFound" xml:space="preserve">
+    <value>Seçilen depo kodu bulunamadı.</value>
+  </data>
+  <data name="WarehouseTransferLineService.BranchCodeNotFound" xml:space="preserve">
+    <value>Şube bilgisi çözümlenemedi.</value>
+  </data>
+  <data name="WarehouseTransferLineService.SourceAndTargetWarehouseCannotBeSame" xml:space="preserve">
+    <value>Kaynak ve hedef depo aynı olamaz.</value>
+  </data>
+  <data name="WarehouseCageTransferService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="WarehouseCageTransferService.NotFound" xml:space="preserve">
+    <value>Kayıt bulunamadı.</value>
+  </data>
+  <data name="WarehouseCageTransferService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="WarehouseCageTransferService.MustContainLines" xml:space="preserve">
+    <value>Depodan kafese transfer belgesi en az bir satır içermelidir.</value>
+  </data>
+  <data name="WarehouseCageTransferService.BusinessRuleError" xml:space="preserve">
+    <value>Depodan kafese transfer iş kuralı hatası oluştu.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.NotFound" xml:space="preserve">
+    <value>Kayıt bulunamadı.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
   <data name="TransferService.NotFound" xml:space="preserve">
     <value>Record not found.</value>
   </data>
@@ -319,6 +376,12 @@
   <data name="BalanceLedgerManager.BatchCageBiomassCannotGoNegative" xml:space="preserve">
     <value>Toplu kafes biyokütle bakiyesi sıfırın altına düşemez.</value>
   </data>
+  <data name="BalanceLedgerManager.BatchWarehouseCountCannotGoNegative" xml:space="preserve">
+    <value>Depo balık sayım bakiyesi sıfırın altına düşemez.</value>
+  </data>
+  <data name="BalanceLedgerManager.BatchWarehouseBiomassCannotGoNegative" xml:space="preserve">
+    <value>Depo biyokütle bakiyesi sıfırın altına düşemez.</value>
+  </data>
   <data name="DailyWeatherService.ProjectDateAlreadyExists" xml:space="preserve">
     <value>Bu proje için bu tarihte hava durumu kaydı zaten mevcut.</value>
   </data>
@@ -360,6 +423,18 @@
   </data>
   <data name="GoodsReceiptService.ProjectGoodsReceiptAlreadyExists" xml:space="preserve">
     <value>Bu proje için zaten bir mal kabul kaydı mevcut.</value>
+  </data>
+  <data name="GoodsReceiptService.WarehouseNotFound" xml:space="preserve">
+    <value>Seçilen depo kodu bulunamadı.</value>
+  </data>
+  <data name="GoodsReceiptService.BranchCodeNotFound" xml:space="preserve">
+    <value>Şube bilgisi çözümlenemedi.</value>
+  </data>
+  <data name="ShipmentService.WarehouseNotFound" xml:space="preserve">
+    <value>Seçilen depo kodu bulunamadı.</value>
+  </data>
+  <data name="ShipmentService.BranchCodeNotFound" xml:space="preserve">
+    <value>Şube bilgisi çözümlenemedi.</value>
   </data>
   <data name="GoodsReceiptService.GoodsReceiptNotFound" xml:space="preserve">
     <value>Mal kabul kaydı bulunamadı.</value>

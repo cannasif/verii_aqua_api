@@ -13,6 +13,8 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
         public DocumentStatus Status { get; set; }
         public long? SupplierId { get; set; }
         public long? WarehouseId { get; set; }
+        public short? WarehouseCode { get; set; }
+        public string? WarehouseName { get; set; }
         public string? Note { get; set; }
     }
 

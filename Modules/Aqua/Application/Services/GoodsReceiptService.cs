@@ -3,6 +3,7 @@ using aqua_api.Shared.Infrastructure.Persistence.Data;
 using aqua_api.Shared.Infrastructure.Time;
 using aqua_api.Shared.Infrastructure.Persistence.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
+using WarehouseEntity = aqua_api.Modules.Warehouse.Domain.Entities.Warehouse;
 
 namespace aqua_api.Modules.Aqua.Application.Services
 {
@@ -13,7 +14,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
 
-        public GoodsReceiptService(AquaDbContext db, IUnitOfWork unitOfWork, IMapper mapper, ILocalizationService localizationService)
+        public GoodsReceiptService(AquaDbContext db, IUnitOfWork unitOfWork, IMapper mapper, ILocalizationService localizationService, IErpService erpService)
         {
             _db = db;
             _unitOfWork = unitOfWork;
@@ -38,7 +39,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
-                var dto = _mapper.Map<GoodsReceiptDto>(entity);
+                var dto = await MapGoodsReceiptDtoAsync(entity);
                 return ApiResponse<GoodsReceiptDto>.SuccessResult(dto, _localizationService.GetLocalizedString("GoodsReceiptService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -72,7 +73,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     .ApplyPagination(request.PageNumber, request.PageSize)
                     .ToListAsync();
 
-                var items = entities.Select(x => _mapper.Map<GoodsReceiptDto>(x)).ToList();
+                var items = new List<GoodsReceiptDto>(entities.Count);
+                foreach (var entity in entities)
+                {
+                    items.Add(await MapGoodsReceiptDtoAsync(entity));
+                }
 
                 var pagedResponse = new PagedResponse<GoodsReceiptDto>
                 {
@@ -135,12 +140,17 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     }
                 }
 
+                if (dto.WarehouseId.HasValue)
+                {
+                    dto.WarehouseId = await ValidateAndResolveWarehouseIdAsync(dto.WarehouseId.Value);
+                }
+
                 dto.ReceiptNo = normalizedReceiptNo;
                 var entity = _mapper.Map<GoodsReceipt>(dto);
                 await _unitOfWork.GoodsReceipts.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
-                var result = _mapper.Map<GoodsReceiptDto>(entity);
+                var result = await MapGoodsReceiptDtoAsync(entity);
                 return ApiResponse<GoodsReceiptDto>.SuccessResult(result, _localizationService.GetLocalizedString("GoodsReceiptService.OperationSuccessful"));
             }
             catch (InvalidOperationException ex)
@@ -217,12 +227,17 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     }
                 }
 
+                if (dto.WarehouseId.HasValue)
+                {
+                    dto.WarehouseId = await ValidateAndResolveWarehouseIdAsync(dto.WarehouseId.Value);
+                }
+
                 dto.ReceiptNo = normalizedReceiptNo;
                 _mapper.Map(dto, entity);
                 await repo.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
-                var result = _mapper.Map<GoodsReceiptDto>(entity);
+                var result = await MapGoodsReceiptDtoAsync(entity);
                 return ApiResponse<GoodsReceiptDto>.SuccessResult(result, _localizationService.GetLocalizedString("GoodsReceiptService.OperationSuccessful"));
             }
             catch (InvalidOperationException ex)
@@ -473,6 +488,43 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 CreatedDate = DateTimeProvider.Now,
                 IsDeleted = false
             });
+        }
+
+        private async Task<long> ValidateAndResolveWarehouseIdAsync(long warehouseId)
+        {
+            var warehouseExists = await _unitOfWork.Repository<WarehouseEntity>()
+                .Query()
+                .AnyAsync(x =>
+                    !x.IsDeleted &&
+                    x.Id == warehouseId);
+
+            if (!warehouseExists)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.WarehouseNotFound"));
+            }
+
+            return warehouseId;
+        }
+
+        private async Task<GoodsReceiptDto> MapGoodsReceiptDtoAsync(GoodsReceipt entity)
+        {
+            var dto = _mapper.Map<GoodsReceiptDto>(entity);
+
+            if (!dto.WarehouseId.HasValue)
+            {
+                return dto;
+            }
+
+            var warehouse = await _unitOfWork.Repository<WarehouseEntity>()
+                .Query()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x =>
+                    !x.IsDeleted &&
+                    x.Id == dto.WarehouseId.Value);
+
+            dto.WarehouseCode = warehouse?.ErpWarehouseCode;
+            dto.WarehouseName = warehouse?.WarehouseName;
+            return dto;
         }
     }
 }

@@ -22,7 +22,8 @@ namespace aqua_api.Modules.Aqua.Domain.Enums
         Adjustment = 4,
         Stocking = 5,
         Shipment = 6,
-        Feeding = 7
+        Feeding = 7,
+        WarehouseTransfer = 8
     }
 
     public enum FeedingSlot : byte

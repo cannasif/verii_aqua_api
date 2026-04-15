@@ -41,9 +41,33 @@ namespace aqua_api.Modules.Integrations.Application.Services
                 _localizationService.GetLocalizedString("ErpService.BranchCodeRetrieved")));
         }
 
+        public async Task<ApiResponse<List<DepoDto>>> GetDeposAsync(short? depoKodu)
+        {
+            try
+            {
+                var subeFromContext = _httpContextAccessor.HttpContext?.Items["BranchCode"] as string;
+                var subeKodu = string.IsNullOrWhiteSpace(subeFromContext) ? null : subeFromContext;
 
+                var result = await _dbContext.Set<RII_FN_DEPO>()
+                    .FromSqlRaw(
+                        "SELECT * FROM dbo.RII_FN_DEPO({0}, {1})",
+                        depoKodu.HasValue ? depoKodu.Value : DBNull.Value,
+                        string.IsNullOrWhiteSpace(subeKodu) ? DBNull.Value : subeKodu)
+                    .AsNoTracking()
+                    .ToListAsync();
 
-        
+                var mappedResult = _mapper.Map<List<DepoDto>>(result);
+                return ApiResponse<List<DepoDto>>.SuccessResult(mappedResult, _localizationService.GetLocalizedString("ErpService.DepoRecordsRetrieved"));
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<List<DepoDto>>.ErrorResult(
+                    _localizationService.GetLocalizedString("ErpService.InternalServerError"),
+                    _localizationService.GetLocalizedString("ErpService.ErrorRetrievingDepoRecords", ex.Message),
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
         // Cari işlemleri - DTO dönen versiyon
         public async Task<ApiResponse<List<CariDto>>> GetCarisAsync(string? cariKodu)
         {

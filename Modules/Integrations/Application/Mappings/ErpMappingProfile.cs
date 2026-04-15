@@ -40,6 +40,14 @@ namespace aqua_api.Modules.Integrations.Application.Mappings
                 .ForMember(dest => dest.KdvOrani, opt => opt.MapFrom(src => src.KDV_ORANI))
                 .ForMember(dest => dest.DepoKodu, opt => opt.MapFrom(src => src.DEPO_KODU));
 
+            CreateMap<RII_FN_DEPO, DepoDto>()
+                .ForMember(dest => dest.DepoKodu, opt => opt.MapFrom(src => src.DEPO_KODU))
+                .ForMember(dest => dest.DepoIsmi, opt => opt.MapFrom(src => src.DEPO_ISMI))
+                .ForMember(dest => dest.CariKodu, opt => opt.MapFrom(src => src.CARI_KODU))
+                .ForMember(dest => dest.SubeKodu, opt => opt.MapFrom(src => src.SUBE_KODU))
+                .ForMember(dest => dest.DepoKilitLe, opt => opt.MapFrom(src => src.DEPO_KILITLE))
+                .ForMember(dest => dest.Eksibakiye, opt => opt.MapFrom(src => src.EKSIBAKIYE));
+
 
             // Branch mappings
             CreateMap<RII_FN_BRANCHES, BranchDto>()
