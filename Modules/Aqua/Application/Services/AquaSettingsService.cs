@@ -76,6 +76,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 RequireFullTransfer = true,
                 AllowProjectMerge = false,
                 PartialTransferOccupiedCageMode = 0,
+                FeedCostFallbackStrategy = 0,
                 CreatedDate = DateTimeProvider.Now,
                 UpdatedDate = DateTimeProvider.Now,
                 IsDeleted = false

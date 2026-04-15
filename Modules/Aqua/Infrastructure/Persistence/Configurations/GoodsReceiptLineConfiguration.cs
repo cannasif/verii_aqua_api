@@ -17,6 +17,12 @@ namespace aqua_api.Modules.Aqua.Infrastructure.Persistence.Configurations
             builder.Property(x => x.TotalGram).HasPrecision(18, 3);
             builder.Property(x => x.FishAverageGram).HasPrecision(18, 3);
             builder.Property(x => x.FishTotalGram).HasPrecision(18, 3);
+            builder.Property(x => x.CurrencyCode).HasMaxLength(10).IsRequired();
+            builder.Property(x => x.ExchangeRate).HasPrecision(18, 6);
+            builder.Property(x => x.UnitPrice).HasPrecision(18, 6);
+            builder.Property(x => x.LocalUnitPrice).HasPrecision(18, 6);
+            builder.Property(x => x.LineAmount).HasPrecision(18, 6);
+            builder.Property(x => x.LocalLineAmount).HasPrecision(18, 6);
 
             builder.HasOne(x => x.GoodsReceipt)
                 .WithMany(x => x.Lines)

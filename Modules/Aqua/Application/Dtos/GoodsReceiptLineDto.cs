@@ -16,6 +16,12 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
         public decimal? FishAverageGram { get; set; }
         public decimal? FishTotalGram { get; set; }
         public long? FishBatchId { get; set; }
+        public string CurrencyCode { get; set; } = "TRY";
+        public decimal? ExchangeRate { get; set; } = 1;
+        public decimal? UnitPrice { get; set; }
+        public decimal? LocalUnitPrice { get; set; }
+        public decimal? LineAmount { get; set; }
+        public decimal? LocalLineAmount { get; set; }
         public StockEntity? Stock { get; set; }
     }
 
@@ -31,6 +37,12 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
         public decimal? FishAverageGram { get; set; }
         public decimal? FishTotalGram { get; set; }
         public long? FishBatchId { get; set; }
+        public string CurrencyCode { get; set; } = "TRY";
+        public decimal? ExchangeRate { get; set; } = 1;
+        public decimal? UnitPrice { get; set; }
+        public decimal? LocalUnitPrice { get; set; }
+        public decimal? LineAmount { get; set; }
+        public decimal? LocalLineAmount { get; set; }
         public StockEntity? Stock { get; set; }
     }
 

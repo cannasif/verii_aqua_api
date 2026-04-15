@@ -1,6 +1,7 @@
 using AutoMapper;
 using aqua_api.Shared.Infrastructure.Persistence.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
+using aqua_api.Shared.Common.Helpers;
 
 namespace aqua_api.Modules.Aqua.Application.Services
 {
@@ -18,6 +19,23 @@ namespace aqua_api.Modules.Aqua.Application.Services
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _localizationService = localizationService;
+        }
+
+        private static void NormalizePricing(CreateShipmentLineDto dto)
+        {
+            var pricing = AquaLinePricingMath.NormalizeShipmentLine(
+                dto.BiomassGram,
+                dto.CurrencyCode,
+                dto.ExchangeRate,
+                dto.UnitPrice
+            );
+
+            dto.CurrencyCode = pricing.CurrencyCode;
+            dto.ExchangeRate = pricing.ExchangeRate;
+            dto.UnitPrice = pricing.UnitPrice;
+            dto.LocalUnitPrice = pricing.LocalUnitPrice;
+            dto.LineAmount = pricing.LineAmount;
+            dto.LocalLineAmount = pricing.LocalLineAmount;
         }
 
         public async Task<ApiResponse<ShipmentLineDto>> GetByIdAsync(long id)
@@ -96,6 +114,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
         {
             try
             {
+                NormalizePricing(dto);
                 var entity = _mapper.Map<ShipmentLine>(dto);
                 await _unitOfWork.ShipmentLines.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
@@ -116,6 +135,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
         {
             try
             {
+                NormalizePricing(dto);
                 var repo = _unitOfWork.ShipmentLines;
                 var entity = await repo.GetByIdForUpdateAsync(id);
 

@@ -9,5 +9,10 @@ namespace aqua_api.Modules.Aqua.Domain.Entities
         // 1: Dolu kafese sadece ayni batch ise izin ver
         // 2: Dolu kafese her durumda izin ver
         public int PartialTransferOccupiedCageMode { get; set; } = 0;
+
+        // 0: Agirlikli ortalama
+        // 1: FIFO
+        // 2: Son alim fiyati
+        public int FeedCostFallbackStrategy { get; set; } = 0;
     }
 }

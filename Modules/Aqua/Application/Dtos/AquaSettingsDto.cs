@@ -7,6 +7,7 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
         public bool RequireFullTransfer { get; set; }
         public bool AllowProjectMerge { get; set; }
         public int PartialTransferOccupiedCageMode { get; set; }
+        public int FeedCostFallbackStrategy { get; set; }
     }
 
     public class UpdateAquaSettingsDto
@@ -16,5 +17,8 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
 
         [Range(0, 2)]
         public int PartialTransferOccupiedCageMode { get; set; } = 0;
+
+        [Range(0, 2)]
+        public int FeedCostFallbackStrategy { get; set; } = 0;
     }
 }
