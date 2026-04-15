@@ -1,6 +1,7 @@
 using AutoMapper;
 using aqua_api.Shared.Infrastructure.Persistence.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
+using aqua_api.Modules.Stock.Domain.Entities;
 
 namespace aqua_api.Modules.Aqua.Application.Services
 {
@@ -23,6 +24,12 @@ namespace aqua_api.Modules.Aqua.Application.Services
             {
                 var entity = await _unitOfWork.BatchCageBalances
                     .Query()
+                    .Include(x => x.FishBatch)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.FishBatch)
+                        .ThenInclude(x => x!.FishStock)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Cage)
                     .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
@@ -33,7 +40,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
-                var dto = _mapper.Map<BatchCageBalanceDto>(entity);
+                var dto = MapBalance(entity);
                 return ApiResponse<BatchCageBalanceDto>.SuccessResult(dto, _localizationService.GetLocalizedString("BatchCageBalanceService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -64,9 +71,15 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
                 var entities = await query
                     .ApplyPagination(request.PageNumber, request.PageSize)
+                    .Include(x => x.FishBatch)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.FishBatch)
+                        .ThenInclude(x => x!.FishStock)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Cage)
                     .ToListAsync();
 
-                var items = entities.Select(x => _mapper.Map<BatchCageBalanceDto>(x)).ToList();
+                var items = entities.Select(MapBalance).ToList();
 
                 var pagedResponse = new PagedResponse<BatchCageBalanceDto>
                 {
@@ -165,6 +178,35 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private static BatchCageBalanceDto MapBalance(BatchCageBalance entity)
+        {
+            var fishBatch = entity.FishBatch;
+            var project = fishBatch?.Project;
+            var fishStock = fishBatch?.FishStock;
+            var projectCage = entity.ProjectCage;
+            var cage = projectCage?.Cage;
+
+            return new BatchCageBalanceDto
+            {
+                Id = entity.Id,
+                FishBatchId = entity.FishBatchId,
+                BatchCode = fishBatch?.BatchCode,
+                ProjectId = fishBatch?.ProjectId,
+                ProjectCode = project?.ProjectCode,
+                ProjectName = project?.ProjectName,
+                FishStockId = fishBatch?.FishStockId,
+                FishStockCode = fishStock?.ErpStockCode,
+                FishStockName = fishStock?.StockName,
+                ProjectCageId = entity.ProjectCageId,
+                ProjectCageCode = cage?.CageCode,
+                ProjectCageName = cage?.CageName,
+                LiveCount = entity.LiveCount,
+                AverageGram = entity.AverageGram,
+                BiomassGram = entity.BiomassGram,
+                AsOfDate = entity.AsOfDate,
+            };
         }
     }
 }

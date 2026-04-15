@@ -12,6 +12,21 @@ namespace aqua_api.Modules.Aqua.Domain.Entities
         public decimal CurrentAverageGram { get; set; }
         public DateTime StartDate { get; set; }
         public long? SourceGoodsReceiptLineId { get; set; }
+        public long? SupplierId { get; set; }
+        public string? SupplierLotCode { get; set; }
+        public string? HatcheryName { get; set; }
+        public string? OriginCountryCode { get; set; }
+        public string? StrainCode { get; set; }
+        public string? GenerationCode { get; set; }
+        public string? BroodstockCode { get; set; }
+        public bool IsVaccinated { get; set; }
+        public DateTime? VaccinationDate { get; set; }
+        public string? VaccinationNote { get; set; }
+        public string? TreatmentHistoryNote { get; set; }
+        public decimal? TargetHarvestAverageGram { get; set; }
+        public DateTime? TargetHarvestDate { get; set; }
+        public string? TargetHarvestClass { get; set; }
+        public string? QualityGrade { get; set; }
 
         public Project? Project { get; set; }
         public StockEntity? FishStock { get; set; }
@@ -28,5 +43,10 @@ namespace aqua_api.Modules.Aqua.Domain.Entities
         public ICollection<StockConvertLine> StockConvertFromLines { get; set; } = new List<StockConvertLine>();
         public ICollection<StockConvertLine> StockConvertToLines { get; set; } = new List<StockConvertLine>();
         public ICollection<BatchMovement> BatchMovements { get; set; } = new List<BatchMovement>();
+        public ICollection<FishHealthEvent> FishHealthEvents { get; set; } = new List<FishHealthEvent>();
+        public ICollection<FishTreatment> FishTreatments { get; set; } = new List<FishTreatment>();
+        public ICollection<FishLabSample> FishLabSamples { get; set; } = new List<FishLabSample>();
+        public ICollection<WelfareAssessment> WelfareAssessments { get; set; } = new List<WelfareAssessment>();
+        public ICollection<ComplianceAudit> ComplianceAudits { get; set; } = new List<ComplianceAudit>();
     }
 }

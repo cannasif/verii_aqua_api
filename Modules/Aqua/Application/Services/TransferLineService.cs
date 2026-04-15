@@ -131,6 +131,91 @@ namespace aqua_api.Modules.Aqua.Application.Services
             }
         }
 
+        public async Task<ApiResponse<TransferLineDto>> CreateWithAutoHeaderAsync(CreateTransferLineWithAutoHeaderDto dto)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var transfer = await _unitOfWork.Transfers
+                    .Query()
+                    .Where(x =>
+                        !x.IsDeleted &&
+                        x.ProjectId == dto.ProjectId &&
+                        x.Status == DocumentStatus.Draft &&
+                        x.TransferDate.Date == dto.TransferDate.Date)
+                    .OrderByDescending(x => x.Id)
+                    .FirstOrDefaultAsync();
+
+                if (transfer == null)
+                {
+                    var project = await _unitOfWork.Projects
+                        .Query()
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(x => x.Id == dto.ProjectId && !x.IsDeleted);
+
+                    if (project == null)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return ApiResponse<TransferLineDto>.ErrorResult(
+                            _localizationService.GetLocalizedString("TransferLineService.NotFound"),
+                            "Project not found.",
+                            StatusCodes.Status404NotFound);
+                    }
+
+                    transfer = new Transfer
+                    {
+                        ProjectId = dto.ProjectId,
+                        TransferDate = dto.TransferDate,
+                        Status = DocumentStatus.Draft,
+                        TransferNo = BuildDocumentNo(project.ProjectCode, project.ProjectName),
+                    };
+
+                    await _unitOfWork.Transfers.AddAsync(transfer);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                var entity = new TransferLine
+                {
+                    TransferId = transfer.Id,
+                    FishBatchId = dto.FishBatchId,
+                    FromProjectCageId = dto.FromProjectCageId,
+                    ToProjectCageId = dto.ToProjectCageId,
+                    FishCount = dto.FishCount,
+                    AverageGram = dto.AverageGram,
+                    BiomassGram = dto.BiomassGram,
+                };
+
+                await _unitOfWork.TransferLines.AddAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                if (transfer.Status == DocumentStatus.Draft)
+                {
+                    var userId = entity.CreatedBy ?? transfer.CreatedBy ?? 1L;
+                    var postResult = await _transferService.Post(transfer.Id, userId);
+                    if (!postResult.Success)
+                    {
+                        return ApiResponse<TransferLineDto>.ErrorResult(
+                            postResult.Message,
+                            postResult.ExceptionMessage,
+                            postResult.StatusCode);
+                    }
+                }
+
+                var result = _mapper.Map<TransferLineDto>(entity);
+                return ApiResponse<TransferLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("TransferLineService.OperationSuccessful"));
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ApiResponse<TransferLineDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("TransferLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
         public async Task<ApiResponse<TransferLineDto>> UpdateAsync(long id, UpdateTransferLineDto dto)
         {
             try
@@ -187,6 +272,13 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private static string BuildDocumentNo(string? projectCode, string? projectName)
+        {
+            var baseValue = !string.IsNullOrWhiteSpace(projectCode) ? projectCode : projectName;
+            var normalized = string.IsNullOrWhiteSpace(baseValue) ? "DOC" : baseValue.Trim();
+            return $"{normalized}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
         }
     }
 }

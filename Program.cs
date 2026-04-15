@@ -23,6 +23,12 @@ builder.Services.AddAquaApiWebApi(builder.Configuration, builder.Environment, co
 var app = builder.Build();
 app.UseAquaApiWebApi(configuredCorsOrigins);
 
-app.Run();
+var isEfDesignTime = AppDomain.CurrentDomain.GetAssemblies()
+    .Any(x => string.Equals(x.GetName().Name, "Microsoft.EntityFrameworkCore.Design", StringComparison.Ordinal));
+
+if (!isEfDesignTime)
+{
+    app.Run();
+}
 
 public partial class Program { }

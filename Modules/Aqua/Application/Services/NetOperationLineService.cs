@@ -131,6 +131,77 @@ namespace aqua_api.Modules.Aqua.Application.Services
             }
         }
 
+        public async Task<ApiResponse<NetOperationLineDto>> CreateWithAutoHeaderAsync(CreateNetOperationLineWithAutoHeaderDto dto)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var netOperation = await _unitOfWork.NetOperations
+                    .Query()
+                    .Where(x =>
+                        !x.IsDeleted &&
+                        x.ProjectId == dto.ProjectId &&
+                        x.Status == DocumentStatus.Draft &&
+                        x.OperationDate.Date == dto.OperationDate.Date &&
+                        x.OperationTypeId == dto.OperationTypeId)
+                    .OrderByDescending(x => x.Id)
+                    .FirstOrDefaultAsync();
+
+                if (netOperation == null)
+                {
+                    netOperation = new NetOperation
+                    {
+                        ProjectId = dto.ProjectId,
+                        OperationTypeId = dto.OperationTypeId,
+                        OperationDate = dto.OperationDate.Date,
+                        OperationNo = BuildDocumentNo(dto.ProjectId, dto.OperationDate),
+                        Status = DocumentStatus.Draft,
+                        Note = dto.Note,
+                    };
+
+                    await _unitOfWork.NetOperations.AddAsync(netOperation);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                var entity = new NetOperationLine
+                {
+                    NetOperationId = netOperation.Id,
+                    ProjectCageId = dto.ProjectCageId,
+                    FishBatchId = dto.FishBatchId,
+                    Note = dto.Note,
+                };
+
+                await _unitOfWork.NetOperationLines.AddAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                if (netOperation.Status == DocumentStatus.Draft)
+                {
+                    var userId = entity.CreatedBy ?? netOperation.CreatedBy ?? 1L;
+                    var postResult = await _netOperationService.Post(netOperation.Id, userId);
+                    if (!postResult.Success)
+                    {
+                        return ApiResponse<NetOperationLineDto>.ErrorResult(
+                            postResult.Message,
+                            postResult.ExceptionMessage,
+                            postResult.StatusCode);
+                    }
+                }
+
+                var result = _mapper.Map<NetOperationLineDto>(entity);
+                return ApiResponse<NetOperationLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("NetOperationLineService.OperationSuccessful"));
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ApiResponse<NetOperationLineDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("NetOperationLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
         public async Task<ApiResponse<NetOperationLineDto>> UpdateAsync(long id, UpdateNetOperationLineDto dto)
         {
             try
@@ -187,6 +258,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private static string BuildDocumentNo(long projectId, DateTime operationDate)
+        {
+            return $"NO-{projectId}-{operationDate:yyyyMMdd}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
         }
     }
 }

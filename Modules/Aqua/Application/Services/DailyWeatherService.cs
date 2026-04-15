@@ -343,7 +343,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 .AnyAsync(x =>
                     x.Id == weatherSeverityId &&
                     !x.IsDeleted &&
-                    x.WeatherTypeId == weatherTypeId);
+                    (x.WeatherTypeId == null || x.WeatherTypeId == weatherTypeId));
         }
     }
 }

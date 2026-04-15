@@ -14,6 +14,19 @@ namespace aqua_api.Modules.Aqua.Infrastructure.Persistence.Configurations
             builder.Property(x => x.BatchCode).HasMaxLength(50).IsRequired();
             builder.Property(x => x.CurrentAverageGram).HasPrecision(18, 3).IsRequired();
             builder.Property(x => x.StartDate).HasPrecision(3).IsRequired();
+            builder.Property(x => x.SupplierLotCode).HasMaxLength(100);
+            builder.Property(x => x.HatcheryName).HasMaxLength(150);
+            builder.Property(x => x.OriginCountryCode).HasMaxLength(10);
+            builder.Property(x => x.StrainCode).HasMaxLength(50);
+            builder.Property(x => x.GenerationCode).HasMaxLength(50);
+            builder.Property(x => x.BroodstockCode).HasMaxLength(50);
+            builder.Property(x => x.VaccinationDate).HasPrecision(3);
+            builder.Property(x => x.VaccinationNote).HasMaxLength(500);
+            builder.Property(x => x.TreatmentHistoryNote).HasMaxLength(1000);
+            builder.Property(x => x.TargetHarvestAverageGram).HasPrecision(18, 3);
+            builder.Property(x => x.TargetHarvestDate).HasPrecision(3);
+            builder.Property(x => x.TargetHarvestClass).HasMaxLength(50);
+            builder.Property(x => x.QualityGrade).HasMaxLength(50);
 
             builder.HasOne(x => x.Project)
                 .WithMany(x => x.FishBatches)

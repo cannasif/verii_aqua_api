@@ -139,6 +139,101 @@ namespace aqua_api.Modules.Aqua.Application.Services
             }
         }
 
+        public async Task<ApiResponse<StockConvertLineDto>> CreateWithAutoHeaderAsync(CreateStockConvertLineWithAutoHeaderDto dto)
+        {
+            try
+            {
+                if (dto.NewAverageGram <= 0)
+                {
+                    return ApiResponse<StockConvertLineDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("StockConvertLineService.BusinessRuleError"),
+                        "NewAverageGram must be greater than 0.",
+                        StatusCodes.Status400BadRequest);
+                }
+
+                await _unitOfWork.BeginTransactionAsync();
+
+                var stockConvert = await _unitOfWork.StockConverts
+                    .Query()
+                    .Where(x =>
+                        !x.IsDeleted &&
+                        x.ProjectId == dto.ProjectId &&
+                        x.Status == DocumentStatus.Draft &&
+                        x.ConvertDate.Date == dto.ConvertDate.Date)
+                    .OrderByDescending(x => x.Id)
+                    .FirstOrDefaultAsync();
+
+                if (stockConvert == null)
+                {
+                    var project = await _unitOfWork.Projects
+                        .Query()
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(x => x.Id == dto.ProjectId && !x.IsDeleted);
+
+                    if (project == null)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return ApiResponse<StockConvertLineDto>.ErrorResult(
+                            _localizationService.GetLocalizedString("StockConvertLineService.NotFound"),
+                            "Project not found.",
+                            StatusCodes.Status404NotFound);
+                    }
+
+                    stockConvert = new StockConvert
+                    {
+                        ProjectId = dto.ProjectId,
+                        ConvertDate = dto.ConvertDate,
+                        Status = DocumentStatus.Draft,
+                        ConvertNo = BuildDocumentNo(project.ProjectCode, project.ProjectName),
+                    };
+
+                    await _unitOfWork.StockConverts.AddAsync(stockConvert);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                var entity = new StockConvertLine
+                {
+                    StockConvertId = stockConvert.Id,
+                    FromFishBatchId = dto.FromFishBatchId,
+                    ToFishBatchId = dto.ToFishBatchId,
+                    FromProjectCageId = dto.FromProjectCageId,
+                    ToProjectCageId = dto.ToProjectCageId,
+                    FishCount = dto.FishCount,
+                    AverageGram = dto.AverageGram,
+                    NewAverageGram = dto.NewAverageGram,
+                    BiomassGram = dto.BiomassGram,
+                };
+
+                await _unitOfWork.StockConvertLines.AddAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                if (stockConvert.Status == DocumentStatus.Draft)
+                {
+                    var userId = entity.CreatedBy ?? stockConvert.CreatedBy ?? 1L;
+                    var postResult = await _stockConvertService.Post(stockConvert.Id, userId);
+                    if (!postResult.Success)
+                    {
+                        return ApiResponse<StockConvertLineDto>.ErrorResult(
+                            postResult.Message,
+                            postResult.ExceptionMessage,
+                            postResult.StatusCode);
+                    }
+                }
+
+                var result = _mapper.Map<StockConvertLineDto>(entity);
+                return ApiResponse<StockConvertLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("StockConvertLineService.OperationSuccessful"));
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ApiResponse<StockConvertLineDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("StockConvertLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
         public async Task<ApiResponse<StockConvertLineDto>> UpdateAsync(long id, UpdateStockConvertLineDto dto)
         {
             try
@@ -203,6 +298,13 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private static string BuildDocumentNo(string? projectCode, string? projectName)
+        {
+            var baseValue = !string.IsNullOrWhiteSpace(projectCode) ? projectCode : projectName;
+            var normalized = string.IsNullOrWhiteSpace(baseValue) ? "DOC" : baseValue.Trim();
+            return $"{normalized}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
         }
     }
 }

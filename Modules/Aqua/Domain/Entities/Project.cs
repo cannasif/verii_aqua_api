@@ -24,5 +24,10 @@ namespace aqua_api.Modules.Aqua.Domain.Entities
         public ICollection<StockConvert> StockConverts { get; set; } = new List<StockConvert>();
         public ICollection<DailyWeather> DailyWeathers { get; set; } = new List<DailyWeather>();
         public ICollection<NetOperation> NetOperations { get; set; } = new List<NetOperation>();
+        public ICollection<FishHealthEvent> FishHealthEvents { get; set; } = new List<FishHealthEvent>();
+        public ICollection<FishTreatment> FishTreatments { get; set; } = new List<FishTreatment>();
+        public ICollection<FishLabSample> FishLabSamples { get; set; } = new List<FishLabSample>();
+        public ICollection<WelfareAssessment> WelfareAssessments { get; set; } = new List<WelfareAssessment>();
+        public ICollection<ComplianceAudit> ComplianceAudits { get; set; } = new List<ComplianceAudit>();
     }
 }

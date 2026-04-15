@@ -131,6 +131,87 @@ namespace aqua_api.Modules.Aqua.Application.Services
             }
         }
 
+        public async Task<ApiResponse<MortalityLineDto>> CreateWithAutoHeaderAsync(CreateMortalityLineWithAutoHeaderDto dto)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var mortality = await _unitOfWork.Mortalities
+                    .Query()
+                    .Where(x =>
+                        !x.IsDeleted &&
+                        x.ProjectId == dto.ProjectId &&
+                        x.Status == DocumentStatus.Draft &&
+                        x.MortalityDate.Date == dto.MortalityDate.Date)
+                    .OrderByDescending(x => x.Id)
+                    .FirstOrDefaultAsync();
+
+                if (mortality == null)
+                {
+                    var projectExists = await _unitOfWork.Projects
+                        .Query()
+                        .AsNoTracking()
+                        .AnyAsync(x => x.Id == dto.ProjectId && !x.IsDeleted);
+
+                    if (!projectExists)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return ApiResponse<MortalityLineDto>.ErrorResult(
+                            _localizationService.GetLocalizedString("MortalityLineService.NotFound"),
+                            "Project not found.",
+                            StatusCodes.Status404NotFound);
+                    }
+
+                    mortality = new Mortality
+                    {
+                        ProjectId = dto.ProjectId,
+                        MortalityDate = dto.MortalityDate,
+                        Status = DocumentStatus.Draft,
+                    };
+
+                    await _unitOfWork.Mortalities.AddAsync(mortality);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                var entity = new MortalityLine
+                {
+                    MortalityId = mortality.Id,
+                    FishBatchId = dto.FishBatchId,
+                    ProjectCageId = dto.ProjectCageId,
+                    DeadCount = dto.DeadCount,
+                };
+
+                await _unitOfWork.MortalityLines.AddAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                if (mortality.Status == DocumentStatus.Draft)
+                {
+                    var userId = entity.CreatedBy ?? mortality.CreatedBy ?? 1L;
+                    var postResult = await _mortalityService.Post(mortality.Id, userId);
+                    if (!postResult.Success)
+                    {
+                        return ApiResponse<MortalityLineDto>.ErrorResult(
+                            postResult.Message,
+                            postResult.ExceptionMessage,
+                            postResult.StatusCode);
+                    }
+                }
+
+                var result = _mapper.Map<MortalityLineDto>(entity);
+                return ApiResponse<MortalityLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("MortalityLineService.OperationSuccessful"));
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ApiResponse<MortalityLineDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("MortalityLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
         public async Task<ApiResponse<MortalityLineDto>> UpdateAsync(long id, UpdateMortalityLineDto dto)
         {
             try

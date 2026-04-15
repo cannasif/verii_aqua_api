@@ -109,6 +109,77 @@ namespace aqua_api.Modules.Aqua.Application.Services
             }
         }
 
+        public async Task<ApiResponse<WeighingLineDto>> CreateWithAutoHeaderAsync(CreateWeighingLineWithAutoHeaderDto dto)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var weighing = await _unitOfWork.Weighings
+                    .Query()
+                    .Where(x =>
+                        !x.IsDeleted &&
+                        x.ProjectId == dto.ProjectId &&
+                        x.Status == DocumentStatus.Draft &&
+                        x.WeighingDate.Date == dto.WeighingDate.Date)
+                    .OrderByDescending(x => x.Id)
+                    .FirstOrDefaultAsync();
+
+                if (weighing == null)
+                {
+                    var project = await _unitOfWork.Projects
+                        .Query()
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(x => x.Id == dto.ProjectId && !x.IsDeleted);
+
+                    if (project == null)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return ApiResponse<WeighingLineDto>.ErrorResult(
+                            _localizationService.GetLocalizedString("WeighingLineService.NotFound"),
+                            "Project not found.",
+                            StatusCodes.Status404NotFound);
+                    }
+
+                    weighing = new Weighing
+                    {
+                        ProjectId = dto.ProjectId,
+                        WeighingDate = dto.WeighingDate,
+                        Status = DocumentStatus.Draft,
+                        WeighingNo = BuildDocumentNo(project.ProjectCode, project.ProjectName),
+                    };
+
+                    await _unitOfWork.Weighings.AddAsync(weighing);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                var entity = new WeighingLine
+                {
+                    WeighingId = weighing.Id,
+                    FishBatchId = dto.FishBatchId,
+                    ProjectCageId = dto.ProjectCageId,
+                    MeasuredCount = dto.MeasuredCount,
+                    MeasuredAverageGram = dto.MeasuredAverageGram,
+                    MeasuredBiomassGram = dto.MeasuredBiomassGram,
+                };
+
+                await _unitOfWork.WeighingLines.AddAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                var result = _mapper.Map<WeighingLineDto>(entity);
+                return ApiResponse<WeighingLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("WeighingLineService.OperationSuccessful"));
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ApiResponse<WeighingLineDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("WeighingLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
         public async Task<ApiResponse<WeighingLineDto>> UpdateAsync(long id, UpdateWeighingLineDto dto)
         {
             try
@@ -165,6 +236,13 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private static string BuildDocumentNo(string? projectCode, string? projectName)
+        {
+            var baseValue = !string.IsNullOrWhiteSpace(projectCode) ? projectCode : projectName;
+            var normalized = string.IsNullOrWhiteSpace(baseValue) ? "DOC" : baseValue.Trim();
+            return $"{normalized}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
         }
     }
 }

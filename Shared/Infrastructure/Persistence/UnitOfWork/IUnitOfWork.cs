@@ -50,6 +50,14 @@ namespace aqua_api.Shared.Infrastructure.Persistence.UnitOfWork
         IGenericRepository<WeatherSeverity> WeatherSeverities { get; }
         IGenericRepository<WeatherType> WeatherTypes { get; }
         IGenericRepository<DailyWeather> DailyWeathers { get; }
+        IGenericRepository<FishHealthEvent> FishHealthEvents { get; }
+        IGenericRepository<FishTreatment> FishTreatments { get; }
+        IGenericRepository<FishLabSample> FishLabSamples { get; }
+        IGenericRepository<FishLabResult> FishLabResults { get; }
+        IGenericRepository<WelfareAssessment> WelfareAssessments { get; }
+        IGenericRepository<ComplianceAudit> ComplianceAudits { get; }
+        IGenericRepository<ComplianceCorrectiveAction> ComplianceCorrectiveActions { get; }
+        IGenericRepository<ProjectCageDailyKpiSnapshot> ProjectCageDailyKpiSnapshots { get; }
         IGenericRepository<NetOperationType> NetOperationTypes { get; }
         IGenericRepository<NetOperation> NetOperations { get; }
         IGenericRepository<NetOperationLine> NetOperationLines { get; }

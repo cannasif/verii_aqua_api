@@ -36,6 +36,13 @@ namespace aqua_api.Modules.Aqua.Api
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpPost("auto-header")]
+        public async Task<ActionResult<ApiResponse<ShipmentLineDto>>> CreateWithAutoHeader([FromBody] CreateShipmentLineWithAutoHeaderDto dto)
+        {
+            var result = await _service.CreateWithAutoHeaderAsync(dto);
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpPut("{id:long}")]
         public async Task<ActionResult<ApiResponse<ShipmentLineDto>>> Update(long id, [FromBody] UpdateShipmentLineDto dto)
         {

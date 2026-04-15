@@ -131,6 +131,86 @@ namespace aqua_api.Modules.Aqua.Application.Services
             }
         }
 
+        public async Task<ApiResponse<ShipmentLineDto>> CreateWithAutoHeaderAsync(CreateShipmentLineWithAutoHeaderDto dto)
+        {
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+
+                var shipment = await _unitOfWork.Shipments
+                    .Query()
+                    .Where(x =>
+                        !x.IsDeleted &&
+                        x.ProjectId == dto.ProjectId &&
+                        x.Status == DocumentStatus.Draft &&
+                        x.ShipmentDate.Date == dto.ShipmentDate.Date)
+                    .OrderByDescending(x => x.Id)
+                    .FirstOrDefaultAsync();
+
+                if (shipment == null)
+                {
+                    var project = await _unitOfWork.Projects
+                        .Query()
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(x => x.Id == dto.ProjectId && !x.IsDeleted);
+
+                    if (project == null)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return ApiResponse<ShipmentLineDto>.ErrorResult(
+                            _localizationService.GetLocalizedString("ShipmentLineService.NotFound"),
+                            "Project not found.",
+                            StatusCodes.Status404NotFound);
+                    }
+
+                    shipment = new Shipment
+                    {
+                        ProjectId = dto.ProjectId,
+                        ShipmentDate = dto.ShipmentDate,
+                        Status = DocumentStatus.Draft,
+                        ShipmentNo = BuildDocumentNo(project.ProjectCode, project.ProjectName),
+                    };
+
+                    await _unitOfWork.Shipments.AddAsync(shipment);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                var createDto = new CreateShipmentLineDto
+                {
+                    ShipmentId = shipment.Id,
+                    FishBatchId = dto.FishBatchId,
+                    FromProjectCageId = dto.FromProjectCageId,
+                    FishCount = dto.FishCount,
+                    AverageGram = dto.AverageGram,
+                    BiomassGram = dto.BiomassGram,
+                    CurrencyCode = dto.CurrencyCode,
+                    ExchangeRate = dto.ExchangeRate,
+                    UnitPrice = dto.UnitPrice,
+                    LocalUnitPrice = dto.LocalUnitPrice,
+                    LineAmount = dto.LineAmount,
+                    LocalLineAmount = dto.LocalLineAmount,
+                };
+
+                NormalizePricing(createDto);
+
+                var entity = _mapper.Map<ShipmentLine>(createDto);
+                await _unitOfWork.ShipmentLines.AddAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                var result = _mapper.Map<ShipmentLineDto>(entity);
+                return ApiResponse<ShipmentLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("ShipmentLineService.OperationSuccessful"));
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ApiResponse<ShipmentLineDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("ShipmentLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
         public async Task<ApiResponse<ShipmentLineDto>> UpdateAsync(long id, UpdateShipmentLineDto dto)
         {
             try
@@ -188,6 +268,13 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private static string BuildDocumentNo(string? projectCode, string? projectName)
+        {
+            var baseValue = !string.IsNullOrWhiteSpace(projectCode) ? projectCode : projectName;
+            var normalized = string.IsNullOrWhiteSpace(baseValue) ? "DOC" : baseValue.Trim();
+            return $"{normalized}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
         }
     }
 }

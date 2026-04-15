@@ -143,6 +143,98 @@ namespace aqua_api.Modules.Aqua.Application.Services
             }
         }
 
+        public async Task<ApiResponse<FeedingLineDto>> CreateWithAutoHeaderAsync(CreateFeedingLineWithAutoHeaderDto dto)
+        {
+            try
+            {
+                if (dto.QtyUnit <= 0)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingLineService.QuantityMustBeGreaterThanZero"));
+                }
+
+                await _unitOfWork.BeginTransactionAsync();
+
+                var feeding = await _unitOfWork.Feedings
+                    .Query()
+                    .Where(x =>
+                        !x.IsDeleted &&
+                        x.ProjectId == dto.ProjectId &&
+                        x.Status != DocumentStatus.Cancelled &&
+                        x.FeedingDate.Date == dto.FeedingDate.Date &&
+                        x.FeedingSlot == dto.FeedingSlot)
+                    .OrderByDescending(x => x.Id)
+                    .FirstOrDefaultAsync();
+
+                if (feeding == null)
+                {
+                    feeding = new Feeding
+                    {
+                        ProjectId = dto.ProjectId,
+                        FeedingNo = BuildDocumentNo(dto.ProjectId, dto.FeedingDate),
+                        FeedingDate = dto.FeedingDate.Date,
+                        FeedingSlot = dto.FeedingSlot,
+                        SourceType = dto.SourceType,
+                        Status = DocumentStatus.Posted,
+                        Note = dto.Note,
+                    };
+
+                    await _unitOfWork.Feedings.AddAsync(feeding);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                var gramPerUnit = dto.GramPerUnit > 0
+                    ? dto.GramPerUnit
+                    : dto.TotalGram > 0
+                        ? Math.Round(dto.TotalGram / dto.QtyUnit, 3, MidpointRounding.AwayFromZero)
+                        : 1;
+
+                var totalGram = dto.TotalGram > 0
+                    ? dto.TotalGram
+                    : Math.Round(dto.QtyUnit * gramPerUnit, 3, MidpointRounding.AwayFromZero);
+
+                var entity = new FeedingLine
+                {
+                    FeedingId = feeding.Id,
+                    StockId = dto.StockId,
+                    QtyUnit = dto.QtyUnit,
+                    GramPerUnit = gramPerUnit,
+                    TotalGram = totalGram,
+                };
+
+                await _unitOfWork.FeedingLines.AddAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                var result = _mapper.Map<FeedingLineDto>(entity);
+                return ApiResponse<FeedingLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingLineService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ApiResponse<FeedingLineDto>.ErrorResult(
+                    ex.Message,
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
+            }
+            catch (DbUpdateException ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                var businessMessage = MapDbError(ex);
+                return ApiResponse<FeedingLineDto>.ErrorResult(
+                    businessMessage,
+                    businessMessage,
+                    StatusCodes.Status400BadRequest);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ApiResponse<FeedingLineDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("FeedingLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
         public async Task<ApiResponse<FeedingLineDto>> UpdateAsync(long id, UpdateFeedingLineDto dto)
         {
             try
@@ -276,6 +368,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
             }
 
             return _localizationService.GetLocalizedString("FeedingLineService.SaveFailed");
+        }
+
+        private static string BuildDocumentNo(long projectId, DateTime feedingDate)
+        {
+            return $"FD-{projectId}-{feedingDate:yyyyMMdd}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
         }
     }
 }

@@ -11,6 +11,20 @@ namespace aqua_api.Modules.Aqua.Infrastructure.Persistence.Configurations
             builder.Property(x => x.WeatherDate).HasColumnType("date").IsRequired();
             builder.Property(x => x.TemperatureC).HasPrecision(18, 3);
             builder.Property(x => x.WindKnot).HasPrecision(18, 3);
+            builder.Property(x => x.WaterTemperatureSurfaceC).HasPrecision(18, 3);
+            builder.Property(x => x.WaterTemperatureDepthC).HasPrecision(18, 3);
+            builder.Property(x => x.DissolvedOxygenMgL).HasPrecision(18, 3);
+            builder.Property(x => x.SalinityPpt).HasPrecision(18, 3);
+            builder.Property(x => x.Ph).HasPrecision(18, 3);
+            builder.Property(x => x.CurrentSpeedKn).HasPrecision(18, 3);
+            builder.Property(x => x.WaveHeightM).HasPrecision(18, 3);
+            builder.Property(x => x.TurbidityNtu).HasPrecision(18, 3);
+            builder.Property(x => x.AmmoniaMgL).HasPrecision(18, 3);
+            builder.Property(x => x.NitriteMgL).HasPrecision(18, 3);
+            builder.Property(x => x.AlgalBloomIndex).HasPrecision(18, 3);
+            builder.Property(x => x.SensorHealthScore).HasPrecision(18, 3);
+            builder.Property(x => x.SensorRecordedAt).HasPrecision(3);
+            builder.Property(x => x.DataSource).HasMaxLength(50);
             builder.Property(x => x.Note).HasMaxLength(500);
 
             builder.HasOne(x => x.Project)

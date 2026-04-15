@@ -61,6 +61,14 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<WeatherSeverity> WeatherSeverities { get; set; }
         public DbSet<WeatherType> WeatherTypes { get; set; }
         public DbSet<DailyWeather> DailyWeathers { get; set; }
+        public DbSet<FishHealthEvent> FishHealthEvents { get; set; }
+        public DbSet<FishTreatment> FishTreatments { get; set; }
+        public DbSet<FishLabSample> FishLabSamples { get; set; }
+        public DbSet<FishLabResult> FishLabResults { get; set; }
+        public DbSet<WelfareAssessment> WelfareAssessments { get; set; }
+        public DbSet<ComplianceAudit> ComplianceAudits { get; set; }
+        public DbSet<ComplianceCorrectiveAction> ComplianceCorrectiveActions { get; set; }
+        public DbSet<ProjectCageDailyKpiSnapshot> ProjectCageDailyKpiSnapshots { get; set; }
         public DbSet<NetOperationType> NetOperationTypes { get; set; }
         public DbSet<NetOperation> NetOperations { get; set; }
         public DbSet<NetOperationLine> NetOperationLines { get; set; }
