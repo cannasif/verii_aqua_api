@@ -14,6 +14,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDailyWeatherRepository, DailyWeatherRepository>();
         services.AddScoped<IShipmentRepository, ShipmentRepository>();
         services.AddScoped<IBatchCageBalanceService, BatchCageBalanceService>();
+        services.AddScoped<IBatchWarehouseBalanceService, BatchWarehouseBalanceService>();
         services.AddScoped<IBatchMovementService, BatchMovementService>();
         services.AddScoped<IAquaSettingsService, AquaSettingsService>();
         services.AddScoped<ICageService, CageService>();
