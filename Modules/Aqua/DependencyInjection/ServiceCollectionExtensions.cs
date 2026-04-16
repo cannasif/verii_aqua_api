@@ -31,6 +31,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<INetOperationService, NetOperationService>();
         services.AddScoped<INetOperationLineService, NetOperationLineService>();
         services.AddScoped<INetOperationTypeService, NetOperationTypeService>();
+        services.AddScoped<IOpeningImportService, OpeningImportService>();
         services.AddScoped<IProjectMergeService, ProjectMergeService>();
         services.AddScoped<IProjectService, ProjectService>();
         services.AddScoped<IProjectCageService, ProjectCageService>();

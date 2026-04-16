@@ -23,7 +23,8 @@ namespace aqua_api.Modules.Aqua.Domain.Enums
         Stocking = 5,
         Shipment = 6,
         Feeding = 7,
-        WarehouseTransfer = 8
+        WarehouseTransfer = 8,
+        OpeningImport = 9
     }
 
     public enum FeedingSlot : byte
@@ -43,5 +44,22 @@ namespace aqua_api.Modules.Aqua.Domain.Enums
     {
         Passive = 0,
         Archived = 1
+    }
+
+    public enum OpeningImportJobStatus : byte
+    {
+        Draft = 0,
+        Previewed = 1,
+        Applied = 2,
+        Failed = 3
+    }
+
+    public enum OpeningImportRowStatus : byte
+    {
+        Pending = 0,
+        Valid = 1,
+        Warning = 2,
+        Error = 3,
+        Applied = 4
     }
 }

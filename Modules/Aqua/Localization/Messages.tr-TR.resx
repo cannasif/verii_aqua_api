@@ -541,4 +541,22 @@
   <data name="ProjectMergeService.SourceProjectNotFound" xml:space="preserve">
     <value>Kaynak projelerden biri bulunamadı.</value>
   </data>
+  <data name="OpeningImportService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="OpeningImportService.InternalServerError" xml:space="preserve">
+    <value>İlk geçiş işlemi sırasında beklenmeyen bir hata oluştu.</value>
+  </data>
+  <data name="OpeningImportService.JobNotFound" xml:space="preserve">
+    <value>İlk geçiş işi bulunamadı.</value>
+  </data>
+  <data name="OpeningImportService.AlreadyApplied" xml:space="preserve">
+    <value>Bu ilk geçiş işi zaten uygulanmış.</value>
+  </data>
+  <data name="OpeningImportService.CommitHasErrors" xml:space="preserve">
+    <value>Hatalı satırlar varken içe aktarma yapılamaz.</value>
+  </data>
+  <data name="OpeningImportService.EmptyWorkbook" xml:space="preserve">
+    <value>Excel içinde işlenecek sheet bulunamadı.</value>
+  </data>
 </root>

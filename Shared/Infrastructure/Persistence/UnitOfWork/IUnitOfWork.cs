@@ -26,6 +26,8 @@ namespace aqua_api.Shared.Infrastructure.Persistence.UnitOfWork
         IGenericRepository<UserPermissionGroup> UserPermissionGroups { get; }
 
         IGenericRepository<Project> Projects { get; }
+        IGenericRepository<OpeningImportJob> OpeningImportJobs { get; }
+        IGenericRepository<OpeningImportRow> OpeningImportRows { get; }
         IGenericRepository<Cage> Cages { get; }
         IGenericRepository<ProjectCage> ProjectCages { get; }
         IGenericRepository<FishBatch> FishBatches { get; }

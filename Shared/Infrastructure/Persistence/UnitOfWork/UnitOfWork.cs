@@ -33,6 +33,8 @@ namespace aqua_api.Shared.Infrastructure.Persistence.UnitOfWork
         private IGenericRepository<UserPermissionGroup>? _userPermissionGroups;
 
         private IGenericRepository<Project>? _projects;
+        private IGenericRepository<OpeningImportJob>? _openingImportJobs;
+        private IGenericRepository<OpeningImportRow>? _openingImportRows;
         private IGenericRepository<Cage>? _cages;
         private IGenericRepository<ProjectCage>? _projectCages;
         private IGenericRepository<FishBatch>? _fishBatches;
@@ -105,6 +107,8 @@ namespace aqua_api.Shared.Infrastructure.Persistence.UnitOfWork
         public IGenericRepository<UserPermissionGroup> UserPermissionGroups => _userPermissionGroups ??= new GenericRepository<UserPermissionGroup>(_context, _httpContextAccessor);
 
         public IGenericRepository<Project> Projects => _projects ??= new GenericRepository<Project>(_context, _httpContextAccessor);
+        public IGenericRepository<OpeningImportJob> OpeningImportJobs => _openingImportJobs ??= new GenericRepository<OpeningImportJob>(_context, _httpContextAccessor);
+        public IGenericRepository<OpeningImportRow> OpeningImportRows => _openingImportRows ??= new GenericRepository<OpeningImportRow>(_context, _httpContextAccessor);
         public IGenericRepository<Cage> Cages => _cages ??= new GenericRepository<Cage>(_context, _httpContextAccessor);
         public IGenericRepository<ProjectCage> ProjectCages => _projectCages ??= new GenericRepository<ProjectCage>(_context, _httpContextAccessor);
         public IGenericRepository<FishBatch> FishBatches => _fishBatches ??= new GenericRepository<FishBatch>(_context, _httpContextAccessor);

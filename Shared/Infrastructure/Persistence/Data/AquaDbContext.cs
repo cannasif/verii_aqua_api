@@ -36,6 +36,8 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<UserPermissionGroup> UserPermissionGroups { get; set; }
 
         public DbSet<Project> Projects { get; set; }
+        public DbSet<OpeningImportJob> OpeningImportJobs { get; set; }
+        public DbSet<OpeningImportRow> OpeningImportRows { get; set; }
         public DbSet<ProjectMerge> ProjectMerges { get; set; }
         public DbSet<ProjectMergeSource> ProjectMergeSources { get; set; }
         public DbSet<ProjectMergeCage> ProjectMergeCages { get; set; }

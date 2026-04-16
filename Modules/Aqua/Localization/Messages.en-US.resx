@@ -541,4 +541,22 @@
   <data name="ProjectMergeService.SourceProjectNotFound" xml:space="preserve">
     <value>One of the source projects could not be found.</value>
   </data>
+  <data name="OpeningImportService.OperationSuccessful" xml:space="preserve">
+    <value>Operation successful.</value>
+  </data>
+  <data name="OpeningImportService.InternalServerError" xml:space="preserve">
+    <value>An unexpected error occurred during the initial migration process.</value>
+  </data>
+  <data name="OpeningImportService.JobNotFound" xml:space="preserve">
+    <value>Initial migration job was not found.</value>
+  </data>
+  <data name="OpeningImportService.AlreadyApplied" xml:space="preserve">
+    <value>This initial migration job has already been applied.</value>
+  </data>
+  <data name="OpeningImportService.CommitHasErrors" xml:space="preserve">
+    <value>The import cannot be committed while there are invalid rows.</value>
+  </data>
+  <data name="OpeningImportService.EmptyWorkbook" xml:space="preserve">
+    <value>No processable sheets were found in the workbook.</value>
+  </data>
 </root>
