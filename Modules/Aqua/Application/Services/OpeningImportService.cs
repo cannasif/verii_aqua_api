@@ -245,6 +245,15 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 .Where(x => referencedProjectCodes.Contains(x.ProjectCode))
                 .ToDictionaryAsync(x => x.ProjectCode, x => x, StringComparer.OrdinalIgnoreCase);
 
+            foreach (var row in rows)
+            {
+                var projectCode = GetValue(row, "projectCode");
+                if (!string.IsNullOrWhiteSpace(projectCode) && existingProjects.ContainsKey(projectCode))
+                {
+                    row.Messages.Add($"Proje zaten mevcut, açılış importu tekrar uygulanamaz: {projectCode}");
+                }
+            }
+
             foreach (var row in cageRows.Concat(stockRows).Concat(goodsReceiptRows).Concat(mortalityRows).Concat(feedingRows).Concat(shipmentRows))
             {
                 var projectCode = GetValue(row, "projectCode");
@@ -366,6 +375,15 @@ namespace aqua_api.Modules.Aqua.Application.Services
             var existingCages = await _unitOfWork.Cages.Query()
                 .Where(x => cageCodes.Contains(x.CageCode))
                 .ToDictionaryAsync(x => x.CageCode, x => x, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var row in rows)
+            {
+                var cageCode = GetValue(row, "cageCode");
+                if (!string.IsNullOrWhiteSpace(cageCode) && existingCages.ContainsKey(cageCode))
+                {
+                    row.Messages.Add($"Kafes zaten mevcut, açılış importu tekrar uygulanamaz: {cageCode}");
+                }
+            }
 
             var activeAssignments = await _unitOfWork.Db.ProjectCages
                 .AsNoTracking()

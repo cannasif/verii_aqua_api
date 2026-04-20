@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -24,6 +25,94 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
     public AquaHttpLifecycleIntegrationTests(AquaHttpTestWebApplicationFactory factory)
     {
         _factory = factory;
+    }
+
+    [Fact]
+    public async Task OpeningImport_PreviewBlocksExistingProjectAndCage_AndCommitDoesNotRun()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var existingProject = new Project
+            {
+                ProjectCode = "PRJ-DUP-001",
+                ProjectName = "Existing Project",
+                StartDate = new DateTime(2026, 4, 1),
+                Status = DocumentStatus.Posted,
+            };
+            var existingCage = new Cage
+            {
+                CageCode = "CAGE-DUP-01",
+                CageName = "Existing Cage",
+            };
+
+            db.Projects.Add(existingProject);
+            db.Cages.Add(existingCage);
+            await db.SaveChangesAsync();
+        }
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(client, "/api/aqua/OpeningImport/preview", new OpeningImportPreviewRequestDto
+        {
+            FileName = "duplicate-opening-import.xlsx",
+            SourceSystem = "http-duplicate-test",
+            Sheets =
+            [
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Projects",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectName", TargetField = "projectName" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "startDate", TargetField = "startDate" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = "PRJ-DUP-001",
+                            ["projectName"] = "Duplicate Project",
+                            ["startDate"] = "2026-04-05",
+                        }
+                    ]
+                },
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Cages",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageCode", TargetField = "cageCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageName", TargetField = "cageName" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = "PRJ-DUP-001",
+                            ["cageCode"] = "CAGE-DUP-01",
+                            ["cageName"] = "Duplicate Cage",
+                        }
+                    ]
+                }
+            ]
+        });
+
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+        Assert.NotNull(preview.Data);
+        Assert.Equal("Failed", preview.Data!.Status);
+        Assert.Contains(preview.Data.Rows, row => row.Messages.Any(message => message.Contains("Proje zaten mevcut")));
+        Assert.Contains(preview.Data.Rows, row => row.Messages.Any(message => message.Contains("Kafes zaten mevcut")));
+
+        using var commitResponse = await client.PostAsJsonAsync($"/api/aqua/OpeningImport/{preview.Data.JobId}/commit", new { });
+        Assert.Equal(HttpStatusCode.BadRequest, commitResponse.StatusCode);
+
+        var commitBody = await commitResponse.Content.ReadFromJsonAsync<ApiResponse<OpeningImportCommitResultDto>>(JsonOptions);
+        Assert.NotNull(commitBody);
+        Assert.False(commitBody!.Success);
     }
 
     [Fact]
