@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using aqua_api.Shared.Common.Helpers;
 
 namespace aqua_api.Modules.Aqua.Application.Services
 {
@@ -228,6 +229,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
             var stockRows = rows.Where(x => IsSheet(x.SheetName, "OpeningStock")).ToList();
             var goodsReceiptRows = rows.Where(x => IsSheet(x.SheetName, "OpeningGoodsReceipts")).ToList();
             var mortalityRows = rows.Where(x => IsSheet(x.SheetName, "OpeningMortality")).ToList();
+            var feedingRows = rows.Where(x => IsSheet(x.SheetName, "OpeningFeedings")).ToList();
+            var shipmentRows = rows.Where(x => IsSheet(x.SheetName, "OpeningShipments")).ToList();
 
             AppendDuplicateErrors(projectRows, "projectCode", value => $"Aynı proje kodu dosyada tekrar ediyor: {value}");
             AppendDuplicateErrors(cageRows, row => $"{GetValue(row, "projectCode")}::{GetValue(row, "cageCode")}", value => $"Aynı proje/kafes eşleşmesi dosyada tekrar ediyor: {value}");
@@ -242,7 +245,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 .Where(x => referencedProjectCodes.Contains(x.ProjectCode))
                 .ToDictionaryAsync(x => x.ProjectCode, x => x, StringComparer.OrdinalIgnoreCase);
 
-            foreach (var row in cageRows.Concat(stockRows).Concat(goodsReceiptRows).Concat(mortalityRows))
+            foreach (var row in cageRows.Concat(stockRows).Concat(goodsReceiptRows).Concat(mortalityRows).Concat(feedingRows).Concat(shipmentRows))
             {
                 var projectCode = GetValue(row, "projectCode");
                 if (string.IsNullOrWhiteSpace(projectCode))
@@ -260,6 +263,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
             var openingStockCodes = stockRows
                 .Concat(goodsReceiptRows)
                 .Concat(mortalityRows)
+                .Concat(feedingRows)
+                .Concat(shipmentRows)
                 .Select(x => GetValue(x, "fishStockCode"))
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -278,10 +283,51 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 }
             }
 
+            var feedStockCodes = feedingRows
+                .Select(x => GetValue(x, "feedStockCode"))
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var existingFeedStocks = await _unitOfWork.Stocks.Query()
+                .Where(x => feedStockCodes.Contains(x.ErpStockCode))
+                .ToDictionaryAsync(x => x.ErpStockCode, x => x, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var row in feedingRows)
+            {
+                var fishStockCode = GetValue(row, "fishStockCode");
+                if (!string.IsNullOrWhiteSpace(fishStockCode) && !existingStocks.ContainsKey(fishStockCode))
+                {
+                    row.Messages.Add($"Balık stoku bulunamadı: {fishStockCode}");
+                }
+
+                var feedStockCode = GetValue(row, "feedStockCode");
+                if (!string.IsNullOrWhiteSpace(feedStockCode) && !existingFeedStocks.ContainsKey(feedStockCode))
+                {
+                    row.Messages.Add($"Yem stoku bulunamadı: {feedStockCode}");
+                }
+            }
+
+            foreach (var row in shipmentRows)
+            {
+                var fishStockCode = GetValue(row, "fishStockCode");
+                if (!string.IsNullOrWhiteSpace(fishStockCode) && !existingStocks.ContainsKey(fishStockCode))
+                {
+                    row.Messages.Add($"Balık stoku bulunamadı: {fishStockCode}");
+                }
+            }
+
             var warehouseCodes = stockRows
                 .Concat(goodsReceiptRows)
                 .Select(x => GetValue(x, "warehouseCode"))
                 .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            warehouseCodes = warehouseCodes
+                .Concat(shipmentRows
+                    .Select(x => GetValue(x, "targetWarehouseCode"))
+                    .Where(x => !string.IsNullOrWhiteSpace(x)))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
@@ -296,9 +342,9 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 .Where(x => warehouseShortCodes.Contains(x.ErpWarehouseCode) && !x.IsDeleted)
                 .ToDictionaryAsync(x => x.ErpWarehouseCode, x => x);
 
-            foreach (var row in stockRows)
+            foreach (var row in stockRows.Concat(shipmentRows))
             {
-                var warehouseCode = GetValue(row, "warehouseCode");
+                var warehouseCode = GetValue(row, "warehouseCode") ?? GetValue(row, "targetWarehouseCode");
                 if (string.IsNullOrWhiteSpace(warehouseCode))
                 {
                     continue;
@@ -328,7 +374,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 .Where(x => !x.IsDeleted && x.ReleasedDate == null && cageCodes.Contains(x.Cage!.CageCode))
                 .ToListAsync();
 
-            foreach (var row in cageRows.Concat(stockRows).Concat(goodsReceiptRows).Concat(mortalityRows))
+            foreach (var row in cageRows.Concat(stockRows).Concat(goodsReceiptRows).Concat(mortalityRows).Concat(feedingRows).Concat(shipmentRows))
             {
                 var cageCode = GetValue(row, "cageCode");
                 var projectCode = GetValue(row, "projectCode");
@@ -376,6 +422,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 .Where(x => referencedCodes.Contains(x.ProjectCode))
                 .ToDictionaryAsync(x => x.ProjectCode, x => x, StringComparer.OrdinalIgnoreCase);
 
+            var createdAny = false;
             foreach (var row in projectRows)
             {
                 var projectCode = row["projectCode"] ?? string.Empty;
@@ -401,6 +448,12 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 await _unitOfWork.Projects.AddAsync(entity);
                 existing[projectCode] = entity;
                 result.CreatedProjects += 1;
+                createdAny = true;
+            }
+
+            if (createdAny)
+            {
+                await _unitOfWork.SaveChangesAsync();
             }
 
             return existing;
@@ -431,11 +484,23 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 .Select(ParseRow)
                 .Where(x => x.TryGetValue("cageCode", out var cageCode) && !string.IsNullOrWhiteSpace(cageCode))
                 .ToList();
+            var feedingRows = rows
+                .Where(x => IsSheet(x.SheetName, "OpeningFeedings") && (x.Status == OpeningImportRowStatus.Valid || x.Status == OpeningImportRowStatus.Warning))
+                .Select(ParseRow)
+                .Where(x => x.TryGetValue("cageCode", out var cageCode) && !string.IsNullOrWhiteSpace(cageCode))
+                .ToList();
+            var shipmentRows = rows
+                .Where(x => IsSheet(x.SheetName, "OpeningShipments") && (x.Status == OpeningImportRowStatus.Valid || x.Status == OpeningImportRowStatus.Warning))
+                .Select(ParseRow)
+                .Where(x => x.TryGetValue("cageCode", out var cageCode) && !string.IsNullOrWhiteSpace(cageCode))
+                .ToList();
 
             var allCageCodes = cageRows
                 .Concat(stockRows)
                 .Concat(goodsReceiptRows)
                 .Concat(mortalityRows)
+                .Concat(feedingRows)
+                .Concat(shipmentRows)
                 .Select(x => x["cageCode"] ?? string.Empty)
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -445,6 +510,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 .Where(x => allCageCodes.Contains(x.CageCode))
                 .ToDictionaryAsync(x => x.CageCode, x => x, StringComparer.OrdinalIgnoreCase);
 
+            var createdAnyCage = false;
             foreach (var row in cageRows)
             {
                 var cageCode = row["cageCode"] ?? string.Empty;
@@ -464,9 +530,28 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 await _unitOfWork.Cages.AddAsync(entity);
                 cagesByCode[cageCode] = entity;
                 result.CreatedCages += 1;
+                createdAnyCage = true;
             }
 
-            foreach (var row in cageRows.Concat(stockRows).Concat(goodsReceiptRows).Concat(mortalityRows))
+            if (createdAnyCage)
+            {
+                await _unitOfWork.SaveChangesAsync();
+            }
+
+            var existingAssignments = await _unitOfWork.Db.ProjectCages
+                .Where(x => !x.IsDeleted && x.ReleasedDate == null && allCageCodes.Contains(x.Cage!.CageCode))
+                .Select(x => new { x.ProjectId, x.CageId })
+                .ToListAsync();
+
+            var activeAssignmentKeys = existingAssignments
+                .Select(x => $"{x.ProjectId}:{x.CageId}")
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var activeCageOwners = existingAssignments
+                .GroupBy(x => x.CageId)
+                .ToDictionary(x => x.Key, x => x.First().ProjectId);
+
+            var createdAnyAssignment = false;
+            foreach (var row in cageRows.Concat(stockRows).Concat(goodsReceiptRows).Concat(mortalityRows).Concat(feedingRows).Concat(shipmentRows))
             {
                 var projectCode = row.TryGetValue("projectCode", out var projectCodeValue) ? projectCodeValue : null;
                 var cageCode = row.TryGetValue("cageCode", out var cageCodeValue) ? cageCodeValue : null;
@@ -480,18 +565,13 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     continue;
                 }
 
-                var existingAssignment = await _unitOfWork.Db.ProjectCages
-                    .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.CageId == cage.Id && x.ReleasedDate == null);
-
-                if (existingAssignment != null)
+                var assignmentKey = $"{project.Id}:{cage.Id}";
+                if (activeAssignmentKeys.Contains(assignmentKey))
                 {
                     continue;
                 }
 
-                var conflictingAssignment = await _unitOfWork.Db.ProjectCages
-                    .FirstOrDefaultAsync(x => !x.IsDeleted && x.CageId == cage.Id && x.ReleasedDate == null);
-
-                if (conflictingAssignment != null)
+                if (activeCageOwners.TryGetValue(cage.Id, out var activeProjectId) && activeProjectId != project.Id)
                 {
                     continue;
                 }
@@ -503,6 +583,14 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     AssignedDate = ParseDateOrDefault(row.TryGetValue("assignedDate", out var assignedDate) ? assignedDate : null, project.StartDate)
                 });
                 result.CreatedProjectCages += 1;
+                createdAnyAssignment = true;
+                activeAssignmentKeys.Add(assignmentKey);
+                activeCageOwners[cage.Id] = project.Id;
+            }
+
+            if (createdAnyAssignment)
+            {
+                await _unitOfWork.SaveChangesAsync();
             }
 
             return cagesByCode;
@@ -576,6 +664,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     };
 
                     await _unitOfWork.FishBatches.AddAsync(batch);
+                    await _unitOfWork.SaveChangesAsync();
                     result.CreatedFishBatches += 1;
                 }
 
@@ -740,7 +829,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     row.NormalizedDataJson = JsonSerializer.Serialize(normalized, JsonOptions);
                     row.MessagesJson = JsonSerializer.Serialize(new List<string>
                     {
-                        "Net açılış stok, özet mal kabul ve ölüm satırlarından türetildi."
+                        "Net açılış stok, özet mal kabul ve mortalite satırlarından türetildi."
                     }, JsonOptions);
 
                     return row;
@@ -756,6 +845,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
         {
             await CreateOpeningGoodsReceiptsAsync(rows, projectsByCode, cagesByCode, result);
             await CreateOpeningMortalitiesAsync(rows, projectsByCode, cagesByCode, result);
+            await CreateOpeningFeedingsAsync(rows, projectsByCode, cagesByCode, result);
+            await CreateOpeningShipmentsAsync(rows, projectsByCode, cagesByCode, result);
         }
 
         private async Task CreateOpeningGoodsReceiptsAsync(
@@ -983,6 +1074,269 @@ namespace aqua_api.Modules.Aqua.Application.Services
             }
         }
 
+        private async Task CreateOpeningFeedingsAsync(
+            List<OpeningImportRow> rows,
+            IReadOnlyDictionary<string, Project> projectsByCode,
+            IReadOnlyDictionary<string, Cage> cagesByCode,
+            OpeningImportCommitResultDto result)
+        {
+            var feedingRows = rows
+                .Where(x => IsSheet(x.SheetName, "OpeningFeedings") && (x.Status == OpeningImportRowStatus.Valid || x.Status == OpeningImportRowStatus.Warning))
+                .ToList();
+
+            if (feedingRows.Count == 0)
+            {
+                return;
+            }
+
+            var stockCodes = feedingRows
+                .Select(ParseRow)
+                .SelectMany(x => new[]
+                {
+                    x.TryGetValue("fishStockCode", out var fishStockCode) ? fishStockCode : null,
+                    x.TryGetValue("feedStockCode", out var feedStockCode) ? feedStockCode : null,
+                })
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var stocks = await _unitOfWork.Stocks.Query(tracking: true)
+                .Where(x => stockCodes.Contains(x.ErpStockCode))
+                .ToDictionaryAsync(x => x.ErpStockCode, x => x, StringComparer.OrdinalIgnoreCase);
+
+            var batchesByKey = await LoadExistingBatchesByKeyAsync(feedingRows, projectsByCode);
+            var headerByKey = new Dictionary<string, Feeding>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var row in feedingRows)
+            {
+                var normalized = ParseRow(row);
+                var projectCode = normalized.TryGetValue("projectCode", out var projectCodeValue) ? projectCodeValue : null;
+                var cageCode = normalized.TryGetValue("cageCode", out var cageCodeValue) ? cageCodeValue : null;
+                var fishStockCode = normalized.TryGetValue("fishStockCode", out var fishStockCodeValue) ? fishStockCodeValue : null;
+                var feedStockCode = normalized.TryGetValue("feedStockCode", out var feedStockCodeValue) ? feedStockCodeValue : null;
+
+                if (string.IsNullOrWhiteSpace(projectCode) ||
+                    string.IsNullOrWhiteSpace(cageCode) ||
+                    string.IsNullOrWhiteSpace(fishStockCode) ||
+                    string.IsNullOrWhiteSpace(feedStockCode))
+                {
+                    result.SkippedRows += 1;
+                    continue;
+                }
+
+                if (!projectsByCode.TryGetValue(projectCode, out var project) ||
+                    !cagesByCode.TryGetValue(cageCode, out var cage) ||
+                    !stocks.TryGetValue(fishStockCode, out var fishStock) ||
+                    !stocks.TryGetValue(feedStockCode, out var feedStock))
+                {
+                    result.SkippedRows += 1;
+                    continue;
+                }
+
+                var projectCage = await _unitOfWork.Db.ProjectCages
+                    .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.CageId == cage.Id && x.ReleasedDate == null);
+                if (projectCage == null)
+                {
+                    result.SkippedRows += 1;
+                    continue;
+                }
+
+                var feedingDate = ParseDateOrDefault(normalized.TryGetValue("feedingDate", out var feedingDateValue) ? feedingDateValue : null, project.StartDate);
+                var feedingSlot = ParseFeedingSlot(normalized.TryGetValue("feedingSlot", out var feedingSlotValue) ? feedingSlotValue : null);
+                var headerKey = $"{project.Id}:{feedingDate:yyyyMMdd}:{(byte)feedingSlot}";
+
+                if (!headerByKey.TryGetValue(headerKey, out var header))
+                {
+                    header = await _unitOfWork.Db.Feedings
+                        .Include(x => x.Lines)
+                        .ThenInclude(x => x.Distributions)
+                        .FirstOrDefaultAsync(x =>
+                            !x.IsDeleted &&
+                            x.ProjectId == project.Id &&
+                            x.FeedingDate.Date == feedingDate.Date &&
+                            x.FeedingSlot == feedingSlot);
+
+                    if (header == null)
+                    {
+                        header = new Feeding
+                        {
+                            ProjectId = project.Id,
+                            FeedingNo = $"OPEN-FEED-{project.ProjectCode}-{feedingDate:yyyyMMdd}-{(byte)feedingSlot}",
+                            FeedingDate = feedingDate,
+                            FeedingSlot = feedingSlot,
+                            SourceType = FeedingSourceType.Manual,
+                            Status = DocumentStatus.Posted,
+                            Note = $"Opening import summary - {row.OpeningImportJobId}"
+                        };
+
+                        await _unitOfWork.Feedings.AddAsync(header);
+                        result.CreatedFeedingHeaders += 1;
+                    }
+
+                    headerByKey[headerKey] = header;
+                }
+
+                var batchCode = normalized.TryGetValue("batchCode", out var batchCodeValue) ? batchCodeValue : null;
+                var batch = await EnsureFishBatchAsync(project, fishStock, batchCode, normalized, batchesByKey, result);
+                var feedGram = ParseDecimalOrDefault(normalized.TryGetValue("feedGram", out var feedGramValue) ? feedGramValue : null, 0m);
+
+                var line = new FeedingLine
+                {
+                    Feeding = header,
+                    StockId = feedStock.Id,
+                    QtyUnit = 1,
+                    GramPerUnit = feedGram,
+                    TotalGram = feedGram,
+                };
+
+                line.Distributions.Add(new FeedingDistribution
+                {
+                    FishBatchId = batch.Id,
+                    ProjectCageId = projectCage.Id,
+                    FeedGram = feedGram,
+                });
+
+                await _unitOfWork.FeedingLines.AddAsync(line);
+                result.CreatedFeedingLines += 1;
+                result.CreatedFeedingDistributions += 1;
+            }
+        }
+
+        private async Task CreateOpeningShipmentsAsync(
+            List<OpeningImportRow> rows,
+            IReadOnlyDictionary<string, Project> projectsByCode,
+            IReadOnlyDictionary<string, Cage> cagesByCode,
+            OpeningImportCommitResultDto result)
+        {
+            var shipmentRows = rows
+                .Where(x => IsSheet(x.SheetName, "OpeningShipments") && (x.Status == OpeningImportRowStatus.Valid || x.Status == OpeningImportRowStatus.Warning))
+                .ToList();
+
+            if (shipmentRows.Count == 0)
+            {
+                return;
+            }
+
+            var stockCodes = shipmentRows
+                .Select(ParseRow)
+                .Select(x => x.TryGetValue("fishStockCode", out var fishStockCode) ? fishStockCode : null)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var stocks = await _unitOfWork.Stocks.Query(tracking: true)
+                .Where(x => stockCodes.Contains(x.ErpStockCode))
+                .ToDictionaryAsync(x => x.ErpStockCode, x => x, StringComparer.OrdinalIgnoreCase);
+
+            var warehouseCodes = shipmentRows
+                .Select(ParseRow)
+                .Select(x => x.TryGetValue("targetWarehouseCode", out var warehouseCode) ? warehouseCode : null)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Select(x => short.Parse(x!, CultureInfo.InvariantCulture))
+                .ToList();
+
+            var warehouses = await _unitOfWork.Db.Warehouses
+                .Where(x => !x.IsDeleted && warehouseCodes.Contains(x.ErpWarehouseCode))
+                .ToDictionaryAsync(x => x.ErpWarehouseCode, x => x);
+
+            var batchesByKey = await LoadExistingBatchesByKeyAsync(shipmentRows, projectsByCode);
+            var headerByKey = new Dictionary<string, Shipment>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var row in shipmentRows)
+            {
+                var normalized = ParseRow(row);
+                var projectCode = normalized.TryGetValue("projectCode", out var projectCodeValue) ? projectCodeValue : null;
+                var cageCode = normalized.TryGetValue("cageCode", out var cageCodeValue) ? cageCodeValue : null;
+                var fishStockCode = normalized.TryGetValue("fishStockCode", out var fishStockCodeValue) ? fishStockCodeValue : null;
+
+                if (string.IsNullOrWhiteSpace(projectCode) || string.IsNullOrWhiteSpace(cageCode) || string.IsNullOrWhiteSpace(fishStockCode))
+                {
+                    result.SkippedRows += 1;
+                    continue;
+                }
+
+                if (!projectsByCode.TryGetValue(projectCode, out var project) ||
+                    !cagesByCode.TryGetValue(cageCode, out var cage) ||
+                    !stocks.TryGetValue(fishStockCode, out var stock))
+                {
+                    result.SkippedRows += 1;
+                    continue;
+                }
+
+                var projectCage = await _unitOfWork.Db.ProjectCages
+                    .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.CageId == cage.Id && x.ReleasedDate == null);
+                if (projectCage == null)
+                {
+                    result.SkippedRows += 1;
+                    continue;
+                }
+
+                var shipmentDate = ParseDateOrDefault(normalized.TryGetValue("shipmentDate", out var shipmentDateValue) ? shipmentDateValue : null, project.StartDate);
+                var targetWarehouseId = TryResolveWarehouseIdByField(normalized, "targetWarehouseCode", warehouses);
+                var headerKey = $"{project.Id}:{shipmentDate:yyyyMMdd}:{targetWarehouseId?.ToString() ?? "none"}";
+
+                if (!headerByKey.TryGetValue(headerKey, out var header))
+                {
+                    header = await _unitOfWork.Db.Shipments
+                        .Include(x => x.Lines)
+                        .FirstOrDefaultAsync(x =>
+                            !x.IsDeleted &&
+                            x.ProjectId == project.Id &&
+                            x.ShipmentDate.Date == shipmentDate.Date &&
+                            x.TargetWarehouseId == targetWarehouseId);
+
+                    if (header == null)
+                    {
+                        header = new Shipment
+                        {
+                            ProjectId = project.Id,
+                            ShipmentNo = $"OPEN-SHP-{project.ProjectCode}-{shipmentDate:yyyyMMdd}-{(targetWarehouseId?.ToString() ?? "NA")}",
+                            ShipmentDate = shipmentDate,
+                            TargetWarehouseId = targetWarehouseId,
+                            Status = DocumentStatus.Posted,
+                            Note = $"Opening import summary - {row.OpeningImportJobId}"
+                        };
+
+                        await _unitOfWork.Shipments.AddAsync(header);
+                        result.CreatedShipmentHeaders += 1;
+                    }
+
+                    headerByKey[headerKey] = header;
+                }
+
+                var batchCode = normalized.TryGetValue("batchCode", out var batchCodeValue) ? batchCodeValue : null;
+                var batch = await EnsureFishBatchAsync(project, stock, batchCode, normalized, batchesByKey, result);
+                var fishCount = ParseIntOrDefault(normalized.TryGetValue("fishCount", out var fishCountValue) ? fishCountValue : null, 0);
+                var averageGram = ParseDecimalOrDefault(normalized.TryGetValue("averageGram", out var averageGramValue) ? averageGramValue : null, 0m);
+                var biomassGram = Math.Round(fishCount * averageGram, 3, MidpointRounding.AwayFromZero);
+                var pricing = AquaLinePricingMath.NormalizeShipmentLine(
+                    biomassGram,
+                    normalized.TryGetValue("currencyCode", out var currencyCodeValue) ? currencyCodeValue : null,
+                    ParseNullableDecimal(normalized.TryGetValue("exchangeRate", out var exchangeRateValue) ? exchangeRateValue : null),
+                    ParseNullableDecimal(normalized.TryGetValue("unitPrice", out var unitPriceValue) ? unitPriceValue : null)
+                );
+
+                await _unitOfWork.ShipmentLines.AddAsync(new ShipmentLine
+                {
+                    Shipment = header,
+                    FishBatchId = batch.Id,
+                    FromProjectCageId = projectCage.Id,
+                    FishCount = fishCount,
+                    AverageGram = averageGram,
+                    BiomassGram = biomassGram,
+                    CurrencyCode = pricing.CurrencyCode,
+                    ExchangeRate = pricing.ExchangeRate,
+                    UnitPrice = pricing.UnitPrice,
+                    LocalUnitPrice = pricing.LocalUnitPrice,
+                    LineAmount = pricing.LineAmount,
+                    LocalLineAmount = pricing.LocalLineAmount,
+                });
+
+                result.CreatedShipmentLines += 1;
+            }
+        }
+
         private async Task<Dictionary<string, FishBatch>> LoadExistingBatchesByKeyAsync(
             List<OpeningImportRow> rows,
             IReadOnlyDictionary<string, Project> projectsByCode)
@@ -1010,7 +1364,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
             Dictionary<string, FishBatch> batchesByKey,
             OpeningImportCommitResultDto result)
         {
-            var effectiveBatchCode = string.IsNullOrWhiteSpace(batchCode) ? $"OPEN-{project.ProjectCode}" : batchCode.Trim();
+            var effectiveBatchCode = ResolveBatchCode(project.ProjectCode, batchCode);
             var key = $"{project.Id}:{effectiveBatchCode}";
             if (batchesByKey.TryGetValue(key, out var existingBatch))
             {
@@ -1034,6 +1388,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
             };
 
             await _unitOfWork.FishBatches.AddAsync(batch);
+            await _unitOfWork.SaveChangesAsync();
             batchesByKey[key] = batch;
             result.CreatedFishBatches += 1;
             return batch;
@@ -1042,8 +1397,14 @@ namespace aqua_api.Modules.Aqua.Application.Services
         private static long? TryResolveWarehouseId(
             Dictionary<string, string?> normalized,
             IReadOnlyDictionary<short, aqua_api.Modules.Warehouse.Domain.Entities.Warehouse> warehouses)
+            => TryResolveWarehouseIdByField(normalized, "warehouseCode", warehouses);
+
+        private static long? TryResolveWarehouseIdByField(
+            Dictionary<string, string?> normalized,
+            string fieldKey,
+            IReadOnlyDictionary<short, aqua_api.Modules.Warehouse.Domain.Entities.Warehouse> warehouses)
         {
-            if (!normalized.TryGetValue("warehouseCode", out var warehouseCode) ||
+            if (!normalized.TryGetValue(fieldKey, out var warehouseCode) ||
                 string.IsNullOrWhiteSpace(warehouseCode) ||
                 !short.TryParse(warehouseCode, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedWarehouseCode) ||
                 !warehouses.TryGetValue(parsedWarehouseCode, out var warehouse))
@@ -1061,10 +1422,12 @@ namespace aqua_api.Modules.Aqua.Application.Services
             var fishStockCode = row.TryGetValue("fishStockCode", out var fishStockCodeValue) ? fishStockCodeValue : null;
             var cageCode = row.TryGetValue("cageCode", out var cageCodeValue) ? cageCodeValue : null;
             var warehouseCode = row.TryGetValue("warehouseCode", out var warehouseCodeValue) ? warehouseCodeValue : null;
-            if (string.IsNullOrWhiteSpace(projectCode) || string.IsNullOrWhiteSpace(batchCode) || string.IsNullOrWhiteSpace(fishStockCode))
+            if (string.IsNullOrWhiteSpace(projectCode) || string.IsNullOrWhiteSpace(fishStockCode))
             {
                 return null;
             }
+
+            var effectiveBatchCode = ResolveBatchCode(projectCode!, batchCode);
 
             var locationPart = !string.IsNullOrWhiteSpace(cageCode)
                 ? $"cage:{cageCode}"
@@ -1072,7 +1435,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     ? $"warehouse:{warehouseCode}"
                     : "unknown";
 
-            return $"{projectCode}::{batchCode}::{fishStockCode}::{locationPart}";
+            return $"{projectCode}::{effectiveBatchCode}::{fishStockCode}::{locationPart}";
         }
 
         private static Dictionary<string, string?> NormalizeDictionary(Dictionary<string, string?> source)
@@ -1130,7 +1493,6 @@ namespace aqua_api.Modules.Aqua.Application.Services
             if (IsSheet(sheetName, "OpeningStock"))
             {
                 Require(normalized, "projectCode", messages, "Proje kodu zorunludur.");
-                Require(normalized, "batchCode", messages, "Batch kodu zorunludur.");
                 Require(normalized, "fishStockCode", messages, "Balık stok kodu zorunludur.");
                 ValidatePositiveInt(normalized, "fishCount", messages, "Balık adedi 0'dan büyük olmalıdır.");
                 ValidatePositiveDecimal(normalized, "averageGram", messages, "Ortalama gram 0'dan büyük olmalıdır.");
@@ -1150,7 +1512,6 @@ namespace aqua_api.Modules.Aqua.Application.Services
             {
                 Require(normalized, "projectCode", messages, "Proje kodu zorunludur.");
                 Require(normalized, "cageCode", messages, "Kafes kodu zorunludur.");
-                Require(normalized, "batchCode", messages, "Batch kodu zorunludur.");
                 Require(normalized, "fishStockCode", messages, "Balık stok kodu zorunludur.");
                 ValidatePositiveInt(normalized, "fishCount", messages, "Balık adedi 0'dan büyük olmalıdır.");
                 ValidatePositiveDecimal(normalized, "averageGram", messages, "Ortalama gram 0'dan büyük olmalıdır.");
@@ -1162,10 +1523,35 @@ namespace aqua_api.Modules.Aqua.Application.Services
             {
                 Require(normalized, "projectCode", messages, "Proje kodu zorunludur.");
                 Require(normalized, "cageCode", messages, "Kafes kodu zorunludur.");
+                Require(normalized, "fishStockCode", messages, "Balık stok kodu zorunludur.");
+                ValidatePositiveInt(normalized, "deadCount", messages, "Mortalite adedi 0'dan büyük olmalıdır.");
+                ValidateDate(normalized, "mortalityDate", messages, "Mortalite tarihi geçersiz.");
+                return messages;
+            }
+
+            if (IsSheet(sheetName, "OpeningFeedings"))
+            {
+                Require(normalized, "projectCode", messages, "Proje kodu zorunludur.");
+                Require(normalized, "cageCode", messages, "Kafes kodu zorunludur.");
                 Require(normalized, "batchCode", messages, "Batch kodu zorunludur.");
                 Require(normalized, "fishStockCode", messages, "Balık stok kodu zorunludur.");
-                ValidatePositiveInt(normalized, "deadCount", messages, "Ölüm adedi 0'dan büyük olmalıdır.");
-                ValidateDate(normalized, "mortalityDate", messages, "Ölüm tarihi geçersiz.");
+                Require(normalized, "feedStockCode", messages, "Yem stok kodu zorunludur.");
+                ValidatePositiveDecimal(normalized, "feedGram", messages, "Yem gramı 0'dan büyük olmalıdır.");
+                ValidateDate(normalized, "feedingDate", messages, "Yemleme tarihi geçersiz.");
+                return messages;
+            }
+
+            if (IsSheet(sheetName, "OpeningShipments"))
+            {
+                Require(normalized, "projectCode", messages, "Proje kodu zorunludur.");
+                Require(normalized, "cageCode", messages, "Kafes kodu zorunludur.");
+                Require(normalized, "batchCode", messages, "Batch kodu zorunludur.");
+                Require(normalized, "fishStockCode", messages, "Balık stok kodu zorunludur.");
+                ValidatePositiveInt(normalized, "fishCount", messages, "Sevkiyat adedi 0'dan büyük olmalıdır.");
+                ValidatePositiveDecimal(normalized, "averageGram", messages, "Ortalama gram 0'dan büyük olmalıdır.");
+                ValidateDate(normalized, "shipmentDate", messages, "Sevkiyat tarihi geçersiz.");
+                ValidateNonNegativeDecimal(normalized, "unitPrice", messages, "Birim fiyat 0 veya daha büyük olmalıdır.");
+                ValidatePositiveDecimalWhenPresent(normalized, "exchangeRate", messages, "Kur 0'dan büyük olmalıdır.");
                 return messages;
             }
 
@@ -1192,6 +1578,32 @@ namespace aqua_api.Modules.Aqua.Application.Services
         private static void ValidatePositiveDecimal(Dictionary<string, string?> values, string key, List<string> messages, string message)
         {
             if (!values.TryGetValue(key, out var value) || !decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed) || parsed <= 0)
+            {
+                messages.Add(message);
+            }
+        }
+
+        private static void ValidatePositiveDecimalWhenPresent(Dictionary<string, string?> values, string key, List<string> messages, string message)
+        {
+            if (!values.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            if (!decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed) || parsed <= 0)
+            {
+                messages.Add(message);
+            }
+        }
+
+        private static void ValidateNonNegativeDecimal(Dictionary<string, string?> values, string key, List<string> messages, string message)
+        {
+            if (!values.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
+            {
+                return;
+            }
+
+            if (!decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed) || parsed < 0)
             {
                 messages.Add(message);
             }
@@ -1250,6 +1662,32 @@ namespace aqua_api.Modules.Aqua.Application.Services
         private static bool IsSheet(string? actual, string expected)
         {
             return string.Equals(actual?.Trim(), expected, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private static string ResolveBatchCode(string projectCode, string? batchCode)
+        {
+            return string.IsNullOrWhiteSpace(batchCode) ? $"OPEN-{projectCode}" : batchCode.Trim();
+        }
+
+        private static FeedingSlot ParseFeedingSlot(string? value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return FeedingSlot.Morning;
+            }
+
+            if (byte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var numeric) &&
+                Enum.IsDefined(typeof(FeedingSlot), (int)numeric))
+            {
+                return (FeedingSlot)numeric;
+            }
+
+            var normalized = value.Trim().ToUpperInvariant();
+            return normalized switch
+            {
+                "EVENING" or "2" or "2. TUR" or "ROUND2" or "ROUND 2" => FeedingSlot.Evening,
+                _ => FeedingSlot.Morning,
+            };
         }
 
         private static OpeningImportSummaryDto BuildSummary(List<StagedRow> rows)
@@ -1331,6 +1769,18 @@ namespace aqua_api.Modules.Aqua.Application.Services
             return decimal.TryParse(rawValue, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed)
                 ? parsed
                 : fallback;
+        }
+
+        private static decimal? ParseNullableDecimal(string? rawValue)
+        {
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                return null;
+            }
+
+            return decimal.TryParse(rawValue, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed)
+                ? parsed
+                : null;
         }
 
         private sealed class StagedRow

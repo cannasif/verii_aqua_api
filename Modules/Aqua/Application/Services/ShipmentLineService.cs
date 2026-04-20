@@ -46,6 +46,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
             {
                 var entity = await _unitOfWork.ShipmentLines
                     .Query()
+                    .Include(x => x.Shipment)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.FishBatch)
+                    .Include(x => x.FromProjectCage)
+                        .ThenInclude(x => x!.Cage)
                     .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
@@ -56,7 +61,10 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
-                var dto = _mapper.Map<ShipmentLineDto>(entity);
+                var warehouse = entity.Shipment?.TargetWarehouseId is long warehouseId
+                    ? await _unitOfWork.Repository<WarehouseEntity>().Query().FirstOrDefaultAsync(x => x.Id == warehouseId && !x.IsDeleted)
+                    : null;
+                var dto = MapShipmentLine(entity, warehouse);
                 return ApiResponse<ShipmentLineDto>.SuccessResult(dto, _localizationService.GetLocalizedString("ShipmentLineService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -87,9 +95,35 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
                 var entities = await query
                     .ApplyPagination(request.PageNumber, request.PageSize)
+                    .Include(x => x.Shipment)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.FishBatch)
+                    .Include(x => x.FromProjectCage)
+                        .ThenInclude(x => x!.Cage)
                     .ToListAsync();
 
-                var items = entities.Select(x => _mapper.Map<ShipmentLineDto>(x)).ToList();
+                var warehouseIds = entities
+                    .Select(x => x.Shipment?.TargetWarehouseId)
+                    .Where(x => x.HasValue)
+                    .Select(x => x!.Value)
+                    .Distinct()
+                    .ToList();
+
+                var warehouses = warehouseIds.Count == 0
+                    ? new List<WarehouseEntity>()
+                    : await _unitOfWork.Repository<WarehouseEntity>()
+                        .Query()
+                        .Where(x => !x.IsDeleted && warehouseIds.Contains(x.Id))
+                        .ToListAsync();
+
+                var warehouseById = warehouses.ToDictionary(x => x.Id);
+                var items = entities
+                    .Select(x => MapShipmentLine(
+                        x,
+                        x.Shipment?.TargetWarehouseId is long warehouseId && warehouseById.TryGetValue(warehouseId, out var warehouse)
+                            ? warehouse
+                            : null))
+                    .ToList();
 
                 var pagedResponse = new PagedResponse<ShipmentLineDto>
                 {
@@ -140,7 +174,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 await _unitOfWork.BeginTransactionAsync();
 
                 var shipment = await _unitOfWork.Shipments
-                    .Query()
+                    .Query(tracking: true)
                     .Where(x =>
                         !x.IsDeleted &&
                         x.ProjectId == dto.ProjectId &&
@@ -290,6 +324,22 @@ namespace aqua_api.Modules.Aqua.Application.Services
             var baseValue = !string.IsNullOrWhiteSpace(projectCode) ? projectCode : projectName;
             var normalized = string.IsNullOrWhiteSpace(baseValue) ? "DOC" : baseValue.Trim();
             return $"{normalized}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+        }
+
+        private ShipmentLineDto MapShipmentLine(ShipmentLine entity, WarehouseEntity? warehouse)
+        {
+            var dto = _mapper.Map<ShipmentLineDto>(entity);
+            dto.ShipmentNo = entity.Shipment?.ShipmentNo;
+            dto.ProjectId = entity.Shipment?.ProjectId;
+            dto.ProjectCode = entity.Shipment?.Project?.ProjectCode;
+            dto.ProjectName = entity.Shipment?.Project?.ProjectName;
+            dto.BatchCode = entity.FishBatch?.BatchCode;
+            dto.FromCageCode = entity.FromProjectCage?.Cage?.CageCode;
+            dto.FromCageName = entity.FromProjectCage?.Cage?.CageName;
+            dto.TargetWarehouseId = entity.Shipment?.TargetWarehouseId;
+            dto.TargetWarehouseCode = warehouse?.ErpWarehouseCode.ToString();
+            dto.TargetWarehouseName = warehouse?.WarehouseName;
+            return dto;
         }
 
         private async Task<long> ValidateAndResolveWarehouseIdAsync(long warehouseId)

@@ -4,8 +4,18 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
     {
         public long Id { get; set; }
         public long ShipmentId { get; set; }
+        public string? ShipmentNo { get; set; }
         public long FishBatchId { get; set; }
+        public string? BatchCode { get; set; }
+        public long? ProjectId { get; set; }
+        public string? ProjectCode { get; set; }
+        public string? ProjectName { get; set; }
         public long FromProjectCageId { get; set; }
+        public string? FromCageCode { get; set; }
+        public string? FromCageName { get; set; }
+        public long? TargetWarehouseId { get; set; }
+        public string? TargetWarehouseCode { get; set; }
+        public string? TargetWarehouseName { get; set; }
         public int FishCount { get; set; }
         public decimal AverageGram { get; set; }
         public decimal BiomassGram { get; set; }

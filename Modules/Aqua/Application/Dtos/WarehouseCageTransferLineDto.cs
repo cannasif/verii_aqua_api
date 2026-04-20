@@ -7,6 +7,7 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
         public long Id { get; set; }
         public long WarehouseCageTransferId { get; set; }
         public long FishBatchId { get; set; }
+        public string? BatchCode { get; set; }
         public long FromWarehouseId { get; set; }
         public short? FromWarehouseCode { get; set; }
         public string? FromWarehouseName { get; set; }

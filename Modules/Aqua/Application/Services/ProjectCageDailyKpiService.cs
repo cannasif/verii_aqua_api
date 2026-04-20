@@ -92,7 +92,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
                     previousBalance ??= firstBalance ?? balance;
 
-                    var feedKg = await _unitOfWork.Db.FeedingDistributions
+                    var feedGrams = await _unitOfWork.Db.FeedingDistributions
                         .AsNoTracking()
                         .Where(x => !x.IsDeleted
                             && x.ProjectCageId == balance.ProjectCageId
@@ -101,7 +101,9 @@ namespace aqua_api.Modules.Aqua.Application.Services
                             && x.FeedingLine.Feeding != null
                             && x.FeedingLine.Feeding.FeedingDate.Date >= lookbackDate
                             && x.FeedingLine.Feeding.FeedingDate.Date <= snapshotDate)
-                        .SumAsync(x => (decimal?)x.FeedGram) ?? 0m;
+                        .Select(x => x.FeedGram)
+                        .ToListAsync();
+                    var feedKg = feedGrams.Sum();
 
                     var deadCount = await _unitOfWork.Db.MortalityLines
                         .AsNoTracking()

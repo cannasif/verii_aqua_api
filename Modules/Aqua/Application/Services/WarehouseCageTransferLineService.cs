@@ -281,6 +281,10 @@ namespace aqua_api.Modules.Aqua.Application.Services
         private async Task<WarehouseCageTransferLineDto> MapDtoAsync(WarehouseCageTransferLine entity)
         {
             var dto = _mapper.Map<WarehouseCageTransferLineDto>(entity);
+            var fishBatch = await _unitOfWork.FishBatches
+                .Query()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => !x.IsDeleted && x.Id == entity.FishBatchId);
 
             var warehouse = await _unitOfWork.Repository<WarehouseEntity>()
                 .Query()
@@ -294,6 +298,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 .Include(x => x.Cage)
                 .FirstOrDefaultAsync(x => !x.IsDeleted && x.Id == entity.ToProjectCageId);
 
+            dto.BatchCode = fishBatch?.BatchCode;
             dto.FromWarehouseCode = warehouse?.ErpWarehouseCode;
             dto.FromWarehouseName = warehouse?.WarehouseName;
             dto.ToProjectCode = targetProjectCage?.Project?.ProjectCode;

@@ -55,9 +55,14 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
         public int CreatedProjectCages { get; set; }
         public int CreatedFishBatches { get; set; }
         public int CreatedGoodsReceipts { get; set; }
+        public int CreatedFeedingHeaders { get; set; }
         public int CreatedMortalityHeaders { get; set; }
+        public int CreatedShipmentHeaders { get; set; }
         public int CreatedGoodsReceiptLines { get; set; }
+        public int CreatedFeedingLines { get; set; }
+        public int CreatedFeedingDistributions { get; set; }
         public int CreatedMortalityLines { get; set; }
+        public int CreatedShipmentLines { get; set; }
         public int AppliedCageRows { get; set; }
         public int AppliedWarehouseRows { get; set; }
         public int SkippedRows { get; set; }

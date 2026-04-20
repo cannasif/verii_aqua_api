@@ -178,8 +178,30 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         Note = dto.Note,
                     };
 
-                    await _unitOfWork.Feedings.AddAsync(feeding);
-                    await _unitOfWork.SaveChangesAsync();
+                    try
+                    {
+                        await _unitOfWork.Feedings.AddAsync(feeding);
+                        await _unitOfWork.SaveChangesAsync();
+                    }
+                    catch (DbUpdateException)
+                    {
+                        var conflictingHeader = await _unitOfWork.Feedings
+                            .Query(tracking: true)
+                            .Where(x =>
+                                !x.IsDeleted &&
+                                x.ProjectId == dto.ProjectId &&
+                                x.FeedingDate.Date == dto.FeedingDate.Date &&
+                                x.FeedingSlot == dto.FeedingSlot)
+                            .OrderByDescending(x => x.Id)
+                            .FirstOrDefaultAsync();
+
+                        if (conflictingHeader == null)
+                        {
+                            throw;
+                        }
+
+                        feeding = conflictingHeader;
+                    }
                 }
 
                 var gramPerUnit = dto.GramPerUnit > 0

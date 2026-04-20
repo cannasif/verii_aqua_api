@@ -28,8 +28,6 @@ namespace aqua_api.Modules.Aqua.Infrastructure.Persistence.Configurations
                 .HasDatabaseName("UX_RII_GoodsReceipt_ReceiptNo_Active");
 
             builder.HasIndex(x => x.ProjectId)
-                .IsUnique()
-                .HasFilter("[IsDeleted] = 0 AND [ProjectId] IS NOT NULL")
                 .HasDatabaseName("UX_RII_GoodsReceipt_Project_Active");
 
             builder.HasIndex(x => x.WarehouseId)
