@@ -30,6 +30,8 @@ public static class ServiceCollectionExtensions
         IWebHostEnvironment environment,
         string[] configuredCorsOrigins)
     {
+        var isTesting = environment.IsEnvironment("Testing");
+
         if (configuredCorsOrigins.Length == 0)
         {
             throw new InvalidOperationException(LocalizationBootstrap.GetString("General.CorsAllowedOriginsRequired"));
@@ -81,36 +83,39 @@ public static class ServiceCollectionExtensions
             });
         });
 
-        services.AddHangfire(hangfire => hangfire
-            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-            .UseSimpleAssemblyNameTypeSerializer()
-            .UseRecommendedSerializerSettings()
-            .UseSqlServerStorage(configuration.GetConnectionString("DefaultConnection"), new SqlServerStorageOptions
-            {
-                CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
-                SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
-                QueuePollInterval = TimeSpan.Zero,
-                UseRecommendedIsolationLevel = true,
-                DisableGlobalLocks = true
-            }));
-
         services.Configure<HangfireMonitoringOptions>(
             configuration.GetSection(HangfireMonitoringOptions.SectionName));
 
-        GlobalJobFilters.Filters.Add(new AutomaticRetryAttribute
+        if (!isTesting)
         {
-            Attempts = 3,
-            DelaysInSeconds = new[] { 60, 300, 900 },
-            LogEvents = true,
-            OnAttemptsExceeded = AttemptsExceededAction.Fail
-        });
+            services.AddHangfire(hangfire => hangfire
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UseSqlServerStorage(configuration.GetConnectionString("DefaultConnection"), new SqlServerStorageOptions
+                {
+                    CommandBatchMaxTimeout = TimeSpan.FromMinutes(5),
+                    SlidingInvisibilityTimeout = TimeSpan.FromMinutes(5),
+                    QueuePollInterval = TimeSpan.Zero,
+                    UseRecommendedIsolationLevel = true,
+                    DisableGlobalLocks = true
+                }));
 
-        services.AddHangfireServer(options =>
-        {
-            options.Queues = new[] { "default", "dead-letter" };
-        });
+            GlobalJobFilters.Filters.Add(new AutomaticRetryAttribute
+            {
+                Attempts = 3,
+                DelaysInSeconds = new[] { 60, 300, 900 },
+                LogEvents = true,
+                OnAttemptsExceeded = AttemptsExceededAction.Fail
+            });
 
-        services.AddHostedService<AdminBootstrapHostedService>();
+            services.AddHangfireServer(options =>
+            {
+                options.Queues = new[] { "default", "dead-letter" };
+            });
+
+            services.AddHostedService<AdminBootstrapHostedService>();
+        }
         services.AddAutoMapper(typeof(Program).Assembly);
         services.AddAquaSharedInfrastructure();
         services.AddIdentityModule();

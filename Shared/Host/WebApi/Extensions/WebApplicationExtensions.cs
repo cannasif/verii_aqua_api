@@ -13,12 +13,17 @@ public static class WebApplicationExtensions
 {
     public static WebApplication UseAquaApiWebApi(this WebApplication app, string[] configuredCorsOrigins)
     {
-        GlobalJobFilters.Filters.Add(
-            new HangfireJobStateFilter(
-                app.Services.GetRequiredService<ILogger<HangfireJobStateFilter>>(),
-                app.Services.GetRequiredService<IBackgroundJobClient>(),
-                app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<HangfireMonitoringOptions>>(),
-                app.Services.GetRequiredService<IServiceScopeFactory>()));
+        var isTesting = app.Environment.IsEnvironment("Testing");
+
+        if (!isTesting)
+        {
+            GlobalJobFilters.Filters.Add(
+                new HangfireJobStateFilter(
+                    app.Services.GetRequiredService<ILogger<HangfireJobStateFilter>>(),
+                    app.Services.GetRequiredService<IBackgroundJobClient>(),
+                    app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<HangfireMonitoringOptions>>(),
+                    app.Services.GetRequiredService<IServiceScopeFactory>()));
+        }
 
         var allowedCorsOrigins = new HashSet<string>(configuredCorsOrigins, StringComparer.OrdinalIgnoreCase);
 
@@ -154,30 +159,33 @@ public static class WebApplicationExtensions
         app.MapHub<NotificationHub>("/notificationHub");
         app.MapControllers();
 
-        app.UseHangfireDashboard("/hangfire", new DashboardOptions
+        if (!isTesting)
         {
-            Authorization = new[] { new HangfireAuthorizationFilter() }
-        });
+            app.UseHangfireDashboard("/hangfire", new DashboardOptions
+            {
+                Authorization = new[] { new HangfireAuthorizationFilter() }
+            });
 
-        var enableStockSyncInDevelopment = app.Configuration.GetValue<bool>("Hangfire:StockSync:EnableInDevelopment");
-        var shouldRunRecurringStockSync = !app.Environment.IsDevelopment() || enableStockSyncInDevelopment;
+            var enableStockSyncInDevelopment = app.Configuration.GetValue<bool>("Hangfire:StockSync:EnableInDevelopment");
+            var shouldRunRecurringStockSync = !app.Environment.IsDevelopment() || enableStockSyncInDevelopment;
 
-        if (shouldRunRecurringStockSync)
-        {
-            RecurringJob.AddOrUpdate<IStockSyncJob>(
-                "erp-stock-sync-job",
-                job => job.ExecuteAsync(),
-                Cron.MinuteInterval(30));
-            RecurringJob.AddOrUpdate<IWarehouseSyncJob>(
-                "erp-warehouse-sync-job",
-                job => job.ExecuteAsync(),
-                Cron.MinuteInterval(30));
-        }
-        else
-        {
-            RecurringJob.RemoveIfExists("erp-stock-sync-job");
-            RecurringJob.RemoveIfExists("erp-warehouse-sync-job");
-            app.Logger.LogInformation("Skipping recurring ERP sync jobs in Development environment. Set Hangfire:StockSync:EnableInDevelopment=true to enable.");
+            if (shouldRunRecurringStockSync)
+            {
+                RecurringJob.AddOrUpdate<IStockSyncJob>(
+                    "erp-stock-sync-job",
+                    job => job.ExecuteAsync(),
+                    Cron.MinuteInterval(30));
+                RecurringJob.AddOrUpdate<IWarehouseSyncJob>(
+                    "erp-warehouse-sync-job",
+                    job => job.ExecuteAsync(),
+                    Cron.MinuteInterval(30));
+            }
+            else
+            {
+                RecurringJob.RemoveIfExists("erp-stock-sync-job");
+                RecurringJob.RemoveIfExists("erp-warehouse-sync-job");
+                app.Logger.LogInformation("Skipping recurring ERP sync jobs in Development environment. Set Hangfire:StockSync:EnableInDevelopment=true to enable.");
+            }
         }
 
         return app;
