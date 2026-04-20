@@ -290,17 +290,10 @@ namespace aqua_api.Modules.Identity.Application.Services
                 if (!string.IsNullOrWhiteSpace(dto.Email) &&
                     !dto.Email.Equals(entity.Email, StringComparison.OrdinalIgnoreCase))
                 {
-                    var emailExists = await _uow.Users.Query()
-                        .AsNoTracking()
-                        .AnyAsync(x => !x.IsDeleted && x.Id != id && x.Email == dto.Email);
-
-                    if (emailExists)
-                    {
-                        return ApiResponse<UserDto>.ErrorResult(
-                            _loc.GetLocalizedString("UserService.UserAlreadyExists"),
-                            _loc.GetLocalizedString("UserService.UserAlreadyExists"),
-                            StatusCodes.Status400BadRequest);
-                    }
+                    return ApiResponse<UserDto>.ErrorResult(
+                        _loc.GetLocalizedString("General.ValidationError"),
+                        _loc.GetLocalizedString("General.ValidationError"),
+                        StatusCodes.Status400BadRequest);
                 }
 
                 var currentPermissionGroupIds = await _uow.UserPermissionGroups.Query()
