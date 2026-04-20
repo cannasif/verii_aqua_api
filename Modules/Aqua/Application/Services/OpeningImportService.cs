@@ -449,7 +449,6 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     continue;
                 }
 
-                var status = ParseProjectStatus(row.TryGetValue("status", out var statusValue) ? statusValue : null);
                 var startDate = ParseDateOrDefault(row.TryGetValue("startDate", out var startDateValue) ? startDateValue : null, DateTimeProvider.Now.Date);
 
                 var entity = new Project
@@ -459,7 +458,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         ? projectName
                         : projectCode,
                     StartDate = startDate,
-                    Status = status,
+                    Status = DocumentStatus.Draft,
                     Note = row.TryGetValue("note", out var note) ? note : null
                 };
 
@@ -1743,28 +1742,6 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         NormalizedData = JsonSerializer.Deserialize<Dictionary<string, string?>>(x.NormalizedDataJson ?? "{}", JsonOptions) ?? new Dictionary<string, string?>()
                     })
                     .ToList()
-            };
-        }
-
-        private static DocumentStatus ParseProjectStatus(string? rawStatus)
-        {
-            if (string.IsNullOrWhiteSpace(rawStatus))
-            {
-                return DocumentStatus.Draft;
-            }
-
-            if (byte.TryParse(rawStatus, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedNumeric) &&
-                Enum.IsDefined(typeof(DocumentStatus), parsedNumeric))
-            {
-                return (DocumentStatus)parsedNumeric;
-            }
-
-            return rawStatus.Trim().ToLowerInvariant() switch
-            {
-                "draft" or "taslak" => DocumentStatus.Draft,
-                "posted" or "postlandı" or "postlandi" => DocumentStatus.Posted,
-                "cancelled" or "iptal" => DocumentStatus.Cancelled,
-                _ => DocumentStatus.Draft
             };
         }
 
