@@ -24,6 +24,7 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<SmtpSetting> SmtpSettings { get; set; }
         public DbSet<AquaSetting> AquaSettings { get; set; }
         public DbSet<JobFailureLog> JobFailureLogs { get; set; }
+        public DbSet<JobExecutionLog> JobExecutionLogs { get; set; }
         public DbSet<RII_FN_CARI> RII_FN_CARI { get; set; }
         public DbSet<RII_VW_STOK> RII_VW_STOK { get; set; }
         public DbSet<RII_FN_DEPO> RII_FN_DEPO { get; set; }
