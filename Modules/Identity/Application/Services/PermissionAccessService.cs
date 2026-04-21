@@ -49,6 +49,21 @@ namespace aqua_api.Modules.Identity.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                var roleTitle = user.RoleNavigation?.Title ?? "User";
+                if (IsAdminLike(roleTitle))
+                {
+                    return ApiResponse<MyPermissionsDto>.SuccessResult(
+                        new MyPermissionsDto
+                        {
+                            UserId = userId,
+                            RoleTitle = roleTitle,
+                            IsSystemAdmin = true,
+                            PermissionGroups = ["System Admin"],
+                            PermissionCodes = ["*"]
+                        },
+                        _localizationService.GetLocalizedString("General.OperationSuccessful"));
+                }
+
                 var userGroupLinks = await _unitOfWork.UserPermissionGroups.Query()
                     .AsNoTracking()
                     .Where(x => x.UserId == userId && !x.IsDeleted)
@@ -57,16 +72,10 @@ namespace aqua_api.Modules.Identity.Application.Services
                     .ThenInclude(x => x.PermissionDefinition)
                     .ToListAsync();
 
-                var roleTitle = user.RoleNavigation?.Title ?? "User";
                 var isSystemAdmin = userGroupLinks.Any(x => x.PermissionGroup.IsSystemAdmin);
 
-                if (!isSystemAdmin && IsAdminLike(roleTitle))
-                {
-                    isSystemAdmin = true;
-                }
-
                 var permissionCodes = isSystemAdmin
-                    ? new List<string>()
+                    ? ["*"]
                     : userGroupLinks
                         .SelectMany(x => x.PermissionGroup.GroupPermissions)
                         .Where(x => !x.IsDeleted && x.PermissionDefinition != null && !x.PermissionDefinition.IsDeleted && x.PermissionDefinition.IsActive)
@@ -80,7 +89,9 @@ namespace aqua_api.Modules.Identity.Application.Services
                     UserId = userId,
                     RoleTitle = roleTitle,
                     IsSystemAdmin = isSystemAdmin,
-                    PermissionGroups = userGroupLinks
+                    PermissionGroups = isSystemAdmin
+                        ? ["System Admin"]
+                        : userGroupLinks
                         .Select(x => x.PermissionGroup.Name)
                         .Distinct(StringComparer.OrdinalIgnoreCase)
                         .OrderBy(x => x)
