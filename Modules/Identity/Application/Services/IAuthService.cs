@@ -14,11 +14,14 @@ namespace aqua_api.Modules.Identity.Application.Services
         Task<ApiResponse<string>> RequestPasswordResetAsync(ForgotPasswordRequest request);
         Task<ApiResponse<bool>> ResetPasswordAsync(ResetPasswordRequest request);
         Task<ApiResponse<string>> ChangePasswordAsync(ChangePasswordRequest request);
+        Task<ApiResponse<LoginWithSessionResponseDto>> RefreshTokenAsync(RefreshTokenDto request);
     }
 
     public class LoginWithSessionResponseDto
     {
         public string Token { get; set; } = string.Empty;
+        public string RefreshToken { get; set; } = string.Empty;
+        public DateTime? RefreshTokenExpiresAt { get; set; }
         public long UserId { get; set; }
         public Guid SessionId { get; set; }
         /// <summary>true: localStorage; false: sessionStorage (frontend token saklama)</summary>

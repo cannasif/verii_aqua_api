@@ -7,11 +7,13 @@ using aqua_api.Shared.Host.WebApi.Hubs;
 using Hangfire;
 using aqua_api.Modules.System.Infrastructure.BackgroundJobs.Interfaces;
 using Microsoft.Extensions.Configuration;
+using System.Security.Cryptography;
 
 namespace aqua_api.Modules.Identity.Application.Services
 {
     public class AuthService : IAuthService
     {
+        private static readonly TimeSpan RefreshTokenLifetime = TimeSpan.FromDays(30);
         private readonly IUnitOfWork _unitOfWork;
         private readonly IJwtService _jwtService;
         private readonly ILocalizationService _localizationService;
@@ -121,7 +123,8 @@ namespace aqua_api.Modules.Identity.Application.Services
                     Password = request.Password
                 };
                 // Email veya username ile kullanıcı arama
-                var user = await _unitOfWork.Users.Query().FirstOrDefaultAsync(u => u.Username == loginDto.Username || u.Email == loginDto.Username);
+                var user = await _unitOfWork.Users.Query(tracking: true)
+                    .FirstOrDefaultAsync(u => u.Username == loginDto.Username || u.Email == loginDto.Username);
                 
                 if (user == null)
                 {
@@ -155,6 +158,8 @@ namespace aqua_api.Modules.Identity.Application.Services
                     await _unitOfWork.SaveChangesAsync();
                     await AuthHub.ForceLogoutUser(_hubContext, user.Id.ToString());
                 }
+
+                EnsureRefreshToken(user);
 
                 var session = new UserSession
                 {
@@ -235,12 +240,101 @@ namespace aqua_api.Modules.Identity.Application.Services
                 var response = new LoginWithSessionResponseDto
                 {
                     Token = loginResult.Data!,
+                    RefreshToken = user.RefreshToken ?? string.Empty,
+                    RefreshTokenExpiresAt = user.RefreshTokenExpiryTime,
                     UserId = user.Id,
                     SessionId = session.SessionId,
                     RememberMe = loginDto.RememberMe
                 };
 
                 return ApiResponse<LoginWithSessionResponseDto>.SuccessResult(response, loginResult.Message);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<LoginWithSessionResponseDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("Error.User.LoginFailed"),
+                    ex.Message ?? string.Empty,
+                    500);
+            }
+        }
+
+        public async Task<ApiResponse<LoginWithSessionResponseDto>> RefreshTokenAsync(RefreshTokenDto request)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.RefreshToken))
+                {
+                    var validationMessage = _localizationService.GetLocalizedString("General.ValidationError");
+                    return ApiResponse<LoginWithSessionResponseDto>.ErrorResult(validationMessage, validationMessage, 400);
+                }
+
+                var now = DateTimeProvider.UtcNow;
+                var user = await _unitOfWork.Users.Query(tracking: true)
+                    .FirstOrDefaultAsync(u =>
+                        u.RefreshToken == request.RefreshToken &&
+                        u.RefreshTokenExpiryTime != null &&
+                        u.RefreshTokenExpiryTime > now &&
+                        u.IsActive);
+
+                if (user == null)
+                {
+                    var invalidMessage = _localizationService.GetLocalizedString("Error.User.InvalidCredentials");
+                    return ApiResponse<LoginWithSessionResponseDto>.ErrorResult(invalidMessage, invalidMessage, 401);
+                }
+
+                var session = await _unitOfWork.UserSessions.Query(tracking: true)
+                    .Where(s => s.UserId == user.Id && s.RevokedAt == null)
+                    .OrderByDescending(s => s.CreatedAt)
+                    .FirstOrDefaultAsync();
+
+                var tokenResponse = _jwtService.GenerateToken(user);
+                if (!tokenResponse.Success || string.IsNullOrWhiteSpace(tokenResponse.Data))
+                {
+                    return ApiResponse<LoginWithSessionResponseDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("Error.User.LoginFailed"),
+                        tokenResponse.ExceptionMessage ?? tokenResponse.Message ?? string.Empty,
+                        500);
+                }
+
+                var accessToken = tokenResponse.Data!;
+                if (session == null)
+                {
+                    session = new UserSession
+                    {
+                        UserId = user.Id,
+                        SessionId = Guid.NewGuid(),
+                        CreatedAt = DateTimeProvider.Now,
+                        Token = ComputeSha256Hash(accessToken),
+                        IsDeleted = false,
+                        CreatedDate = DateTimeProvider.Now
+                    };
+
+                    await _unitOfWork.UserSessions.AddAsync(session);
+                }
+                else
+                {
+                    session.CreatedAt = DateTimeProvider.Now;
+                    session.Token = ComputeSha256Hash(accessToken);
+                    session.UpdatedDate = DateTimeProvider.Now;
+                    await _unitOfWork.UserSessions.UpdateAsync(session);
+                }
+
+                EnsureRefreshToken(user);
+                await _unitOfWork.SaveChangesAsync();
+
+                var response = new LoginWithSessionResponseDto
+                {
+                    Token = accessToken,
+                    RefreshToken = user.RefreshToken ?? string.Empty,
+                    RefreshTokenExpiresAt = user.RefreshTokenExpiryTime,
+                    UserId = user.Id,
+                    SessionId = session.SessionId,
+                    RememberMe = true
+                };
+
+                return ApiResponse<LoginWithSessionResponseDto>.SuccessResult(
+                    response,
+                    _localizationService.GetLocalizedString("Success.User.LoginSuccessful"));
             }
             catch (Exception ex)
             {
@@ -460,6 +554,29 @@ namespace aqua_api.Modules.Identity.Application.Services
                 builder.Append(bytes[i].ToString("x2"));
             }
             return builder.ToString();
+        }
+
+        private void EnsureRefreshToken(User user)
+        {
+            if (!string.IsNullOrWhiteSpace(user.RefreshToken) &&
+                user.RefreshTokenExpiryTime.HasValue &&
+                user.RefreshTokenExpiryTime.Value > DateTimeProvider.UtcNow)
+            {
+                return;
+            }
+
+            user.RefreshToken = GenerateRefreshToken();
+            user.RefreshTokenExpiryTime = DateTimeProvider.UtcNow.Add(RefreshTokenLifetime);
+            user.UpdatedDate = DateTimeProvider.Now;
+        }
+
+        private static string GenerateRefreshToken()
+        {
+            var bytes = RandomNumberGenerator.GetBytes(64);
+            return Convert.ToBase64String(bytes)
+                .Replace("+", "-")
+                .Replace("/", "_")
+                .TrimEnd('=');
         }
 
         private async Task InvalidateUserSessionsAsync(long userId)

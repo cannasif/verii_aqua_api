@@ -104,5 +104,13 @@ namespace aqua_api.Modules.Identity.Api
             return StatusCode(result.StatusCode, result);
         }
 
+        [AllowAnonymous]
+        [HttpPost("refresh-token")]
+        public async Task<ActionResult<ApiResponse<LoginWithSessionResponseDto>>> RefreshToken([FromBody] RefreshTokenDto request)
+        {
+            var result = await _authService.RefreshTokenAsync(request);
+            return StatusCode(result.StatusCode, result);
+        }
+
     }
 }

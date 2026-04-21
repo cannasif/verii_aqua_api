@@ -7,6 +7,8 @@ namespace aqua_api.Modules.Identity.Application.Services
 {
     public class PermissionAccessService : IPermissionAccessService
     {
+        private static readonly string[] AdminRoleTokens = ["admin", "administrator", "system admin", "yonetici", "yönetici", "roles.admin"];
+
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILocalizationService _localizationService;
         private readonly IHttpContextAccessor _httpContextAccessor;
@@ -58,8 +60,7 @@ namespace aqua_api.Modules.Identity.Application.Services
                 var roleTitle = user.RoleNavigation?.Title ?? "User";
                 var isSystemAdmin = userGroupLinks.Any(x => x.PermissionGroup.IsSystemAdmin);
 
-                if (!isSystemAdmin && userGroupLinks.Count == 0 &&
-                    roleTitle.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+                if (!isSystemAdmin && IsAdminLike(roleTitle))
                 {
                     isSystemAdmin = true;
                 }
@@ -98,6 +99,17 @@ namespace aqua_api.Modules.Identity.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private static bool IsAdminLike(string? roleTitle)
+        {
+            if (string.IsNullOrWhiteSpace(roleTitle))
+            {
+                return false;
+            }
+
+            return AdminRoleTokens.Any(token =>
+                roleTitle.Contains(token, StringComparison.OrdinalIgnoreCase));
         }
     }
 }
