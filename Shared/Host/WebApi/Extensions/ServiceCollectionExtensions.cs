@@ -80,6 +80,7 @@ public static class ServiceCollectionExtensions
             options.UseSqlServer(connectionString, sqlOptions =>
             {
                 sqlOptions.CommandTimeout(60);
+                sqlOptions.UseCompatibilityLevel(120);
             });
         });
 

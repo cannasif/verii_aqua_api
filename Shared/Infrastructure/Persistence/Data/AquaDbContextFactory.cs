@@ -35,7 +35,11 @@ public sealed class AquaDbContextFactory : IDesignTimeDbContextFactory<AquaDbCon
         }
 
         var optionsBuilder = new DbContextOptionsBuilder<AquaDbContext>();
-        optionsBuilder.UseSqlServer(connectionString);
+        optionsBuilder.UseSqlServer(connectionString, sqlOptions =>
+        {
+            sqlOptions.CommandTimeout(60);
+            sqlOptions.UseCompatibilityLevel(120);
+        });
         return new AquaDbContext(optionsBuilder.Options);
     }
 
