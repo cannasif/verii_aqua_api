@@ -1,5 +1,10 @@
 namespace aqua_api.Modules.Aqua.Application.Dtos
 {
+    public class DashboardProjectsRequestDto
+    {
+        public List<long> ProjectIds { get; set; } = new();
+    }
+
     public class DashboardProjectsResponseDto
     {
         public List<DashboardProjectSummaryDto> Projects { get; set; } = new();

@@ -22,6 +22,13 @@ namespace aqua_api.Modules.Aqua.Api
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpPost("summary")]
+        public async Task<ActionResult<ApiResponse<DashboardProjectsResponseDto>>> PostSummary([FromBody] DashboardProjectsRequestDto? request)
+        {
+            var result = await _service.GetProjectSummariesAsync(request?.ProjectIds ?? []);
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpGet("detail/{projectId:long}")]
         public async Task<ActionResult<ApiResponse<DashboardProjectDetailDto>>> GetDetail(long projectId)
         {
