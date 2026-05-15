@@ -2,6 +2,7 @@ using AutoMapper;
 using aqua_api.Modules.Integrations.Domain.Erp;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 
@@ -327,6 +328,26 @@ namespace aqua_api.Modules.Integrations.Application.Services
             }
             catch (Exception ex)
             {
+                if (IsMissingSqlObject(ex, "RII_FN_PROJECTCODE"))
+                {
+                    _logger.LogWarning(ex, "ERP project function is missing. Falling back to Aqua project table.");
+
+                    var fallbackProjects = await _dbContext.Projects
+                        .AsNoTracking()
+                        .Where(x => !x.IsDeleted)
+                        .OrderBy(x => x.ProjectCode)
+                        .Select(x => new ProjeDto
+                        {
+                            ProjeKod = x.ProjectCode,
+                            ProjeAciklama = x.ProjectName
+                        })
+                        .ToListAsync();
+
+                    return ApiResponse<List<ProjeDto>>.SuccessResult(
+                        fallbackProjects,
+                        _localizationService.GetLocalizedString("ErpService.ProjeRecordsRetrieved"));
+                }
+
                 return ApiResponse<List<ProjeDto>>.ErrorResult(
                     _localizationService.GetLocalizedString("ErpService.InternalServerError"),
                     _localizationService.GetLocalizedString("ErpService.GetProjectCodesExceptionMessage", ex.Message),
@@ -352,6 +373,23 @@ namespace aqua_api.Modules.Integrations.Application.Services
                     _localizationService.GetLocalizedString("ErpService.HealthCheckExceptionMessage", ex.Message),
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private static bool IsMissingSqlObject(Exception ex, string objectName)
+        {
+            if (ex is SqlException sqlException)
+            {
+                if (sqlException.Number == 208)
+                {
+                    return true;
+                }
+
+                return sqlException.Message.Contains(objectName, StringComparison.OrdinalIgnoreCase)
+                    && sqlException.Message.Contains("Invalid object name", StringComparison.OrdinalIgnoreCase);
+            }
+
+            return ex.Message.Contains(objectName, StringComparison.OrdinalIgnoreCase)
+                && ex.Message.Contains("Invalid object name", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
