@@ -559,4 +559,22 @@
   <data name="OpeningImportService.EmptyWorkbook" xml:space="preserve">
     <value>Excel içinde işlenecek sheet bulunamadı.</value>
   </data>
+  <data name="CageWarehouseMappingService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="CageWarehouseMappingService.NotFound" xml:space="preserve">
+    <value>Kafes-depo eşleştirme kaydı bulunamadı.</value>
+  </data>
+  <data name="CageWarehouseMappingService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="CageWarehouseMappingService.CageNotFound" xml:space="preserve">
+    <value>Seçilen kafes bulunamadı.</value>
+  </data>
+  <data name="CageWarehouseMappingService.WarehouseNotFound" xml:space="preserve">
+    <value>Seçilen Netsis deposu bulunamadı. Önce depo senkronizasyonunu çalıştırın.</value>
+  </data>
+  <data name="CageWarehouseMappingService.ActiveMappingAlreadyExists" xml:space="preserve">
+    <value>Bu kafes için zaten aktif bir Netsis depo eşleştirmesi var.</value>
+  </data>
 </root>

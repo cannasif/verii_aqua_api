@@ -17,6 +17,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBatchWarehouseBalanceService, BatchWarehouseBalanceService>();
         services.AddScoped<IBatchMovementService, BatchMovementService>();
         services.AddScoped<IAquaSettingsService, AquaSettingsService>();
+        services.AddScoped<ICageWarehouseMappingService, CageWarehouseMappingService>();
         services.AddScoped<ICageService, CageService>();
         services.AddScoped<IDailyWeatherService, DailyWeatherService>();
         services.AddScoped<IFeedingService, FeedingService>();

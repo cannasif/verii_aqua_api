@@ -43,6 +43,7 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<ProjectMergeSource> ProjectMergeSources { get; set; }
         public DbSet<ProjectMergeCage> ProjectMergeCages { get; set; }
         public DbSet<Cage> Cages { get; set; }
+        public DbSet<CageWarehouseMapping> CageWarehouseMappings { get; set; }
         public DbSet<ProjectCage> ProjectCages { get; set; }
         public DbSet<FishBatch> FishBatches { get; set; }
         public DbSet<BatchCageBalance> BatchCageBalances { get; set; }

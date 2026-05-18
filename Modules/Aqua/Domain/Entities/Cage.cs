@@ -11,5 +11,6 @@ namespace aqua_api.Modules.Aqua.Domain.Entities
         public decimal? CapacityGram { get; set; }
 
         public ICollection<ProjectCage> ProjectCages { get; set; } = new List<ProjectCage>();
+        public ICollection<CageWarehouseMapping> WarehouseMappings { get; set; } = new List<CageWarehouseMapping>();
     }
 }
