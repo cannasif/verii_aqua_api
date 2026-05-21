@@ -116,6 +116,78 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
     }
 
     [Fact]
+    public async Task OpeningImport_AcceptsTurkishDateAndExcelSerialDateFormats()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(client, "/api/aqua/OpeningImport/preview", new OpeningImportPreviewRequestDto
+        {
+            FileName = "localized-opening-import.xlsx",
+            SourceSystem = "localized-date-test",
+            Sheets =
+            [
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Projects",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectName", TargetField = "projectName" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "startDate", TargetField = "startDate" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = "PRJ-DATE-TR-001",
+                            ["projectName"] = "Localized Date Project",
+                            ["startDate"] = "17.06.2022",
+                        }
+                    ]
+                },
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Cages",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageCode", TargetField = "cageCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageName", TargetField = "cageName" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "assignedDate", TargetField = "assignedDate" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = "PRJ-DATE-TR-001",
+                            ["cageCode"] = "CAGE-DATE-TR-001",
+                            ["cageName"] = "Localized Date Cage",
+                            ["assignedDate"] = "44729",
+                        }
+                    ]
+                }
+            ]
+        });
+
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+        Assert.NotNull(preview.Data);
+        Assert.Equal("Previewed", preview.Data!.Status);
+        Assert.All(preview.Data.Rows, row => Assert.Empty(row.Messages));
+
+        var commit = await PostAsync<OpeningImportCommitResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data.JobId}/commit", new { });
+        Assert.True(commit.Success, $"{commit.Message} | {commit.ExceptionMessage}");
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        var project = await db.Projects.SingleAsync(x => !x.IsDeleted && x.ProjectCode == "PRJ-DATE-TR-001");
+        var projectCage = await db.ProjectCages.Include(x => x.Cage).SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id);
+
+        Assert.Equal(new DateTime(2022, 6, 17), project.StartDate.Date);
+        Assert.Equal(new DateTime(2022, 6, 17), projectCage.AssignedDate.Date);
+    }
+
+    [Fact]
     public async Task HttpLifecycle_OpeningToShipment_KeepsEndpointsAndReportsAligned()
     {
         var client = _factory.CreateClient();

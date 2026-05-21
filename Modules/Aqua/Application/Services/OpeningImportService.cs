@@ -326,7 +326,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 }
             }
 
-            var warehouseCodes = stockRows
+            var warehouseCodes = cageRows
+                .Concat(stockRows)
                 .Concat(goodsReceiptRows)
                 .Select(x => GetValue(x, "warehouseCode"))
                 .Where(x => !string.IsNullOrWhiteSpace(x))
@@ -351,7 +352,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 .Where(x => warehouseShortCodes.Contains(x.ErpWarehouseCode) && !x.IsDeleted)
                 .ToDictionaryAsync(x => x.ErpWarehouseCode, x => x);
 
-            foreach (var row in stockRows.Concat(shipmentRows))
+            foreach (var row in cageRows.Concat(stockRows).Concat(goodsReceiptRows).Concat(shipmentRows))
             {
                 var warehouseCode = GetValue(row, "warehouseCode") ?? GetValue(row, "targetWarehouseCode");
                 if (string.IsNullOrWhiteSpace(warehouseCode))
@@ -555,6 +556,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 await _unitOfWork.SaveChangesAsync();
             }
 
+            await EnsureCageWarehouseMappingsAsync(cageRows, cagesByCode, result);
+
             var existingAssignments = await _unitOfWork.Db.ProjectCages
                 .Where(x => !x.IsDeleted && x.ReleasedDate == null && allCageCodes.Contains(x.Cage!.CageCode))
                 .Select(x => new { x.ProjectId, x.CageId })
@@ -611,6 +614,84 @@ namespace aqua_api.Modules.Aqua.Application.Services
             }
 
             return cagesByCode;
+        }
+
+        private async Task EnsureCageWarehouseMappingsAsync(
+            IReadOnlyCollection<Dictionary<string, string?>> cageRows,
+            IReadOnlyDictionary<string, Cage> cagesByCode,
+            OpeningImportCommitResultDto result)
+        {
+            var mappingRows = cageRows
+                .Where(x => x.TryGetValue("warehouseCode", out var warehouseCode) && !string.IsNullOrWhiteSpace(warehouseCode))
+                .ToList();
+
+            if (mappingRows.Count == 0)
+            {
+                return;
+            }
+
+            var warehouseCodes = mappingRows
+                .Select(x => x["warehouseCode"])
+                .Where(x => short.TryParse(x, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                .Select(x => short.Parse(x!, NumberStyles.Integer, CultureInfo.InvariantCulture))
+                .Distinct()
+                .ToList();
+
+            var warehouses = await _unitOfWork.Db.Warehouses
+                .Where(x => !x.IsDeleted && warehouseCodes.Contains(x.ErpWarehouseCode))
+                .ToDictionaryAsync(x => x.ErpWarehouseCode, x => x);
+
+            var cageIds = mappingRows
+                .Select(x => x.TryGetValue("cageCode", out var cageCode) && !string.IsNullOrWhiteSpace(cageCode) && cagesByCode.TryGetValue(cageCode, out var cage)
+                    ? cage.Id
+                    : (long?)null)
+                .Where(x => x.HasValue)
+                .Select(x => x!.Value)
+                .Distinct()
+                .ToList();
+
+            var activeMappings = await _unitOfWork.Repository<CageWarehouseMapping>()
+                .Query()
+                .Where(x => !x.IsDeleted && x.IsActive && cageIds.Contains(x.CageId))
+                .Select(x => new { x.CageId, x.WarehouseId })
+                .ToListAsync();
+
+            var activeCageIds = activeMappings
+                .Select(x => x.CageId)
+                .ToHashSet();
+
+            var createdAny = false;
+            foreach (var row in mappingRows)
+            {
+                var cageCode = row.TryGetValue("cageCode", out var cageCodeValue) ? cageCodeValue : null;
+                var warehouseCode = row.TryGetValue("warehouseCode", out var warehouseCodeValue) ? warehouseCodeValue : null;
+
+                if (string.IsNullOrWhiteSpace(cageCode) ||
+                    string.IsNullOrWhiteSpace(warehouseCode) ||
+                    !cagesByCode.TryGetValue(cageCode, out var cage) ||
+                    !short.TryParse(warehouseCode, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedWarehouseCode) ||
+                    !warehouses.TryGetValue(parsedWarehouseCode, out var warehouse) ||
+                    activeCageIds.Contains(cage.Id))
+                {
+                    continue;
+                }
+
+                await _unitOfWork.Repository<CageWarehouseMapping>().AddAsync(new CageWarehouseMapping
+                {
+                    CageId = cage.Id,
+                    WarehouseId = warehouse.Id,
+                    IsActive = true,
+                    Note = "İlk geçiş Excel şablonu üzerinden oluşturuldu."
+                });
+                activeCageIds.Add(cage.Id);
+                result.CreatedCageWarehouseMappings += 1;
+                createdAny = true;
+            }
+
+            if (createdAny)
+            {
+                await _unitOfWork.SaveChangesAsync();
+            }
         }
 
         private async Task ApplyOpeningBalancesAsync(
@@ -1633,7 +1714,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 return;
             }
 
-            if (!DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out _))
+            if (!TryParseOpeningDate(value, out _))
             {
                 messages.Add(message);
             }
@@ -1747,9 +1828,57 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
         private static DateTime ParseDateOrDefault(string? rawValue, DateTime fallback)
         {
-            return DateTime.TryParse(rawValue, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out var parsed)
+            return TryParseOpeningDate(rawValue, out var parsed)
                 ? parsed
                 : fallback;
+        }
+
+        private static bool TryParseOpeningDate(string? rawValue, out DateTime parsed)
+        {
+            parsed = default;
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                return false;
+            }
+
+            var value = rawValue.Trim();
+            if (double.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var serialDate) &&
+                serialDate >= 1 &&
+                serialDate <= 2958465)
+            {
+                parsed = DateTime.FromOADate(serialDate).Date;
+                return true;
+            }
+
+            var exactFormats = new[]
+            {
+                "yyyy-MM-dd",
+                "yyyy/M/d",
+                "yyyy.MM.dd",
+                "dd.MM.yyyy",
+                "d.M.yyyy",
+                "dd/MM/yyyy",
+                "d/M/yyyy",
+                "dd-MM-yyyy",
+                "d-M-yyyy",
+                "yyyy-MM-ddTHH:mm:ss",
+                "yyyy-MM-dd HH:mm:ss"
+            };
+
+            if (DateTime.TryParseExact(value, exactFormats, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out parsed))
+            {
+                parsed = parsed.Date;
+                return true;
+            }
+
+            if (DateTime.TryParse(value, new CultureInfo("tr-TR"), DateTimeStyles.AssumeLocal, out parsed) ||
+                DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AssumeLocal, out parsed))
+            {
+                parsed = parsed.Date;
+                return true;
+            }
+
+            return false;
         }
 
         private static int ParseIntOrDefault(string? rawValue, int fallback)

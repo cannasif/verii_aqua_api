@@ -52,6 +52,7 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
         public long JobId { get; set; }
         public int CreatedProjects { get; set; }
         public int CreatedCages { get; set; }
+        public int CreatedCageWarehouseMappings { get; set; }
         public int CreatedProjectCages { get; set; }
         public int CreatedFishBatches { get; set; }
         public int CreatedGoodsReceipts { get; set; }
