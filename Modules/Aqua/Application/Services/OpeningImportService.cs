@@ -217,6 +217,21 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 var cages = await _unitOfWork.Cages.Query(tracking: true, ignoreQueryFilters: true)
                     .Where(x => x.IsDeleted && cageCodes.Contains(x.CageCode))
                     .ToListAsync();
+                var projectIds = projects.Select(x => x.Id).ToList();
+                var cageIds = cages.Select(x => x.Id).ToList();
+
+                var projectCages = await _unitOfWork.Db.ProjectCages
+                    .IgnoreQueryFilters()
+                    .Where(x =>
+                        x.IsDeleted &&
+                        ((projectIds.Count > 0 && projectIds.Contains(x.ProjectId)) ||
+                         (cageIds.Count > 0 && cageIds.Contains(x.CageId))))
+                    .ToListAsync();
+
+                var cageWarehouseMappings = await _unitOfWork.Db.CageWarehouseMappings
+                    .IgnoreQueryFilters()
+                    .Where(x => x.IsDeleted && cageIds.Count > 0 && cageIds.Contains(x.CageId))
+                    .ToListAsync();
 
                 var result = new OpeningImportCleanupSoftDeletedResultDto
                 {
@@ -225,7 +240,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     DeletedCageCodes = cages.Select(x => x.CageCode).ToList()
                 };
 
-                if (projects.Count == 0 && cages.Count == 0)
+                if (projects.Count == 0 && cages.Count == 0 && projectCages.Count == 0 && cageWarehouseMappings.Count == 0)
                 {
                     return ApiResponse<OpeningImportCleanupSoftDeletedResultDto>.SuccessResult(
                         result,
@@ -233,6 +248,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 }
 
                 await _unitOfWork.BeginTransactionAsync();
+                _unitOfWork.Db.RemoveRange(cageWarehouseMappings);
+                _unitOfWork.Db.RemoveRange(projectCages);
                 _unitOfWork.Db.RemoveRange(cages);
                 _unitOfWork.Db.RemoveRange(projects);
                 await _unitOfWork.SaveChangesAsync();
@@ -240,6 +257,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
                 result.DeletedProjects = projects.Count;
                 result.DeletedCages = cages.Count;
+                result.DeletedProjectCages = projectCages.Count;
+                result.DeletedCageWarehouseMappings = cageWarehouseMappings.Count;
 
                 return ApiResponse<OpeningImportCleanupSoftDeletedResultDto>.SuccessResult(
                     result,
@@ -1706,7 +1725,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
                 var hasCage = !string.IsNullOrWhiteSpace(normalized.TryGetValue("cageCode", out var cageCode) ? cageCode : null);
                 var hasWarehouse = !string.IsNullOrWhiteSpace(normalized.TryGetValue("warehouseCode", out var warehouseCode) ? warehouseCode : null);
-                if (hasCage == hasWarehouse)
+                if (!hasCage && !hasWarehouse)
                 {
                     messages.Add("Açılış stok satırında ya kafes kodu ya da depo kodu verilmelidir.");
                 }
@@ -1775,7 +1794,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
         private static void ValidatePositiveInt(Dictionary<string, string?> values, string key, List<string> messages, string message)
         {
-            if (!values.TryGetValue(key, out var value) || !int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed) || parsed <= 0)
+            if (!values.TryGetValue(key, out var value) || !TryParseOpeningInt(value, out var parsed) || parsed <= 0)
             {
                 messages.Add(message);
             }
@@ -1783,7 +1802,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
         private static void ValidatePositiveDecimal(Dictionary<string, string?> values, string key, List<string> messages, string message)
         {
-            if (!values.TryGetValue(key, out var value) || !decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed) || parsed <= 0)
+            if (!values.TryGetValue(key, out var value) || !TryParseOpeningDecimal(value, out var parsed) || parsed <= 0)
             {
                 messages.Add(message);
             }
@@ -1796,7 +1815,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 return;
             }
 
-            if (!decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed) || parsed <= 0)
+            if (!TryParseOpeningDecimal(value, out var parsed) || parsed <= 0)
             {
                 messages.Add(message);
             }
@@ -1809,7 +1828,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 return;
             }
 
-            if (!decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed) || parsed < 0)
+            if (!TryParseOpeningDecimal(value, out var parsed) || parsed < 0)
             {
                 messages.Add(message);
             }
@@ -1991,14 +2010,14 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
         private static int ParseIntOrDefault(string? rawValue, int fallback)
         {
-            return int.TryParse(rawValue, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsed)
+            return TryParseOpeningInt(rawValue, out var parsed)
                 ? parsed
                 : fallback;
         }
 
         private static decimal ParseDecimalOrDefault(string? rawValue, decimal fallback)
         {
-            return decimal.TryParse(rawValue, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed)
+            return TryParseOpeningDecimal(rawValue, out var parsed)
                 ? parsed
                 : fallback;
         }
@@ -2010,9 +2029,109 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 return null;
             }
 
-            return decimal.TryParse(rawValue, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed)
+            return TryParseOpeningDecimal(rawValue, out var parsed)
                 ? parsed
                 : null;
+        }
+
+        private static bool TryParseOpeningInt(string? rawValue, out int parsed)
+        {
+            parsed = 0;
+            if (!TryParseOpeningDecimal(rawValue, out var decimalValue))
+            {
+                return false;
+            }
+
+            var rounded = decimal.Round(decimalValue, 0, MidpointRounding.AwayFromZero);
+            if (rounded < int.MinValue || rounded > int.MaxValue)
+            {
+                return false;
+            }
+
+            parsed = (int)rounded;
+            return true;
+        }
+
+        private static bool TryParseOpeningDecimal(string? rawValue, out decimal parsed)
+        {
+            parsed = 0m;
+            if (string.IsNullOrWhiteSpace(rawValue))
+            {
+                return false;
+            }
+
+            var value = rawValue.Trim()
+                .Replace(" ", string.Empty)
+                .Replace("\u00A0", string.Empty);
+
+            if (ShouldNormalizeBeforeCultureParse(value))
+            {
+                value = NormalizeOpeningNumber(value);
+            }
+
+            if (decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out parsed))
+            {
+                return true;
+            }
+
+            if (decimal.TryParse(value, NumberStyles.Number, new CultureInfo("tr-TR"), out parsed))
+            {
+                return true;
+            }
+
+            var normalized = NormalizeOpeningNumber(value);
+            return decimal.TryParse(normalized, NumberStyles.Number, CultureInfo.InvariantCulture, out parsed);
+        }
+
+        private static bool ShouldNormalizeBeforeCultureParse(string value)
+        {
+            var lastComma = value.LastIndexOf(',');
+            var lastDot = value.LastIndexOf('.');
+            return (lastComma >= 0 && lastDot >= 0) ||
+                   (lastComma >= 0 && ShouldTreatSingleSeparatorAsGrouping(value, lastComma)) ||
+                   (lastDot >= 0 && ShouldTreatSingleSeparatorAsGrouping(value, lastDot));
+        }
+
+        private static string NormalizeOpeningNumber(string value)
+        {
+            var lastComma = value.LastIndexOf(',');
+            var lastDot = value.LastIndexOf('.');
+
+            if (lastComma >= 0 && lastDot >= 0)
+            {
+                var decimalSeparator = lastComma > lastDot ? ',' : '.';
+                var groupingSeparator = decimalSeparator == ',' ? "." : ",";
+                return value
+                    .Replace(groupingSeparator, string.Empty)
+                    .Replace(decimalSeparator, '.');
+            }
+
+            if (lastComma >= 0)
+            {
+                return ShouldTreatSingleSeparatorAsGrouping(value, lastComma)
+                    ? value.Replace(",", string.Empty)
+                    : value.Replace(',', '.');
+            }
+
+            if (lastDot >= 0)
+            {
+                return ShouldTreatSingleSeparatorAsGrouping(value, lastDot)
+                    ? value.Replace(".", string.Empty)
+                    : value;
+            }
+
+            return value;
+        }
+
+        private static bool ShouldTreatSingleSeparatorAsGrouping(string value, int separatorIndex)
+        {
+            var digitsAfter = value.Length - separatorIndex - 1;
+            if (digitsAfter != 3)
+            {
+                return false;
+            }
+
+            return value[(separatorIndex + 1)..].All(char.IsDigit);
         }
 
         private sealed class StagedRow

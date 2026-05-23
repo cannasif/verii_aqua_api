@@ -1,10 +1,12 @@
 using System.Globalization;
 using System.Net;
 using System.Net.Http.Json;
+using System.Reflection;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using aqua_api.Modules.Aqua.Application.Dtos;
+using aqua_api.Modules.Aqua.Application.Services;
 using aqua_api.Modules.Aqua.Domain.Entities;
 using aqua_api.Modules.Aqua.Domain.Enums;
 using aqua_api.Shared.Common.Dtos;
@@ -25,6 +27,16 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
     public AquaHttpLifecycleIntegrationTests(AquaHttpTestWebApplicationFactory factory)
     {
         _factory = factory;
+    }
+
+    [Fact]
+    public void OpeningImport_ParsesCustomerExcelNumberFormats()
+    {
+        Assert.Equal(7686, InvokeParseInt("7.686"));
+        Assert.Equal(477175, InvokeParseInt("477175.00"));
+        Assert.Equal(6481, InvokeParseInt("6,481.27"));
+        Assert.Equal(986203m, InvokeParseDecimal("986,203.00"));
+        Assert.Equal(174906.7143m, InvokeParseDecimal("174906.7143"));
     }
 
     [Fact]
@@ -124,18 +136,27 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
-            db.Projects.Add(new Project
+            var deletedProject = new Project
             {
                 ProjectCode = "PRJ-DELETED-001",
                 ProjectName = "Deleted Test Project",
                 StartDate = new DateTime(2026, 4, 1),
                 Status = DocumentStatus.Draft,
                 IsDeleted = true
-            });
-            db.Cages.Add(new Cage
+            };
+            var deletedCage = new Cage
             {
                 CageCode = "CAGE-DELETED-001",
                 CageName = "Deleted Test Cage",
+                IsDeleted = true
+            };
+            db.Projects.Add(deletedProject);
+            db.Cages.Add(deletedCage);
+            db.ProjectCages.Add(new ProjectCage
+            {
+                Project = deletedProject,
+                Cage = deletedCage,
+                AssignedDate = new DateTime(2026, 4, 1),
                 IsDeleted = true
             });
             await db.SaveChangesAsync();
@@ -199,6 +220,7 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.NotNull(cleanup.Data);
         Assert.Equal(1, cleanup.Data!.DeletedProjects);
         Assert.Equal(1, cleanup.Data.DeletedCages);
+        Assert.Equal(1, cleanup.Data.DeletedProjectCages);
         Assert.Contains("PRJ-DELETED-001", cleanup.Data.DeletedProjectCodes);
         Assert.Contains("CAGE-DELETED-001", cleanup.Data.DeletedCageCodes);
 
@@ -657,6 +679,20 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         var body = await response.Content.ReadFromJsonAsync<ApiResponse<T>>(JsonOptions);
         Assert.NotNull(body);
         return body!;
+    }
+
+    private static int InvokeParseInt(string value)
+    {
+        var method = typeof(OpeningImportService).GetMethod("ParseIntOrDefault", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+        return (int)method!.Invoke(null, [value, 0])!;
+    }
+
+    private static decimal InvokeParseDecimal(string value)
+    {
+        var method = typeof(OpeningImportService).GetMethod("ParseDecimalOrDefault", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(method);
+        return (decimal)method!.Invoke(null, [value, 0m])!;
     }
 
     private static decimal CalculateWeightedFeedCostPerKg(List<GoodsReceiptLine> lines)
