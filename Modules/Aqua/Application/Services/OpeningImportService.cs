@@ -223,14 +223,13 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 var projectCages = await _unitOfWork.Db.ProjectCages
                     .IgnoreQueryFilters()
                     .Where(x =>
-                        x.IsDeleted &&
-                        ((projectIds.Count > 0 && projectIds.Contains(x.ProjectId)) ||
-                         (cageIds.Count > 0 && cageIds.Contains(x.CageId))))
+                        (projectIds.Count > 0 && projectIds.Contains(x.ProjectId)) ||
+                        (cageIds.Count > 0 && cageIds.Contains(x.CageId)))
                     .ToListAsync();
 
                 var cageWarehouseMappings = await _unitOfWork.Db.CageWarehouseMappings
                     .IgnoreQueryFilters()
-                    .Where(x => x.IsDeleted && cageIds.Count > 0 && cageIds.Contains(x.CageId))
+                    .Where(x => cageIds.Count > 0 && cageIds.Contains(x.CageId))
                     .ToListAsync();
 
                 var result = new OpeningImportCleanupSoftDeletedResultDto

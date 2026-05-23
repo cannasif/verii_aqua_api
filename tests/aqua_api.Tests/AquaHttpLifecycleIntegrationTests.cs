@@ -157,7 +157,6 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
                 Project = deletedProject,
                 Cage = deletedCage,
                 AssignedDate = new DateTime(2026, 4, 1),
-                IsDeleted = true
             });
             await db.SaveChangesAsync();
         }
