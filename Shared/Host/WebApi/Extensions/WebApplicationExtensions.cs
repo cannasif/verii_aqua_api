@@ -39,7 +39,7 @@ public static class WebApplicationExtensions
                 {
                     ctx.Response.Headers.Append("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
                     ctx.Response.Headers.Append("Access-Control-Allow-Headers",
-                        "Content-Type, Authorization, X-Branch-Code, Branch-Code, X-Language, x-language, x-branch-code");
+                        "Content-Type, Authorization, X-Branch-Code, Branch-Code, X-Language, x-language, x-branch-code, X-HTTP-Method-Override, x-http-method-override");
                     ctx.Response.Headers.Append("Access-Control-Max-Age", "86400");
                     ctx.Response.StatusCode = StatusCodes.Status204NoContent;
                     return;
@@ -123,6 +123,21 @@ public static class WebApplicationExtensions
                 var json = System.Text.Json.JsonSerializer.Serialize(new { error = fallbackMessage, message });
                 await ctx.Response.WriteAsync(json);
             });
+        });
+
+        app.Use(async (ctx, next) =>
+        {
+            if (HttpMethods.IsPost(ctx.Request.Method) &&
+                ctx.Request.Headers.TryGetValue("X-HTTP-Method-Override", out var overrideMethod))
+            {
+                var method = overrideMethod.ToString().Trim().ToUpperInvariant();
+                if (method is "PUT" or "PATCH" or "DELETE")
+                {
+                    ctx.Request.Method = method;
+                }
+            }
+
+            await next();
         });
 
         app.UseRouting();
