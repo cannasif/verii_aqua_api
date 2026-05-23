@@ -230,6 +230,104 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
     }
 
     [Fact]
+    public async Task OpeningImport_ResetExistingDataHardDeletesActiveDemoProjectAndCageScope()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var project = new Project
+            {
+                ProjectCode = "PRJ-RESET-001",
+                ProjectName = "Reset Demo Project",
+                StartDate = new DateTime(2026, 4, 1),
+                Status = DocumentStatus.Draft
+            };
+            var cage = new Cage
+            {
+                CageCode = "CAGE-RESET-001",
+                CageName = "Reset Demo Cage"
+            };
+
+            db.Projects.Add(project);
+            db.Cages.Add(cage);
+            db.ProjectCages.Add(new ProjectCage
+            {
+                Project = project,
+                Cage = cage,
+                AssignedDate = new DateTime(2026, 4, 1)
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(client, "/api/aqua/OpeningImport/preview", new OpeningImportPreviewRequestDto
+        {
+            FileName = "reset-opening-import.xlsx",
+            SourceSystem = "reset-test",
+            Sheets =
+            [
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Projects",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectName", TargetField = "projectName" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "startDate", TargetField = "startDate" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = "PRJ-RESET-001",
+                            ["projectName"] = "Reset Project",
+                            ["startDate"] = "2026-04-05",
+                        }
+                    ]
+                },
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Cages",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageCode", TargetField = "cageCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageName", TargetField = "cageName" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = "PRJ-RESET-001",
+                            ["cageCode"] = "CAGE-RESET-001",
+                            ["cageName"] = "Reset Cage",
+                        }
+                    ]
+                }
+            ]
+        });
+
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+        Assert.NotNull(preview.Data);
+        Assert.Equal("Failed", preview.Data!.Status);
+
+        var reset = await PostAsync<OpeningImportResetExistingDataResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data.JobId}/reset-existing-data", new { });
+        Assert.True(reset.Success, $"{reset.Message} | {reset.ExceptionMessage}");
+        Assert.NotNull(reset.Data);
+        Assert.Equal(1, reset.Data!.DeletedProjects);
+        Assert.Equal(1, reset.Data.DeletedCages);
+        Assert.Equal(1, reset.Data.DeletedProjectCages);
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        Assert.False(await verifyDb.Projects.IgnoreQueryFilters().AnyAsync(x => x.ProjectCode == "PRJ-RESET-001"));
+        Assert.False(await verifyDb.Cages.IgnoreQueryFilters().AnyAsync(x => x.CageCode == "CAGE-RESET-001"));
+        Assert.False(await verifyDb.ProjectCages.IgnoreQueryFilters().AnyAsync(x => x.Project!.ProjectCode == "PRJ-RESET-001" || x.Cage!.CageCode == "CAGE-RESET-001"));
+    }
+
+    [Fact]
     public async Task OpeningImport_AcceptsTurkishDateAndExcelSerialDateFormats()
     {
         var client = _factory.CreateClient();

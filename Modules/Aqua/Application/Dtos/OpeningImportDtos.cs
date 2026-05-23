@@ -79,4 +79,20 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
         public List<string> DeletedProjectCodes { get; set; } = new();
         public List<string> DeletedCageCodes { get; set; } = new();
     }
+
+    public class OpeningImportResetExistingDataResultDto
+    {
+        public long JobId { get; set; }
+        public int DeletedProjects { get; set; }
+        public int DeletedCages { get; set; }
+        public int DeletedProjectCages { get; set; }
+        public int DeletedFishBatches { get; set; }
+        public int DeletedGoodsReceipts { get; set; }
+        public int DeletedFeedings { get; set; }
+        public int DeletedMortalities { get; set; }
+        public int DeletedShipments { get; set; }
+        public int DeletedOperationalRecords { get; set; }
+        public List<string> DeletedProjectCodes { get; set; } = new();
+        public List<string> DeletedCageCodes { get; set; } = new();
+    }
 }

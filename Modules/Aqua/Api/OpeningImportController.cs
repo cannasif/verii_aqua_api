@@ -42,5 +42,12 @@ namespace aqua_api.Modules.Aqua.Api
             var result = await _service.CleanupSoftDeletedReferencesAsync(id);
             return StatusCode(result.StatusCode, result);
         }
+
+        [HttpPost("{id:long}/reset-existing-data")]
+        public async Task<ActionResult<ApiResponse<OpeningImportResetExistingDataResultDto>>> ResetExistingData(long id)
+        {
+            var result = await _service.ResetExistingDataAsync(id);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }
