@@ -128,7 +128,8 @@ public static class WebApplicationExtensions
         app.Use(async (ctx, next) =>
         {
             if (HttpMethods.IsPost(ctx.Request.Method) &&
-                ctx.Request.Headers.TryGetValue("X-HTTP-Method-Override", out var overrideMethod))
+                (ctx.Request.Headers.TryGetValue("X-HTTP-Method-Override", out var overrideMethod) ||
+                 ctx.Request.Query.TryGetValue("__method", out overrideMethod)))
             {
                 var method = overrideMethod.ToString().Trim().ToUpperInvariant();
                 if (method is "PUT" or "PATCH" or "DELETE")
