@@ -175,6 +175,96 @@ namespace aqua_api.Modules.Aqua.Application.Services
             }
         }
 
+        public async Task<ApiResponse<OpeningImportCleanupSoftDeletedResultDto>> CleanupSoftDeletedReferencesAsync(long id)
+        {
+            try
+            {
+                var job = await _unitOfWork.Db.Set<OpeningImportJob>()
+                    .Include(x => x.Rows)
+                    .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+                if (job == null)
+                {
+                    return ApiResponse<OpeningImportCleanupSoftDeletedResultDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("OpeningImportService.JobNotFound"),
+                        _localizationService.GetLocalizedString("OpeningImportService.JobNotFound"),
+                        StatusCodes.Status404NotFound);
+                }
+
+                if (job.Status == OpeningImportJobStatus.Applied)
+                {
+                    return ApiResponse<OpeningImportCleanupSoftDeletedResultDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("OpeningImportService.AlreadyApplied"),
+                        _localizationService.GetLocalizedString("OpeningImportService.AlreadyApplied"),
+                        StatusCodes.Status400BadRequest);
+                }
+
+                var normalizedRows = job.Rows.Select(ParseRow).ToList();
+                var projectCodes = normalizedRows
+                    .Select(x => x.TryGetValue("projectCode", out var projectCode) ? projectCode : null)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                var cageCodes = normalizedRows
+                    .Select(x => x.TryGetValue("cageCode", out var cageCode) ? cageCode : null)
+                    .Where(x => !string.IsNullOrWhiteSpace(x))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                var projects = await _unitOfWork.Projects.Query(tracking: true, ignoreQueryFilters: true)
+                    .Where(x => x.IsDeleted && projectCodes.Contains(x.ProjectCode))
+                    .ToListAsync();
+                var cages = await _unitOfWork.Cages.Query(tracking: true, ignoreQueryFilters: true)
+                    .Where(x => x.IsDeleted && cageCodes.Contains(x.CageCode))
+                    .ToListAsync();
+
+                var result = new OpeningImportCleanupSoftDeletedResultDto
+                {
+                    JobId = id,
+                    DeletedProjectCodes = projects.Select(x => x.ProjectCode).ToList(),
+                    DeletedCageCodes = cages.Select(x => x.CageCode).ToList()
+                };
+
+                if (projects.Count == 0 && cages.Count == 0)
+                {
+                    return ApiResponse<OpeningImportCleanupSoftDeletedResultDto>.SuccessResult(
+                        result,
+                        "Temizlenecek silinmiş test kaydı bulunamadı.");
+                }
+
+                await _unitOfWork.BeginTransactionAsync();
+                _unitOfWork.Db.RemoveRange(cages);
+                _unitOfWork.Db.RemoveRange(projects);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                result.DeletedProjects = projects.Count;
+                result.DeletedCages = cages.Count;
+
+                return ApiResponse<OpeningImportCleanupSoftDeletedResultDto>.SuccessResult(
+                    result,
+                    "Silinmiş test kayıtları temizlendi. Lütfen önizlemeyi yeniden çalıştırın.");
+            }
+            catch (DbUpdateException ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+
+                return ApiResponse<OpeningImportCleanupSoftDeletedResultDto>.ErrorResult(
+                    "Silinmiş test kayıtları otomatik temizlenemedi.",
+                    $"Bu kayıtların ilişkili hareketleri olabilir. Önce bağlı kayıtları manuel kontrol edin. Detay: {ex.GetBaseException().Message}",
+                    StatusCodes.Status409Conflict);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+
+                return ApiResponse<OpeningImportCleanupSoftDeletedResultDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("OpeningImportService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
         private async Task<List<StagedRow>> ValidateRowsAsync(OpeningImportPreviewRequestDto dto)
         {
             var stagedRows = new List<StagedRow>();
@@ -244,6 +334,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
             var existingProjects = await _unitOfWork.Projects.Query()
                 .Where(x => referencedProjectCodes.Contains(x.ProjectCode))
                 .ToDictionaryAsync(x => x.ProjectCode, x => x, StringComparer.OrdinalIgnoreCase);
+            var deletedProjectCodes = await _unitOfWork.Projects.Query(ignoreQueryFilters: true)
+                .Where(x => x.IsDeleted && referencedProjectCodes.Contains(x.ProjectCode))
+                .Select(x => x.ProjectCode)
+                .ToListAsync();
+            var deletedProjectCodeSet = deletedProjectCodes.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             foreach (var row in rows)
             {
@@ -251,6 +346,10 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 if (!string.IsNullOrWhiteSpace(projectCode) && existingProjects.ContainsKey(projectCode))
                 {
                     row.Messages.Add($"Proje zaten mevcut, açılış importu tekrar uygulanamaz: {projectCode}");
+                }
+                else if (!string.IsNullOrWhiteSpace(projectCode) && deletedProjectCodeSet.Contains(projectCode))
+                {
+                    row.Messages.Add($"Proje kodu daha önce silinmiş kayıt olarak mevcut. İlk girişten önce bu test kaydını kalıcı temizleyin veya geri yükleyin: {projectCode}");
                 }
             }
 
@@ -376,6 +475,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
             var existingCages = await _unitOfWork.Cages.Query()
                 .Where(x => cageCodes.Contains(x.CageCode))
                 .ToDictionaryAsync(x => x.CageCode, x => x, StringComparer.OrdinalIgnoreCase);
+            var deletedCageCodes = await _unitOfWork.Cages.Query(ignoreQueryFilters: true)
+                .Where(x => x.IsDeleted && cageCodes.Contains(x.CageCode))
+                .Select(x => x.CageCode)
+                .ToListAsync();
+            var deletedCageCodeSet = deletedCageCodes.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
             foreach (var row in rows)
             {
@@ -383,6 +487,10 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 if (!string.IsNullOrWhiteSpace(cageCode) && existingCages.ContainsKey(cageCode))
                 {
                     row.Messages.Add($"Kafes zaten mevcut, açılış importu tekrar uygulanamaz: {cageCode}");
+                }
+                else if (!string.IsNullOrWhiteSpace(cageCode) && deletedCageCodeSet.Contains(cageCode))
+                {
+                    row.Messages.Add($"Kafes kodu daha önce silinmiş kayıt olarak mevcut. İlk girişten önce bu test kaydını kalıcı temizleyin veya geri yükleyin: {cageCode}");
                 }
             }
 

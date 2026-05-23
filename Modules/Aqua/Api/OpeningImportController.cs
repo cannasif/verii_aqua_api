@@ -35,5 +35,12 @@ namespace aqua_api.Modules.Aqua.Api
             var result = await _service.CommitAsync(id);
             return StatusCode(result.StatusCode, result);
         }
+
+        [HttpPost("{id:long}/cleanup-soft-deleted")]
+        public async Task<ActionResult<ApiResponse<OpeningImportCleanupSoftDeletedResultDto>>> CleanupSoftDeletedReferences(long id)
+        {
+            var result = await _service.CleanupSoftDeletedReferencesAsync(id);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }

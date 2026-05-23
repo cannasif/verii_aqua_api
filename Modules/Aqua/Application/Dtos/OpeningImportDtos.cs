@@ -68,4 +68,13 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
         public int AppliedWarehouseRows { get; set; }
         public int SkippedRows { get; set; }
     }
+
+    public class OpeningImportCleanupSoftDeletedResultDto
+    {
+        public long JobId { get; set; }
+        public int DeletedProjects { get; set; }
+        public int DeletedCages { get; set; }
+        public List<string> DeletedProjectCodes { get; set; } = new();
+        public List<string> DeletedCageCodes { get; set; } = new();
+    }
 }

@@ -116,6 +116,99 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
     }
 
     [Fact]
+    public async Task OpeningImport_PreviewBlocksSoftDeletedProjectAndCageCodes()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            db.Projects.Add(new Project
+            {
+                ProjectCode = "PRJ-DELETED-001",
+                ProjectName = "Deleted Test Project",
+                StartDate = new DateTime(2026, 4, 1),
+                Status = DocumentStatus.Draft,
+                IsDeleted = true
+            });
+            db.Cages.Add(new Cage
+            {
+                CageCode = "CAGE-DELETED-001",
+                CageName = "Deleted Test Cage",
+                IsDeleted = true
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(client, "/api/aqua/OpeningImport/preview", new OpeningImportPreviewRequestDto
+        {
+            FileName = "soft-deleted-opening-import.xlsx",
+            SourceSystem = "soft-deleted-test",
+            Sheets =
+            [
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Projects",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectName", TargetField = "projectName" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "startDate", TargetField = "startDate" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = "PRJ-DELETED-001",
+                            ["projectName"] = "Live Project Reusing Deleted Test Code",
+                            ["startDate"] = "2026-04-05",
+                        }
+                    ]
+                },
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Cages",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageCode", TargetField = "cageCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageName", TargetField = "cageName" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = "PRJ-DELETED-001",
+                            ["cageCode"] = "CAGE-DELETED-001",
+                            ["cageName"] = "Live Cage Reusing Deleted Test Code",
+                        }
+                    ]
+                }
+            ]
+        });
+
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+        Assert.NotNull(preview.Data);
+        Assert.Equal("Failed", preview.Data!.Status);
+        Assert.Contains(preview.Data.Rows, row => row.Messages.Any(message => message.Contains("Proje kodu daha önce silinmiş")));
+        Assert.Contains(preview.Data.Rows, row => row.Messages.Any(message => message.Contains("Kafes kodu daha önce silinmiş")));
+
+        var cleanup = await PostAsync<OpeningImportCleanupSoftDeletedResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data.JobId}/cleanup-soft-deleted", new { });
+        Assert.True(cleanup.Success, $"{cleanup.Message} | {cleanup.ExceptionMessage}");
+        Assert.NotNull(cleanup.Data);
+        Assert.Equal(1, cleanup.Data!.DeletedProjects);
+        Assert.Equal(1, cleanup.Data.DeletedCages);
+        Assert.Contains("PRJ-DELETED-001", cleanup.Data.DeletedProjectCodes);
+        Assert.Contains("CAGE-DELETED-001", cleanup.Data.DeletedCageCodes);
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        Assert.False(await verifyDb.Projects.IgnoreQueryFilters().AnyAsync(x => x.ProjectCode == "PRJ-DELETED-001"));
+        Assert.False(await verifyDb.Cages.IgnoreQueryFilters().AnyAsync(x => x.CageCode == "CAGE-DELETED-001"));
+    }
+
+    [Fact]
     public async Task OpeningImport_AcceptsTurkishDateAndExcelSerialDateFormats()
     {
         var client = _factory.CreateClient();
