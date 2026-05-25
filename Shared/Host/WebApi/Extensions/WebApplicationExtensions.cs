@@ -25,22 +25,22 @@ public static class WebApplicationExtensions
                     app.Services.GetRequiredService<IServiceScopeFactory>()));
         }
 
-        var allowedCorsOrigins = new HashSet<string>(configuredCorsOrigins, StringComparer.OrdinalIgnoreCase);
+        var allowedCorsOrigins = CorsOriginMatcher.NormalizeAllowedOrigins(configuredCorsOrigins);
 
         app.Use(async (ctx, next) =>
         {
             var origin = ctx.Request.Headers["Origin"].ToString();
-            if (!string.IsNullOrEmpty(origin) && allowedCorsOrigins.Contains(origin))
+            if (CorsOriginMatcher.IsAllowed(origin, allowedCorsOrigins, ctx.Request.Host))
             {
-                ctx.Response.Headers.Append("Access-Control-Allow-Origin", origin);
-                ctx.Response.Headers.Append("Access-Control-Allow-Credentials", "true");
+                ctx.Response.OnStarting(() =>
+                {
+                    ApplyCorsHeaders(ctx, origin);
+                    return Task.CompletedTask;
+                });
 
                 if (HttpMethods.IsOptions(ctx.Request.Method))
                 {
-                    ctx.Response.Headers.Append("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
-                    ctx.Response.Headers.Append("Access-Control-Allow-Headers",
-                        "Content-Type, Authorization, X-Branch-Code, Branch-Code, X-Language, x-language, x-branch-code, X-HTTP-Method-Override, x-http-method-override");
-                    ctx.Response.Headers.Append("Access-Control-Max-Age", "86400");
+                    ApplyCorsHeaders(ctx, origin);
                     ctx.Response.StatusCode = StatusCodes.Status204NoContent;
                     return;
                 }
@@ -89,16 +89,6 @@ public static class WebApplicationExtensions
                     ctx.Response.StatusCode = StatusCodes.Status409Conflict;
                     ctx.Response.ContentType = "application/json";
 
-                    var conflictOrigin = ctx.Request.Headers["Origin"].ToString();
-                    if (!string.IsNullOrEmpty(conflictOrigin) && allowedCorsOrigins.Contains(conflictOrigin))
-                    {
-                        if (!ctx.Response.Headers.ContainsKey("Access-Control-Allow-Origin"))
-                        {
-                            ctx.Response.Headers.Append("Access-Control-Allow-Origin", conflictOrigin);
-                            ctx.Response.Headers.Append("Access-Control-Allow-Credentials", "true");
-                        }
-                    }
-
                     var conflictJson = System.Text.Json.JsonSerializer.Serialize(response);
                     await ctx.Response.WriteAsync(conflictJson);
                     return;
@@ -106,16 +96,6 @@ public static class WebApplicationExtensions
 
                 ctx.Response.StatusCode = StatusCodes.Status500InternalServerError;
                 ctx.Response.ContentType = "application/json";
-
-                var origin = ctx.Request.Headers["Origin"].ToString();
-                if (!string.IsNullOrEmpty(origin) && allowedCorsOrigins.Contains(origin))
-                {
-                    if (!ctx.Response.Headers.ContainsKey("Access-Control-Allow-Origin"))
-                    {
-                        ctx.Response.Headers.Append("Access-Control-Allow-Origin", origin);
-                        ctx.Response.Headers.Append("Access-Control-Allow-Credentials", "true");
-                    }
-                }
 
                 var fallbackMessage = localizationService?.GetLocalizedString("General.ErrorOccurred")
                     ?? LocalizationBootstrap.GetString("General.ErrorOccurred");
@@ -205,6 +185,28 @@ public static class WebApplicationExtensions
         }
 
         return app;
+    }
+
+    private static void ApplyCorsHeaders(HttpContext ctx, string origin)
+    {
+        if (ctx.Response.HasStarted)
+        {
+            return;
+        }
+
+        ctx.Response.Headers["Access-Control-Allow-Origin"] = origin;
+        ctx.Response.Headers["Access-Control-Allow-Credentials"] = "true";
+        ctx.Response.Headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
+        ctx.Response.Headers["Access-Control-Allow-Headers"] =
+            "Content-Type, Authorization, X-Branch-Code, Branch-Code, X-Language, x-language, x-branch-code, X-Requested-With, x-requested-with, X-SignalR-User-Agent, x-signalr-user-agent, X-HTTP-Method-Override, x-http-method-override";
+        ctx.Response.Headers["Access-Control-Max-Age"] = "86400";
+
+        var vary = ctx.Response.Headers.Vary.ToString();
+        if (!vary.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Any(value => string.Equals(value, "Origin", StringComparison.OrdinalIgnoreCase)))
+        {
+            ctx.Response.Headers.Vary = string.IsNullOrWhiteSpace(vary) ? "Origin" : $"{vary}, Origin";
+        }
     }
 
     private static DbUpdateException? FindDbUpdateException(Exception? exception)

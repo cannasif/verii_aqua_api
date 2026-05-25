@@ -36,6 +36,7 @@ public static class ServiceCollectionExtensions
         {
             throw new InvalidOperationException(LocalizationBootstrap.GetString("General.CorsAllowedOriginsRequired"));
         }
+        var allowedCorsOrigins = CorsOriginMatcher.NormalizeAllowedOrigins(configuredCorsOrigins);
 
         services.AddControllers();
 
@@ -151,7 +152,7 @@ public static class ServiceCollectionExtensions
         {
             options.AddPolicy("DevCors", policy =>
             {
-                policy.WithOrigins(configuredCorsOrigins)
+                policy.SetIsOriginAllowed(origin => CorsOriginMatcher.IsAllowed(origin, allowedCorsOrigins, default))
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .AllowCredentials();

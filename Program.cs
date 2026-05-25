@@ -12,11 +12,15 @@ if (builder.Environment.IsDevelopment())
 var configuredCorsOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
     .Get<string[]>()
-    ?.Where(origin => !string.IsNullOrWhiteSpace(origin))
-    .Select(origin => origin.Trim().TrimEnd('/'))
-    .Distinct(StringComparer.OrdinalIgnoreCase)
-    .ToArray()
     ?? Array.Empty<string>();
+
+var configuredCorsOriginPatterns = builder.Configuration
+    .GetSection("Cors:AllowedOriginPatterns")
+    .Get<string[]>()
+    ?? Array.Empty<string>();
+
+configuredCorsOrigins = CorsOriginMatcher
+    .NormalizeAllowedOrigins(configuredCorsOrigins.Concat(configuredCorsOriginPatterns));
 
 builder.Services.AddAquaApiWebApi(builder.Configuration, builder.Environment, configuredCorsOrigins);
 
