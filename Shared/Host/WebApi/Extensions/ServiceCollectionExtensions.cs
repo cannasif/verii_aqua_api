@@ -9,6 +9,7 @@ using aqua_api.Modules.Identity.DependencyInjection;
 using aqua_api.Modules.Integrations.DependencyInjection;
 using aqua_api.Modules.Stock.DependencyInjection;
 using aqua_api.Modules.System.DependencyInjection;
+using aqua_api.Shared.Host.WebApi.Routing;
 using aqua_api.Shared.Infrastructure.DependencyInjection;
 using Hangfire;
 using Hangfire.SqlServer;
@@ -38,7 +39,10 @@ public static class ServiceCollectionExtensions
         }
         var allowedCorsOrigins = CorsOriginMatcher.NormalizeAllowedOrigins(configuredCorsOrigins);
 
-        services.AddControllers();
+        services.AddControllers(options =>
+        {
+            options.Conventions.Add(new IisSafeHttpMethodConvention());
+        });
 
         services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
         {
