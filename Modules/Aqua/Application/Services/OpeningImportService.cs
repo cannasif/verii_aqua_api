@@ -7,6 +7,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
 {
     public class OpeningImportService : IOpeningImportService
     {
+        private const string OpeningGoodsReceiptHeaderConflictMessage =
+            "Bir proje icin acilis mal kabul satirlarinin mal kabul no, tarih ve depo bilgisi ayni olmalidir; tek mal kabul basligi olusturulur.";
+        private const string OpeningGoodsReceiptBatchConflictMessage =
+            "Ayni proje ve batch icin balik stok kodu ve ortalama gram ayni olmalidir; farkli urun veya agirlik icin farkli batch kodu kullanin.";
+
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -132,6 +137,14 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     return ApiResponse<OpeningImportCommitResultDto>.ErrorResult(
                         _localizationService.GetLocalizedString("OpeningImportService.AlreadyApplied"),
                         _localizationService.GetLocalizedString("OpeningImportService.AlreadyApplied"),
+                        StatusCodes.Status400BadRequest);
+                }
+
+                if (HasOpeningGoodsReceiptHeaderConflicts(job.Rows))
+                {
+                    return ApiResponse<OpeningImportCommitResultDto>.ErrorResult(
+                        OpeningGoodsReceiptHeaderConflictMessage,
+                        OpeningGoodsReceiptHeaderConflictMessage,
                         StatusCodes.Status400BadRequest);
                 }
 
@@ -297,14 +310,6 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         _localizationService.GetLocalizedString("OpeningImportService.JobNotFound"),
                         _localizationService.GetLocalizedString("OpeningImportService.JobNotFound"),
                         StatusCodes.Status404NotFound);
-                }
-
-                if (job.Status == OpeningImportJobStatus.Applied)
-                {
-                    return ApiResponse<OpeningImportResetExistingDataResultDto>.ErrorResult(
-                        _localizationService.GetLocalizedString("OpeningImportService.AlreadyApplied"),
-                        _localizationService.GetLocalizedString("OpeningImportService.AlreadyApplied"),
-                        StatusCodes.Status400BadRequest);
                 }
 
                 var normalizedRows = job.Rows.Select(ParseRow).ToList();
@@ -528,6 +533,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
             foreach (var row in stagedRows)
             {
                 row.Entity.Status = ResolveRowStatus(row.Messages);
+                row.Entity.NormalizedDataJson = JsonSerializer.Serialize(row.NormalizedData, JsonOptions);
                 row.Entity.MessagesJson = JsonSerializer.Serialize(row.Messages, JsonOptions);
             }
 
@@ -547,8 +553,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
             var feedingRows = rows.Where(x => IsSheet(x.SheetName, "OpeningFeedings")).ToList();
             var shipmentRows = rows.Where(x => IsSheet(x.SheetName, "OpeningShipments")).ToList();
 
+            PropagateOpeningGoodsReceiptHeaderValues(goodsReceiptRows);
             AppendDuplicateErrors(projectRows, "projectCode", value => $"Aynı proje kodu dosyada tekrar ediyor: {value}");
             AppendDuplicateErrors(cageRows, row => $"{GetValue(row, "projectCode")}::{GetValue(row, "cageCode")}", value => $"Aynı proje/kafes eşleşmesi dosyada tekrar ediyor: {value}");
+            AppendOpeningGoodsReceiptHeaderErrors(goodsReceiptRows);
+            AppendOpeningGoodsReceiptBatchErrors(goodsReceiptRows);
 
             var referencedProjectCodes = rows
                 .Select(x => GetValue(x, "projectCode"))
@@ -1320,6 +1329,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
             var batchesByKey = await LoadExistingBatchesByKeyAsync(receiptRows, projectsByCode);
             var headerByKey = new Dictionary<string, GoodsReceipt>(StringComparer.OrdinalIgnoreCase);
+            var lineByKey = new Dictionary<string, GoodsReceiptLine>(StringComparer.OrdinalIgnoreCase);
+            var distributionByKey = new Dictionary<string, GoodsReceiptFishDistribution>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var row in receiptRows)
             {
@@ -1342,14 +1353,14 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 var receiptNo = normalized.TryGetValue("receiptNo", out var receiptNoValue) && !string.IsNullOrWhiteSpace(receiptNoValue)
                     ? receiptNoValue!.Trim()
                     : $"OPEN-REC-{project.ProjectCode}-{receiptDate:yyyyMMdd}";
-                var headerKey = $"{project.Id}:{receiptNo}";
+                var headerKey = project.Id.ToString(CultureInfo.InvariantCulture);
 
                 if (!headerByKey.TryGetValue(headerKey, out var header))
                 {
                     header = await _unitOfWork.Db.GoodsReceipts
                         .Include(x => x.Lines)
                         .ThenInclude(x => x.FishDistributions)
-                        .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.ReceiptNo == receiptNo);
+                        .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id);
 
                     if (header == null)
                     {
@@ -1371,22 +1382,35 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 }
 
                 var batchCode = normalized.TryGetValue("batchCode", out var batchCodeValue) ? batchCodeValue : null;
-                var batch = await EnsureFishBatchAsync(project, stock, batchCode, normalized, batchesByKey, result);
+                var effectiveBatchCode = ResolveBatchCode(project.ProjectCode, batchCode);
+                var lineKey = $"{project.Id}:{effectiveBatchCode}";
+                var fishCount = ParseIntOrDefault(normalized.TryGetValue("fishCount", out var fishCountValue) ? fishCountValue : null, 0);
+                var fishAverageGram = ParseDecimalOrDefault(normalized.TryGetValue("averageGram", out var averageGramValue) ? averageGramValue : null, 0m);
 
-                var line = new GoodsReceiptLine
+                if (!lineByKey.TryGetValue(lineKey, out var line))
                 {
-                    GoodsReceipt = header,
-                    ItemType = GoodsReceiptItemType.Fish,
-                    StockId = stock.Id,
-                    FishCount = ParseIntOrDefault(normalized.TryGetValue("fishCount", out var fishCountValue) ? fishCountValue : null, 0),
-                    FishAverageGram = ParseDecimalOrDefault(normalized.TryGetValue("averageGram", out var averageGramValue) ? averageGramValue : null, 0m),
-                    FishTotalGram = Math.Round(
-                        ParseIntOrDefault(normalized.TryGetValue("fishCount", out var lineFishCountValue) ? lineFishCountValue : null, 0)
-                        * ParseDecimalOrDefault(normalized.TryGetValue("averageGram", out var lineAverageGramValue) ? lineAverageGramValue : null, 0m),
-                        3,
-                        MidpointRounding.AwayFromZero),
-                    FishBatchId = batch.Id
-                };
+                    var batch = await EnsureFishBatchAsync(project, stock, batchCode, normalized, batchesByKey, result);
+                    line = new GoodsReceiptLine
+                    {
+                        GoodsReceipt = header,
+                        ItemType = GoodsReceiptItemType.Fish,
+                        StockId = stock.Id,
+                        FishCount = 0,
+                        FishAverageGram = fishAverageGram,
+                        FishTotalGram = 0,
+                        FishBatchId = batch.Id
+                    };
+
+                    await _unitOfWork.GoodsReceiptLines.AddAsync(line);
+                    lineByKey[lineKey] = line;
+                    result.CreatedGoodsReceiptLines += 1;
+                }
+
+                line.FishCount = (line.FishCount ?? 0) + fishCount;
+                line.FishTotalGram = Math.Round(
+                    (line.FishTotalGram ?? 0) + fishCount * fishAverageGram,
+                    3,
+                    MidpointRounding.AwayFromZero);
 
                 if (!string.IsNullOrWhiteSpace(normalized.TryGetValue("cageCode", out var cageCodeValue) ? cageCodeValue : null) &&
                     cagesByCode.TryGetValue(cageCodeValue!, out var cage))
@@ -1396,17 +1420,22 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
                     if (projectCage != null)
                     {
-                        line.FishDistributions.Add(new GoodsReceiptFishDistribution
+                        var distributionKey = $"{lineKey}:{projectCage.Id}";
+                        if (!distributionByKey.TryGetValue(distributionKey, out var distribution))
                         {
-                            ProjectCageId = projectCage.Id,
-                            FishBatchId = batch.Id,
-                            FishCount = line.FishCount ?? 0
-                        });
+                            distribution = new GoodsReceiptFishDistribution
+                            {
+                                ProjectCageId = projectCage.Id,
+                                FishBatchId = line.FishBatchId!.Value,
+                                FishCount = 0
+                            };
+                            line.FishDistributions.Add(distribution);
+                            distributionByKey[distributionKey] = distribution;
+                        }
+
+                        distribution.FishCount += fishCount;
                     }
                 }
-
-                await _unitOfWork.GoodsReceiptLines.AddAsync(line);
-                result.CreatedGoodsReceiptLines += 1;
             }
         }
 
@@ -2072,6 +2101,105 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     row.Messages.Add(messageFactory(duplicate.Key!));
                 }
             }
+        }
+
+        private static void AppendOpeningGoodsReceiptHeaderErrors(IEnumerable<StagedRow> rows)
+        {
+            foreach (var group in rows
+                         .Where(x => !string.IsNullOrWhiteSpace(GetValue(x, "projectCode")))
+                         .GroupBy(x => GetValue(x, "projectCode")!, StringComparer.OrdinalIgnoreCase))
+            {
+                var receiptNumbers = group
+                    .Select(x => GetValue(x, "receiptNo")?.Trim() ?? string.Empty)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                var receiptDates = group
+                    .Select(x => GetValue(x, "receiptDate")?.Trim() ?? string.Empty)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                var warehouseCodes = group
+                    .Select(x => GetValue(x, "warehouseCode")?.Trim() ?? string.Empty)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (receiptNumbers.Count <= 1 && receiptDates.Count <= 1 && warehouseCodes.Count <= 1)
+                {
+                    continue;
+                }
+
+                foreach (var row in group)
+                {
+                    row.Messages.Add(OpeningGoodsReceiptHeaderConflictMessage);
+                }
+            }
+        }
+
+        private static void PropagateOpeningGoodsReceiptHeaderValues(IEnumerable<StagedRow> rows)
+        {
+            foreach (var group in rows
+                         .Where(x => !string.IsNullOrWhiteSpace(GetValue(x, "projectCode")))
+                         .GroupBy(x => GetValue(x, "projectCode")!, StringComparer.OrdinalIgnoreCase))
+            {
+                foreach (var field in new[] { "receiptNo", "receiptDate", "warehouseCode" })
+                {
+                    var headerValue = group
+                        .Select(x => GetValue(x, field))
+                        .FirstOrDefault(x => !string.IsNullOrWhiteSpace(x));
+                    if (string.IsNullOrWhiteSpace(headerValue))
+                    {
+                        continue;
+                    }
+
+                    foreach (var row in group.Where(x => string.IsNullOrWhiteSpace(GetValue(x, field))))
+                    {
+                        row.NormalizedData[field] = headerValue;
+                    }
+                }
+            }
+        }
+
+        private static void AppendOpeningGoodsReceiptBatchErrors(IEnumerable<StagedRow> rows)
+        {
+            foreach (var group in rows
+                         .Where(x => !string.IsNullOrWhiteSpace(GetValue(x, "projectCode")))
+                         .GroupBy(
+                             x => $"{GetValue(x, "projectCode")}::{ResolveBatchCode(GetValue(x, "projectCode")!, GetValue(x, "batchCode"))}",
+                             StringComparer.OrdinalIgnoreCase))
+            {
+                var stockCodes = group
+                    .Select(x => GetValue(x, "fishStockCode")?.Trim() ?? string.Empty)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+                var averageGrams = group
+                    .Select(x => TryParseOpeningDecimal(GetValue(x, "averageGram"), out var parsed)
+                        ? parsed.ToString(CultureInfo.InvariantCulture)
+                        : GetValue(x, "averageGram")?.Trim() ?? string.Empty)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (stockCodes.Count <= 1 && averageGrams.Count <= 1)
+                {
+                    continue;
+                }
+
+                foreach (var row in group)
+                {
+                    row.Messages.Add(OpeningGoodsReceiptBatchConflictMessage);
+                }
+            }
+        }
+
+        private static bool HasOpeningGoodsReceiptHeaderConflicts(IEnumerable<OpeningImportRow> rows)
+        {
+            return rows
+                .Where(x => IsSheet(x.SheetName, "OpeningGoodsReceipts"))
+                .Select(ParseRow)
+                .Where(x => x.TryGetValue("projectCode", out var projectCode) && !string.IsNullOrWhiteSpace(projectCode))
+                .GroupBy(x => x["projectCode"]!, StringComparer.OrdinalIgnoreCase)
+                .Any(group =>
+                    group.Select(x => x.TryGetValue("receiptNo", out var value) ? value?.Trim() ?? string.Empty : string.Empty).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1 ||
+                    group.Select(x => x.TryGetValue("receiptDate", out var value) ? value?.Trim() ?? string.Empty : string.Empty).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1 ||
+                    group.Select(x => x.TryGetValue("warehouseCode", out var value) ? value?.Trim() ?? string.Empty : string.Empty).Distinct(StringComparer.OrdinalIgnoreCase).Count() > 1);
         }
 
         private static string? GetValue(StagedRow row, string key)

@@ -400,6 +400,137 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
     }
 
     [Fact]
+    public async Task OpeningImport_GoodsReceiptRowsForOneBatch_CreateOneLineWithCageDistributions()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(
+            client,
+            "/api/aqua/OpeningImport/preview",
+            BuildOpeningGoodsReceiptRequest("PRJ-REC-ONE", "OPEN-REC-ONE", string.Empty, secondReceiptDate: string.Empty));
+
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+        Assert.Equal("Previewed", preview.Data!.Status);
+        Assert.Equal(
+            "OPEN-REC-ONE",
+            preview.Data.Rows.Single(x => x.SheetName == "OpeningGoodsReceipts" && x.RowNumber == 3).NormalizedData["receiptNo"]);
+
+        var commit = await PostAsync<OpeningImportCommitResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data.JobId}/commit", new { });
+        Assert.True(commit.Success, $"{commit.Message} | {commit.ExceptionMessage}");
+        Assert.Equal(1, commit.Data!.CreatedGoodsReceipts);
+        Assert.Equal(1, commit.Data.CreatedGoodsReceiptLines);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        var projectId = await db.Projects.Where(x => x.ProjectCode == "PRJ-REC-ONE").Select(x => x.Id).SingleAsync();
+        var headers = await db.GoodsReceipts
+            .Include(x => x.Lines)
+            .ThenInclude(x => x.FishDistributions)
+            .Where(x => x.ProjectId == projectId)
+            .ToListAsync();
+
+        Assert.Single(headers);
+        Assert.Single(headers[0].Lines);
+        Assert.Equal(1100, headers[0].Lines.Single().FishCount);
+        Assert.Equal(2, headers[0].Lines.Single().FishDistributions.Count);
+        Assert.Equal(1100, headers[0].Lines.Single().FishDistributions.Sum(x => x.FishCount));
+    }
+
+    [Fact]
+    public async Task OpeningImport_ResetExistingDataHardDeletesAlreadyAppliedImportScope()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(
+            client,
+            "/api/aqua/OpeningImport/preview",
+            BuildOpeningGoodsReceiptRequest("PRJ-RESET-APPLIED", "OPEN-RESET-APPLIED", string.Empty, secondReceiptDate: string.Empty));
+
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+
+        var commit = await PostAsync<OpeningImportCommitResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data!.JobId}/commit", new { });
+        Assert.True(commit.Success, $"{commit.Message} | {commit.ExceptionMessage}");
+
+        var reset = await PostAsync<OpeningImportResetExistingDataResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data.JobId}/reset-existing-data", new { });
+        Assert.True(reset.Success, $"{reset.Message} | {reset.ExceptionMessage}");
+        Assert.Equal(1, reset.Data!.DeletedProjects);
+        Assert.Equal(2, reset.Data.DeletedCages);
+        Assert.Equal(1, reset.Data.DeletedGoodsReceipts);
+        Assert.Equal(1, reset.Data.DeletedFishBatches);
+        Assert.True(reset.Data.DeletedOperationalRecords > 0);
+
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        Assert.False(await db.Projects.IgnoreQueryFilters().AnyAsync(x => x.ProjectCode == "PRJ-RESET-APPLIED"));
+        Assert.False(await db.GoodsReceipts.IgnoreQueryFilters().AnyAsync(x => x.ReceiptNo == "OPEN-RESET-APPLIED"));
+    }
+
+    [Fact]
+    public async Task OpeningImport_GoodsReceiptRowsForOneProject_BlockConflictingHeaderInformation()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(
+            client,
+            "/api/aqua/OpeningImport/preview",
+            BuildOpeningGoodsReceiptRequest("PRJ-REC-CONFLICT", "OPEN-REC-A", "OPEN-REC-B"));
+
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+        Assert.Equal("Failed", preview.Data!.Status);
+        Assert.Contains(
+            preview.Data.Rows.Where(x => x.SheetName == "OpeningGoodsReceipts"),
+            row => row.Messages.Any(message => message.Contains("tek mal kabul basligi", StringComparison.OrdinalIgnoreCase)));
+
+        var commit = await PostAsync<OpeningImportCommitResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data.JobId}/commit", new { });
+        Assert.False(commit.Success);
+        Assert.Contains("tek mal kabul basligi", commit.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task OpeningImport_GoodsReceiptRowsForOneBatch_BlockDifferentAverageGram()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+        var request = BuildOpeningGoodsReceiptRequest("PRJ-REC-BATCH-CONFLICT", "OPEN-REC-BATCH", "OPEN-REC-BATCH");
+        request.Sheets.Single(x => x.SheetName == "OpeningGoodsReceipts").Rows[1]["averageGram"] = "6";
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(
+            client,
+            "/api/aqua/OpeningImport/preview",
+            request);
+
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+        Assert.Equal("Failed", preview.Data!.Status);
+        Assert.Contains(
+            preview.Data.Rows.Where(x => x.SheetName == "OpeningGoodsReceipts"),
+            row => row.Messages.Any(message => message.Contains("farkli urun veya agirlik", StringComparison.OrdinalIgnoreCase)));
+    }
+
+    [Fact]
+    public async Task OpeningImport_GoodsReceiptRowsForDifferentBatches_CreateSeparateLines()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+        var request = BuildOpeningGoodsReceiptRequest("PRJ-REC-TWO-BATCH", "OPEN-REC-TWO-BATCH", "OPEN-REC-TWO-BATCH");
+        request.Sheets.Single(x => x.SheetName == "OpeningGoodsReceipts").Rows[1]["batchCode"] = "PRJ-REC-TWO-BATCH-B2";
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(
+            client,
+            "/api/aqua/OpeningImport/preview",
+            request);
+
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+        Assert.Equal("Previewed", preview.Data!.Status);
+
+        var commit = await PostAsync<OpeningImportCommitResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data.JobId}/commit", new { });
+        Assert.True(commit.Success, $"{commit.Message} | {commit.ExceptionMessage}");
+        Assert.Equal(2, commit.Data!.CreatedGoodsReceiptLines);
+    }
+
+    [Fact]
     public async Task HttpLifecycle_OpeningToShipment_KeepsEndpointsAndReportsAligned()
     {
         var client = _factory.CreateClient();
@@ -776,6 +907,86 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         var body = await response.Content.ReadFromJsonAsync<ApiResponse<T>>(JsonOptions);
         Assert.NotNull(body);
         return body!;
+    }
+
+    private static OpeningImportPreviewRequestDto BuildOpeningGoodsReceiptRequest(
+        string projectCode,
+        string firstReceiptNo,
+        string secondReceiptNo,
+        string secondReceiptDate = "2026-04-01")
+    {
+        return new OpeningImportPreviewRequestDto
+        {
+            FileName = "opening-goods-receipt-rule.xlsx",
+            SourceSystem = "integration-test",
+            Sheets =
+            [
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Projects",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectName", TargetField = "projectName" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "startDate", TargetField = "startDate" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode,
+                            ["projectName"] = "Receipt Rule Project",
+                            ["startDate"] = "2026-04-01",
+                        }
+                    ]
+                },
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Cages",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageCode", TargetField = "cageCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageName", TargetField = "cageName" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?> { ["projectCode"] = projectCode, ["cageCode"] = $"{projectCode}-C1", ["cageName"] = "Cage 1" },
+                        new Dictionary<string, string?> { ["projectCode"] = projectCode, ["cageCode"] = $"{projectCode}-C2", ["cageName"] = "Cage 2" },
+                    ]
+                },
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "OpeningGoodsReceipts",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageCode", TargetField = "cageCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "receiptNo", TargetField = "receiptNo" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "receiptDate", TargetField = "receiptDate" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "batchCode", TargetField = "batchCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "fishStockCode", TargetField = "fishStockCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "fishCount", TargetField = "fishCount" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "averageGram", TargetField = "averageGram" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode, ["cageCode"] = $"{projectCode}-C1", ["receiptNo"] = firstReceiptNo,
+                            ["receiptDate"] = "2026-04-01", ["batchCode"] = $"{projectCode}-B1", ["fishStockCode"] = "PLAMUT-5G",
+                            ["fishCount"] = "500", ["averageGram"] = "5",
+                        },
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode, ["cageCode"] = $"{projectCode}-C2", ["receiptNo"] = secondReceiptNo,
+                            ["receiptDate"] = secondReceiptDate, ["batchCode"] = $"{projectCode}-B1", ["fishStockCode"] = "PLAMUT-5G",
+                            ["fishCount"] = "600", ["averageGram"] = "5",
+                        }
+                    ]
+                }
+            ]
+        };
     }
 
     private static int InvokeParseInt(string value)
