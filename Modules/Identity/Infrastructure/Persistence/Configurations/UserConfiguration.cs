@@ -38,6 +38,9 @@ namespace aqua_api.Modules.Identity.Infrastructure.Persistence.Configurations
             builder.Property(u => u.RoleId)
                 .IsRequired();
 
+            builder.Property(u => u.ManagerUserId)
+                .IsRequired(false);
+
             builder.Property(u => u.RefreshToken)
                 .IsRequired(false)
                 .HasMaxLength(500);
@@ -63,6 +66,11 @@ namespace aqua_api.Modules.Identity.Infrastructure.Persistence.Configurations
                 .HasForeignKey(u => u.RoleId)
                 .OnDelete(DeleteBehavior.NoAction);
 
+            builder.HasOne(u => u.ManagerUser)
+                .WithMany(u => u.DirectReports)
+                .HasForeignKey(u => u.ManagerUserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
             // Indexes
             builder.HasIndex(u => u.Email)
                 .IsUnique()
@@ -74,6 +82,9 @@ namespace aqua_api.Modules.Identity.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(u => u.IsDeleted)
                 .HasDatabaseName("IX_Users_IsDeleted");
+
+            builder.HasIndex(u => u.ManagerUserId)
+                .HasDatabaseName("IX_Users_ManagerUserId");
 
             // Global Query Filter for soft delete
             builder.HasQueryFilter(e => !e.IsDeleted);

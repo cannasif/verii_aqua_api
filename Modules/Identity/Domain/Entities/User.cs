@@ -20,6 +20,10 @@ namespace aqua_api.Modules.Identity.Domain.Entities
 
         public UserAuthority? RoleNavigation { get; set; }
 
+        public long? ManagerUserId { get; set; }
+
+        public User? ManagerUser { get; set; }
+
         public bool IsEmailConfirmed { get; set; } = false;
 
         public DateTime? LastLoginDate { get; set; }
@@ -34,5 +38,6 @@ namespace aqua_api.Modules.Identity.Domain.Entities
 
         // Navigation properties
         public virtual ICollection<UserSession> Sessions { get; set; } = new List<UserSession>();
+        public virtual ICollection<User> DirectReports { get; set; } = new List<User>();
     }
 }

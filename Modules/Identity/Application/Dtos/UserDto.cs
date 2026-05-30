@@ -12,6 +12,8 @@ namespace aqua_api.Modules.Identity.Application.Dtos
         public string? PhoneNumber { get; set; }
         public string Role { get; set; } = string.Empty;
         public long RoleId { get; set; }
+        public long? ManagerUserId { get; set; }
+        public string? ManagerFullName { get; set; }
         public bool IsEmailConfirmed { get; set; }
         public bool IsActive { get; set; }
         public DateTime? LastLoginDate { get; set; }
@@ -89,6 +91,7 @@ namespace aqua_api.Modules.Identity.Application.Dtos
         public long RoleId { get; set; }
 
         public bool? IsActive { get; set; }
+        public long? ManagerUserId { get; set; }
 
         public List<long>? PermissionGroupIds { get; set; }
     }
@@ -167,6 +170,7 @@ namespace aqua_api.Modules.Identity.Application.Dtos
         public string? PhoneNumber { get; set; }
 
         public long? RoleId { get; set; }
+        public long? ManagerUserId { get; set; }
 
         public bool? IsActive { get; set; }
 

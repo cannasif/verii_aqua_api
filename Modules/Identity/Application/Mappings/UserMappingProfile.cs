@@ -10,6 +10,7 @@ namespace aqua_api.Modules.Identity.Application.Mappings
             CreateMap<User, UserDto>()
                 .ForMember(dest => dest.RoleId, opt => opt.MapFrom(src => src.RoleId))
                 .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.RoleNavigation != null ? src.RoleNavigation.Title : string.Empty))
+                .ForMember(dest => dest.ManagerFullName, opt => opt.MapFrom(src => src.ManagerUser != null ? src.ManagerUser.FullName : null))
                 .ForMember(dest => dest.FullName, opt => opt.MapFrom(src => $"{src.FirstName} {src.LastName}"));
 
             CreateMap<CreateUserDto, User>()

@@ -24,6 +24,13 @@ namespace aqua_api.Modules.Identity.Api
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpPost("query")]
+        public async Task<IActionResult> Query([FromBody] PagedRequest? request)
+        {
+            var result = await _service.GetAllUsersAsync(request ?? new PagedRequest());
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById(long id)
         {

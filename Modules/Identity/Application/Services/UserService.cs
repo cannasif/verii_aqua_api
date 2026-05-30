@@ -70,13 +70,15 @@ namespace aqua_api.Modules.Identity.Application.Services
 
                 var columnMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    { "role", "RoleNavigation.Title" }
+                    { "role", "RoleNavigation.Title" },
+                    { "managerFullName", "ManagerUser.FirstName" }
                 };
 
                 var query = _uow.Users.Query()
                     .AsNoTracking()
                     .Where(u => !u.IsDeleted)
                     .Include(u => u.RoleNavigation)
+                    .Include(u => u.ManagerUser)
                     .Include(u => u.CreatedByUser)
                     .Include(u => u.UpdatedByUser)
                     .Include(u => u.DeletedByUser)
@@ -127,6 +129,7 @@ namespace aqua_api.Modules.Identity.Application.Services
                 var userWithNav = await _uow.Users.Query()
                     .AsNoTracking()
                     .Include(u => u.RoleNavigation)
+                    .Include(u => u.ManagerUser)
                     .Include(u => u.CreatedByUser)
                     .Include(u => u.UpdatedByUser)
                     .Include(u => u.DeletedByUser)
@@ -192,6 +195,21 @@ namespace aqua_api.Modules.Identity.Application.Services
                         normalizedCreate.StatusCode);
                 }
 
+                if (dto.ManagerUserId.HasValue)
+                {
+                    var managerExists = await _uow.Users.Query()
+                        .AsNoTracking()
+                        .AnyAsync(x => !x.IsDeleted && x.Id == dto.ManagerUserId.Value);
+
+                    if (!managerExists)
+                    {
+                        return ApiResponse<UserDto>.ErrorResult(
+                            _loc.GetLocalizedString("General.ValidationError"),
+                            "Manager user not found.",
+                            StatusCodes.Status400BadRequest);
+                    }
+                }
+
                 dto.RoleId = normalizedCreate.Data.RoleId;
                 dto.PermissionGroupIds = normalizedCreate.Data.PermissionGroupIds;
 
@@ -219,6 +237,7 @@ namespace aqua_api.Modules.Identity.Application.Services
                 var userWithNav = await _uow.Users.Query()
                     .AsNoTracking()
                     .Include(u => u.RoleNavigation)
+                    .Include(u => u.ManagerUser)
                     .Include(u => u.CreatedByUser)
                     .Include(u => u.UpdatedByUser)
                     .Include(u => u.DeletedByUser)
@@ -296,6 +315,29 @@ namespace aqua_api.Modules.Identity.Application.Services
                         StatusCodes.Status400BadRequest);
                 }
 
+                if (dto.ManagerUserId.HasValue)
+                {
+                    if (dto.ManagerUserId.Value == id)
+                    {
+                        return ApiResponse<UserDto>.ErrorResult(
+                            _loc.GetLocalizedString("General.ValidationError"),
+                            "A user cannot be their own manager.",
+                            StatusCodes.Status400BadRequest);
+                    }
+
+                    var managerExists = await _uow.Users.Query()
+                        .AsNoTracking()
+                        .AnyAsync(x => !x.IsDeleted && x.Id == dto.ManagerUserId.Value);
+
+                    if (!managerExists)
+                    {
+                        return ApiResponse<UserDto>.ErrorResult(
+                            _loc.GetLocalizedString("General.ValidationError"),
+                            "Manager user not found.",
+                            StatusCodes.Status400BadRequest);
+                    }
+                }
+
                 var currentPermissionGroupIds = await _uow.UserPermissionGroups.Query()
                     .AsNoTracking()
                     .Where(x => x.UserId == entity.Id && !x.IsDeleted)
@@ -336,6 +378,7 @@ namespace aqua_api.Modules.Identity.Application.Services
                 var userWithNav = await _uow.Users.Query()
                     .AsNoTracking()
                     .Include(u => u.RoleNavigation)
+                    .Include(u => u.ManagerUser)
                     .Include(u => u.CreatedByUser)
                     .Include(u => u.UpdatedByUser)
                     .Include(u => u.DeletedByUser)
