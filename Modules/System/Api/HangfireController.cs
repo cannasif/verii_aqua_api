@@ -129,23 +129,30 @@ namespace aqua_api.Modules.System.Api
         }
 
         [HttpGet("failed")]
-        public Task<IActionResult> GetFailed([FromQuery] int from = 0, [FromQuery] int count = 20)
+        public Task<IActionResult> GetFailed(
+            [FromQuery] int? pageNumber = null,
+            [FromQuery] int? pageSize = null,
+            [FromQuery] int from = 0,
+            [FromQuery] int count = 20)
         {
-            return GetFailuresFromDb(from, count);
+            var (resolvedFrom, resolvedCount) = ResolvePaging(pageNumber, pageSize, from, count, 20);
+            return GetFailuresFromDb(resolvedFrom, resolvedCount);
         }
 
         [HttpGet("failures-from-db")]
-        public async Task<IActionResult> GetFailuresFromDb([FromQuery] int from = 0, [FromQuery] int count = 50)
+        public async Task<IActionResult> GetFailuresFromDb(
+            [FromQuery] int? pageNumber = null,
+            [FromQuery] int? pageSize = null,
+            [FromQuery] int from = 0,
+            [FromQuery] int count = 50)
         {
-            if (from < 0) from = 0;
-            if (count <= 0) count = 50;
-            if (count > 200) count = 200;
+            var (resolvedFrom, resolvedCount) = ResolvePaging(pageNumber, pageSize, from, count, 50);
 
             var items = await _db.JobFailureLogs
                 .AsNoTracking()
                 .OrderByDescending(x => x.FailedAt)
-                .Skip(from)
-                .Take(count)
+                .Skip(resolvedFrom)
+                .Take(resolvedCount)
                 .Select(x => new
                 {
                     x.JobId,
@@ -170,11 +177,13 @@ namespace aqua_api.Modules.System.Api
         }
 
         [HttpGet("successes-from-db")]
-        public async Task<IActionResult> GetSuccessesFromDb([FromQuery] int from = 0, [FromQuery] int count = 50)
+        public async Task<IActionResult> GetSuccessesFromDb(
+            [FromQuery] int? pageNumber = null,
+            [FromQuery] int? pageSize = null,
+            [FromQuery] int from = 0,
+            [FromQuery] int count = 50)
         {
-            if (from < 0) from = 0;
-            if (count <= 0) count = 50;
-            if (count > 200) count = 200;
+            var (resolvedFrom, resolvedCount) = ResolvePaging(pageNumber, pageSize, from, count, 50);
 
             var successQuery = _db.JobExecutionLogs
                 .AsNoTracking()
@@ -182,8 +191,8 @@ namespace aqua_api.Modules.System.Api
 
             var items = await successQuery
                 .OrderByDescending(x => x.FinishedAt)
-                .Skip(from)
-                .Take(count)
+                .Skip(resolvedFrom)
+                .Take(resolvedCount)
                 .Select(x => new
                 {
                     x.JobId,
@@ -207,11 +216,13 @@ namespace aqua_api.Modules.System.Api
         }
 
         [HttpGet("dead-letter")]
-        public async Task<IActionResult> GetDeadLetter([FromQuery] int from = 0, [FromQuery] int count = 20)
+        public async Task<IActionResult> GetDeadLetter(
+            [FromQuery] int? pageNumber = null,
+            [FromQuery] int? pageSize = null,
+            [FromQuery] int from = 0,
+            [FromQuery] int count = 20)
         {
-            if (from < 0) from = 0;
-            if (count <= 0) count = 20;
-            if (count > 200) count = 200;
+            var (resolvedFrom, resolvedCount) = ResolvePaging(pageNumber, pageSize, from, count, 20);
 
             var deadLetterQuery = _db.JobFailureLogs
                 .AsNoTracking()
@@ -219,8 +230,8 @@ namespace aqua_api.Modules.System.Api
 
             var items = await deadLetterQuery
                 .OrderByDescending(x => x.FailedAt)
-                .Skip(from)
-                .Take(count)
+                .Skip(resolvedFrom)
+                .Take(resolvedCount)
                 .Select(x => new
                 {
                     x.JobId,
@@ -264,6 +275,37 @@ namespace aqua_api.Modules.System.Api
                 JobId = jobId,
                 Timestamp = DateTime.UtcNow
             });
+        }
+
+        private static (int From, int Count) ResolvePaging(
+            int? pageNumber,
+            int? pageSize,
+            int from,
+            int count,
+            int fallbackCount)
+        {
+            if (pageNumber is null && pageSize is not null && from == 0)
+            {
+                return (0, NormalizePageSize(pageSize.Value, fallbackCount));
+            }
+
+            if (pageNumber.HasValue)
+            {
+                var safePageSize = NormalizePageSize(pageSize ?? fallbackCount, fallbackCount);
+                var safePageNumber = Math.Max(1, pageNumber.Value);
+                var computedFrom = (safePageNumber - 1) * safePageSize;
+
+                return (computedFrom, safePageSize);
+            }
+
+            var safeFrom = Math.Max(0, from);
+            return (safeFrom, NormalizePageSize(count, fallbackCount));
+        }
+
+        private static int NormalizePageSize(int requestedSize, int fallbackSize)
+        {
+            var parsed = requestedSize <= 0 ? fallbackSize : requestedSize;
+            return Math.Min(200, Math.Max(1, parsed));
         }
 
         private static void EnsureManualSyncJobs(List<RecurringJobListItem> jobs)
