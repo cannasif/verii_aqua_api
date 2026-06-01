@@ -13,6 +13,9 @@ namespace aqua_api.Modules.System.Api
     [Authorize]
     public class HangfireController : ControllerBase
     {
+        private const string StockSyncRecurringJobId = "erp-stock-sync-job";
+        private const string WarehouseSyncRecurringJobId = "erp-warehouse-sync-job";
+
         private readonly AquaDbContext _db;
         private readonly IBackgroundJobClient _backgroundJobClient;
         private readonly ILocalizationService _localizationService;
@@ -30,9 +33,9 @@ namespace aqua_api.Modules.System.Api
             using var connection = JobStorage.Current.GetConnection();
             var jobs = connection.GetRecurringJobs()
                 .OrderBy(x => x.Id)
-                .Select(x => new
+                .Select(x => new RecurringJobListItem
                 {
-                    x.Id,
+                    Id = x.Id,
                     JobName = x.Job?.Type?.Name ?? x.Id,
                     Method = x.Job?.Method?.Name,
                     Cron = x.Cron,
@@ -43,6 +46,8 @@ namespace aqua_api.Modules.System.Api
                     Error = x.Error,
                 })
                 .ToList();
+
+            EnsureManualSyncJobs(jobs);
 
             return Ok(new
             {
@@ -64,18 +69,30 @@ namespace aqua_api.Modules.System.Api
             var exists = connection.GetRecurringJobs()
                 .Any(x => string.Equals(x.Id, jobId, StringComparison.OrdinalIgnoreCase));
 
-            if (!exists)
+            if (exists)
+            {
+                RecurringJob.TriggerJob(jobId);
+
+                return Ok(new
+                {
+                    JobId = jobId,
+                    TriggeredAt = DateTime.UtcNow,
+                    Message = "Recurring job triggered successfully.",
+                });
+            }
+
+            var enqueuedJobId = EnqueueKnownSyncJob(jobId);
+            if (enqueuedJobId == null)
             {
                 return NotFound(new { Message = "Recurring job not found." });
             }
 
-            RecurringJob.TriggerJob(jobId);
-
             return Ok(new
             {
-                JobId = jobId,
+                JobId = enqueuedJobId,
+                RecurringJobId = jobId,
                 TriggeredAt = DateTime.UtcNow,
-                Message = "Recurring job triggered successfully.",
+                Message = "Sync job enqueued successfully.",
             });
         }
 
@@ -247,6 +264,71 @@ namespace aqua_api.Modules.System.Api
                 JobId = jobId,
                 Timestamp = DateTime.UtcNow
             });
+        }
+
+        private static void EnsureManualSyncJobs(List<RecurringJobListItem> jobs)
+        {
+            AddManualJobIfMissing(
+                jobs,
+                StockSyncRecurringJobId,
+                nameof(StockSyncJob),
+                nameof(IStockSyncJob.ExecuteAsync));
+
+            AddManualJobIfMissing(
+                jobs,
+                WarehouseSyncRecurringJobId,
+                nameof(WarehouseSyncJob),
+                nameof(IWarehouseSyncJob.ExecuteAsync));
+        }
+
+        private static void AddManualJobIfMissing(
+            List<RecurringJobListItem> jobs,
+            string id,
+            string jobName,
+            string method)
+        {
+            if (jobs.Any(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase)))
+            {
+                return;
+            }
+
+            jobs.Add(new RecurringJobListItem
+            {
+                Id = id,
+                JobName = jobName,
+                Method = method,
+                Cron = "-",
+                Queue = "default",
+                Error = null,
+            });
+        }
+
+        private string? EnqueueKnownSyncJob(string jobId)
+        {
+            if (string.Equals(jobId, StockSyncRecurringJobId, StringComparison.OrdinalIgnoreCase))
+            {
+                return _backgroundJobClient.Enqueue<IStockSyncJob>(job => job.ExecuteAsync());
+            }
+
+            if (string.Equals(jobId, WarehouseSyncRecurringJobId, StringComparison.OrdinalIgnoreCase))
+            {
+                return _backgroundJobClient.Enqueue<IWarehouseSyncJob>(job => job.ExecuteAsync());
+            }
+
+            return null;
+        }
+
+        private sealed class RecurringJobListItem
+        {
+            public string Id { get; set; } = string.Empty;
+            public string JobName { get; set; } = string.Empty;
+            public string? Method { get; set; }
+            public string? Cron { get; set; }
+            public string? Queue { get; set; }
+            public string? NextExecution { get; set; }
+            public string? LastExecution { get; set; }
+            public string? LastJobId { get; set; }
+            public string? Error { get; set; }
         }
     }
 }
