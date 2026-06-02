@@ -9,6 +9,14 @@ namespace aqua_api.Modules.Aqua.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
+        private static readonly IReadOnlyDictionary<string, string> ColumnMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["batchCode"] = "FishBatch.BatchCode",
+            ["projectCode"] = "ProjectCage.Project.ProjectCode",
+            ["projectName"] = "ProjectCage.Project.ProjectName",
+            ["cageCode"] = "ProjectCage.Cage.CageCode",
+            ["cageName"] = "ProjectCage.Cage.CageName"
+        };
 
         public FeedingDistributionService(IUnitOfWork unitOfWork, IMapper mapper, ILocalizationService localizationService)
         {
@@ -23,6 +31,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
             {
                 var entity = await _unitOfWork.FeedingDistributions
                     .Query()
+                    .Include(x => x.FishBatch)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Cage)
                     .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
@@ -33,7 +46,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
-                var dto = _mapper.Map<FeedingDistributionDto>(entity);
+                var dto = MapFeedingDistribution(entity);
                 return ApiResponse<FeedingDistributionDto>.SuccessResult(dto, _localizationService.GetLocalizedString("FeedingDistributionService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -55,18 +68,23 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 var query = _unitOfWork.FeedingDistributions
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplyFilters(request.Filters, request.FilterLogic, ColumnMapping);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(FeedingDistribution.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, ColumnMapping);
 
                 var totalCount = await query.CountAsync();
 
                 var entities = await query
                     .ApplyPagination(request.PageNumber, request.PageSize)
+                    .Include(x => x.FishBatch)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Cage)
                     .ToListAsync();
 
-                var items = entities.Select(x => _mapper.Map<FeedingDistributionDto>(x)).ToList();
+                var items = entities.Select(MapFeedingDistribution).ToList();
 
                 var pagedResponse = new PagedResponse<FeedingDistributionDto>
                 {
@@ -139,7 +157,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     }
                 }
 
-                var result = _mapper.Map<FeedingDistributionDto>(entity);
+                var result = MapFeedingDistribution(entity);
                 return ApiResponse<FeedingDistributionDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingDistributionService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -170,7 +188,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 await repo.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
-                var result = _mapper.Map<FeedingDistributionDto>(entity);
+                var result = MapFeedingDistribution(entity);
                 return ApiResponse<FeedingDistributionDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingDistributionService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -207,6 +225,18 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private FeedingDistributionDto MapFeedingDistribution(FeedingDistribution entity)
+        {
+            var dto = _mapper.Map<FeedingDistributionDto>(entity);
+            dto.BatchCode = entity.FishBatch?.BatchCode;
+            dto.ProjectId = entity.ProjectCage?.ProjectId;
+            dto.ProjectCode = entity.ProjectCage?.Project?.ProjectCode;
+            dto.ProjectName = entity.ProjectCage?.Project?.ProjectName;
+            dto.CageCode = entity.ProjectCage?.Cage?.CageCode;
+            dto.CageName = entity.ProjectCage?.Cage?.CageName;
+            return dto;
         }
     }
 }

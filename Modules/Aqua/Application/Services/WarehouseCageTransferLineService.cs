@@ -302,7 +302,9 @@ namespace aqua_api.Modules.Aqua.Application.Services
             dto.FromWarehouseCode = warehouse?.ErpWarehouseCode;
             dto.FromWarehouseName = warehouse?.WarehouseName;
             dto.ToProjectCode = targetProjectCage?.Project?.ProjectCode;
+            dto.ToProjectName = targetProjectCage?.Project?.ProjectName;
             dto.ToCageCode = targetProjectCage?.Cage?.CageCode;
+            dto.ToCageName = targetProjectCage?.Cage?.CageName;
 
             return dto;
         }

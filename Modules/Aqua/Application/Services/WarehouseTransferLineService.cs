@@ -275,6 +275,13 @@ namespace aqua_api.Modules.Aqua.Application.Services
         private async Task<WarehouseTransferLineDto> MapWarehouseTransferLineDtoAsync(WarehouseTransferLine entity)
         {
             var dto = _mapper.Map<WarehouseTransferLineDto>(entity);
+            dto.BatchCode = await _unitOfWork.FishBatches
+                .Query()
+                .AsNoTracking()
+                .Where(x => !x.IsDeleted && x.Id == entity.FishBatchId)
+                .Select(x => x.BatchCode)
+                .FirstOrDefaultAsync();
+
             var warehouseIds = new[] { entity.FromWarehouseId, entity.ToWarehouseId }
                 .Where(x => x > 0)
                 .Distinct()

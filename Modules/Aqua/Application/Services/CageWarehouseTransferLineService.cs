@@ -300,7 +300,9 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
             dto.BatchCode = fishBatch?.BatchCode;
             dto.FromProjectCode = sourceProjectCage?.Project?.ProjectCode;
+            dto.FromProjectName = sourceProjectCage?.Project?.ProjectName;
             dto.FromCageCode = sourceProjectCage?.Cage?.CageCode;
+            dto.FromCageName = sourceProjectCage?.Cage?.CageName;
             dto.ToWarehouseCode = warehouse?.ErpWarehouseCode;
             dto.ToWarehouseName = warehouse?.WarehouseName;
 

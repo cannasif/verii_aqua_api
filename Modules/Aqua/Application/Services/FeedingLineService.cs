@@ -9,6 +9,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
+        private static readonly IReadOnlyDictionary<string, string> ColumnMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["stockCode"] = "Stock.ErpStockCode",
+            ["stockName"] = "Stock.StockName"
+        };
 
         public FeedingLineService(IUnitOfWork unitOfWork, IMapper mapper, ILocalizationService localizationService)
         {
@@ -23,6 +28,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
             {
                 var entity = await _unitOfWork.FeedingLines
                     .Query()
+                    .Include(x => x.Stock)
                     .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
@@ -33,7 +39,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
-                var dto = _mapper.Map<FeedingLineDto>(entity);
+                var dto = MapFeedingLine(entity);
                 return ApiResponse<FeedingLineDto>.SuccessResult(dto, _localizationService.GetLocalizedString("FeedingLineService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -55,18 +61,19 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 var query = _unitOfWork.FeedingLines
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplyFilters(request.Filters, request.FilterLogic, ColumnMapping);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(FeedingLine.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, ColumnMapping);
 
                 var totalCount = await query.CountAsync();
 
                 var entities = await query
                     .ApplyPagination(request.PageNumber, request.PageSize)
+                    .Include(x => x.Stock)
                     .ToListAsync();
 
-                var items = entities.Select(x => _mapper.Map<FeedingLineDto>(x)).ToList();
+                var items = entities.Select(MapFeedingLine).ToList();
 
                 var pagedResponse = new PagedResponse<FeedingLineDto>
                 {
@@ -116,7 +123,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 await _unitOfWork.FeedingLines.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
-                var result = _mapper.Map<FeedingLineDto>(entity);
+                var result = MapFeedingLine(entity);
                 return ApiResponse<FeedingLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingLineService.OperationSuccessful"));
             }
             catch (InvalidOperationException ex)
@@ -227,7 +234,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                var result = _mapper.Map<FeedingLineDto>(entity);
+                var result = MapFeedingLine(entity);
                 return ApiResponse<FeedingLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingLineService.OperationSuccessful"));
             }
             catch (InvalidOperationException ex)
@@ -276,7 +283,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 await repo.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
-                var result = _mapper.Map<FeedingLineDto>(entity);
+                var result = MapFeedingLine(entity);
                 return ApiResponse<FeedingLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingLineService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -369,6 +376,14 @@ namespace aqua_api.Modules.Aqua.Application.Services
             await _unitOfWork.SaveChangesAsync();
 
             return newHeader.Id;
+        }
+
+        private FeedingLineDto MapFeedingLine(FeedingLine entity)
+        {
+            var dto = _mapper.Map<FeedingLineDto>(entity);
+            dto.StockCode = entity.Stock?.ErpStockCode;
+            dto.StockName = entity.Stock?.StockName;
+            return dto;
         }
 
         private string MapDbError(DbUpdateException ex)

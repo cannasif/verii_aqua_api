@@ -8,6 +8,8 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
         public long Id { get; set; }
         public long FeedingId { get; set; }
         public long StockId { get; set; }
+        public string? StockCode { get; set; }
+        public string? StockName { get; set; }
         public decimal QtyUnit { get; set; }
         public decimal GramPerUnit { get; set; }
         public decimal TotalGram { get; set; }

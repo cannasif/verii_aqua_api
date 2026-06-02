@@ -29,6 +29,16 @@ namespace aqua_api.Modules.Aqua.Application.Services
             {
                 var entity = await _unitOfWork.StockConvertLines
                     .Query()
+                    .Include(x => x.FromFishBatch)
+                    .Include(x => x.ToFishBatch)
+                    .Include(x => x.FromProjectCage)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.FromProjectCage)
+                        .ThenInclude(x => x!.Cage)
+                    .Include(x => x.ToProjectCage)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.ToProjectCage)
+                        .ThenInclude(x => x!.Cage)
                     .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
@@ -39,7 +49,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
-                var dto = _mapper.Map<StockConvertLineDto>(entity);
+                var dto = MapStockConvertLine(entity);
                 return ApiResponse<StockConvertLineDto>.SuccessResult(dto, _localizationService.GetLocalizedString("StockConvertLineService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -60,6 +70,16 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
                 var query = _unitOfWork.StockConvertLines
                     .Query()
+                    .Include(x => x.FromFishBatch)
+                    .Include(x => x.ToFishBatch)
+                    .Include(x => x.FromProjectCage)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.FromProjectCage)
+                        .ThenInclude(x => x!.Cage)
+                    .Include(x => x.ToProjectCage)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.ToProjectCage)
+                        .ThenInclude(x => x!.Cage)
                     .Where(x => !x.IsDeleted)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
@@ -72,7 +92,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     .ApplyPagination(request.PageNumber, request.PageSize)
                     .ToListAsync();
 
-                var items = entities.Select(x => _mapper.Map<StockConvertLineDto>(x)).ToList();
+                var items = entities.Select(MapStockConvertLine).ToList();
 
                 var pagedResponse = new PagedResponse<StockConvertLineDto>
                 {
@@ -93,6 +113,22 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private StockConvertLineDto MapStockConvertLine(StockConvertLine entity)
+        {
+            var dto = _mapper.Map<StockConvertLineDto>(entity);
+            dto.FromBatchCode = entity.FromFishBatch?.BatchCode;
+            dto.ToBatchCode = entity.ToFishBatch?.BatchCode;
+            dto.FromProjectCode = entity.FromProjectCage?.Project?.ProjectCode;
+            dto.FromProjectName = entity.FromProjectCage?.Project?.ProjectName;
+            dto.FromCageCode = entity.FromProjectCage?.Cage?.CageCode;
+            dto.FromCageName = entity.FromProjectCage?.Cage?.CageName;
+            dto.ToProjectCode = entity.ToProjectCage?.Project?.ProjectCode;
+            dto.ToProjectName = entity.ToProjectCage?.Project?.ProjectName;
+            dto.ToCageCode = entity.ToProjectCage?.Cage?.CageCode;
+            dto.ToCageName = entity.ToProjectCage?.Cage?.CageName;
+            return dto;
         }
 
         public async Task<ApiResponse<StockConvertLineDto>> CreateAsync(CreateStockConvertLineDto dto)

@@ -13,7 +13,9 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
         public string? FromWarehouseName { get; set; }
         public long ToProjectCageId { get; set; }
         public string? ToProjectCode { get; set; }
+        public string? ToProjectName { get; set; }
         public string? ToCageCode { get; set; }
+        public string? ToCageName { get; set; }
         public int FishCount { get; set; }
         public decimal AverageGram { get; set; }
         public decimal BiomassGram { get; set; }

@@ -44,6 +44,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
             {
                 var entity = await _unitOfWork.GoodsReceiptLines
                     .Query()
+                    .Include(x => x.Stock)
+                    .Include(x => x.FishBatch)
                     .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
@@ -54,7 +56,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
-                var dto = _mapper.Map<GoodsReceiptLineDto>(entity);
+                var dto = MapGoodsReceiptLine(entity);
                 return ApiResponse<GoodsReceiptLineDto>.SuccessResult(dto, _localizationService.GetLocalizedString("GoodsReceiptLineService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -75,6 +77,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
                 var query = _unitOfWork.GoodsReceiptLines
                     .Query()
+                    .Include(x => x.Stock)
+                    .Include(x => x.FishBatch)
                     .Where(x => !x.IsDeleted)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
@@ -87,7 +91,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     .ApplyPagination(request.PageNumber, request.PageSize)
                     .ToListAsync();
 
-                var items = entities.Select(x => _mapper.Map<GoodsReceiptLineDto>(x)).ToList();
+                var items = entities.Select(MapGoodsReceiptLine).ToList();
 
                 var pagedResponse = new PagedResponse<GoodsReceiptLineDto>
                 {
@@ -108,6 +112,13 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private GoodsReceiptLineDto MapGoodsReceiptLine(GoodsReceiptLine entity)
+        {
+            var dto = _mapper.Map<GoodsReceiptLineDto>(entity);
+            dto.BatchCode = entity.FishBatch?.BatchCode;
+            return dto;
         }
 
         public async Task<ApiResponse<GoodsReceiptLineDto>> CreateAsync(CreateGoodsReceiptLineDto dto)

@@ -29,6 +29,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
             {
                 var entity = await _unitOfWork.NetOperationLines
                     .Query()
+                    .Include(x => x.FishBatch)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Cage)
                     .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
@@ -39,7 +44,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
-                var dto = _mapper.Map<NetOperationLineDto>(entity);
+                var dto = MapNetOperationLine(entity);
                 return ApiResponse<NetOperationLineDto>.SuccessResult(dto, _localizationService.GetLocalizedString("NetOperationLineService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -60,6 +65,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
                 var query = _unitOfWork.NetOperationLines
                     .Query()
+                    .Include(x => x.FishBatch)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Cage)
                     .Where(x => !x.IsDeleted)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
@@ -72,7 +82,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     .ApplyPagination(request.PageNumber, request.PageSize)
                     .ToListAsync();
 
-                var items = entities.Select(x => _mapper.Map<NetOperationLineDto>(x)).ToList();
+                var items = entities.Select(MapNetOperationLine).ToList();
 
                 var pagedResponse = new PagedResponse<NetOperationLineDto>
                 {
@@ -93,6 +103,17 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private NetOperationLineDto MapNetOperationLine(NetOperationLine entity)
+        {
+            var dto = _mapper.Map<NetOperationLineDto>(entity);
+            dto.BatchCode = entity.FishBatch?.BatchCode;
+            dto.ProjectCode = entity.ProjectCage?.Project?.ProjectCode;
+            dto.ProjectName = entity.ProjectCage?.Project?.ProjectName;
+            dto.CageCode = entity.ProjectCage?.Cage?.CageCode;
+            dto.CageName = entity.ProjectCage?.Cage?.CageName;
+            return dto;
         }
 
         public async Task<ApiResponse<NetOperationLineDto>> CreateAsync(CreateNetOperationLineDto dto)

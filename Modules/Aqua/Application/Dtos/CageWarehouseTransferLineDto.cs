@@ -10,7 +10,9 @@ namespace aqua_api.Modules.Aqua.Application.Dtos
         public string? BatchCode { get; set; }
         public long FromProjectCageId { get; set; }
         public string? FromProjectCode { get; set; }
+        public string? FromProjectName { get; set; }
         public string? FromCageCode { get; set; }
+        public string? FromCageName { get; set; }
         public long ToWarehouseId { get; set; }
         public short? ToWarehouseCode { get; set; }
         public string? ToWarehouseName { get; set; }

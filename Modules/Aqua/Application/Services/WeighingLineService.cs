@@ -23,6 +23,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
             {
                 var entity = await _unitOfWork.WeighingLines
                     .Query()
+                    .Include(x => x.FishBatch)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Cage)
                     .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
@@ -33,7 +38,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
-                var dto = _mapper.Map<WeighingLineDto>(entity);
+                var dto = MapWeighingLine(entity);
                 return ApiResponse<WeighingLineDto>.SuccessResult(dto, _localizationService.GetLocalizedString("WeighingLineService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -54,6 +59,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
                 var query = _unitOfWork.WeighingLines
                     .Query()
+                    .Include(x => x.FishBatch)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Cage)
                     .Where(x => !x.IsDeleted)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
@@ -66,7 +76,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     .ApplyPagination(request.PageNumber, request.PageSize)
                     .ToListAsync();
 
-                var items = entities.Select(x => _mapper.Map<WeighingLineDto>(x)).ToList();
+                var items = entities.Select(MapWeighingLine).ToList();
 
                 var pagedResponse = new PagedResponse<WeighingLineDto>
                 {
@@ -87,6 +97,17 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private WeighingLineDto MapWeighingLine(WeighingLine entity)
+        {
+            var dto = _mapper.Map<WeighingLineDto>(entity);
+            dto.BatchCode = entity.FishBatch?.BatchCode;
+            dto.ProjectCode = entity.ProjectCage?.Project?.ProjectCode;
+            dto.ProjectName = entity.ProjectCage?.Project?.ProjectName;
+            dto.CageCode = entity.ProjectCage?.Cage?.CageCode;
+            dto.CageName = entity.ProjectCage?.Cage?.CageName;
+            return dto;
         }
 
         public async Task<ApiResponse<WeighingLineDto>> CreateAsync(CreateWeighingLineDto dto)
