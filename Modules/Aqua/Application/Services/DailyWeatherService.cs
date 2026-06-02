@@ -338,12 +338,18 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
         private async Task<bool> IsValidWeatherSelectionAsync(long weatherTypeId, long weatherSeverityId)
         {
+            var weatherTypeExists = await _unitOfWork.WeatherTypes
+                .Query()
+                .AnyAsync(x => x.Id == weatherTypeId && !x.IsDeleted);
+
+            if (!weatherTypeExists)
+            {
+                return false;
+            }
+
             return await _unitOfWork.WeatherSeverities
                 .Query()
-                .AnyAsync(x =>
-                    x.Id == weatherSeverityId &&
-                    !x.IsDeleted &&
-                    (x.WeatherTypeId == null || x.WeatherTypeId == weatherTypeId));
+                .AnyAsync(x => x.Id == weatherSeverityId && !x.IsDeleted);
         }
     }
 }

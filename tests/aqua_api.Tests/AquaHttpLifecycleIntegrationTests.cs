@@ -400,6 +400,199 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
     }
 
     [Fact]
+    public async Task WeatherSeverityDefinition_IsIndependentFromWeatherType()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        var code = $"SEV-{Guid.NewGuid():N}"[..12].ToUpperInvariant();
+        var created = await PostAsync<WeatherSeverityDto>(client, "/api/aqua/WeatherSeverity", new CreateWeatherSeverityDto
+        {
+            Code = code,
+            Name = "Independent Severity",
+            Score = 35,
+        });
+
+        Assert.True(created.Success, $"{created.Message} | {created.ExceptionMessage}");
+        Assert.NotNull(created.Data);
+        Assert.Equal(code, created.Data!.Code);
+        Assert.Equal(35, created.Data.Score);
+    }
+
+    [Fact]
+    public async Task OpeningYesterday_FeedingAndMortalityToday_AppearAsSeparateDailyRowsInDashboardReport()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        var projectCode = $"PRJ-DAY-{suffix}";
+        var cageCode = $"CAGE-DAY-{suffix}";
+        var batchCode = $"BATCH-DAY-{suffix}";
+        var yesterday = DateTime.Today.AddDays(-1);
+        var today = DateTime.Today;
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(client, "/api/aqua/OpeningImport/preview", new OpeningImportPreviewRequestDto
+        {
+            FileName = "daily-row-split-opening.xlsx",
+            SourceSystem = "daily-row-split-test",
+            Sheets =
+            [
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Projects",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectName", TargetField = "projectName" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "startDate", TargetField = "startDate" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode,
+                            ["projectName"] = "Daily Row Split Project",
+                            ["startDate"] = yesterday.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        }
+                    ]
+                },
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Cages",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageCode", TargetField = "cageCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageName", TargetField = "cageName" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "assignedDate", TargetField = "assignedDate" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode,
+                            ["cageCode"] = cageCode,
+                            ["cageName"] = "Daily Row Split Cage",
+                            ["assignedDate"] = yesterday.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        }
+                    ]
+                },
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "OpeningStock",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageCode", TargetField = "cageCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "batchCode", TargetField = "batchCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "fishStockCode", TargetField = "fishStockCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "fishCount", TargetField = "fishCount" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "averageGram", TargetField = "averageGram" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "asOfDate", TargetField = "asOfDate" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode,
+                            ["cageCode"] = cageCode,
+                            ["batchCode"] = batchCode,
+                            ["fishStockCode"] = "PLAMUT-5G",
+                            ["fishCount"] = "1000",
+                            ["averageGram"] = "5",
+                            ["asOfDate"] = yesterday.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        }
+                    ]
+                }
+            ]
+        });
+
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+        Assert.NotNull(preview.Data);
+        Assert.Equal("Previewed", preview.Data!.Status);
+
+        var commit = await PostAsync<OpeningImportCommitResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data.JobId}/commit", new { });
+        Assert.True(commit.Success, $"{commit.Message} | {commit.ExceptionMessage}");
+
+        long projectId;
+        long projectCageId;
+        long fishBatchId;
+        long feedStockId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var project = await db.Projects.SingleAsync(x => !x.IsDeleted && x.ProjectCode == projectCode);
+            var projectCage = await db.ProjectCages.SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id);
+            var fishBatch = await db.FishBatches.SingleAsync(x => !x.IsDeleted && x.BatchCode == batchCode);
+            var feedStock = await db.Stocks.SingleAsync(x => !x.IsDeleted && x.ErpStockCode == "YEM-STD");
+
+            projectId = project.Id;
+            projectCageId = projectCage.Id;
+            fishBatchId = fishBatch.Id;
+            feedStockId = feedStock.Id;
+        }
+
+        var feeding = await PostAsync<FeedingLineDto>(client, "/api/aqua/FeedingLine/auto-header", new CreateFeedingLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            FeedingDate = today,
+            FeedingSlot = FeedingSlot.Morning,
+            StockId = feedStockId,
+            QtyUnit = 2m,
+            GramPerUnit = 1000m,
+            TotalGram = 2_000m,
+        });
+        Assert.True(feeding.Success, $"{feeding.Message} | {feeding.ExceptionMessage}");
+
+        var feedingDistribution = await PostAsync<FeedingDistributionDto>(client, "/api/aqua/FeedingDistribution", new CreateFeedingDistributionDto
+        {
+            FeedingLineId = feeding.Data!.Id,
+            FishBatchId = fishBatchId,
+            ProjectCageId = projectCageId,
+            FeedGram = 2_000m,
+        });
+        Assert.True(feedingDistribution.Success, $"{feedingDistribution.Message} | {feedingDistribution.ExceptionMessage}");
+
+        var mortality = await PostAsync<MortalityLineDto>(client, "/api/aqua/MortalityLine/auto-header", new CreateMortalityLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            MortalityDate = today,
+            FishBatchId = fishBatchId,
+            ProjectCageId = projectCageId,
+            DeadCount = 10,
+        });
+        Assert.True(mortality.Success, $"{mortality.Message} | {mortality.ExceptionMessage}");
+
+        var detail = await GetAsync<DashboardProjectDetailDto>(client, $"/api/aqua/dashboard-project/detail/{projectId}");
+        Assert.True(detail.Success, $"{detail.Message} | {detail.ExceptionMessage}");
+        var cage = Assert.Single(detail.Data!.Cages);
+        var yesterdayRow = Assert.Single(cage.DailyRows, x => x.Date == yesterday.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        var todayRow = Assert.Single(cage.DailyRows, x => x.Date == today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+
+        Assert.Equal(1000, yesterdayRow.CountDelta);
+        Assert.Equal(0m, yesterdayRow.FeedGram);
+        Assert.Equal(0, yesterdayRow.DeadCount);
+        Assert.Equal(2_000m, todayRow.FeedGram);
+        Assert.Equal(10, todayRow.DeadCount);
+        Assert.Equal(-10, todayRow.CountDelta);
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        var movements = await verifyDb.BatchMovements
+            .Where(x => !x.IsDeleted && x.FishBatchId == fishBatchId)
+            .ToListAsync();
+        var movementsByDate = movements
+            .GroupBy(x => x.MovementDate.Date)
+            .Select(x => new { Date = x.Key, Types = x.Select(m => m.MovementType).ToList() })
+            .ToList();
+
+        Assert.Contains(movementsByDate, x => x.Date == yesterday.Date && x.Types.Contains(BatchMovementType.OpeningImport));
+        Assert.Contains(movementsByDate, x => x.Date == today.Date && x.Types.Contains(BatchMovementType.Feeding) && x.Types.Contains(BatchMovementType.Mortality));
+    }
+
+    [Fact]
     public async Task OpeningImport_GoodsReceiptRowsForOneBatch_CreateOneLineWithCageDistributions()
     {
         var client = _factory.CreateClient();
