@@ -197,10 +197,14 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
             var shippedBiomassGram = shipmentList.Sum(x => x.BiomassGram);
             var totalFeedGram = feedingDistributions.Sum(x => x.FeedGram);
-            var producedBiomassKg = Math.Max(0m, (endingBiomassGram + shippedBiomassGram - openingBiomassGram) / 1000m);
             var openingFish = Math.Max(0, openingFishCount);
             var endingFish = Math.Max(0, endingFishCount);
             var mortalityFish = Math.Max(0, mortalityList.Sum(x => x.DeadCount));
+            var endingAverageGram = endingFish > 0 ? Round(endingBiomassGram / endingFish) : 0m;
+            var mortalityFallbackBiomassGram = mortalityMovementBiomassGram > 0
+                ? mortalityMovementBiomassGram
+                : Math.Round(mortalityFish * endingAverageGram, 3, MidpointRounding.AwayFromZero);
+            var producedBiomassKg = Math.Max(0m, (endingBiomassGram + mortalityFallbackBiomassGram + shippedBiomassGram) / 1000m);
 
             return new DevirFcrReportRowDto
             {
@@ -212,11 +216,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 MortalityFishCount = mortalityFish,
                 MortalityPct = openingFish > 0 ? Round((decimal)mortalityFish / openingFish * 100m) : null,
                 EndingFishCount = endingFish,
-                EndingAverageGram = endingFish > 0 ? Round(endingBiomassGram / endingFish) : 0m,
+                EndingAverageGram = endingAverageGram,
                 OpeningBiomassKg = Round(Math.Max(0m, openingBiomassGram / 1000m)),
                 EndingBiomassKg = Round(Math.Max(0m, endingBiomassGram / 1000m)),
                 ShippedBiomassKg = Round(Math.Max(0m, shippedBiomassGram / 1000m)),
-                MortalityBiomassKg = Round(Math.Max(0m, mortalityMovementBiomassGram / 1000m)),
+                MortalityBiomassKg = Round(Math.Max(0m, mortalityFallbackBiomassGram / 1000m)),
                 TotalFeedKg = Round(Math.Max(0m, totalFeedGram / 1000m)),
                 ProducedBiomassKg = Round(producedBiomassKg),
                 Fcr = producedBiomassKg > 0 ? Round((totalFeedGram / 1000m) / producedBiomassKg) : null,
