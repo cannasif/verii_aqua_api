@@ -15,7 +15,8 @@ namespace aqua_api.Shared.Infrastructure.Services
             "aqua_api.Modules.Stock.Localization.Messages",
             "aqua_api.Modules.Integrations.Localization.Messages",
             "aqua_api.Modules.System.Localization.Messages",
-            "aqua_api.Modules.Aqua.Localization.Messages"
+            "aqua_api.Modules.Aqua.Localization.Messages",
+            "aqua_api.Modules.KpiReport.Localization.Messages"
         };
 
         public LocalizationService(ILogger<LocalizationService> logger)

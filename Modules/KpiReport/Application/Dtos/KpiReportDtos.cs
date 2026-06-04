@@ -5,6 +5,7 @@ public class KpiReportProjectOptionDto
     public long Id { get; set; }
     public string? ProjectCode { get; set; }
     public string? ProjectName { get; set; }
+    public DateTime StartDate { get; set; }
 }
 
 public class RawKpiReportDto

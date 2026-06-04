@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="KpiReportService.ProjectsLoaded" xml:space="preserve"><value>Proyectos del informe KPI cargados.</value></data>
+  <data name="KpiReportService.ProjectsLoadFailed" xml:space="preserve"><value>No se pudieron cargar los proyectos del informe KPI.</value></data>
+  <data name="KpiReportService.InvalidProject" xml:space="preserve"><value>Proyecto no válido.</value></data>
+  <data name="KpiReportService.ProjectIdGreaterThanZero" xml:space="preserve"><value>El ID del proyecto debe ser mayor que cero.</value></data>
+  <data name="KpiReportService.ProjectNotFound" xml:space="preserve"><value>Proyecto no encontrado.</value></data>
+  <data name="KpiReportService.RawKpiLoaded" xml:space="preserve"><value>Informe Raw KPI cargado.</value></data>
+  <data name="KpiReportService.RawKpiLoadFailed" xml:space="preserve"><value>No se pudo cargar el informe Raw KPI.</value></data>
+  <data name="KpiReportService.ProjectDetailLoaded" xml:space="preserve"><value>Informe de detalle del proyecto cargado.</value></data>
+  <data name="KpiReportService.ProjectDetailLoadFailed" xml:space="preserve"><value>No se pudo cargar el informe de detalle del proyecto.</value></data>
+  <data name="KpiReportService.BusinessKpiLoaded" xml:space="preserve"><value>Informe Business KPI cargado.</value></data>
+  <data name="KpiReportService.BusinessKpiLoadFailed" xml:space="preserve"><value>No se pudo cargar el informe Business KPI.</value></data>
+  <data name="KpiReportService.Detail.Slot" xml:space="preserve"><value>Turno</value></data>
+  <data name="KpiReportService.Detail.Stock" xml:space="preserve"><value>Stock</value></data>
+  <data name="KpiReportService.Detail.Feed" xml:space="preserve"><value>Alimento</value></data>
+  <data name="KpiReportService.Detail.RiskBase" xml:space="preserve"><value>Base de riesgo</value></data>
+  <data name="KpiReportService.Detail.Batch" xml:space="preserve"><value>Batch</value></data>
+  <data name="KpiReportService.Detail.Count" xml:space="preserve"><value>Cantidad</value></data>
+  <data name="KpiReportService.Detail.Average" xml:space="preserve"><value>Promedio</value></data>
+  <data name="KpiReportService.Detail.Biomass" xml:space="preserve"><value>Biomasa</value></data>
+  <data name="KpiReportService.Detail.ColdStorage" xml:space="preserve"><value>Almacén frigorífico</value></data>
+  <data name="DevirFcrReportService.ReportLoaded" xml:space="preserve"><value>Informe Devir / FCR cargado.</value></data>
+  <data name="DevirFcrReportService.InvalidDateRange" xml:space="preserve"><value>Rango de fechas no válido.</value></data>
+  <data name="DevirFcrReportService.ToDateGreaterThanOrEqualFromDate" xml:space="preserve"><value>La fecha final debe ser mayor o igual que la fecha inicial.</value></data>
+  <data name="DevirFcrReportService.ReportLoadFailed" xml:space="preserve"><value>No se pudo cargar el informe Devir / FCR.</value></data>
+</root>

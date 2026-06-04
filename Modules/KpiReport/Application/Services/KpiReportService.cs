@@ -16,11 +16,16 @@ public class KpiReportService : IKpiReportService
 
     private readonly IUnitOfWork _unitOfWork;
     private readonly IDevirFcrReportService _devirFcrReportService;
+    private readonly ILocalizationService _localizationService;
 
-    public KpiReportService(IUnitOfWork unitOfWork, IDevirFcrReportService devirFcrReportService)
+    public KpiReportService(
+        IUnitOfWork unitOfWork,
+        IDevirFcrReportService devirFcrReportService,
+        ILocalizationService localizationService)
     {
         _unitOfWork = unitOfWork;
         _devirFcrReportService = devirFcrReportService;
+        _localizationService = localizationService;
     }
 
     public async Task<ApiResponse<List<KpiReportProjectOptionDto>>> GetProjectsAsync()
@@ -35,16 +40,17 @@ public class KpiReportService : IKpiReportService
                 {
                     Id = x.Id,
                     ProjectCode = x.ProjectCode,
-                    ProjectName = x.ProjectName
+                    ProjectName = x.ProjectName,
+                    StartDate = x.StartDate
                 })
                 .ToListAsync();
 
-            return ApiResponse<List<KpiReportProjectOptionDto>>.SuccessResult(projects, "KPI report projects loaded.");
+            return ApiResponse<List<KpiReportProjectOptionDto>>.SuccessResult(projects, L("KpiReportService.ProjectsLoaded"));
         }
         catch (Exception ex)
         {
             return ApiResponse<List<KpiReportProjectOptionDto>>.ErrorResult(
-                "KPI report projects could not be loaded.",
+                L("KpiReportService.ProjectsLoadFailed"),
                 ex.Message,
                 StatusCodes.Status500InternalServerError);
         }
@@ -62,8 +68,8 @@ public class KpiReportService : IKpiReportService
             if (projectId <= 0)
             {
                 return ApiResponse<RawKpiReportDto>.ErrorResult(
-                    "Invalid project.",
-                    "ProjectId must be greater than zero.",
+                    L("KpiReportService.InvalidProject"),
+                    L("KpiReportService.ProjectIdGreaterThanZero"),
                     StatusCodes.Status400BadRequest);
             }
 
@@ -74,8 +80,8 @@ public class KpiReportService : IKpiReportService
             if (project == null)
             {
                 return ApiResponse<RawKpiReportDto>.ErrorResult(
-                    "Project not found.",
-                    "Project not found.",
+                    L("KpiReportService.ProjectNotFound"),
+                    L("KpiReportService.ProjectNotFound"),
                     StatusCodes.Status404NotFound);
             }
 
@@ -218,12 +224,12 @@ public class KpiReportService : IKpiReportService
                 MetricDefinitions = GetRawMetricDefinitions()
             };
 
-            return ApiResponse<RawKpiReportDto>.SuccessResult(report, "Raw KPI report loaded.");
+            return ApiResponse<RawKpiReportDto>.SuccessResult(report, L("KpiReportService.RawKpiLoaded"));
         }
         catch (Exception ex)
         {
             return ApiResponse<RawKpiReportDto>.ErrorResult(
-                "Raw KPI report could not be loaded.",
+                L("KpiReportService.RawKpiLoadFailed"),
                 ex.Message,
                 StatusCodes.Status500InternalServerError);
         }
@@ -236,8 +242,8 @@ public class KpiReportService : IKpiReportService
             if (projectId <= 0)
             {
                 return ApiResponse<ProjectDetailReportDto>.ErrorResult(
-                    "Invalid project.",
-                    "ProjectId must be greater than zero.",
+                    L("KpiReportService.InvalidProject"),
+                    L("KpiReportService.ProjectIdGreaterThanZero"),
                     StatusCodes.Status400BadRequest);
             }
 
@@ -248,8 +254,8 @@ public class KpiReportService : IKpiReportService
             if (project == null)
             {
                 return ApiResponse<ProjectDetailReportDto>.ErrorResult(
-                    "Project not found.",
-                    "Project not found.",
+                    L("KpiReportService.ProjectNotFound"),
+                    L("KpiReportService.ProjectNotFound"),
                     StatusCodes.Status404NotFound);
             }
 
@@ -437,12 +443,12 @@ public class KpiReportService : IKpiReportService
                 stocks,
                 fishBatches);
 
-            return ApiResponse<ProjectDetailReportDto>.SuccessResult(report, "Project detail report loaded.");
+            return ApiResponse<ProjectDetailReportDto>.SuccessResult(report, L("KpiReportService.ProjectDetailLoaded"));
         }
         catch (Exception ex)
         {
             return ApiResponse<ProjectDetailReportDto>.ErrorResult(
-                "Project detail report could not be loaded.",
+                L("KpiReportService.ProjectDetailLoadFailed"),
                 ex.Message,
                 StatusCodes.Status500InternalServerError);
         }
@@ -456,8 +462,8 @@ public class KpiReportService : IKpiReportService
             if (!rawResponse.Success || rawResponse.Data == null)
             {
                 return ApiResponse<BusinessKpiReportDto>.ErrorResult(
-                    rawResponse.Message ?? "Business KPI report could not be loaded.",
-                    rawResponse.ExceptionMessage ?? "Raw KPI report could not be loaded.",
+                    rawResponse.Message ?? L("KpiReportService.BusinessKpiLoadFailed"),
+                    rawResponse.ExceptionMessage ?? L("KpiReportService.RawKpiLoadFailed"),
                     rawResponse.StatusCode);
             }
 
@@ -524,12 +530,12 @@ public class KpiReportService : IKpiReportService
                 MetricDefinitions = GetBusinessMetricDefinitions()
             };
 
-            return ApiResponse<BusinessKpiReportDto>.SuccessResult(report, "Business KPI report loaded.");
+            return ApiResponse<BusinessKpiReportDto>.SuccessResult(report, L("KpiReportService.BusinessKpiLoaded"));
         }
         catch (Exception ex)
         {
             return ApiResponse<BusinessKpiReportDto>.ErrorResult(
-                "Business KPI report could not be loaded.",
+                L("KpiReportService.BusinessKpiLoadFailed"),
                 ex.Message,
                 StatusCodes.Status500InternalServerError);
         }
@@ -759,7 +765,7 @@ public class KpiReportService : IKpiReportService
         return result;
     }
 
-    private static ProjectDetailReportDto BuildProjectDetailReport(
+    private ProjectDetailReportDto BuildProjectDetailReport(
         Project project,
         List<ProjectCage> projectCages,
         List<ProjectCage> reportProjectCages,
@@ -884,7 +890,12 @@ public class KpiReportService : IKpiReportService
                 feedDetailsByCageDate,
                 distribution.ProjectCageId,
                 date,
-                JoinDetail(feeding.FeedingNo, $"slot:{feeding.FeedingSlot}", $"stock:{stockText}", $"feed:{Round(distribution.FeedGram)}g", feeding.Note));
+                JoinDetail(
+                    feeding.FeedingNo,
+                    Detail("Slot", feeding.FeedingSlot),
+                    Detail("Stock", stockText),
+                    Detail("Feed", $"{Round(distribution.FeedGram)}g"),
+                    feeding.Note));
         }
 
         var deadByCageDate = new Dictionary<long, Dictionary<string, int>>();
@@ -902,7 +913,7 @@ public class KpiReportService : IKpiReportService
                 x => x.Date,
                 x => JoinDetail(
                     x.Weather.WeatherSeverity?.Name,
-                    x.Weather.WeatherSeverity != null ? $"risk-base:{x.Weather.WeatherSeverity.Score}" : null,
+                    x.Weather.WeatherSeverity != null ? Detail("RiskBase", x.Weather.WeatherSeverity.Score) : null,
                     x.Weather.WeatherType?.Name,
                     x.Weather.TemperatureC.HasValue ? $"{Round(x.Weather.TemperatureC.Value)}C" : null,
                     x.Weather.WindKnot.HasValue ? $"{Round(x.Weather.WindKnot.Value)}kt" : null));
@@ -926,7 +937,14 @@ public class KpiReportService : IKpiReportService
             var fromLabel = cageLabelById.GetValueOrDefault(line.FromProjectCageId, line.FromProjectCageId.ToString());
             var toLabel = cageLabelById.GetValueOrDefault(line.ToProjectCageId, line.ToProjectCageId.ToString());
             var batchText = fishBatchLabelById.GetValueOrDefault(line.FishBatchId, line.FishBatchId.ToString());
-            var detail = JoinDetail(header.TransferNo, $"{fromLabel} -> {toLabel}", $"batch:{batchText}", $"count:{line.FishCount}", $"avg:{Round(line.AverageGram)}g", $"biomass:{Round(line.BiomassGram)}g", header.Note);
+            var detail = JoinDetail(
+                header.TransferNo,
+                $"{fromLabel} -> {toLabel}",
+                Detail("Batch", batchText),
+                Detail("Count", line.FishCount),
+                Detail("Average", $"{Round(line.AverageGram)}g"),
+                Detail("Biomass", $"{Round(line.BiomassGram)}g"),
+                header.Note);
 
             if (reportCageIdSet.Contains(line.FromProjectCageId))
             {
@@ -950,7 +968,16 @@ public class KpiReportService : IKpiReportService
             if (!weighingById.TryGetValue(line.WeighingId, out var header)) continue;
             var date = DateKey(header.WeighingDate);
             AddValue(weighingByCageDate, line.ProjectCageId, date, 1);
-            AppendDetail(weighingDetailsByCageDate, line.ProjectCageId, date, JoinDetail(header.WeighingNo, $"count:{line.MeasuredCount}", $"avg:{Round(line.MeasuredAverageGram)}g", $"biomass:{Round(line.MeasuredBiomassGram)}g", header.Note));
+            AppendDetail(
+                weighingDetailsByCageDate,
+                line.ProjectCageId,
+                date,
+                JoinDetail(
+                    header.WeighingNo,
+                    Detail("Count", line.MeasuredCount),
+                    Detail("Average", $"{Round(line.MeasuredAverageGram)}g"),
+                    Detail("Biomass", $"{Round(line.MeasuredBiomassGram)}g"),
+                    header.Note));
         }
 
         var shipmentByCageDate = new Dictionary<long, Dictionary<string, int>>();
@@ -965,7 +992,17 @@ public class KpiReportService : IKpiReportService
             AddValue(shipmentByCageDate, line.FromProjectCageId, date, 1);
             AddValue(shipmentFishByCageDate, line.FromProjectCageId, date, line.FishCount);
             AddValue(shipmentBiomassByCageDate, line.FromProjectCageId, date, line.BiomassGram);
-            AppendDetail(shipmentDetailsByCageDate, line.FromProjectCageId, date, JoinDetail(header.ShipmentNo, $"{fromLabel} -> {header.TargetWarehouseId?.ToString() ?? "ColdStorage"}", $"count:{line.FishCount}", $"avg:{Round(line.AverageGram)}g", $"biomass:{Round(line.BiomassGram)}g", header.Note));
+            AppendDetail(
+                shipmentDetailsByCageDate,
+                line.FromProjectCageId,
+                date,
+                JoinDetail(
+                    header.ShipmentNo,
+                    $"{fromLabel} -> {header.TargetWarehouseId?.ToString() ?? L("KpiReportService.Detail.ColdStorage")}",
+                    Detail("Count", line.FishCount),
+                    Detail("Average", $"{Round(line.AverageGram)}g"),
+                    Detail("Biomass", $"{Round(line.BiomassGram)}g"),
+                    header.Note));
         }
 
         var convertByCageDate = new Dictionary<long, Dictionary<string, int>>();
@@ -979,7 +1016,14 @@ public class KpiReportService : IKpiReportService
             var movement = stockConvertMovementsByRefId.GetValueOrDefault(line.StockConvertId)?.FirstOrDefault();
             var stockTransition = FormatStockTransition(movement?.FromStockId, movement?.ToStockId, stockLabelById);
             var toAverageGram = line.AverageGram + line.NewAverageGram;
-            var detail = JoinDetail(header.ConvertNo, $"{fromLabel} -> {toLabel}", stockTransition, $"count:{line.FishCount}", $"avg:{Round(line.AverageGram)}g + {Round(line.NewAverageGram)}g = {Round(toAverageGram)}g", $"biomass:{Round(line.BiomassGram)}g", header.Note);
+            var detail = JoinDetail(
+                header.ConvertNo,
+                $"{fromLabel} -> {toLabel}",
+                stockTransition,
+                Detail("Count", line.FishCount),
+                Detail("Average", $"{Round(line.AverageGram)}g + {Round(line.NewAverageGram)}g = {Round(toAverageGram)}g"),
+                Detail("Biomass", $"{Round(line.BiomassGram)}g"),
+                header.Note);
 
             if (reportCageIdSet.Contains(line.FromProjectCageId))
             {
@@ -1164,13 +1208,25 @@ public class KpiReportService : IKpiReportService
         return string.IsNullOrWhiteSpace(label) ? fallbackId.ToString() : label;
     }
 
-    private static string? FormatStockTransition(long? fromStockId, long? toStockId, Dictionary<long, string> stockLabelById)
+    private string? FormatStockTransition(long? fromStockId, long? toStockId, Dictionary<long, string> stockLabelById)
     {
         if (!fromStockId.HasValue && !toStockId.HasValue) return null;
         var fromText = fromStockId.HasValue ? stockLabelById.GetValueOrDefault(fromStockId.Value, fromStockId.Value.ToString()) : "?";
         var toText = toStockId.HasValue ? stockLabelById.GetValueOrDefault(toStockId.Value, toStockId.Value.ToString()) : "?";
-        return $"stock:{fromText} -> {toText}";
+        return Detail("Stock", $"{fromText} -> {toText}");
     }
+
+    private string Detail(string key, object? value)
+    {
+        if (value == null)
+        {
+            return string.Empty;
+        }
+
+        return $"{L($"KpiReportService.Detail.{key}")}: {value}";
+    }
+
+    private string L(string key) => _localizationService.GetLocalizedString(key);
 
     private static decimal ComputeFallbackFeedCostPerKg(List<GoodsReceiptLine> lines, int strategy)
     {

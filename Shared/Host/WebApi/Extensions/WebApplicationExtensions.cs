@@ -107,14 +107,21 @@ public static class WebApplicationExtensions
 
         app.Use(async (ctx, next) =>
         {
-            if (HttpMethods.IsPost(ctx.Request.Method) &&
-                (ctx.Request.Headers.TryGetValue("X-HTTP-Method-Override", out var overrideMethod) ||
-                 ctx.Request.Query.TryGetValue("__method", out overrideMethod)))
+            if (HttpMethods.IsPost(ctx.Request.Method))
             {
-                var method = overrideMethod.ToString().Trim().ToUpperInvariant();
-                if (method is "PUT" or "PATCH" or "DELETE")
+                if (TryResolvePostVerbFallback(ctx.Request.Path, out var normalizedPath, out var normalizedMethod))
                 {
-                    ctx.Request.Method = method;
+                    ctx.Request.Method = normalizedMethod;
+                    ctx.Request.Path = normalizedPath;
+                }
+                else if (ctx.Request.Headers.TryGetValue("X-HTTP-Method-Override", out var overrideMethod) ||
+                         ctx.Request.Query.TryGetValue("__method", out overrideMethod))
+                {
+                    var method = overrideMethod.ToString().Trim().ToUpperInvariant();
+                    if (method is "PUT" or "PATCH" or "DELETE")
+                    {
+                        ctx.Request.Method = method;
+                    }
                 }
             }
 
@@ -207,6 +214,42 @@ public static class WebApplicationExtensions
         {
             ctx.Response.Headers.Vary = string.IsNullOrWhiteSpace(vary) ? "Origin" : $"{vary}, Origin";
         }
+    }
+
+    private static bool TryResolvePostVerbFallback(PathString requestPath, out PathString normalizedPath, out string normalizedMethod)
+    {
+        var path = requestPath.Value ?? string.Empty;
+        normalizedPath = requestPath;
+        normalizedMethod = HttpMethods.Post;
+
+        if (path.EndsWith("/update", StringComparison.OrdinalIgnoreCase))
+        {
+            normalizedPath = new PathString(path[..^"/update".Length]);
+            normalizedMethod = HttpMethods.Put;
+            return HasNumericTailSegment(normalizedPath);
+        }
+
+        if (path.EndsWith("/delete", StringComparison.OrdinalIgnoreCase))
+        {
+            normalizedPath = new PathString(path[..^"/delete".Length]);
+            normalizedMethod = HttpMethods.Delete;
+            return HasNumericTailSegment(normalizedPath);
+        }
+
+        return false;
+    }
+
+    private static bool HasNumericTailSegment(PathString path)
+    {
+        var value = path.Value?.TrimEnd('/') ?? string.Empty;
+        var lastSlashIndex = value.LastIndexOf('/');
+        if (lastSlashIndex < 0 || lastSlashIndex == value.Length - 1)
+        {
+            return false;
+        }
+
+        var tail = value[(lastSlashIndex + 1)..];
+        return long.TryParse(tail, out _);
     }
 
     private static DbUpdateException? FindDbUpdateException(Exception? exception)

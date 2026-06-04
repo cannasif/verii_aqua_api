@@ -6,10 +6,12 @@ namespace aqua_api.Modules.Aqua.Application.Services
     public class DevirFcrReportService : IDevirFcrReportService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILocalizationService _localizationService;
 
-        public DevirFcrReportService(IUnitOfWork unitOfWork)
+        public DevirFcrReportService(IUnitOfWork unitOfWork, ILocalizationService localizationService)
         {
             _unitOfWork = unitOfWork;
+            _localizationService = localizationService;
         }
 
         public async Task<ApiResponse<DevirFcrReportDto>> GetReportAsync(DevirFcrReportRequestDto request)
@@ -27,18 +29,10 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     {
                         FromDate = request.FromDate.Date,
                         ToDate = request.ToDate.Date,
-                    }, "Devir / FCR report loaded.");
+                    }, L("DevirFcrReportService.ReportLoaded"));
                 }
 
-                var fromDate = request.FromDate.Date;
-                var toDate = request.ToDate.Date;
-                if (toDate < fromDate)
-                {
-                    return ApiResponse<DevirFcrReportDto>.ErrorResult(
-                        "Invalid date range.",
-                        "ToDate must be greater than or equal to FromDate.",
-                        StatusCodes.Status400BadRequest);
-                }
+                var toDate = DateTimeProvider.Now.Date;
 
                 var projects = await _unitOfWork.Db.Projects
                     .AsNoTracking()
@@ -61,6 +55,17 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         .AsNoTracking()
                         .Where(x => !x.IsDeleted && x.ProjectCageId.HasValue && projectCageIds.Contains(x.ProjectCageId.Value))
                         .ToListAsync();
+
+                var projectStartById = projects.ToDictionary(
+                    x => x.Id,
+                    x => ResolveProjectLifecycleStart(
+                        x,
+                        movements.Where(m =>
+                            m.ProjectCageId.HasValue &&
+                            projectIdByCageId.GetValueOrDefault(m.ProjectCageId.Value) == x.Id)));
+                var fromDate = projectStartById.Count == 0
+                    ? toDate
+                    : projectStartById.Values.Min();
 
                 var feedings = await _unitOfWork.Db.Feedings
                     .AsNoTracking()
@@ -129,7 +134,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 var rows = projects
                     .Select(project => BuildRow(
                         project,
-                        fromDate,
+                        projectStartById.GetValueOrDefault(project.Id, project.StartDate.Date),
                         toDate,
                         movements.Where(x => x.ProjectCageId.HasValue && projectIdByCageId.GetValueOrDefault(x.ProjectCageId.Value) == project.Id),
                         feedingDistributions.Where(x =>
@@ -148,20 +153,22 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     Totals = BuildTotals(rows),
                 };
 
-                return ApiResponse<DevirFcrReportDto>.SuccessResult(response, "Devir / FCR report loaded.");
+                return ApiResponse<DevirFcrReportDto>.SuccessResult(response, L("DevirFcrReportService.ReportLoaded"));
             }
             catch (Exception ex)
             {
                 return ApiResponse<DevirFcrReportDto>.ErrorResult(
-                    "Devir / FCR report could not be loaded.",
+                    L("DevirFcrReportService.ReportLoadFailed"),
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
         }
 
+        private string L(string key) => _localizationService.GetLocalizedString(key);
+
         private static DevirFcrReportRowDto BuildRow(
             Project project,
-            DateTime fromDate,
+            DateTime projectFromDate,
             DateTime toDate,
             IEnumerable<BatchMovement> movements,
             IEnumerable<FeedingDistribution> feedingDistributions,
@@ -170,13 +177,13 @@ namespace aqua_api.Modules.Aqua.Application.Services
         {
             var movementList = movements.ToList();
             var openingFishCount = movementList
-                .Where(x => x.MovementDate.Date < fromDate)
+                .Where(x => IsOpeningSnapshotMovement(x, projectFromDate))
                 .Sum(x => x.SignedCount);
             var endingFishCount = movementList
                 .Where(x => x.MovementDate.Date <= toDate)
                 .Sum(x => x.SignedCount);
             var openingBiomassGram = movementList
-                .Where(x => x.MovementDate.Date < fromDate)
+                .Where(x => IsOpeningSnapshotMovement(x, projectFromDate))
                 .Sum(x => x.SignedBiomassGram);
             var endingBiomassGram = movementList
                 .Where(x => x.MovementDate.Date <= toDate)
@@ -185,7 +192,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
             var shipmentList = shipmentLines.ToList();
             var mortalityList = mortalityLines.ToList();
             var mortalityMovementBiomassGram = movementList
-                .Where(x => x.MovementType == BatchMovementType.Mortality && IsInRange(x.MovementDate, fromDate, toDate))
+                .Where(x => x.MovementType == BatchMovementType.Mortality && IsInRange(x.MovementDate, projectFromDate, toDate))
                 .Sum(x => Math.Max(0m, -x.SignedBiomassGram));
 
             var shippedBiomassGram = shipmentList.Sum(x => x.BiomassGram);
@@ -249,6 +256,34 @@ namespace aqua_api.Modules.Aqua.Application.Services
         {
             var date = value.Date;
             return date >= fromDate && date <= toDate;
+        }
+
+        private static bool IsOpeningSnapshotMovement(BatchMovement movement, DateTime fromDate)
+        {
+            var date = movement.MovementDate.Date;
+            if (date < fromDate)
+            {
+                return true;
+            }
+
+            return date == fromDate &&
+                   movement.SignedCount > 0 &&
+                   movement.MovementType is BatchMovementType.OpeningImport or BatchMovementType.Stocking;
+        }
+
+        private static DateTime ResolveProjectLifecycleStart(Project project, IEnumerable<BatchMovement> movements)
+        {
+            var dates = movements
+                .Where(x => x.SignedCount > 0 && x.MovementType is BatchMovementType.OpeningImport or BatchMovementType.Stocking)
+                .Select(x => x.MovementDate.Date)
+                .ToList();
+
+            if (project.StartDate != default)
+            {
+                dates.Add(project.StartDate.Date);
+            }
+
+            return dates.Count == 0 ? DateTimeProvider.Now.Date : dates.Min();
         }
 
         private static decimal Round(decimal value) => decimal.Round(value, 3, MidpointRounding.AwayFromZero);
