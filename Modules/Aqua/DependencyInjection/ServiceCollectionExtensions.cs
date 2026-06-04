@@ -38,6 +38,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IProjectCageService, ProjectCageService>();
         services.AddScoped<IProjectCageDailyKpiService, ProjectCageDailyKpiService>();
         services.AddScoped<IDashboardProjectReportService, DashboardProjectReportService>();
+        services.AddScoped<IDevirFcrReportService, DevirFcrReportService>();
         services.AddScoped<IStockConvertService, StockConvertService>();
         services.AddScoped<IStockConvertLineService, StockConvertLineService>();
         services.AddScoped<ITransferService, TransferService>();
