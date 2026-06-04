@@ -96,6 +96,21 @@ namespace aqua_api.Modules.Stock.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasDefaultValue(0);
 
+            builder.Property(e => e.IsERPIntegrated)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            builder.Property(e => e.ERPIntegrationNumber)
+                .HasMaxLength(100)
+                .IsRequired(false);
+
+            builder.Property(e => e.LastSyncDate)
+                .IsRequired(false);
+
+            builder.Property(e => e.CountTriedBy)
+                .HasDefaultValue(0)
+                .IsRequired(false);
+
             // Navigation Properties
             builder.HasOne(e => e.StockDetail)
                 .WithOne(d => d.Stock)

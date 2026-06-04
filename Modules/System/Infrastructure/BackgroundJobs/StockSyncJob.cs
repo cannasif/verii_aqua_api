@@ -59,9 +59,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             var skippedCount = 0;
             var failedCount = 0;
             var duplicatePayloadCount = 0;
-            var branchCode = 0;
-            var compositeKey = string.Empty;
-            var processedCodeAndBranch = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var processedCodes = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var erpStock in erpResponse.Data)
             {
@@ -72,9 +70,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                     continue;
                 }
 
-                branchCode = (int)erpStock.SubeKodu;
-                compositeKey = $"{code}|{branchCode}";
-                if (!processedCodeAndBranch.Add(compositeKey))
+                if (!processedCodes.Add(code))
                 {
                     duplicatePayloadCount++;
                     continue;
@@ -84,23 +80,25 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 {
                     var stock = await _unitOfWork.Stocks
                         .Query(tracking: true, ignoreQueryFilters: true)
-                        .FirstOrDefaultAsync(x => x.ErpStockCode == code && x.BranchCode == branchCode);
+                        .FirstOrDefaultAsync(x => x.ErpStockCode == code);
 
-                    var stockName = string.IsNullOrWhiteSpace(erpStock.StokAdi) ? code : erpStock.StokAdi!;
-                    var unit = erpStock.OlcuBr1 ?? string.Empty;
-                    var ureticiKodu = erpStock.UreticiKodu ?? string.Empty;
-                    var grupKodu = erpStock.GrupKodu ?? string.Empty;
-                    var grupAdi = erpStock.GrupIsim ?? string.Empty;
-                    var kod1 = erpStock.Kod1 ?? string.Empty;
-                    var kod1Adi = erpStock.Kod1Adi ?? string.Empty;
-                    var kod2 = erpStock.Kod2 ?? string.Empty;
-                    var kod2Adi = erpStock.Kod2Adi ?? string.Empty;
-                    var kod3 = erpStock.Kod3 ?? string.Empty;
-                    var kod3Adi = erpStock.Kod3Adi ?? string.Empty;
-                    var kod4 = erpStock.Kod4 ?? string.Empty;
-                    var kod4Adi = erpStock.Kod4Adi ?? string.Empty;
-                    var kod5 = erpStock.Kod5 ?? string.Empty;
-                    var kod5Adi = erpStock.Kod5Adi ?? string.Empty;
+                    var stockName = Clean(erpStock.StokAdi);
+                    stockName = string.IsNullOrWhiteSpace(stockName) ? code : stockName;
+                    var unit = Clean(erpStock.OlcuBr1);
+                    var ureticiKodu = Clean(erpStock.UreticiKodu);
+                    var grupKodu = Clean(erpStock.GrupKodu);
+                    var grupAdi = Clean(erpStock.GrupIsim);
+                    var kod1 = Clean(erpStock.Kod1);
+                    var kod1Adi = Clean(erpStock.Kod1Adi);
+                    var kod2 = Clean(erpStock.Kod2);
+                    var kod2Adi = Clean(erpStock.Kod2Adi);
+                    var kod3 = Clean(erpStock.Kod3);
+                    var kod3Adi = Clean(erpStock.Kod3Adi);
+                    var kod4 = Clean(erpStock.Kod4);
+                    var kod4Adi = Clean(erpStock.Kod4Adi);
+                    var kod5 = Clean(erpStock.Kod5);
+                    var kod5Adi = Clean(erpStock.Kod5Adi);
+                    var branchCode = (int)erpStock.SubeKodu;
 
                     if (stock == null)
                     {
@@ -123,6 +121,10 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                             Kod5 = kod5,
                             Kod5Adi = kod5Adi,
                             BranchCode = branchCode,
+                            IsERPIntegrated = true,
+                            ERPIntegrationNumber = code,
+                            LastSyncDate = DateTime.UtcNow,
+                            CountTriedBy = 0,
                             IsDeleted = false
                         });
                         await _unitOfWork.SaveChangesAsync();
@@ -132,27 +134,31 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 
                     var updated = false;
                     if (stock.StockName != stockName) { stock.StockName = stockName; updated = true; }
-                    if (stock.Unit != unit) { stock.Unit = unit; updated = true; }
-                    if (stock.UreticiKodu != ureticiKodu) { stock.UreticiKodu = ureticiKodu; updated = true; }
-                    if (stock.GrupKodu != grupKodu) { stock.GrupKodu = grupKodu; updated = true; }
-                    if (stock.GrupAdi != grupAdi) { stock.GrupAdi = grupAdi; updated = true; }
-                    if (stock.Kod1 != kod1) { stock.Kod1 = kod1; updated = true; }
-                    if (stock.Kod1Adi != kod1Adi) { stock.Kod1Adi = kod1Adi; updated = true; }
-                    if (stock.Kod2 != kod2) { stock.Kod2 = kod2; updated = true; }
-                    if (stock.Kod2Adi != kod2Adi) { stock.Kod2Adi = kod2Adi; updated = true; }
-                    if (stock.Kod3 != kod3) { stock.Kod3 = kod3; updated = true; }
-                    if (stock.Kod3Adi != kod3Adi) { stock.Kod3Adi = kod3Adi; updated = true; }
-                    if (stock.Kod4 != kod4) { stock.Kod4 = kod4; updated = true; }
-                    if (stock.Kod4Adi != kod4Adi) { stock.Kod4Adi = kod4Adi; updated = true; }
-                    if (stock.Kod5 != kod5) { stock.Kod5 = kod5; updated = true; }
-                    if (stock.Kod5Adi != kod5Adi) { stock.Kod5Adi = kod5Adi; updated = true; }
+                    if (ApplyErpText(stock.Unit, unit, value => stock.Unit = value)) { updated = true; }
+                    if (ApplyErpText(stock.UreticiKodu, ureticiKodu, value => stock.UreticiKodu = value)) { updated = true; }
+                    if (ApplyErpText(stock.GrupKodu, grupKodu, value => stock.GrupKodu = value)) { updated = true; }
+                    if (ApplyErpText(stock.GrupAdi, grupAdi, value => stock.GrupAdi = value)) { updated = true; }
+                    if (ApplyErpText(stock.Kod1, kod1, value => stock.Kod1 = value)) { updated = true; }
+                    if (ApplyErpText(stock.Kod1Adi, kod1Adi, value => stock.Kod1Adi = value)) { updated = true; }
+                    if (ApplyErpText(stock.Kod2, kod2, value => stock.Kod2 = value)) { updated = true; }
+                    if (ApplyErpText(stock.Kod2Adi, kod2Adi, value => stock.Kod2Adi = value)) { updated = true; }
+                    if (ApplyErpText(stock.Kod3, kod3, value => stock.Kod3 = value)) { updated = true; }
+                    if (ApplyErpText(stock.Kod3Adi, kod3Adi, value => stock.Kod3Adi = value)) { updated = true; }
+                    if (ApplyErpText(stock.Kod4, kod4, value => stock.Kod4 = value)) { updated = true; }
+                    if (ApplyErpText(stock.Kod4Adi, kod4Adi, value => stock.Kod4Adi = value)) { updated = true; }
+                    if (ApplyErpText(stock.Kod5, kod5, value => stock.Kod5 = value)) { updated = true; }
+                    if (ApplyErpText(stock.Kod5Adi, kod5Adi, value => stock.Kod5Adi = value)) { updated = true; }
                     if (stock.BranchCode != branchCode) { stock.BranchCode = branchCode; updated = true; }
+                    if (!stock.IsERPIntegrated) { stock.IsERPIntegrated = true; updated = true; }
+                    if (string.IsNullOrWhiteSpace(stock.ERPIntegrationNumber)) { stock.ERPIntegrationNumber = code; updated = true; }
+                    if (stock.CountTriedBy == null) { stock.CountTriedBy = 0; updated = true; }
 
                     if (!updated)
                     {
                         continue;
                     }
 
+                    stock.LastSyncDate = DateTime.UtcNow;
                     stock.UpdatedDate = DateTimeProvider.Now;
                     stock.UpdatedBy = null;
                     await _unitOfWork.SaveChangesAsync();
@@ -202,6 +208,26 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             {
                 _logger.LogWarning(logEx, "Stock sync failure could not be written to RII_JOB_FAILURE_LOG. StockCode: {StockCode}", code);
             }
+        }
+
+        private static string Clean(string? value)
+            => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+
+        private static bool ApplyErpText(string? current, string incoming, Action<string> assign)
+        {
+            if (string.IsNullOrWhiteSpace(incoming) && !string.IsNullOrWhiteSpace(current))
+            {
+                return false;
+            }
+
+            var next = incoming;
+            if (current == next)
+            {
+                return false;
+            }
+
+            assign(next);
+            return true;
         }
     }
 }

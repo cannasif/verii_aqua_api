@@ -362,28 +362,53 @@ namespace aqua_api.Modules.Stock.Application.Services
                 if (string.IsNullOrWhiteSpace(erpStock.StokKodu))
                     continue;
 
+                var code = Clean(erpStock.StokKodu);
+                if (string.IsNullOrWhiteSpace(code))
+                    continue;
+
+                var stockName = Clean(erpStock.StokAdi);
+                stockName = string.IsNullOrWhiteSpace(stockName) ? code : stockName;
+                var unit = Clean(erpStock.OlcuBr1);
+                var ureticiKodu = Clean(erpStock.UreticiKodu);
+                var grupKodu = Clean(erpStock.GrupKodu);
+                var grupAdi = Clean(erpStock.GrupIsim);
+                var kod1 = Clean(erpStock.Kod1);
+                var kod1Adi = Clean(erpStock.Kod1Adi);
+                var kod2 = Clean(erpStock.Kod2);
+                var kod2Adi = Clean(erpStock.Kod2Adi);
+                var kod3 = Clean(erpStock.Kod3);
+                var kod3Adi = Clean(erpStock.Kod3Adi);
+                var kod4 = Clean(erpStock.Kod4);
+                var kod4Adi = Clean(erpStock.Kod4Adi);
+                var kod5 = Clean(erpStock.Kod5);
+                var kod5Adi = Clean(erpStock.Kod5Adi);
+
                 // 🔹 INSERT
-                if (!existingStocks.TryGetValue(erpStock.StokKodu, out var stock))
+                if (!existingStocks.TryGetValue(code, out var stock))
                 {
                     newStocks.Add(new StockEntity
                     {
-                        ErpStockCode = erpStock.StokKodu,
-                        StockName = erpStock.StokAdi ?? string.Empty,
-                        Unit = erpStock.OlcuBr1,
-                        UreticiKodu = erpStock.UreticiKodu,
-                        GrupKodu = erpStock.GrupKodu,
-                        GrupAdi = erpStock.GrupIsim,
-                        Kod1 = erpStock.Kod1,
-                        Kod1Adi = erpStock.Kod1Adi,
-                        Kod2 = erpStock.Kod2,
-                        Kod2Adi = erpStock.Kod2Adi,
-                        Kod3 = erpStock.Kod3,
-                        Kod3Adi = erpStock.Kod3Adi,
-                        Kod4 = erpStock.Kod4,
-                        Kod4Adi = erpStock.Kod4Adi,
-                        Kod5 = erpStock.Kod5,
-                        Kod5Adi = erpStock.Kod5Adi,
+                        ErpStockCode = code,
+                        StockName = stockName,
+                        Unit = unit,
+                        UreticiKodu = ureticiKodu,
+                        GrupKodu = grupKodu,
+                        GrupAdi = grupAdi,
+                        Kod1 = kod1,
+                        Kod1Adi = kod1Adi,
+                        Kod2 = kod2,
+                        Kod2Adi = kod2Adi,
+                        Kod3 = kod3,
+                        Kod3Adi = kod3Adi,
+                        Kod4 = kod4,
+                        Kod4Adi = kod4Adi,
+                        Kod5 = kod5,
+                        Kod5Adi = kod5Adi,
                         BranchCode = erpStock.SubeKodu,
+                        IsERPIntegrated = true,
+                        ERPIntegrationNumber = code,
+                        LastSyncDate = DateTime.UtcNow,
+                        CountTriedBy = 0,
                         IsDeleted = false
                     });
 
@@ -392,42 +417,32 @@ namespace aqua_api.Modules.Stock.Application.Services
                 }
 
                 // 🔹 UPDATE (ANY FIELD CHANGED)
-                if (
-                    stock.StockName != erpStock.StokAdi ||
-                    stock.Unit != erpStock.OlcuBr1 ||
-                    stock.UreticiKodu != erpStock.UreticiKodu ||
-                    stock.GrupKodu != erpStock.GrupKodu ||
-                    stock.GrupAdi != erpStock.GrupIsim ||
-                    stock.Kod1 != erpStock.Kod1 ||
-                    stock.Kod1Adi != erpStock.Kod1Adi ||
-                    stock.Kod2 != erpStock.Kod2 ||
-                    stock.Kod2Adi != erpStock.Kod2Adi ||
-                    stock.Kod3 != erpStock.Kod3 ||
-                    stock.Kod3Adi != erpStock.Kod3Adi ||
-                    stock.Kod4 != erpStock.Kod4 ||
-                    stock.Kod4Adi != erpStock.Kod4Adi ||
-                    stock.Kod5 != erpStock.Kod5 ||
-                    stock.Kod5Adi != erpStock.Kod5Adi ||
-                    stock.BranchCode != erpStock.SubeKodu
-                )
-                {
-                    stock.StockName = erpStock.StokAdi ?? string.Empty;
-                    stock.Unit = erpStock.OlcuBr1;
-                    stock.UreticiKodu = erpStock.UreticiKodu;
-                    stock.GrupKodu = erpStock.GrupKodu;
-                    stock.GrupAdi = erpStock.GrupIsim;
-                    stock.Kod1 = erpStock.Kod1;
-                    stock.Kod1Adi = erpStock.Kod1Adi;
-                    stock.Kod2 = erpStock.Kod2;
-                    stock.Kod2Adi = erpStock.Kod2Adi;
-                    stock.Kod3 = erpStock.Kod3;
-                    stock.Kod3Adi = erpStock.Kod3Adi;
-                    stock.Kod4 = erpStock.Kod4;
-                    stock.Kod4Adi = erpStock.Kod4Adi;
-                    stock.Kod5 = erpStock.Kod5;
-                    stock.Kod5Adi = erpStock.Kod5Adi;
-                    stock.BranchCode = erpStock.SubeKodu;
+                var updated = false;
+                if (stock.StockName != stockName) { stock.StockName = stockName; updated = true; }
+                if (ApplyErpText(stock.Unit, unit, value => stock.Unit = value)) { updated = true; }
+                if (ApplyErpText(stock.UreticiKodu, ureticiKodu, value => stock.UreticiKodu = value)) { updated = true; }
+                if (ApplyErpText(stock.GrupKodu, grupKodu, value => stock.GrupKodu = value)) { updated = true; }
+                if (ApplyErpText(stock.GrupAdi, grupAdi, value => stock.GrupAdi = value)) { updated = true; }
+                if (ApplyErpText(stock.Kod1, kod1, value => stock.Kod1 = value)) { updated = true; }
+                if (ApplyErpText(stock.Kod1Adi, kod1Adi, value => stock.Kod1Adi = value)) { updated = true; }
+                if (ApplyErpText(stock.Kod2, kod2, value => stock.Kod2 = value)) { updated = true; }
+                if (ApplyErpText(stock.Kod2Adi, kod2Adi, value => stock.Kod2Adi = value)) { updated = true; }
+                if (ApplyErpText(stock.Kod3, kod3, value => stock.Kod3 = value)) { updated = true; }
+                if (ApplyErpText(stock.Kod3Adi, kod3Adi, value => stock.Kod3Adi = value)) { updated = true; }
+                if (ApplyErpText(stock.Kod4, kod4, value => stock.Kod4 = value)) { updated = true; }
+                if (ApplyErpText(stock.Kod4Adi, kod4Adi, value => stock.Kod4Adi = value)) { updated = true; }
+                if (ApplyErpText(stock.Kod5, kod5, value => stock.Kod5 = value)) { updated = true; }
+                if (ApplyErpText(stock.Kod5Adi, kod5Adi, value => stock.Kod5Adi = value)) { updated = true; }
+                if (stock.BranchCode != erpStock.SubeKodu) { stock.BranchCode = erpStock.SubeKodu; updated = true; }
+                if (!stock.IsERPIntegrated) { stock.IsERPIntegrated = true; updated = true; }
+                if (string.IsNullOrWhiteSpace(stock.ERPIntegrationNumber)) { stock.ERPIntegrationNumber = code; updated = true; }
+                if (stock.CountTriedBy == null) { stock.CountTriedBy = 0; updated = true; }
 
+                if (updated)
+                {
+                    stock.LastSyncDate = DateTime.UtcNow;
+                    stock.UpdatedDate = DateTimeProvider.Now;
+                    stock.UpdatedBy = null;
                     hasAnyChange = true;
                 }
             }
@@ -454,6 +469,26 @@ namespace aqua_api.Modules.Stock.Application.Services
                 await _unitOfWork.RollbackTransactionAsync();
                 throw;
             }
+        }
+
+        private static string Clean(string? value)
+            => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+
+        private static bool ApplyErpText(string? current, string incoming, Action<string> assign)
+        {
+            if (string.IsNullOrWhiteSpace(incoming) && !string.IsNullOrWhiteSpace(current))
+            {
+                return false;
+            }
+
+            var next = incoming;
+            if (current == next)
+            {
+                return false;
+            }
+
+            assign(next);
+            return true;
         }
 
     }

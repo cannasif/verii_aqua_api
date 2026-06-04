@@ -31,6 +31,10 @@ namespace aqua_api.Modules.Stock.Domain.Entities
         public string? Kod5 { get; set; }
         public string? Kod5Adi { get; set; }
         public int BranchCode { get; set; }
+        public bool IsERPIntegrated { get; set; }
+        public string? ERPIntegrationNumber { get; set; }
+        public DateTime? LastSyncDate { get; set; }
+        public int? CountTriedBy { get; set; }
 
         // Navigation properties
         public StockDetail? StockDetail { get; set; }
