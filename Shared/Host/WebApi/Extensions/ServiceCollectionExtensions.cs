@@ -7,6 +7,7 @@ using aqua_api.Modules.System.Infrastructure.Startup;
 using aqua_api.Modules.Aqua.DependencyInjection;
 using aqua_api.Modules.Identity.DependencyInjection;
 using aqua_api.Modules.Integrations.DependencyInjection;
+using aqua_api.Modules.KpiReport.DependencyInjection;
 using aqua_api.Modules.Stock.DependencyInjection;
 using aqua_api.Modules.System.DependencyInjection;
 using aqua_api.Shared.Host.WebApi.Routing;
@@ -128,6 +129,7 @@ public static class ServiceCollectionExtensions
         services.AddStockModule();
         services.AddWarehouseModule();
         services.AddAquaModule();
+        services.AddKpiReportModule();
         services.AddSeaWaterTemperatureModule();
         services.AddCurrentDirectionModule();
         services.AddWindDirectionModule();
