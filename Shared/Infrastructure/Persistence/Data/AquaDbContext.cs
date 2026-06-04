@@ -74,6 +74,7 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<WeatherSeverity> WeatherSeverities { get; set; }
         public DbSet<WeatherType> WeatherTypes { get; set; }
         public DbSet<DailyWeather> DailyWeathers { get; set; }
+        public DbSet<SeaWaterTemperature> SeaWaterTemperatures { get; set; }
         public DbSet<FishHealthEvent> FishHealthEvents { get; set; }
         public DbSet<FishTreatment> FishTreatments { get; set; }
         public DbSet<FishLabSample> FishLabSamples { get; set; }
