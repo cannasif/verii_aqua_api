@@ -129,6 +129,7 @@ public static class ServiceCollectionExtensions
         services.AddWarehouseModule();
         services.AddAquaModule();
         services.AddSeaWaterTemperatureModule();
+        services.AddWindDirectionModule();
         services.AddIntegrationsModule();
         services.AddSystemModule();
         services.AddHttpContextAccessor();
