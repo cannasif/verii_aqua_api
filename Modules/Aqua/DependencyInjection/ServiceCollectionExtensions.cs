@@ -20,6 +20,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ICageWarehouseMappingService, CageWarehouseMappingService>();
         services.AddScoped<ICageService, CageService>();
         services.AddScoped<IDailyWeatherService, DailyWeatherService>();
+        services.AddScoped<IDailyEnvironmentalEntryService, DailyEnvironmentalEntryService>();
         services.AddScoped<IFeedingService, FeedingService>();
         services.AddScoped<IFeedingDistributionService, FeedingDistributionService>();
         services.AddScoped<IFeedingLineService, FeedingLineService>();

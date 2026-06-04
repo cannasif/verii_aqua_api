@@ -20,6 +20,7 @@ namespace aqua_api.Modules.Aqua.Api
         private readonly IWarehouseCageTransferService _warehouseCageTransferService;
         private readonly INetOperationService _netOperationService;
         private readonly IDailyWeatherService _dailyWeatherService;
+        private readonly IDailyEnvironmentalEntryService _dailyEnvironmentalEntryService;
 
         public AquaPostingController(
             IGoodsReceiptService goodsReceiptService,
@@ -32,7 +33,8 @@ namespace aqua_api.Modules.Aqua.Api
             ICageWarehouseTransferService cageWarehouseTransferService,
             IWarehouseCageTransferService warehouseCageTransferService,
             INetOperationService netOperationService,
-            IDailyWeatherService dailyWeatherService)
+            IDailyWeatherService dailyWeatherService,
+            IDailyEnvironmentalEntryService dailyEnvironmentalEntryService)
         {
             _goodsReceiptService = goodsReceiptService;
             _transferService = transferService;
@@ -45,6 +47,7 @@ namespace aqua_api.Modules.Aqua.Api
             _warehouseCageTransferService = warehouseCageTransferService;
             _netOperationService = netOperationService;
             _dailyWeatherService = dailyWeatherService;
+            _dailyEnvironmentalEntryService = dailyEnvironmentalEntryService;
         }
 
         [HttpPost("goods-receipt/{id:long}")]
@@ -121,6 +124,13 @@ namespace aqua_api.Modules.Aqua.Api
         public async Task<IActionResult> CreateDailyWeather([FromBody] CreateDailyWeatherRequest request)
         {
             var result = await _dailyWeatherService.CreateDaily(request, GetUserId());
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost("daily-environmental-entry")]
+        public async Task<IActionResult> CreateDailyEnvironmentalEntry([FromBody] CreateDailyEnvironmentalEntryRequest request)
+        {
+            var result = await _dailyEnvironmentalEntryService.CreateAsync(request, GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 
