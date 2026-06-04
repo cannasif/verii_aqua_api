@@ -1053,6 +1053,20 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.Equal(47.25m, latestKpis.Data.Sum(x => x.BiomassKg));
         Assert.Equal(63m, latestKpis.Data.Sum(x => x.FeedKgPeriod));
 
+        var devirFcr = await PostAsync<DevirFcrReportDto>(client, "/api/kpi-report/devir-fcr", new DevirFcrReportRequestDto
+        {
+            ProjectIds = [projectId]
+        });
+        Assert.True(devirFcr.Success, $"{devirFcr.Message} | {devirFcr.ExceptionMessage}");
+        var devirFcrRow = Assert.Single(devirFcr.Data!.Rows);
+        Assert.Equal(50m, devirFcrRow.OpeningBiomassKg);
+        Assert.Equal(57.25m, devirFcrRow.EndingBiomassKg);
+        Assert.Equal(12m, devirFcrRow.ShippedBiomassKg);
+        Assert.Equal(0.75m, devirFcrRow.MortalityBiomassKg);
+        Assert.Equal(20m, devirFcrRow.ProducedBiomassKg);
+        Assert.Equal(63m, devirFcrRow.TotalFeedKg);
+        Assert.Equal(3.15m, devirFcrRow.Fcr);
+
         var cageBalances = await GetAsync<PagedResponse<BatchCageBalanceDto>>(client, "/api/aqua/BatchCageBalance");
         Assert.True(cageBalances.Success);
         Assert.True(cageBalances.Data!.Items.Count >= 2);

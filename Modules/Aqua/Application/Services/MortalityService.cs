@@ -196,9 +196,18 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         .AsNoTracking()
                         .FirstOrDefaultAsync(x => x.FishBatchId == line.FishBatchId && x.ProjectCageId == line.ProjectCageId && !x.IsDeleted);
 
-                    var biomassDelta = balance != null
-                        ? -Math.Round(balance.AverageGram * line.DeadCount, 3, MidpointRounding.AwayFromZero)
-                        : (decimal?)null;
+                    var averageGram = ResolveAverageGram(balance);
+                    if (averageGram <= 0)
+                    {
+                        throw new InvalidOperationException("Fire kaydi icin batch/kafes ortalama gramaji bulunamadi.");
+                    }
+
+                    if (balance == null || balance.LiveCount < line.DeadCount)
+                    {
+                        throw new InvalidOperationException("Fire kaydi icin batch/kafes bakiyesi yetersiz.");
+                    }
+
+                    var biomassDelta = -Math.Round(averageGram * line.DeadCount, 3, MidpointRounding.AwayFromZero);
 
                     await _balanceLedgerManager.ApplyDelta(
                         mortality.ProjectId,
@@ -215,8 +224,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         null,
                         null,
                         null,
-                        balance?.AverageGram,
-                        balance?.AverageGram,
+                        averageGram,
+                        averageGram,
                         userId);
                 }
 
@@ -253,6 +262,23 @@ namespace aqua_api.Modules.Aqua.Application.Services
         {
             if (status != DocumentStatus.Draft)
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", documentName));
+        }
+
+        private static decimal ResolveAverageGram(BatchCageBalance? balance)
+        {
+            if (balance == null)
+            {
+                return 0m;
+            }
+
+            if (balance.AverageGram > 0)
+            {
+                return balance.AverageGram;
+            }
+
+            return balance.LiveCount > 0 && balance.BiomassGram > 0
+                ? Math.Round(balance.BiomassGram / balance.LiveCount, 3, MidpointRounding.AwayFromZero)
+                : 0m;
         }
 
     }

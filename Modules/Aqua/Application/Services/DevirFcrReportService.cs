@@ -39,30 +39,28 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     .Where(x => !x.IsDeleted && projectIds.Contains(x.Id))
                     .ToListAsync();
 
-                var projectCages = await _unitOfWork.Db.ProjectCages
+                var fishBatches = await _unitOfWork.Db.FishBatches
                     .AsNoTracking()
                     .Where(x => !x.IsDeleted && projectIds.Contains(x.ProjectId))
+                    .Select(x => new { x.Id, x.ProjectId })
                     .ToListAsync();
-
-                var projectCageIds = projectCages.Select(x => x.Id).Distinct().ToList();
-                var projectIdByCageId = projectCages
+                var fishBatchIds = fishBatches.Select(x => x.Id).Distinct().ToList();
+                var projectIdByFishBatchId = fishBatches
                     .GroupBy(x => x.Id)
                     .ToDictionary(x => x.Key, x => x.First().ProjectId);
 
-                var movements = projectCageIds.Count == 0
+                var movements = fishBatchIds.Count == 0
                     ? new List<BatchMovement>()
                     : await _unitOfWork.Db.BatchMovements
                         .AsNoTracking()
-                        .Where(x => !x.IsDeleted && x.ProjectCageId.HasValue && projectCageIds.Contains(x.ProjectCageId.Value))
+                        .Where(x => !x.IsDeleted && fishBatchIds.Contains(x.FishBatchId))
                         .ToListAsync();
 
                 var projectStartById = projects.ToDictionary(
                     x => x.Id,
                     x => ResolveProjectLifecycleStart(
                         x,
-                        movements.Where(m =>
-                            m.ProjectCageId.HasValue &&
-                            projectIdByCageId.GetValueOrDefault(m.ProjectCageId.Value) == x.Id)));
+                        movements.Where(m => projectIdByFishBatchId.GetValueOrDefault(m.FishBatchId) == x.Id)));
                 var fromDate = projectStartById.Count == 0
                     ? toDate
                     : projectStartById.Values.Min();
@@ -129,6 +127,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 var feedingIdByLineId = feedingLines.ToDictionary(x => x.Id, x => x.FeedingId);
                 var feedingProjectById = feedings.ToDictionary(x => x.Id, x => x.ProjectId);
                 var mortalityProjectById = mortalities.ToDictionary(x => x.Id, x => x.ProjectId);
+                var mortalityDateById = mortalities.ToDictionary(x => x.Id, x => x.MortalityDate);
                 var shipmentProjectById = shipments.ToDictionary(x => x.Id, x => x.ProjectId);
 
                 var rows = projects
@@ -136,11 +135,17 @@ namespace aqua_api.Modules.Aqua.Application.Services
                         project,
                         projectStartById.GetValueOrDefault(project.Id, project.StartDate.Date),
                         toDate,
-                        movements.Where(x => x.ProjectCageId.HasValue && projectIdByCageId.GetValueOrDefault(x.ProjectCageId.Value) == project.Id),
+                        movements.Where(x => projectIdByFishBatchId.GetValueOrDefault(x.FishBatchId) == project.Id),
                         feedingDistributions.Where(x =>
                             feedingIdByLineId.TryGetValue(x.FeedingLineId, out var feedingId) &&
                             feedingProjectById.GetValueOrDefault(feedingId) == project.Id),
-                        mortalityLines.Where(x => mortalityProjectById.GetValueOrDefault(x.MortalityId) == project.Id),
+                        mortalityLines
+                            .Where(x => mortalityProjectById.GetValueOrDefault(x.MortalityId) == project.Id)
+                            .Select(x => new MortalityLineSnapshot(
+                                x.FishBatchId,
+                                x.ProjectCageId,
+                                x.DeadCount,
+                                mortalityDateById.GetValueOrDefault(x.MortalityId, toDate))),
                         shipmentLines.Where(x => shipmentProjectById.GetValueOrDefault(x.ShipmentId) == project.Id)))
                     .OrderBy(x => x.ProjectCode)
                     .ToList();
@@ -172,7 +177,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
             DateTime toDate,
             IEnumerable<BatchMovement> movements,
             IEnumerable<FeedingDistribution> feedingDistributions,
-            IEnumerable<MortalityLine> mortalityLines,
+            IEnumerable<MortalityLineSnapshot> mortalityLines,
             IEnumerable<ShipmentLine> shipmentLines)
         {
             var movementList = movements.ToList();
@@ -203,8 +208,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
             var endingAverageGram = endingFish > 0 ? Round(endingBiomassGram / endingFish) : 0m;
             var mortalityFallbackBiomassGram = mortalityMovementBiomassGram > 0
                 ? mortalityMovementBiomassGram
-                : Math.Round(mortalityFish * endingAverageGram, 3, MidpointRounding.AwayFromZero);
-            var producedBiomassKg = Math.Max(0m, (endingBiomassGram + mortalityFallbackBiomassGram + shippedBiomassGram) / 1000m);
+                : mortalityList.Sum(x => Math.Round(
+                    x.DeadCount * ResolveAverageGramAtMortalityDate(movementList, x, endingAverageGram),
+                    3,
+                    MidpointRounding.AwayFromZero));
+            var producedBiomassKg = Math.Max(0m, (endingBiomassGram + mortalityFallbackBiomassGram + shippedBiomassGram - openingBiomassGram) / 1000m);
 
             return new DevirFcrReportRowDto
             {
@@ -291,5 +299,31 @@ namespace aqua_api.Modules.Aqua.Application.Services
         }
 
         private static decimal Round(decimal value) => decimal.Round(value, 3, MidpointRounding.AwayFromZero);
+
+        private static decimal ResolveAverageGramAtMortalityDate(
+            IReadOnlyCollection<BatchMovement> movements,
+            MortalityLineSnapshot mortalityLine,
+            decimal fallbackAverageGram)
+        {
+            var balanceMovements = movements
+                .Where(x =>
+                    x.FishBatchId == mortalityLine.FishBatchId &&
+                    x.ProjectCageId == mortalityLine.ProjectCageId &&
+                    x.MovementDate.Date <= mortalityLine.MortalityDate.Date &&
+                    x.MovementType != BatchMovementType.Mortality)
+                .ToList();
+
+            var balanceCount = balanceMovements.Sum(x => x.SignedCount);
+            var balanceBiomassGram = balanceMovements.Sum(x => x.SignedBiomassGram);
+
+            if (balanceCount > 0 && balanceBiomassGram > 0)
+            {
+                return Round(balanceBiomassGram / balanceCount);
+            }
+
+            return fallbackAverageGram;
+        }
+
+        private sealed record MortalityLineSnapshot(long FishBatchId, long ProjectCageId, int DeadCount, DateTime MortalityDate);
     }
 }

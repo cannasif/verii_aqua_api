@@ -164,6 +164,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 var cagesByCode = await EnsureCagesAsync(committedRows, projectsByCode, result);
                 await CreateSummaryDocumentsAsync(committedRows, projectsByCode, cagesByCode, result);
                 await ApplyOpeningBalancesAsync(committedRows, projectsByCode, cagesByCode, result);
+                await ApplyOpeningMortalityLedgersAsync(committedRows, projectsByCode, cagesByCode);
 
                 job.Status = OpeningImportJobStatus.Applied;
                 job.AppliedAt = DateTimeProvider.Now;
@@ -1174,6 +1175,117 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
                 row.Status = OpeningImportRowStatus.Applied;
                 row.UpdatedDate = DateTimeProvider.Now;
+            }
+        }
+
+        private async Task ApplyOpeningMortalityLedgersAsync(
+            List<OpeningImportRow> rows,
+            IReadOnlyDictionary<string, Project> projectsByCode,
+            IReadOnlyDictionary<string, Cage> cagesByCode)
+        {
+            var mortalityRows = rows
+                .Where(x => IsSheet(x.SheetName, "OpeningMortality") && (x.Status == OpeningImportRowStatus.Valid || x.Status == OpeningImportRowStatus.Warning || x.Status == OpeningImportRowStatus.Applied))
+                .ToList();
+
+            if (mortalityRows.Count == 0)
+            {
+                return;
+            }
+
+            var stockCodes = mortalityRows
+                .Select(ParseRow)
+                .Select(x => x.TryGetValue("fishStockCode", out var fishStockCode) ? fishStockCode : null)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var stocks = await _unitOfWork.Stocks.Query(tracking: true)
+                .Where(x => stockCodes.Contains(x.ErpStockCode))
+                .ToDictionaryAsync(x => x.ErpStockCode, x => x, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var row in mortalityRows)
+            {
+                var normalized = ParseRow(row);
+                var projectCode = normalized["projectCode"] ?? string.Empty;
+                var fishStockCode = normalized["fishStockCode"] ?? string.Empty;
+                var cageCode = normalized.TryGetValue("cageCode", out var cageValue) ? cageValue : null;
+
+                if (!projectsByCode.TryGetValue(projectCode, out var project) ||
+                    !stocks.TryGetValue(fishStockCode, out var stock) ||
+                    string.IsNullOrWhiteSpace(cageCode) ||
+                    !cagesByCode.TryGetValue(cageCode, out var cage))
+                {
+                    continue;
+                }
+
+                var projectCage = await _unitOfWork.Db.ProjectCages
+                    .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.CageId == cage.Id && x.ReleasedDate == null);
+                if (projectCage == null)
+                {
+                    continue;
+                }
+
+                var mortalityDate = ParseDateOrDefault(normalized.TryGetValue("mortalityDate", out var mortalityDateValue) ? mortalityDateValue : null, project.StartDate);
+                var deadCount = ParseIntOrDefault(normalized.TryGetValue("deadCount", out var deadCountValue) ? deadCountValue : null, 0);
+                if (deadCount <= 0)
+                {
+                    continue;
+                }
+
+                var batchCode = normalized.TryGetValue("batchCode", out var batchCodeValue) ? batchCodeValue : null;
+                var batch = await _unitOfWork.Db.FishBatches
+                    .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.BatchCode == batchCode && x.FishStockId == stock.Id);
+                if (batch == null)
+                {
+                    throw new InvalidOperationException("Fire kaydi icin batch bulunamadi.");
+                }
+
+                var mortality = await _unitOfWork.Db.Mortalities
+                    .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.MortalityDate.Date == mortalityDate.Date);
+                if (mortality == null)
+                {
+                    throw new InvalidOperationException("Fire kaydi icin mortality basligi bulunamadi.");
+                }
+
+                var ledgerExists = await _unitOfWork.Db.BatchMovements.AnyAsync(x =>
+                    !x.IsDeleted &&
+                    x.MovementType == BatchMovementType.Mortality &&
+                    x.ReferenceTable == "RII_Mortality" &&
+                    x.ReferenceId == mortality.Id &&
+                    x.FishBatchId == batch.Id &&
+                    x.ProjectCageId == projectCage.Id);
+
+                if (ledgerExists)
+                {
+                    continue;
+                }
+
+                var balance = await _unitOfWork.Db.BatchCageBalances
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => !x.IsDeleted && x.FishBatchId == batch.Id && x.ProjectCageId == projectCage.Id);
+                var averageGram = ResolveAverageGram(balance);
+                if (averageGram <= 0)
+                {
+                    throw new InvalidOperationException("Fire kaydi icin batch/kafes ortalama gramaji bulunamadi.");
+                }
+
+                await _balanceLedgerManager.ApplyDelta(
+                    project.Id,
+                    batch.Id,
+                    projectCage.Id,
+                    -deadCount,
+                    -Math.Round(deadCount * averageGram, 3, MidpointRounding.AwayFromZero),
+                    BatchMovementType.Mortality,
+                    mortalityDate,
+                    "Opening import mortality",
+                    "RII_Mortality",
+                    mortality.Id,
+                    projectCage.Id,
+                    null,
+                    stock.Id,
+                    stock.Id,
+                    averageGram,
+                    averageGram);
             }
         }
 
@@ -2466,6 +2578,23 @@ namespace aqua_api.Modules.Aqua.Application.Services
             }
 
             return value[(separatorIndex + 1)..].All(char.IsDigit);
+        }
+
+        private static decimal ResolveAverageGram(BatchCageBalance? balance)
+        {
+            if (balance == null)
+            {
+                return 0m;
+            }
+
+            if (balance.AverageGram > 0)
+            {
+                return balance.AverageGram;
+            }
+
+            return balance.LiveCount > 0 && balance.BiomassGram > 0
+                ? Math.Round(balance.BiomassGram / balance.LiveCount, 3, MidpointRounding.AwayFromZero)
+                : 0m;
         }
 
         private sealed class StagedRow
