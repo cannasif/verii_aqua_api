@@ -75,6 +75,8 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<WeatherType> WeatherTypes { get; set; }
         public DbSet<DailyWeather> DailyWeathers { get; set; }
         public DbSet<SeaWaterTemperature> SeaWaterTemperatures { get; set; }
+        public DbSet<CurrentDirection> CurrentDirections { get; set; }
+        public DbSet<CurrentDirectionMatch> CurrentDirectionMatches { get; set; }
         public DbSet<WindDirection> WindDirections { get; set; }
         public DbSet<WindDirectionMatch> WindDirectionMatches { get; set; }
         public DbSet<FishHealthEvent> FishHealthEvents { get; set; }
