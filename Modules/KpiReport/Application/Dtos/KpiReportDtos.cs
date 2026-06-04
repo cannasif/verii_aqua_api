@@ -65,3 +65,128 @@ public class KpiMetricDefinitionDto
     public string DescriptionKey { get; set; } = string.Empty;
     public string FormulaKey { get; set; } = string.Empty;
 }
+
+public class ProjectDetailProjectDto
+{
+    public long Id { get; set; }
+    public string? ProjectCode { get; set; }
+    public string? ProjectName { get; set; }
+    public DateTime StartDate { get; set; }
+    public DateTime? EndDate { get; set; }
+    public byte Status { get; set; }
+}
+
+public class ProjectDetailReportDto
+{
+    public ProjectDetailProjectDto Project { get; set; } = new();
+    public List<ProjectDetailCageReportDto> Cages { get; set; } = new();
+    public List<ProjectDetailCageHistoryItemDto> CageHistory { get; set; } = new();
+    public ProjectDetailWarehouseSummaryDto WarehouseSummary { get; set; } = new();
+}
+
+public class ProjectDetailCageHistoryItemDto
+{
+    public long ProjectCageId { get; set; }
+    public string CageLabel { get; set; } = "-";
+    public DateTime? AssignedDate { get; set; }
+    public DateTime? ReleasedDate { get; set; }
+}
+
+public class ProjectDetailWarehouseSummaryDto
+{
+    public int ActiveWarehouseCount { get; set; }
+    public int WarehouseFishCount { get; set; }
+    public decimal WarehouseBiomassGram { get; set; }
+    public int TotalSystemFishCount { get; set; }
+    public decimal TotalSystemBiomassGram { get; set; }
+}
+
+public class ProjectDetailCageReportDto
+{
+    public long ProjectCageId { get; set; }
+    public string CageLabel { get; set; } = "-";
+    public int InitialFishCount { get; set; }
+    public decimal InitialAverageGram { get; set; }
+    public decimal InitialBiomassGram { get; set; }
+    public int CurrentFishCount { get; set; }
+    public decimal CurrentAverageGram { get; set; }
+    public decimal CurrentBiomassGram { get; set; }
+    public int TotalDeadCount { get; set; }
+    public decimal TotalFeedGram { get; set; }
+    public int TotalCountDelta { get; set; }
+    public decimal TotalBiomassDelta { get; set; }
+    public List<string> MissingFeedingDays { get; set; } = new();
+    public List<ProjectDetailCageDailyRowDto> DailyRows { get; set; } = new();
+}
+
+public class ProjectDetailCageDailyRowDto
+{
+    public string Date { get; set; } = string.Empty;
+    public decimal FeedGram { get; set; }
+    public int FeedStockCount { get; set; }
+    public List<string> FeedDetails { get; set; } = new();
+    public int DeadCount { get; set; }
+    public decimal DeadBiomassGram { get; set; }
+    public int CountDelta { get; set; }
+    public decimal BiomassDelta { get; set; }
+    public string Weather { get; set; } = "-";
+    public int NetOperationCount { get; set; }
+    public List<string> NetOperationDetails { get; set; } = new();
+    public int TransferCount { get; set; }
+    public List<string> TransferDetails { get; set; } = new();
+    public int WeighingCount { get; set; }
+    public List<string> WeighingDetails { get; set; } = new();
+    public int StockConvertCount { get; set; }
+    public List<string> StockConvertDetails { get; set; } = new();
+    public int ShipmentCount { get; set; }
+    public List<string> ShipmentDetails { get; set; } = new();
+    public int ShipmentFishCount { get; set; }
+    public decimal ShipmentBiomassGram { get; set; }
+    public bool Fed { get; set; }
+}
+
+public class BusinessKpiReportDto
+{
+    public long ProjectId { get; set; }
+    public string ProjectCode { get; set; } = "-";
+    public string ProjectName { get; set; } = "-";
+    public decimal EstimatedFeedCost { get; set; }
+    public decimal? FeedCostPerCurrentKg { get; set; }
+    public decimal ProjectedHarvestBiomassKg { get; set; }
+    public decimal ProjectedRevenue { get; set; }
+    public decimal ProjectedGrossMargin { get; set; }
+    public decimal? ProjectedMarginPct { get; set; }
+    public decimal TargetWeightProgressPct { get; set; }
+    public int? DaysToTarget { get; set; }
+    public string? EstimatedHarvestDate { get; set; }
+    public decimal ForecastConfidencePct { get; set; }
+    public decimal HarvestReadinessPct { get; set; }
+    public BusinessKpiAssumptionsDto Assumptions { get; set; } = new();
+    public List<BusinessKpiRowDto> Rows { get; set; } = new();
+    public List<KpiMetricDefinitionDto> MetricDefinitions { get; set; } = new();
+}
+
+public class BusinessKpiAssumptionsDto
+{
+    public int ForecastDays { get; set; }
+    public decimal TargetHarvestGram { get; set; }
+    public decimal FeedCostPerKg { get; set; }
+    public decimal SalePricePerKg { get; set; }
+}
+
+public class BusinessKpiRowDto
+{
+    public long ProjectCageId { get; set; }
+    public string CageLabel { get; set; } = "-";
+    public decimal TargetWeightProgressPct { get; set; }
+    public int? DaysToTarget { get; set; }
+    public string? EstimatedHarvestDate { get; set; }
+    public decimal ForecastConfidencePct { get; set; }
+    public decimal HarvestReadinessPct { get; set; }
+    public decimal EstimatedFeedCost { get; set; }
+    public decimal? FeedCostPerCurrentKg { get; set; }
+    public decimal ProjectedHarvestBiomassKg { get; set; }
+    public decimal ProjectedRevenue { get; set; }
+    public decimal ProjectedGrossMargin { get; set; }
+    public decimal? ProjectedMarginPct { get; set; }
+}

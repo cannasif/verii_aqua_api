@@ -38,4 +38,18 @@ public class KpiReportController : ControllerBase
         var result = await _service.GetRawKpiReportAsync(projectId);
         return StatusCode(result.StatusCode, result);
     }
+
+    [HttpGet("project-detail/{projectId:long}")]
+    public async Task<ActionResult<ApiResponse<ProjectDetailReportDto>>> GetProjectDetailReport(long projectId)
+    {
+        var result = await _service.GetProjectDetailReportAsync(projectId);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpGet("business-kpi/{projectId:long}")]
+    public async Task<ActionResult<ApiResponse<BusinessKpiReportDto>>> GetBusinessKpiReport(long projectId)
+    {
+        var result = await _service.GetBusinessKpiReportAsync(projectId);
+        return StatusCode(result.StatusCode, result);
+    }
 }
