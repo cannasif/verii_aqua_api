@@ -12,7 +12,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
         private static readonly IReadOnlyDictionary<string, string> ColumnMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["stockCode"] = "Stock.ErpStockCode",
-            ["stockName"] = "Stock.StockName"
+            ["stockName"] = "Stock.StockName",
+            ["feedingSlot"] = "Feeding.FeedingSlot"
         };
 
         public FeedingLineService(IUnitOfWork unitOfWork, IMapper mapper, ILocalizationService localizationService)
@@ -28,7 +29,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
             {
                 var entity = await _unitOfWork.FeedingLines
                     .Query()
+                    .Include(x => x.Feeding)
                     .Include(x => x.Stock)
+                    .Include(x => x.Distributions)
+                        .ThenInclude(x => x.ProjectCage)
+                            .ThenInclude(x => x!.Cage)
                     .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
@@ -70,7 +75,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
                 var entities = await query
                     .ApplyPagination(request.PageNumber, request.PageSize)
+                    .Include(x => x.Feeding)
                     .Include(x => x.Stock)
+                    .Include(x => x.Distributions)
+                        .ThenInclude(x => x.ProjectCage)
+                            .ThenInclude(x => x!.Cage)
                     .ToListAsync();
 
                 var items = entities.Select(MapFeedingLine).ToList();
@@ -381,9 +390,25 @@ namespace aqua_api.Modules.Aqua.Application.Services
         private FeedingLineDto MapFeedingLine(FeedingLine entity)
         {
             var dto = _mapper.Map<FeedingLineDto>(entity);
+            dto.FeedingSlot = entity.Feeding?.FeedingSlot;
             dto.StockCode = entity.Stock?.ErpStockCode;
             dto.StockName = entity.Stock?.StockName;
+            dto.CageCode = JoinDistinct(entity.Distributions
+                .Select(x => x.ProjectCage?.Cage?.CageCode));
+            dto.CageName = JoinDistinct(entity.Distributions
+                .Select(x => x.ProjectCage?.Cage?.CageName));
             return dto;
+        }
+
+        private static string? JoinDistinct(IEnumerable<string?> values)
+        {
+            var items = values
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x!.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return items.Count == 0 ? null : string.Join(", ", items);
         }
 
         private string MapDbError(DbUpdateException ex)
