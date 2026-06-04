@@ -1,6 +1,6 @@
 using System;
 
-namespace aqua_api.Modules.Aqua.Domain.Entities
+namespace aqua_api.Modules.SeaWaterTemperature.Domain.Entities
 {
     public class SeaWaterTemperature : BaseEntity
     {

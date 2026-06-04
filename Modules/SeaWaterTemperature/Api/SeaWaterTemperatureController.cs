@@ -1,9 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-namespace aqua_api.Modules.Aqua.Api
+namespace aqua_api.Modules.SeaWaterTemperature.Api
 {
     [ApiController]
+    [Route("api/SeaWaterTemperature")]
     [Route("api/aqua/SeaWaterTemperature")]
     [Authorize]
     public class SeaWaterTemperatureController : ControllerBase

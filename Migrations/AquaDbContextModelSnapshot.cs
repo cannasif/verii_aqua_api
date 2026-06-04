@@ -2839,7 +2839,7 @@ namespace aqua_api.Migrations
                     b.ToTable("RII_ProjectMergeSource", (string)null);
                 });
 
-            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.SeaWaterTemperature", b =>
+            modelBuilder.Entity("aqua_api.Modules.SeaWaterTemperature.Domain.Entities.SeaWaterTemperature", b =>
                 {
                     b.Property<long>("Id")
                         .ValueGeneratedOnAdd()
@@ -7708,7 +7708,7 @@ namespace aqua_api.Migrations
                     b.Navigation("UpdatedByUser");
                 });
 
-            modelBuilder.Entity("aqua_api.Modules.Aqua.Domain.Entities.SeaWaterTemperature", b =>
+            modelBuilder.Entity("aqua_api.Modules.SeaWaterTemperature.Domain.Entities.SeaWaterTemperature", b =>
                 {
                     b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
                         .WithMany()

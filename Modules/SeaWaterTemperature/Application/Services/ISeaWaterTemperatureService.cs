@@ -1,4 +1,4 @@
-namespace aqua_api.Modules.Aqua.Application.Services
+namespace aqua_api.Modules.SeaWaterTemperature.Application.Services
 {
     public interface ISeaWaterTemperatureService
     {

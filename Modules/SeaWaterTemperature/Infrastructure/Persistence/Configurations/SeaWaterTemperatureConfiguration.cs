@@ -1,11 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using SeaWaterTemperatureEntity = aqua_api.Modules.SeaWaterTemperature.Domain.Entities.SeaWaterTemperature;
 
-namespace aqua_api.Modules.Aqua.Infrastructure.Persistence.Configurations
+namespace aqua_api.Modules.SeaWaterTemperature.Infrastructure.Persistence.Configurations
 {
-    public class SeaWaterTemperatureConfiguration : BaseEntityConfiguration<SeaWaterTemperature>
+    public class SeaWaterTemperatureConfiguration : BaseEntityConfiguration<SeaWaterTemperatureEntity>
     {
-        protected override void ConfigureEntity(EntityTypeBuilder<SeaWaterTemperature> builder)
+        protected override void ConfigureEntity(EntityTypeBuilder<SeaWaterTemperatureEntity> builder)
         {
             builder.ToTable("RII_SEA_WATER_TEMPERATURE");
 

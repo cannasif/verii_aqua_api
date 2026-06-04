@@ -1,7 +1,8 @@
 using aqua_api.Shared.Infrastructure.Persistence.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
+using SeaWaterTemperatureEntity = aqua_api.Modules.SeaWaterTemperature.Domain.Entities.SeaWaterTemperature;
 
-namespace aqua_api.Modules.Aqua.Application.Services
+namespace aqua_api.Modules.SeaWaterTemperature.Application.Services
 {
     public class SeaWaterTemperatureService : ISeaWaterTemperatureService
     {
@@ -48,7 +49,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 var query = BaseQuery()
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
-                var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(SeaWaterTemperature.RecordDate) : request.SortBy;
+                var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(SeaWaterTemperatureEntity.RecordDate) : request.SortBy;
                 query = query.ApplySorting(sortBy, request.SortDirection);
 
                 var totalCount = await query.CountAsync();
@@ -85,7 +86,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     return validation;
                 }
 
-                var entity = new SeaWaterTemperature
+                var entity = new SeaWaterTemperatureEntity
                 {
                     ProjectId = dto.ProjectId,
                     ProjectCageId = dto.ProjectCageId,
@@ -95,7 +96,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     Note = string.IsNullOrWhiteSpace(dto.Note) ? null : dto.Note.Trim()
                 };
 
-                await _unitOfWork.Repository<SeaWaterTemperature>().AddAsync(entity);
+                await _unitOfWork.Repository<SeaWaterTemperatureEntity>().AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
                 var saved = await BaseQuery().FirstAsync(x => x.Id == entity.Id);
@@ -138,7 +139,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 entity.WeatherDescription = dto.WeatherDescription.Trim();
                 entity.Note = string.IsNullOrWhiteSpace(dto.Note) ? null : dto.Note.Trim();
 
-                await _unitOfWork.Repository<SeaWaterTemperature>().UpdateAsync(entity);
+                await _unitOfWork.Repository<SeaWaterTemperatureEntity>().UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
                 var saved = await BaseQuery().FirstAsync(x => x.Id == entity.Id);
@@ -157,7 +158,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
         {
             try
             {
-                var deleted = await _unitOfWork.Repository<SeaWaterTemperature>().SoftDeleteAsync(id);
+                var deleted = await _unitOfWork.Repository<SeaWaterTemperatureEntity>().SoftDeleteAsync(id);
                 if (!deleted)
                 {
                     return ApiResponse<bool>.ErrorResult(
@@ -178,7 +179,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
             }
         }
 
-        private IQueryable<SeaWaterTemperature> BaseQuery()
+        private IQueryable<SeaWaterTemperatureEntity> BaseQuery()
         {
             return _unitOfWork.Db.SeaWaterTemperatures
                 .AsNoTracking()
@@ -239,7 +240,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
             return ApiResponse<SeaWaterTemperatureDto>.SuccessResult(new SeaWaterTemperatureDto(), "Valid");
         }
 
-        private static SeaWaterTemperatureDto Map(SeaWaterTemperature entity)
+        private static SeaWaterTemperatureDto Map(SeaWaterTemperatureEntity entity)
         {
             return new SeaWaterTemperatureDto
             {

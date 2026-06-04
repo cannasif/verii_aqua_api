@@ -1,6 +1,6 @@
 using System;
 
-namespace aqua_api.Modules.Aqua.Application.Dtos
+namespace aqua_api.Modules.SeaWaterTemperature.Application.Dtos
 {
     public class SeaWaterTemperatureDto
     {
