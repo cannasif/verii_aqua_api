@@ -1,4 +1,4 @@
-using aqua_api.Modules.Aqua.Application.Dtos;
+using aqua_api.Modules.AquaReports.Application.Dtos;
 using aqua_api.Modules.KpiReport.Application.Dtos;
 
 namespace aqua_api.Modules.KpiReport.Application.Services;

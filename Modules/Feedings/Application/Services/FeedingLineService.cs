@@ -1,0 +1,440 @@
+using AutoMapper;
+using aqua_api.Shared.Infrastructure.Persistence.UnitOfWork;
+using Microsoft.EntityFrameworkCore;
+
+namespace aqua_api.Modules.Feedings.Application.Services
+{
+    public class FeedingLineService : IFeedingLineService
+    {
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly IMapper _mapper;
+        private readonly ILocalizationService _localizationService;
+        private static readonly IReadOnlyDictionary<string, string> ColumnMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["stockCode"] = "Stock.ErpStockCode",
+            ["stockName"] = "Stock.StockName",
+            ["feedingSlot"] = "Feeding.FeedingSlot"
+        };
+
+        public FeedingLineService(IUnitOfWork unitOfWork, IMapper mapper, ILocalizationService localizationService)
+        {
+            _unitOfWork = unitOfWork;
+            _mapper = mapper;
+            _localizationService = localizationService;
+        }
+
+        public async Task<ApiResponse<FeedingLineDto>> GetByIdAsync(long id)
+        {
+            try
+            {
+                var entity = await _unitOfWork.FeedingLines
+                    .Query()
+                    .Include(x => x.Feeding)
+                    .Include(x => x.Stock)
+                    .Include(x => x.Distributions)
+                        .ThenInclude(x => x.ProjectCage)
+                            .ThenInclude(x => x!.Cage)
+                    .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+                if (entity == null)
+                {
+                    return ApiResponse<FeedingLineDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("FeedingLineService.NotFound"),
+                        _localizationService.GetLocalizedString("FeedingLineService.NotFound"),
+                        StatusCodes.Status404NotFound);
+                }
+
+                var dto = MapFeedingLine(entity);
+                return ApiResponse<FeedingLineDto>.SuccessResult(dto, _localizationService.GetLocalizedString("FeedingLineService.OperationSuccessful"));
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<FeedingLineDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("FeedingLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        public async Task<ApiResponse<PagedResponse<FeedingLineDto>>> GetAllAsync(PagedRequest request)
+        {
+            try
+            {
+                request ??= new PagedRequest();
+                request.Filters ??= new List<Filter>();
+
+                var query = _unitOfWork.FeedingLines
+                    .Query()
+                    .Where(x => !x.IsDeleted)
+                    .ApplyFilters(request.Filters, request.FilterLogic, ColumnMapping);
+
+                var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(FeedingLine.Id) : request.SortBy;
+                query = query.ApplySorting(sortBy, request.SortDirection, ColumnMapping);
+
+                var totalCount = await query.CountAsync();
+
+                var entities = await query
+                    .ApplyPagination(request.PageNumber, request.PageSize)
+                    .Include(x => x.Feeding)
+                    .Include(x => x.Stock)
+                    .Include(x => x.Distributions)
+                        .ThenInclude(x => x.ProjectCage)
+                            .ThenInclude(x => x!.Cage)
+                    .ToListAsync();
+
+                var items = entities.Select(MapFeedingLine).ToList();
+
+                var pagedResponse = new PagedResponse<FeedingLineDto>
+                {
+                    Items = items,
+                    TotalCount = totalCount,
+                    PageNumber = request.PageNumber,
+                    PageSize = request.PageSize
+                };
+
+                return ApiResponse<PagedResponse<FeedingLineDto>>.SuccessResult(
+                    pagedResponse,
+                    _localizationService.GetLocalizedString("FeedingLineService.OperationSuccessful"));
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<PagedResponse<FeedingLineDto>>.ErrorResult(
+                    _localizationService.GetLocalizedString("FeedingLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        public async Task<ApiResponse<FeedingLineDto>> CreateAsync(CreateFeedingLineDto dto)
+        {
+            try
+            {
+                if (dto.QtyUnit <= 0)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingLineService.QuantityMustBeGreaterThanZero"));
+                }
+
+                dto.FeedingId = await EnsureFeedingIdAsync(dto);
+
+                if (dto.GramPerUnit <= 0)
+                {
+                    dto.GramPerUnit = dto.TotalGram > 0
+                        ? Math.Round(dto.TotalGram / dto.QtyUnit, 3, MidpointRounding.AwayFromZero)
+                        : 1;
+                }
+
+                if (dto.TotalGram <= 0)
+                {
+                    dto.TotalGram = Math.Round(dto.QtyUnit * dto.GramPerUnit, 3, MidpointRounding.AwayFromZero);
+                }
+
+                var entity = _mapper.Map<FeedingLine>(dto);
+                await _unitOfWork.FeedingLines.AddAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
+
+                var result = MapFeedingLine(entity);
+                return ApiResponse<FeedingLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingLineService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResponse<FeedingLineDto>.ErrorResult(
+                    ex.Message,
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
+            }
+            catch (DbUpdateException ex)
+            {
+                var businessMessage = MapDbError(ex);
+                return ApiResponse<FeedingLineDto>.ErrorResult(
+                    businessMessage,
+                    businessMessage,
+                    StatusCodes.Status400BadRequest);
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<FeedingLineDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("FeedingLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        public async Task<ApiResponse<FeedingLineDto>> CreateWithAutoHeaderAsync(CreateFeedingLineWithAutoHeaderDto dto)
+        {
+            try
+            {
+                if (dto.QtyUnit <= 0)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingLineService.QuantityMustBeGreaterThanZero"));
+                }
+
+                await _unitOfWork.BeginTransactionAsync();
+
+                var feeding = await _unitOfWork.Feedings
+                    .Query()
+                    .Where(x =>
+                        !x.IsDeleted &&
+                        x.ProjectId == dto.ProjectId &&
+                        x.Status != DocumentStatus.Cancelled &&
+                        x.FeedingDate.Date == dto.FeedingDate.Date &&
+                        x.FeedingSlot == dto.FeedingSlot)
+                    .OrderByDescending(x => x.Id)
+                    .FirstOrDefaultAsync();
+
+                if (feeding == null)
+                {
+                    feeding = new Feeding
+                    {
+                        ProjectId = dto.ProjectId,
+                        FeedingNo = BuildDocumentNo(dto.ProjectId, dto.FeedingDate),
+                        FeedingDate = dto.FeedingDate.Date,
+                        FeedingSlot = dto.FeedingSlot,
+                        SourceType = dto.SourceType,
+                        Status = DocumentStatus.Posted,
+                        Note = dto.Note,
+                    };
+
+                    try
+                    {
+                        await _unitOfWork.Feedings.AddAsync(feeding);
+                        await _unitOfWork.SaveChangesAsync();
+                    }
+                    catch (DbUpdateException)
+                    {
+                        var conflictingHeader = await _unitOfWork.Feedings
+                            .Query(tracking: true)
+                            .Where(x =>
+                                !x.IsDeleted &&
+                                x.ProjectId == dto.ProjectId &&
+                                x.FeedingDate.Date == dto.FeedingDate.Date &&
+                                x.FeedingSlot == dto.FeedingSlot)
+                            .OrderByDescending(x => x.Id)
+                            .FirstOrDefaultAsync();
+
+                        if (conflictingHeader == null)
+                        {
+                            throw;
+                        }
+
+                        feeding = conflictingHeader;
+                    }
+                }
+
+                var gramPerUnit = dto.GramPerUnit > 0
+                    ? dto.GramPerUnit
+                    : dto.TotalGram > 0
+                        ? Math.Round(dto.TotalGram / dto.QtyUnit, 3, MidpointRounding.AwayFromZero)
+                        : 1;
+
+                var totalGram = dto.TotalGram > 0
+                    ? dto.TotalGram
+                    : Math.Round(dto.QtyUnit * gramPerUnit, 3, MidpointRounding.AwayFromZero);
+
+                var entity = new FeedingLine
+                {
+                    FeedingId = feeding.Id,
+                    StockId = dto.StockId,
+                    QtyUnit = dto.QtyUnit,
+                    GramPerUnit = gramPerUnit,
+                    TotalGram = totalGram,
+                };
+
+                await _unitOfWork.FeedingLines.AddAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                var result = MapFeedingLine(entity);
+                return ApiResponse<FeedingLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingLineService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ApiResponse<FeedingLineDto>.ErrorResult(
+                    ex.Message,
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
+            }
+            catch (DbUpdateException ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                var businessMessage = MapDbError(ex);
+                return ApiResponse<FeedingLineDto>.ErrorResult(
+                    businessMessage,
+                    businessMessage,
+                    StatusCodes.Status400BadRequest);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ApiResponse<FeedingLineDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("FeedingLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        public async Task<ApiResponse<FeedingLineDto>> UpdateAsync(long id, UpdateFeedingLineDto dto)
+        {
+            try
+            {
+                var repo = _unitOfWork.FeedingLines;
+                var entity = await repo.GetByIdForUpdateAsync(id);
+
+                if (entity == null)
+                {
+                    return ApiResponse<FeedingLineDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("FeedingLineService.NotFound"),
+                        _localizationService.GetLocalizedString("FeedingLineService.NotFound"),
+                        StatusCodes.Status404NotFound);
+                }
+
+                _mapper.Map(dto, entity);
+                await repo.UpdateAsync(entity);
+                await _unitOfWork.SaveChangesAsync();
+
+                var result = MapFeedingLine(entity);
+                return ApiResponse<FeedingLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingLineService.OperationSuccessful"));
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<FeedingLineDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("FeedingLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        public async Task<ApiResponse<bool>> SoftDeleteAsync(long id)
+        {
+            try
+            {
+                var repo = _unitOfWork.FeedingLines;
+                var isDeleted = await repo.SoftDeleteAsync(id);
+
+                if (!isDeleted)
+                {
+                    return ApiResponse<bool>.ErrorResult(
+                        _localizationService.GetLocalizedString("FeedingLineService.NotFound"),
+                        _localizationService.GetLocalizedString("FeedingLineService.NotFound"),
+                        StatusCodes.Status404NotFound);
+                }
+
+                await _unitOfWork.SaveChangesAsync();
+                return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("FeedingLineService.OperationSuccessful"));
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<bool>.ErrorResult(
+                    _localizationService.GetLocalizedString("FeedingLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        private async Task<long> EnsureFeedingIdAsync(CreateFeedingLineDto dto)
+        {
+            if (dto.FeedingId > 0)
+            {
+                var current = await _unitOfWork.Feedings
+                    .Query()
+                    .FirstOrDefaultAsync(x => x.Id == dto.FeedingId && !x.IsDeleted);
+
+                if (current != null)
+                {
+                    return current.Id;
+                }
+            }
+
+            if (!dto.ProjectId.HasValue || dto.ProjectId.Value <= 0)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingLineService.HeaderNotFoundRetryWithProject"));
+            }
+
+            var targetDate = (dto.FeedingDate ?? DateTime.UtcNow).Date;
+
+            var existingHeader = await _unitOfWork.Feedings
+                .Query()
+                .Where(x => !x.IsDeleted
+                    && x.ProjectId == dto.ProjectId.Value
+                    && x.FeedingDate.Date == targetDate
+                    && x.Status != DocumentStatus.Cancelled)
+                .OrderByDescending(x => x.CreatedDate)
+                .FirstOrDefaultAsync();
+
+            if (existingHeader != null)
+            {
+                return existingHeader.Id;
+            }
+
+            var generatedFeedingNo = string.IsNullOrWhiteSpace(dto.FeedingNo)
+                ? $"FD-{dto.ProjectId.Value}-{targetDate:yyyyMMdd}-{Guid.NewGuid():N}"[..32]
+                : dto.FeedingNo.Trim();
+
+            var newHeader = new Feeding
+            {
+                ProjectId = dto.ProjectId.Value,
+                FeedingNo = generatedFeedingNo,
+                FeedingDate = targetDate,
+                FeedingSlot = dto.FeedingSlot ?? FeedingSlot.Morning,
+                SourceType = dto.SourceType ?? FeedingSourceType.Manual,
+                Status = dto.Status ?? DocumentStatus.Posted,
+                Note = dto.Note
+            };
+
+            await _unitOfWork.Feedings.AddAsync(newHeader);
+            await _unitOfWork.SaveChangesAsync();
+
+            return newHeader.Id;
+        }
+
+        private FeedingLineDto MapFeedingLine(FeedingLine entity)
+        {
+            var dto = _mapper.Map<FeedingLineDto>(entity);
+            dto.FeedingSlot = entity.Feeding?.FeedingSlot;
+            dto.StockCode = entity.Stock?.ErpStockCode;
+            dto.StockName = entity.Stock?.StockName;
+            dto.CageCode = JoinDistinct(entity.Distributions
+                .Select(x => x.ProjectCage?.Cage?.CageCode));
+            dto.CageName = JoinDistinct(entity.Distributions
+                .Select(x => x.ProjectCage?.Cage?.CageName));
+            return dto;
+        }
+
+        private static string? JoinDistinct(IEnumerable<string?> values)
+        {
+            var items = values
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x!.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return items.Count == 0 ? null : string.Join(", ", items);
+        }
+
+        private string MapDbError(DbUpdateException ex)
+        {
+            var message = ex.InnerException?.Message ?? ex.Message;
+            if (message.Contains("CK_RII_FeedingLine_Positive", StringComparison.OrdinalIgnoreCase))
+            {
+                return _localizationService.GetLocalizedString("FeedingLineService.PositiveValuesRequired");
+            }
+
+            if (message.Contains("FK_RII_FeedingLine_Feeding", StringComparison.OrdinalIgnoreCase))
+            {
+                return _localizationService.GetLocalizedString("FeedingLineService.HeaderCreateRetryForToday");
+            }
+
+            if (message.Contains("FK_RII_FeedingLine_Stock", StringComparison.OrdinalIgnoreCase))
+            {
+                return _localizationService.GetLocalizedString("FeedingLineService.InvalidStockSelection");
+            }
+
+            return _localizationService.GetLocalizedString("FeedingLineService.SaveFailed");
+        }
+
+        private static string BuildDocumentNo(long projectId, DateTime feedingDate)
+        {
+            return $"FD-{projectId}-{feedingDate:yyyyMMdd}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+        }
+    }
+}

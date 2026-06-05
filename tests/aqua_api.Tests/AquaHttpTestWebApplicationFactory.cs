@@ -159,7 +159,7 @@ public sealed class AquaHttpTestWebApplicationFactory : WebApplicationFactory<Pr
 
         foreach (var row in rows)
         {
-            var header = new aqua_api.Modules.Aqua.Domain.Entities.GoodsReceipt
+            var header = new aqua_api.Modules.GoodsReceipts.Domain.Entities.GoodsReceipt
             {
                 ProjectId = projectId,
                 ReceiptNo = row.ReceiptNo,
@@ -171,7 +171,7 @@ public sealed class AquaHttpTestWebApplicationFactory : WebApplicationFactory<Pr
             db.GoodsReceipts.Add(header);
             await db.SaveChangesAsync();
 
-            db.GoodsReceiptLines.Add(new aqua_api.Modules.Aqua.Domain.Entities.GoodsReceiptLine
+            db.GoodsReceiptLines.Add(new aqua_api.Modules.GoodsReceipts.Domain.Entities.GoodsReceiptLine
             {
                 GoodsReceiptId = header.Id,
                 ItemType = aqua_api.Modules.Aqua.Domain.Enums.GoodsReceiptItemType.Feed,
@@ -278,7 +278,7 @@ internal sealed class SqliteHttpTestAquaDbContext : AquaDbContext
             }
         }
 
-        var feedingEntity = modelBuilder.Model.FindEntityType(typeof(aqua_api.Modules.Aqua.Domain.Entities.Feeding));
+        var feedingEntity = modelBuilder.Model.FindEntityType(typeof(aqua_api.Modules.Feedings.Domain.Entities.Feeding));
         var feedingDateOnly = feedingEntity?.FindProperty("FeedingDateOnly");
         feedingDateOnly?.SetAnnotation("Relational:ComputedColumnSql", "date(FeedingDate)");
         feedingDateOnly?.SetAnnotation("Relational:IsStored", true);

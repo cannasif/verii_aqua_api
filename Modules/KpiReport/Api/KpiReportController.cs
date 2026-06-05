@@ -1,4 +1,4 @@
-using aqua_api.Modules.Aqua.Application.Dtos;
+using aqua_api.Modules.AquaReports.Application.Dtos;
 using aqua_api.Modules.KpiReport.Application.Dtos;
 using aqua_api.Modules.KpiReport.Application.Services;
 using Microsoft.AspNetCore.Authorization;

@@ -2,7 +2,6 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using aqua_api.Modules.Aqua.Application.Dtos;
 using aqua_api.Modules.Aqua.Domain.Enums;
 using aqua_api.Shared.Common.Dtos;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
