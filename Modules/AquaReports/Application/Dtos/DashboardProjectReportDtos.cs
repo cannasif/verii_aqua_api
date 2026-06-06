@@ -65,8 +65,11 @@ namespace aqua_api.Modules.AquaReports.Application.Dtos
         public int CurrentFishCount { get; set; }
         public decimal CurrentAverageGram { get; set; }
         public decimal CurrentBiomassGram { get; set; }
+        public decimal TotalShipmentBiomassGram { get; set; }
+        public decimal TotalDeadBiomassGram { get; set; }
         public int TotalDeadCount { get; set; }
         public decimal TotalFeedGram { get; set; }
+        public decimal? Fcr { get; set; }
         public int TotalCountDelta { get; set; }
         public decimal TotalBiomassDelta { get; set; }
         public List<string> MissingFeedingDays { get; set; } = new();

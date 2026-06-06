@@ -367,12 +367,13 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             var initialByCage = new Dictionary<long, int>();
             var initialBiomassByCage = new Dictionary<long, decimal>();
             var mortalityByCage = new Dictionary<long, int>();
+            var movementMortalityByCage = new Dictionary<long, int>();
             foreach (var row in batchMovements)
             {
                 if (!row.ProjectCageId.HasValue || !reportCageIdSet.Contains(row.ProjectCageId.Value)) continue;
                 var cageId = row.ProjectCageId.Value;
 
-                if (row.MovementType == BatchMovementType.Stocking)
+                if (row.MovementType is BatchMovementType.OpeningImport or BatchMovementType.Stocking)
                 {
                     if (row.SignedCount > 0)
                     {
@@ -389,7 +390,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     var dead = Math.Max(0, -row.SignedCount);
                     if (dead > 0)
                     {
-                        mortalityByCage[cageId] = mortalityByCage.GetValueOrDefault(cageId) + dead;
+                        movementMortalityByCage[cageId] = movementMortalityByCage.GetValueOrDefault(cageId) + dead;
                     }
                 }
             }
@@ -426,6 +427,12 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 if (!mortalityIdToDate.TryGetValue(row.MortalityId, out var date)) continue;
                 mortalityByCage[row.ProjectCageId] = mortalityByCage.GetValueOrDefault(row.ProjectCageId) + row.DeadCount;
                 AddByDate(dailyDeadByCage, row.ProjectCageId, date, row.DeadCount);
+            }
+
+            foreach (var (projectCageId, deadCount) in movementMortalityByCage)
+            {
+                if (mortalityByCage.ContainsKey(projectCageId)) continue;
+                mortalityByCage[projectCageId] = deadCount;
             }
 
             var dailyFeedByCage = new Dictionary<long, Dictionary<string, decimal>>();
@@ -615,9 +622,9 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 }
                 if (reportCageIdSet.Contains(row.ToProjectCageId))
                 {
-                    AddByDate(convertByCageDate, row.ToProjectCageId, date, 1);
                     if (row.ToProjectCageId != row.FromProjectCageId)
                     {
+                        AddByDate(convertByCageDate, row.ToProjectCageId, date, 1);
                         AppendDetail(convertDetailsByCageDate, row.ToProjectCageId, date, detail);
                     }
                 }
@@ -778,6 +785,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             var totalDeadBiomassGram = cages.Sum(x => x.TotalDeadBiomassGram);
             var totalFeedGram = cages.Sum(x => x.TotalFeedGram);
             var cageBiomassGram = cages.Sum(x => x.CurrentBiomassGram);
+            var totalSystemBiomassGram = report.WarehouseSummary.TotalSystemBiomassGram;
             var initialBiomassGram = cages.Sum(x => x.InitialBiomassGram);
 
             return new DashboardProjectSummaryDto
@@ -794,10 +802,10 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 TotalDeadCount = totalDeadCount,
                 TotalDeadBiomassGram = RoundGram(totalDeadBiomassGram),
                 ActiveCageCount = cages.Count,
-                Fcr = ComputeFcr(totalFeedGram, cageBiomassGram, initialBiomassGram, totalDeadBiomassGram, totalShipmentBiomassGram),
+                Fcr = ComputeFcr(totalFeedGram, totalSystemBiomassGram, initialBiomassGram, totalDeadBiomassGram, totalShipmentBiomassGram),
                 CageBiomassGram = RoundGram(cageBiomassGram),
                 WarehouseBiomassGram = report.WarehouseSummary.WarehouseBiomassGram,
-                TotalSystemBiomassGram = report.WarehouseSummary.TotalSystemBiomassGram,
+                TotalSystemBiomassGram = totalSystemBiomassGram,
                 Cages = cages
             };
         }
@@ -838,8 +846,16 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 CurrentFishCount = cage.CurrentFishCount,
                 CurrentAverageGram = RoundGram(cage.CurrentAverageGram),
                 CurrentBiomassGram = RoundGram(cage.CurrentBiomassGram),
+                TotalShipmentBiomassGram = RoundGram(cage.DailyRows.Sum(x => x.ShipmentBiomassGram)),
+                TotalDeadBiomassGram = RoundGram(cage.DailyRows.Sum(x => x.DeadBiomassGram)),
                 TotalDeadCount = cage.TotalDeadCount,
                 TotalFeedGram = RoundGram(cage.TotalFeedGram),
+                Fcr = ComputeFcr(
+                    cage.TotalFeedGram,
+                    cage.CurrentBiomassGram,
+                    cage.InitialBiomassGram,
+                    cage.DailyRows.Sum(x => x.DeadBiomassGram),
+                    cage.DailyRows.Sum(x => x.ShipmentBiomassGram)),
                 TotalCountDelta = cage.TotalCountDelta,
                 TotalBiomassDelta = RoundGram(cage.TotalBiomassDelta),
                 MissingFeedingDays = cage.MissingFeedingDays,
@@ -918,9 +934,12 @@ namespace aqua_api.Modules.AquaReports.Application.Services
 
         private static decimal? ComputeFcr(decimal totalFeedGram, decimal currentBiomassGram, decimal initialBiomassGram, decimal totalDeadBiomassGram, decimal totalShipmentBiomassGram)
         {
-            var producedBiomassKg = Math.Max(0m, (currentBiomassGram + totalDeadBiomassGram + totalShipmentBiomassGram - initialBiomassGram) / 1000m);
+            var outputBiomassGram = currentBiomassGram + totalDeadBiomassGram + totalShipmentBiomassGram;
+            var biomassGainKg = Math.Max(0m, (outputBiomassGram - initialBiomassGram) / 1000m);
+            var carriedOutputBiomassKg = Math.Max(0m, outputBiomassGram / 1000m);
+            var producedBiomassKg = biomassGainKg > 0 ? biomassGainKg : carriedOutputBiomassKg;
             if (producedBiomassKg <= 0) return null;
-            return decimal.Round((totalFeedGram / 1000m) / producedBiomassKg, 3);
+            return RoundGram((totalFeedGram / 1000m) / producedBiomassKg);
         }
 
         private static decimal CalculateIncrementedAverageGram(decimal fromAverageGram, decimal incrementGram)

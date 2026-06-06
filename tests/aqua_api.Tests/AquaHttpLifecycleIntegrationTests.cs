@@ -1065,6 +1065,57 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.Equal(63m, devirFcrRow.TotalFeedKg);
         Assert.Equal(3.15m, devirFcrRow.Fcr);
 
+        var dashboardSummary = await PostAsync<DashboardProjectsResponseDto>(client, "/api/aqua/dashboard-project/summary", new DashboardProjectsRequestDto
+        {
+            ProjectIds = [projectId]
+        });
+        Assert.True(dashboardSummary.Success, $"{dashboardSummary.Message} | {dashboardSummary.ExceptionMessage}");
+        var dashboardProject = Assert.Single(dashboardSummary.Data!.Projects);
+        Assert.Equal(devirFcrRow.EndingBiomassKg, dashboardProject.TotalSystemBiomassGram / 1000m);
+        Assert.Equal(47.25m, dashboardProject.CageBiomassGram / 1000m);
+        Assert.Equal(10m, dashboardProject.WarehouseBiomassGram / 1000m);
+        Assert.Equal(devirFcrRow.ShippedBiomassKg, dashboardProject.TotalShipmentBiomassGram / 1000m);
+        Assert.Equal(devirFcrRow.MortalityBiomassKg, dashboardProject.TotalDeadBiomassGram / 1000m);
+        Assert.Equal(devirFcrRow.Fcr, dashboardProject.Fcr);
+
+        var dashboardDetail = await GetAsync<DashboardProjectDetailDto>(client, $"/api/aqua/dashboard-project/detail/{projectId}");
+        Assert.True(dashboardDetail.Success, $"{dashboardDetail.Message} | {dashboardDetail.ExceptionMessage}");
+        var dashboardCage = Assert.Single(dashboardDetail.Data!.Cages);
+        Assert.Equal(devirFcrRow.TotalFeedKg, dashboardCage.TotalFeedGram / 1000m);
+        Assert.Equal(devirFcrRow.ShippedBiomassKg, dashboardCage.TotalShipmentBiomassGram / 1000m);
+        Assert.Equal(devirFcrRow.MortalityBiomassKg, dashboardCage.TotalDeadBiomassGram / 1000m);
+        Assert.Equal(6.3m, dashboardCage.Fcr);
+        Assert.Equal(4, dashboardCage.DailyRows.Count);
+
+        var day1 = Assert.Single(dashboardCage.DailyRows, x => x.Date == "2026-04-01");
+        Assert.Equal(10_000, day1.CountDelta);
+        Assert.Equal(50m, day1.BiomassDelta / 1000m);
+        Assert.Equal(0m, day1.FeedGram);
+        Assert.False(day1.Fed);
+
+        var day2 = Assert.Single(dashboardCage.DailyRows, x => x.Date == "2026-04-02");
+        Assert.Equal(20m, day2.FeedGram / 1000m);
+        Assert.Equal(100, day2.DeadCount);
+        Assert.Equal(0.5m, day2.DeadBiomassGram / 1000m);
+        Assert.Equal(0, day2.ShipmentFishCount);
+        Assert.True(day2.Fed);
+
+        var day3 = Assert.Single(dashboardCage.DailyRows, x => x.Date == "2026-04-03");
+        Assert.Equal(25m, day3.FeedGram / 1000m);
+        Assert.Equal(1, day3.StockConvertCount);
+        Assert.Equal(20m, day3.BiomassDelta / 1000m);
+        Assert.Equal(0, day3.DeadCount);
+        Assert.True(day3.Fed);
+
+        var day4 = Assert.Single(dashboardCage.DailyRows, x => x.Date == "2026-04-04");
+        Assert.Equal(18m, day4.FeedGram / 1000m);
+        Assert.Equal(50, day4.DeadCount);
+        Assert.Equal(0.25m, day4.DeadBiomassGram / 1000m);
+        Assert.Equal(2, day4.ShipmentCount);
+        Assert.Equal(1_200, day4.ShipmentFishCount);
+        Assert.Equal(12m, day4.ShipmentBiomassGram / 1000m);
+        Assert.True(day4.Fed);
+
         var cageBalances = await GetAsync<PagedResponse<BatchCageBalanceDto>>(client, "/api/aqua/BatchCageBalance");
         Assert.True(cageBalances.Success);
         Assert.True(cageBalances.Data!.Items.Count >= 2);
