@@ -16,7 +16,7 @@
     <value>İşlem başarılı.</value>
   </data>
   <data name="WeighingLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Kayıt bulunamadı.</value>
   </data>
   <data name="WeighingLineService.InternalServerError" xml:space="preserve">
     <value>Dahili sunucu hatası oluştu.</value>
@@ -25,7 +25,7 @@
     <value>İşlem başarılı.</value>
   </data>
   <data name="WeighingService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Kayıt bulunamadı.</value>
   </data>
   <data name="WeighingService.InternalServerError" xml:space="preserve">
     <value>Dahili sunucu hatası oluştu.</value>
