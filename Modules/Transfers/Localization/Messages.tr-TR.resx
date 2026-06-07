@@ -16,7 +16,7 @@
     <value>İşlem başarılı.</value>
   </data>
   <data name="TransferLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Kayıt bulunamadı.</value>
   </data>
   <data name="TransferLineService.InternalServerError" xml:space="preserve">
     <value>Dahili sunucu hatası oluştu.</value>
@@ -82,7 +82,7 @@
     <value>Dahili sunucu hatası oluştu.</value>
   </data>
   <data name="TransferService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Transfer kaydı bulunamadı.</value>
   </data>
   <data name="TransferService.InternalServerError" xml:space="preserve">
     <value>Dahili sunucu hatası oluştu.</value>
@@ -119,5 +119,32 @@
   </data>
   <data name="TransferService.TargetProjectCageInactive" xml:space="preserve">
     <value>Hedef proje kafesi aktif değil.</value>
+  </data>
+  <data name="TransferService.BusinessRuleError" xml:space="preserve">
+    <value>Transfer iş kuralı hatası oluştu.</value>
+  </data>
+  <data name="CageWarehouseTransferService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="CageWarehouseTransferService.NotFound" xml:space="preserve">
+    <value>Kayıt bulunamadı.</value>
+  </data>
+  <data name="CageWarehouseTransferService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="CageWarehouseTransferService.MustContainLines" xml:space="preserve">
+    <value>Kafesten depo transfer belgesi en az bir satır içermelidir.</value>
+  </data>
+  <data name="CageWarehouseTransferService.BusinessRuleError" xml:space="preserve">
+    <value>Kafesten depo transferi iş kuralı hatası oluştu.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.NotFound" xml:space="preserve">
+    <value>Kayıt bulunamadı.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
   </data>
 </root>

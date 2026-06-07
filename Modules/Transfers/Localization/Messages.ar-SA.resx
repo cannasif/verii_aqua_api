@@ -16,7 +16,7 @@
     <value>العملية ناجحة.</value>
   </data>
   <data name="TransferLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>السجل غير موجود.</value>
   </data>
   <data name="TransferLineService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
@@ -25,7 +25,7 @@
     <value>العملية ناجحة.</value>
   </data>
   <data name="TransferService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>السجل غير موجود.</value>
   </data>
   <data name="TransferService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
@@ -38,5 +38,113 @@
   </data>
   <data name="TransferService.SourceAndTargetCageCannotBeSame" xml:space="preserve">
     <value>لا يمكن أن يكون القفص المصدر والقفص الهدف متماثلين.</value>
+  </data>
+  <data name="TransferService.BusinessRuleError" xml:space="preserve">
+    <value>حدث خطأ في قاعدة أعمال النقل.</value>
+  </data>
+  <data name="TransferService.FullTransferRequired" xml:space="preserve">
+    <value>لا يمكن ترك أي بقايا أثناء النقل. يجب نقل جميع الأسماك.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageNotAllowed" xml:space="preserve">
+    <value>النقل الجزئي إلى قفص مشغول غير مسموح.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageOnlySameBatchAllowed" xml:space="preserve">
+    <value>النقل الجزئي إلى قفص مشغول مسموح فقط لنفس الدُفعة.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageNotFound" xml:space="preserve">
+    <value>قفص مشروع المصدر غير موجود.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageInactive" xml:space="preserve">
+    <value>قفص مشروع المصدر غير نشط.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageMustBelongToTransferProject" xml:space="preserve">
+    <value>يجب أن ينتمي قفص مشروع المصدر إلى مشروع التحويل.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageNotFound" xml:space="preserve">
+    <value>قفص مشروع الهدف غير موجود.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageInactive" xml:space="preserve">
+    <value>قفص مشروع الهدف غير نشط.</value>
+  </data>
+  <data name="WarehouseTransferService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="WarehouseTransferService.NotFound" xml:space="preserve">
+    <value>السجل غير موجود.</value>
+  </data>
+  <data name="WarehouseTransferService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="WarehouseTransferService.MustContainLines" xml:space="preserve">
+    <value>يجب أن يحتوي مستند تحويل المخزون على سطر واحد على الأقل.</value>
+  </data>
+  <data name="WarehouseTransferService.BusinessRuleError" xml:space="preserve">
+    <value>حدث خطأ في قاعدة أعمال تحويل المخزون.</value>
+  </data>
+  <data name="WarehouseTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="WarehouseTransferLineService.NotFound" xml:space="preserve">
+    <value>السجل غير موجود.</value>
+  </data>
+  <data name="WarehouseTransferLineService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="WarehouseTransferLineService.WarehouseNotFound" xml:space="preserve">
+    <value>تعذر العثور على كود المخزن المحدد.</value>
+  </data>
+  <data name="WarehouseTransferLineService.BranchCodeNotFound" xml:space="preserve">
+    <value>تعذر تحديد فرع المستخدم.</value>
+  </data>
+  <data name="WarehouseTransferLineService.SourceAndTargetWarehouseCannotBeSame" xml:space="preserve">
+    <value>لا يمكن أن يكون المخزن المصدر والمستهدف متماثلين.</value>
+  </data>
+  <data name="WarehouseCageTransferService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="WarehouseCageTransferService.NotFound" xml:space="preserve">
+    <value>السجل غير موجود.</value>
+  </data>
+  <data name="WarehouseCageTransferService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="WarehouseCageTransferService.MustContainLines" xml:space="preserve">
+    <value>يجب أن يحتوي مستند نقل القفص إلى المخزن على سطر واحد على الأقل.</value>
+  </data>
+  <data name="WarehouseCageTransferService.BusinessRuleError" xml:space="preserve">
+    <value>حدث خطأ في قاعدة أعمال نقل القفص إلى المخزن.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.NotFound" xml:space="preserve">
+    <value>السجل غير موجود.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="CageWarehouseTransferService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="CageWarehouseTransferService.NotFound" xml:space="preserve">
+    <value>السجل غير موجود.</value>
+  </data>
+  <data name="CageWarehouseTransferService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="CageWarehouseTransferService.MustContainLines" xml:space="preserve">
+    <value>يجب أن يحتوي مستند نقل القفص إلى المستودع على سطر واحد على الأقل.</value>
+  </data>
+  <data name="CageWarehouseTransferService.BusinessRuleError" xml:space="preserve">
+    <value>حدث خطأ في قاعدة أعمال نقل القفص إلى المستودع.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.NotFound" xml:space="preserve">
+    <value>السجل غير موجود.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
   </data>
 </root>

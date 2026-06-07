@@ -16,7 +16,7 @@
     <value>Operación exitosa.</value>
   </data>
   <data name="TransferLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Registro no encontrado.</value>
   </data>
   <data name="TransferLineService.InternalServerError" xml:space="preserve">
     <value>Ocurrió un error interno del server.</value>
@@ -25,7 +25,7 @@
     <value>Operación exitosa.</value>
   </data>
   <data name="TransferService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Registro no encontrado.</value>
   </data>
   <data name="TransferService.InternalServerError" xml:space="preserve">
     <value>Ocurrió un error interno del server.</value>
@@ -38,5 +38,113 @@
   </data>
   <data name="TransferService.SourceAndTargetCageCannotBeSame" xml:space="preserve">
     <value>Las jaulas de origen y destino no pueden ser la misma.</value>
+  </data>
+  <data name="TransferService.BusinessRuleError" xml:space="preserve">
+    <value>Se produjo un error de regla de negocio en la transferencia.</value>
+  </data>
+  <data name="TransferService.FullTransferRequired" xml:space="preserve">
+    <value>No se puede dejar un remanente durante la transferencia. Se deben mover todos los peces.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageNotAllowed" xml:space="preserve">
+    <value>No se permite la transferencia parcial a una jaula ocupada.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageOnlySameBatchAllowed" xml:space="preserve">
+    <value>La transferencia parcial a una jaula ocupada solo se permite para el mismo lote.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageNotFound" xml:space="preserve">
+    <value>No se encontró la jaula de origen del proyecto.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageInactive" xml:space="preserve">
+    <value>La jaula de origen del proyecto no está activa.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageMustBelongToTransferProject" xml:space="preserve">
+    <value>La jaula de origen del proyecto debe pertenecer al proyecto de transferencia.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageNotFound" xml:space="preserve">
+    <value>No se encontró la jaula de destino del proyecto.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageInactive" xml:space="preserve">
+    <value>La jaula de destino del proyecto no está activa.</value>
+  </data>
+  <data name="WarehouseTransferService.OperationSuccessful" xml:space="preserve">
+    <value>Operación exitosa.</value>
+  </data>
+  <data name="WarehouseTransferService.NotFound" xml:space="preserve">
+    <value>Registro no encontrado.</value>
+  </data>
+  <data name="WarehouseTransferService.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno del server.</value>
+  </data>
+  <data name="WarehouseTransferService.MustContainLines" xml:space="preserve">
+    <value>El documento de traslado al almacén debe contener al menos una línea.</value>
+  </data>
+  <data name="WarehouseTransferService.BusinessRuleError" xml:space="preserve">
+    <value>Se produjo un error de regla de negocio en el traslado de almacén.</value>
+  </data>
+  <data name="WarehouseTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operación exitosa.</value>
+  </data>
+  <data name="WarehouseTransferLineService.NotFound" xml:space="preserve">
+    <value>Registro no encontrado.</value>
+  </data>
+  <data name="WarehouseTransferLineService.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno del server.</value>
+  </data>
+  <data name="WarehouseTransferLineService.WarehouseNotFound" xml:space="preserve">
+    <value>No se pudo encontrar el código de almacén seleccionado.</value>
+  </data>
+  <data name="WarehouseTransferLineService.BranchCodeNotFound" xml:space="preserve">
+    <value>No se pudo resolver el contexto de la sucursal.</value>
+  </data>
+  <data name="WarehouseTransferLineService.SourceAndTargetWarehouseCannotBeSame" xml:space="preserve">
+    <value>El almacén de origen y destino no pueden ser el mismo.</value>
+  </data>
+  <data name="WarehouseCageTransferService.OperationSuccessful" xml:space="preserve">
+    <value>Operación exitosa.</value>
+  </data>
+  <data name="WarehouseCageTransferService.NotFound" xml:space="preserve">
+    <value>Registro no encontrado.</value>
+  </data>
+  <data name="WarehouseCageTransferService.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno del server.</value>
+  </data>
+  <data name="WarehouseCageTransferService.MustContainLines" xml:space="preserve">
+    <value>El documento de traslado de almacén a jaula debe contener al menos una línea.</value>
+  </data>
+  <data name="WarehouseCageTransferService.BusinessRuleError" xml:space="preserve">
+    <value>Se produjo un error de regla de negocio en el traslado de almacén a jaula.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operación exitosa.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.NotFound" xml:space="preserve">
+    <value>Registro no encontrado.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno del server.</value>
+  </data>
+  <data name="CageWarehouseTransferService.OperationSuccessful" xml:space="preserve">
+    <value>Operación exitosa.</value>
+  </data>
+  <data name="CageWarehouseTransferService.NotFound" xml:space="preserve">
+    <value>Registro no encontrado.</value>
+  </data>
+  <data name="CageWarehouseTransferService.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno del server.</value>
+  </data>
+  <data name="CageWarehouseTransferService.MustContainLines" xml:space="preserve">
+    <value>El documento de transferencia de jaula a almacén debe contener al menos una línea.</value>
+  </data>
+  <data name="CageWarehouseTransferService.BusinessRuleError" xml:space="preserve">
+    <value>Se produjo un error de regla de negocio en la transferencia de jaula a almacén.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operación exitosa.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.NotFound" xml:space="preserve">
+    <value>Registro no encontrado.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno del server.</value>
   </data>
 </root>

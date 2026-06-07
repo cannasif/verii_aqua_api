@@ -16,7 +16,7 @@
     <value>Opération réussie.</value>
   </data>
   <data name="TransferLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Enregistrement introuvable.</value>
   </data>
   <data name="TransferLineService.InternalServerError" xml:space="preserve">
     <value>Une erreur interne du serveur s'est produite.</value>
@@ -25,7 +25,7 @@
     <value>Opération réussie.</value>
   </data>
   <data name="TransferService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Enregistrement introuvable.</value>
   </data>
   <data name="TransferService.InternalServerError" xml:space="preserve">
     <value>Une erreur interne du serveur s'est produite.</value>
@@ -38,5 +38,113 @@
   </data>
   <data name="TransferService.SourceAndTargetCageCannotBeSame" xml:space="preserve">
     <value>Les cages source et cible ne peuvent pas être identiques.</value>
+  </data>
+  <data name="TransferService.BusinessRuleError" xml:space="preserve">
+    <value>Une erreur de règle métier de transfert s'est produite.</value>
+  </data>
+  <data name="TransferService.FullTransferRequired" xml:space="preserve">
+    <value>Aucun reliquat ne peut être laissé pendant le transfert. Tous les poissons doivent être déplacés.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageNotAllowed" xml:space="preserve">
+    <value>Le transfert partiel vers une cage occupée n'est pas autorisé.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageOnlySameBatchAllowed" xml:space="preserve">
+    <value>Le transfert partiel vers une cage occupée n'est autorisé que pour le même lot.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageNotFound" xml:space="preserve">
+    <value>Cage de projet source introuvable.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageInactive" xml:space="preserve">
+    <value>La cage de projet source n'est pas active.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageMustBelongToTransferProject" xml:space="preserve">
+    <value>La cage de projet source doit appartenir au projet de transfert.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageNotFound" xml:space="preserve">
+    <value>Cage de projet cible introuvable.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageInactive" xml:space="preserve">
+    <value>La cage de projet cible n'est pas active.</value>
+  </data>
+  <data name="WarehouseTransferService.OperationSuccessful" xml:space="preserve">
+    <value>Opération réussie.</value>
+  </data>
+  <data name="WarehouseTransferService.NotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="WarehouseTransferService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="WarehouseTransferService.MustContainLines" xml:space="preserve">
+    <value>Le document de transfert vers l'entrepôt doit contenir au moins une ligne.</value>
+  </data>
+  <data name="WarehouseTransferService.BusinessRuleError" xml:space="preserve">
+    <value>Une erreur de règle métier du transfert entre entrepôts s'est produite.</value>
+  </data>
+  <data name="WarehouseTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>Opération réussie.</value>
+  </data>
+  <data name="WarehouseTransferLineService.NotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="WarehouseTransferLineService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="WarehouseTransferLineService.WarehouseNotFound" xml:space="preserve">
+    <value>Le code d'entrepôt sélectionné est introuvable.</value>
+  </data>
+  <data name="WarehouseTransferLineService.BranchCodeNotFound" xml:space="preserve">
+    <value>Le contexte de branche n'a pas pu être résolu.</value>
+  </data>
+  <data name="WarehouseTransferLineService.SourceAndTargetWarehouseCannotBeSame" xml:space="preserve">
+    <value>Les entrepôts source et cible ne peuvent pas être identiques.</value>
+  </data>
+  <data name="WarehouseCageTransferService.OperationSuccessful" xml:space="preserve">
+    <value>Opération réussie.</value>
+  </data>
+  <data name="WarehouseCageTransferService.NotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="WarehouseCageTransferService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="WarehouseCageTransferService.MustContainLines" xml:space="preserve">
+    <value>Le document de transfert vers la cage doit contenir au moins une ligne.</value>
+  </data>
+  <data name="WarehouseCageTransferService.BusinessRuleError" xml:space="preserve">
+    <value>Une erreur de règle métier du transfert entre entrepôt et cage s'est produite.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>Opération réussie.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.NotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="CageWarehouseTransferService.OperationSuccessful" xml:space="preserve">
+    <value>Opération réussie.</value>
+  </data>
+  <data name="CageWarehouseTransferService.NotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="CageWarehouseTransferService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="CageWarehouseTransferService.MustContainLines" xml:space="preserve">
+    <value>Le document de transfert de cage vers dépôt doit contenir au moins une ligne.</value>
+  </data>
+  <data name="CageWarehouseTransferService.BusinessRuleError" xml:space="preserve">
+    <value>Une erreur de règle métier de transfert de cage vers dépôt s'est produite.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>Opération réussie.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.NotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
   </data>
 </root>

@@ -120,4 +120,31 @@
   <data name="TransferService.TargetProjectCageInactive" xml:space="preserve">
     <value>Target project cage is not active.</value>
   </data>
+  <data name="TransferService.BusinessRuleError" xml:space="preserve">
+    <value>A transfer business rule error occurred.</value>
+  </data>
+  <data name="CageWarehouseTransferService.OperationSuccessful" xml:space="preserve">
+    <value>Operation successful.</value>
+  </data>
+  <data name="CageWarehouseTransferService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="CageWarehouseTransferService.InternalServerError" xml:space="preserve">
+    <value>An internal server error occurred.</value>
+  </data>
+  <data name="CageWarehouseTransferService.MustContainLines" xml:space="preserve">
+    <value>The cage to warehouse transfer document must contain at least one line.</value>
+  </data>
+  <data name="CageWarehouseTransferService.BusinessRuleError" xml:space="preserve">
+    <value>A cage to warehouse transfer business rule error occurred.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operation successful.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.InternalServerError" xml:space="preserve">
+    <value>An internal server error occurred.</value>
+  </data>
 </root>

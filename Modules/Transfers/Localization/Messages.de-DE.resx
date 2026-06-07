@@ -16,7 +16,7 @@
     <value>Operation erfolgreich.</value>
   </data>
   <data name="TransferLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Datensatz nicht gefunden.</value>
   </data>
   <data name="TransferLineService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>
@@ -25,7 +25,7 @@
     <value>Operation erfolgreich.</value>
   </data>
   <data name="TransferService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Datensatz nicht gefunden.</value>
   </data>
   <data name="TransferService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>
@@ -38,5 +38,113 @@
   </data>
   <data name="TransferService.SourceAndTargetCageCannotBeSame" xml:space="preserve">
     <value>Quell- und Zielkäfig dürfen nicht identisch sein.</value>
+  </data>
+  <data name="TransferService.BusinessRuleError" xml:space="preserve">
+    <value>Es ist ein Fehler bei der Transfer-Geschäftsregel aufgetreten.</value>
+  </data>
+  <data name="TransferService.FullTransferRequired" xml:space="preserve">
+    <value>Es darf bei einer Übertragung kein Rest verbleiben. Alle Fische müssen bewegt werden.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageNotAllowed" xml:space="preserve">
+    <value>Eine Teilübertragung zu einem belegten Käfig ist nicht erlaubt.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageOnlySameBatchAllowed" xml:space="preserve">
+    <value>Teilübertragungen zu einem belegten Käfig sind nur für dieselbe Charge erlaubt.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageNotFound" xml:space="preserve">
+    <value>Quellprojektkäfig nicht gefunden.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageInactive" xml:space="preserve">
+    <value>Quellprojektkäfig ist nicht aktiv.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageMustBelongToTransferProject" xml:space="preserve">
+    <value>Quellprojektkäfig muss zum Transferprojekt gehören.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageNotFound" xml:space="preserve">
+    <value>Zielprojektkäfig nicht gefunden.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageInactive" xml:space="preserve">
+    <value>Zielprojektkäfig ist nicht aktiv.</value>
+  </data>
+  <data name="WarehouseTransferService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="WarehouseTransferService.NotFound" xml:space="preserve">
+    <value>Datensatz nicht gefunden.</value>
+  </data>
+  <data name="WarehouseTransferService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="WarehouseTransferService.MustContainLines" xml:space="preserve">
+    <value>Das Dokument für die Transferbuchung muss mindestens eine Zeile enthalten.</value>
+  </data>
+  <data name="WarehouseTransferService.BusinessRuleError" xml:space="preserve">
+    <value>Bei der Bestandsübertragung ist ein Geschäftsregel-Fehler aufgetreten.</value>
+  </data>
+  <data name="WarehouseTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="WarehouseTransferLineService.NotFound" xml:space="preserve">
+    <value>Datensatz nicht gefunden.</value>
+  </data>
+  <data name="WarehouseTransferLineService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="WarehouseTransferLineService.WarehouseNotFound" xml:space="preserve">
+    <value>Der ausgewählte Lagercode wurde nicht gefunden.</value>
+  </data>
+  <data name="WarehouseTransferLineService.BranchCodeNotFound" xml:space="preserve">
+    <value>Der Zweigkontext konnte nicht aufgelöst werden.</value>
+  </data>
+  <data name="WarehouseTransferLineService.SourceAndTargetWarehouseCannotBeSame" xml:space="preserve">
+    <value>Quell- und Ziellager dürfen nicht identisch sein.</value>
+  </data>
+  <data name="WarehouseCageTransferService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="WarehouseCageTransferService.NotFound" xml:space="preserve">
+    <value>Datensatz nicht gefunden.</value>
+  </data>
+  <data name="WarehouseCageTransferService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="WarehouseCageTransferService.MustContainLines" xml:space="preserve">
+    <value>Das Dokument für den Lager-zu-Käfig-Transfer muss mindestens eine Zeile enthalten.</value>
+  </data>
+  <data name="WarehouseCageTransferService.BusinessRuleError" xml:space="preserve">
+    <value>Bei der Lager-zu-Käfig-Übertragung ist ein Geschäftsregel-Fehler aufgetreten.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.NotFound" xml:space="preserve">
+    <value>Datensatz nicht gefunden.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="CageWarehouseTransferService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="CageWarehouseTransferService.NotFound" xml:space="preserve">
+    <value>Datensatz nicht gefunden.</value>
+  </data>
+  <data name="CageWarehouseTransferService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="CageWarehouseTransferService.MustContainLines" xml:space="preserve">
+    <value>Das Dokument für den Kasten-zu-Lager-Transfer muss mindestens eine Zeile enthalten.</value>
+  </data>
+  <data name="CageWarehouseTransferService.BusinessRuleError" xml:space="preserve">
+    <value>Bei der Kasten-zu-Lager-Übertragung ist ein Geschäftsregel-Fehler aufgetreten.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.NotFound" xml:space="preserve">
+    <value>Datensatz nicht gefunden.</value>
+  </data>
+  <data name="CageWarehouseTransferLineService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
   </data>
 </root>
