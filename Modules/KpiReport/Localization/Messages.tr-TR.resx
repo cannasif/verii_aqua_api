@@ -18,7 +18,7 @@
   <data name="KpiReportService.Detail.Slot" xml:space="preserve"><value>Tur</value></data>
   <data name="KpiReportService.Detail.Stock" xml:space="preserve"><value>Stok</value></data>
   <data name="KpiReportService.Detail.Feed" xml:space="preserve"><value>Yem</value></data>
-  <data name="KpiReportService.Detail.RiskBase" xml:space="preserve"><value>Risk Bazı</value></data>
+  <data name="KpiReportService.Detail.RiskBase" xml:space="preserve"><value>Risk Tabanı</value></data>
   <data name="KpiReportService.Detail.Batch" xml:space="preserve"><value>Batch</value></data>
   <data name="KpiReportService.Detail.Count" xml:space="preserve"><value>Adet</value></data>
   <data name="KpiReportService.Detail.Average" xml:space="preserve"><value>Ortalama</value></data>
