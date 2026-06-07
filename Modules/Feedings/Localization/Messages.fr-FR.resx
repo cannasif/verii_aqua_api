@@ -16,7 +16,7 @@
     <value>Opération réussie.</value>
   </data>
   <data name="FeedingService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Enregistrement introuvable.</value>
   </data>
   <data name="FeedingService.InternalServerError" xml:space="preserve">
     <value>Une erreur interne du serveur s'est produite.</value>
@@ -25,7 +25,7 @@
     <value>Opération réussie.</value>
   </data>
   <data name="FeedingLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Enregistrement introuvable.</value>
   </data>
   <data name="FeedingLineService.InternalServerError" xml:space="preserve">
     <value>Une erreur interne du serveur s'est produite.</value>
@@ -34,7 +34,7 @@
     <value>Opération réussie.</value>
   </data>
   <data name="FeedingDistributionService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Enregistrement introuvable.</value>
   </data>
   <data name="FeedingDistributionService.InternalServerError" xml:space="preserve">
     <value>Une erreur interne du serveur s'est produite.</value>
@@ -55,6 +55,6 @@
     <value>Vous avez sélectionné un stock non valide.</value>
   </data>
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
-    <value>Besleme satırı kaydedilirken hata oluştu.</value>
+    <value>Une erreur s'est produite lors de l'enregistrement de la ligne d'alimentation.</value>
   </data>
 </root>

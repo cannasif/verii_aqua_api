@@ -16,7 +16,7 @@
     <value>العملية ناجحة.</value>
   </data>
   <data name="FeedingService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>السجل غير موجود.</value>
   </data>
   <data name="FeedingService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
@@ -25,7 +25,7 @@
     <value>العملية ناجحة.</value>
   </data>
   <data name="FeedingLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>السجل غير موجود.</value>
   </data>
   <data name="FeedingLineService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
@@ -34,7 +34,7 @@
     <value>العملية ناجحة.</value>
   </data>
   <data name="FeedingDistributionService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>السجل غير موجود.</value>
   </data>
   <data name="FeedingDistributionService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
@@ -55,6 +55,6 @@
     <value>لقد اخترت مخزوناً غير صالح.</value>
   </data>
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
-    <value>Besleme satırı kaydedilirken hata oluştu.</value>
+    <value>حدث خطأ أثناء حفظ سطر التغذية.</value>
   </data>
 </root>
