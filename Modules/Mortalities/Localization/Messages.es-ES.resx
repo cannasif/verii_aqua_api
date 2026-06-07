@@ -18,14 +18,26 @@
   <data name="MortalityService.NotFound" xml:space="preserve">
     <value>Registro no encontrado.</value>
   </data>
+  <data name="MortalityService.BusinessRuleError" xml:space="preserve">
+    <value>Se produjo un error de regla de negocio de mortalidad.</value>
+  </data>
   <data name="MortalityService.InternalServerError" xml:space="preserve">
     <value>Ocurrió un error interno del server.</value>
+  </data>
+  <data name="MortalityService.AverageGramMissing" xml:space="preserve">
+    <value>No se encontró el peso promedio en gramos del lote/jaula para el registro de mortalidad.</value>
+  </data>
+  <data name="MortalityService.InsufficientBalance" xml:space="preserve">
+    <value>Saldo insuficiente de lote/jaula para el registro de mortalidad.</value>
   </data>
   <data name="MortalityLineService.OperationSuccessful" xml:space="preserve">
     <value>Operación exitosa.</value>
   </data>
   <data name="MortalityLineService.NotFound" xml:space="preserve">
     <value>Registro no encontrado.</value>
+  </data>
+  <data name="MortalityLineService.ProjectNotFound" xml:space="preserve">
+    <value>Proyecto no encontrado.</value>
   </data>
   <data name="MortalityLineService.InternalServerError" xml:space="preserve">
     <value>Ocurrió un error interno del server.</value>

@@ -18,14 +18,26 @@
   <data name="MortalityService.NotFound" xml:space="preserve">
     <value>Datensatz nicht gefunden.</value>
   </data>
+  <data name="MortalityService.BusinessRuleError" xml:space="preserve">
+    <value>Ein Mortalitäts-Geschäftsregelfehler ist aufgetreten.</value>
+  </data>
   <data name="MortalityService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="MortalityService.AverageGramMissing" xml:space="preserve">
+    <value>Das durchschnittliche Grammgewicht für die ausgewählte Charge/Käfig wurde für den Mortalitätseintrag nicht gefunden.</value>
+  </data>
+  <data name="MortalityService.InsufficientBalance" xml:space="preserve">
+    <value>Unzureichender Charge/Käfig-Bestand für den Mortalitätseintrag.</value>
   </data>
   <data name="MortalityLineService.OperationSuccessful" xml:space="preserve">
     <value>Operation erfolgreich.</value>
   </data>
   <data name="MortalityLineService.NotFound" xml:space="preserve">
     <value>Datensatz nicht gefunden.</value>
+  </data>
+  <data name="MortalityLineService.ProjectNotFound" xml:space="preserve">
+    <value>Projekt nicht gefunden.</value>
   </data>
   <data name="MortalityLineService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>

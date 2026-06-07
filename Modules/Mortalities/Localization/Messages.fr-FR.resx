@@ -18,14 +18,26 @@
   <data name="MortalityService.NotFound" xml:space="preserve">
     <value>Enregistrement introuvable.</value>
   </data>
+  <data name="MortalityService.BusinessRuleError" xml:space="preserve">
+    <value>Une erreur de règle métier de mortalité s'est produite.</value>
+  </data>
   <data name="MortalityService.InternalServerError" xml:space="preserve">
     <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="MortalityService.AverageGramMissing" xml:space="preserve">
+    <value>Le poids moyen en grammes du lot/cage pour l'enregistrement de mortalité n'a pas été trouvé.</value>
+  </data>
+  <data name="MortalityService.InsufficientBalance" xml:space="preserve">
+    <value>Solde de lot/cage insuffisant pour l'enregistrement de mortalité.</value>
   </data>
   <data name="MortalityLineService.OperationSuccessful" xml:space="preserve">
     <value>Opération réussie.</value>
   </data>
   <data name="MortalityLineService.NotFound" xml:space="preserve">
     <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="MortalityLineService.ProjectNotFound" xml:space="preserve">
+    <value>Projet introuvable.</value>
   </data>
   <data name="MortalityLineService.InternalServerError" xml:space="preserve">
     <value>Une erreur interne du serveur s'est produite.</value>

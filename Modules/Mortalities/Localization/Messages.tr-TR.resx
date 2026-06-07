@@ -18,14 +18,26 @@
   <data name="MortalityService.NotFound" xml:space="preserve">
     <value>Kayıt bulunamadı.</value>
   </data>
+  <data name="MortalityService.BusinessRuleError" xml:space="preserve">
+    <value>Fire kaydı iş kuralı hatası oluştu.</value>
+  </data>
   <data name="MortalityService.InternalServerError" xml:space="preserve">
     <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="MortalityService.AverageGramMissing" xml:space="preserve">
+    <value>Fire kaydı için batch/kafes ortalama gramajı bulunamadı.</value>
+  </data>
+  <data name="MortalityService.InsufficientBalance" xml:space="preserve">
+    <value>Fire kaydı için batch/kafes bakiyesi yetersiz.</value>
   </data>
   <data name="MortalityLineService.OperationSuccessful" xml:space="preserve">
     <value>İşlem başarılı.</value>
   </data>
   <data name="MortalityLineService.NotFound" xml:space="preserve">
     <value>Kayıt bulunamadı.</value>
+  </data>
+  <data name="MortalityLineService.ProjectNotFound" xml:space="preserve">
+    <value>Proje bulunamadı.</value>
   </data>
   <data name="MortalityLineService.InternalServerError" xml:space="preserve">
     <value>Dahili sunucu hatası oluştu.</value>

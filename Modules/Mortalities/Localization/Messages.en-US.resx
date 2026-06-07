@@ -18,14 +18,26 @@
   <data name="MortalityService.NotFound" xml:space="preserve">
     <value>Record not found.</value>
   </data>
+  <data name="MortalityService.BusinessRuleError" xml:space="preserve">
+    <value>Mortality business rule error occurred.</value>
+  </data>
   <data name="MortalityService.InternalServerError" xml:space="preserve">
     <value>An internal server error occurred.</value>
+  </data>
+  <data name="MortalityService.AverageGramMissing" xml:space="preserve">
+    <value>Average gram value for the batch/cage could not be found for the mortality entry.</value>
+  </data>
+  <data name="MortalityService.InsufficientBalance" xml:space="preserve">
+    <value>Insufficient batch/cage balance for mortality entry.</value>
   </data>
   <data name="MortalityLineService.OperationSuccessful" xml:space="preserve">
     <value>Operation successful.</value>
   </data>
   <data name="MortalityLineService.NotFound" xml:space="preserve">
     <value>Record not found.</value>
+  </data>
+  <data name="MortalityLineService.ProjectNotFound" xml:space="preserve">
+    <value>Project not found.</value>
   </data>
   <data name="MortalityLineService.InternalServerError" xml:space="preserve">
     <value>An internal server error occurred.</value>

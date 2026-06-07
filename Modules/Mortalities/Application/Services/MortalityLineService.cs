@@ -180,7 +180,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                         await _unitOfWork.RollbackTransactionAsync();
                         return ApiResponse<MortalityLineDto>.ErrorResult(
                             _localizationService.GetLocalizedString("MortalityLineService.NotFound"),
-                            "Project not found.",
+                            _localizationService.GetLocalizedString("MortalityLineService.ProjectNotFound"),
                             StatusCodes.Status404NotFound);
                     }
 

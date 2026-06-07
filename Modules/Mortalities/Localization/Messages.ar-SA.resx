@@ -18,14 +18,26 @@
   <data name="MortalityService.NotFound" xml:space="preserve">
     <value>السجل غير موجود.</value>
   </data>
+  <data name="MortalityService.BusinessRuleError" xml:space="preserve">
+    <value>حدث خطأ في قاعدة العمل الخاصة بالنفوق.</value>
+  </data>
   <data name="MortalityService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="MortalityService.AverageGramMissing" xml:space="preserve">
+    <value>لم يتم العثور على متوسط الغرامات للدفعة/القفص لسجل النفوق.</value>
+  </data>
+  <data name="MortalityService.InsufficientBalance" xml:space="preserve">
+    <value>رصيد غير كافٍ للدفعة/القفص لسجل النفوق.</value>
   </data>
   <data name="MortalityLineService.OperationSuccessful" xml:space="preserve">
     <value>العملية ناجحة.</value>
   </data>
   <data name="MortalityLineService.NotFound" xml:space="preserve">
     <value>السجل غير موجود.</value>
+  </data>
+  <data name="MortalityLineService.ProjectNotFound" xml:space="preserve">
+    <value>المشروع غير موجود.</value>
   </data>
   <data name="MortalityLineService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>

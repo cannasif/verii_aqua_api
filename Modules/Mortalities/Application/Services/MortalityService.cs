@@ -199,12 +199,12 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     var averageGram = ResolveAverageGram(balance);
                     if (averageGram <= 0)
                     {
-                        throw new InvalidOperationException("Fire kaydi icin batch/kafes ortalama gramaji bulunamadi.");
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.AverageGramMissing"));
                     }
 
                     if (balance == null || balance.LiveCount < line.DeadCount)
                     {
-                        throw new InvalidOperationException("Fire kaydi icin batch/kafes bakiyesi yetersiz.");
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.InsufficientBalance"));
                     }
 
                     var biomassDelta = -Math.Round(averageGram * line.DeadCount, 3, MidpointRounding.AwayFromZero);
