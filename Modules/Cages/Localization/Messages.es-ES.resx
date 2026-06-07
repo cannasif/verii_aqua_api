@@ -30,4 +30,22 @@
   <data name="CageService.InternalServerError" xml:space="preserve">
     <value>Ocurrió un error interno del server.</value>
   </data>
+  <data name="CageWarehouseMappingService.OperationSuccessful" xml:space="preserve">
+    <value>Operación exitosa.</value>
+  </data>
+  <data name="CageWarehouseMappingService.NotFound" xml:space="preserve">
+    <value>No se encontró la asignación de jaula-almacén.</value>
+  </data>
+  <data name="CageWarehouseMappingService.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno del server.</value>
+  </data>
+  <data name="CageWarehouseMappingService.CageNotFound" xml:space="preserve">
+    <value>No se encontró la jaula seleccionada.</value>
+  </data>
+  <data name="CageWarehouseMappingService.WarehouseNotFound" xml:space="preserve">
+    <value>No se encontró el almacén de Netsis seleccionado. Ejecute primero la sincronización de almacén.</value>
+  </data>
+  <data name="CageWarehouseMappingService.ActiveMappingAlreadyExists" xml:space="preserve">
+    <value>Esta jaula ya tiene una asignación activa de almacén de Netsis.</value>
+  </data>
 </root>

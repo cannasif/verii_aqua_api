@@ -30,4 +30,22 @@
   <data name="CageService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
   </data>
+  <data name="CageWarehouseMappingService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="CageWarehouseMappingService.NotFound" xml:space="preserve">
+    <value>لم يتم العثور على مطابقة بين القفص والمستودع.</value>
+  </data>
+  <data name="CageWarehouseMappingService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="CageWarehouseMappingService.CageNotFound" xml:space="preserve">
+    <value>القفص المختار غير موجود.</value>
+  </data>
+  <data name="CageWarehouseMappingService.WarehouseNotFound" xml:space="preserve">
+    <value>المستودع المختار لنظام Netsis غير موجود. نفذ أولاً مزامنة المستودعات.</value>
+  </data>
+  <data name="CageWarehouseMappingService.ActiveMappingAlreadyExists" xml:space="preserve">
+    <value>هذا القفص يحتوي بالفعل على تعيين فعال لمستودع Netsis.</value>
+  </data>
 </root>

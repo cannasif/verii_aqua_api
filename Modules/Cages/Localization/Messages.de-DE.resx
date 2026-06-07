@@ -30,4 +30,22 @@
   <data name="CageService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>
   </data>
+  <data name="CageWarehouseMappingService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="CageWarehouseMappingService.NotFound" xml:space="preserve">
+    <value>Die Kasten-Lager-Mapping-Zuordnung wurde nicht gefunden.</value>
+  </data>
+  <data name="CageWarehouseMappingService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="CageWarehouseMappingService.CageNotFound" xml:space="preserve">
+    <value>Der ausgewählte Kasten wurde nicht gefunden.</value>
+  </data>
+  <data name="CageWarehouseMappingService.WarehouseNotFound" xml:space="preserve">
+    <value>Das ausgewählte Netsis-Lager wurde nicht gefunden. Führen Sie zuerst die Lagersynchronisierung aus.</value>
+  </data>
+  <data name="CageWarehouseMappingService.ActiveMappingAlreadyExists" xml:space="preserve">
+    <value>Für diesen Kasten gibt es bereits eine aktive Netsis-Lagerzuordnung.</value>
+  </data>
 </root>
