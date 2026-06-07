@@ -1,5 +1,6 @@
 using Hangfire;
 using aqua_api.Modules.System.Infrastructure.BackgroundJobs.Interfaces;
+using aqua_api.Shared.Host.WebApi.Filters;
 using Microsoft.Extensions.Options;
 
 namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs

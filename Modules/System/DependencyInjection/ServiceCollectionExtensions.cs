@@ -1,3 +1,4 @@
+using aqua_api.Modules.System.Infrastructure.BackgroundJobs;
 using aqua_api.Modules.System.Infrastructure.BackgroundJobs.Interfaces;
 
 namespace aqua_api.Modules.System.DependencyInjection;
