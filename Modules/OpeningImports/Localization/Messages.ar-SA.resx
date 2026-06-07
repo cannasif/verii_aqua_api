@@ -16,18 +16,165 @@
     <value>تمت العملية بنجاح.</value>
   </data>
   <data name="OpeningImportService.InternalServerError" xml:space="preserve">
-    <value>حدث خطأ غير متوقع أثناء عملية الاستيراد الأولي.</value>
+    <value>حدث خطأ غير متوقع أثناء عملية استيراد الافتتاح.</value>
   </data>
   <data name="OpeningImportService.JobNotFound" xml:space="preserve">
-    <value>لم يتم العثور على مهمة الاستيراد الأولية.</value>
+    <value>لم يتم العثور على مهمة استيراد الافتتاح.</value>
   </data>
   <data name="OpeningImportService.AlreadyApplied" xml:space="preserve">
-    <value>تم تنفيذ مهمة الاستيراد الأولية بالفعل.</value>
+    <value>تم تنفيذ عملية استيراد الافتتاح بالفعل.</value>
   </data>
   <data name="OpeningImportService.CommitHasErrors" xml:space="preserve">
-    <value>لا يمكن اعتماد الاستيراد أثناء وجود صفوف غير صالحة.</value>
+    <value>لا يمكن الإرسال إذا وُجدت صفوف غير صالحة.</value>
   </data>
   <data name="OpeningImportService.EmptyWorkbook" xml:space="preserve">
-    <value>لم يتم العثور على أوراق عمل قابلة للمعالجة في الملف.</value>
+    <value>لم يتم العثور على أوراق قابلة للمعالجة في الملف.</value>
+  </data>
+  <data name="OpeningImportService.GoodsReceiptHeaderConflict" xml:space="preserve">
+    <value>يجب أن تكون قيم ترويسة الإيصال متسقة لكل مشروع. يجب تطابق رقم الإيصال والتاريخ والمخزن.</value>
+  </data>
+  <data name="OpeningImportService.GoodsReceiptBatchConflict" xml:space="preserve">
+    <value>داخل نفس المشروع والدفعة يجب أن يكون مخزون السمك والوزن المتوسط متسقة.</value>
+  </data>
+  <data name="OpeningImportService.TemplateGeneratedByOpeningImport" xml:space="preserve">
+    <value>تم إنشاء هذا القالب لعملية استيراد الافتتاح.</value>
+  </data>
+  <data name="OpeningImportService.CleanupNoDeletedTestRecordFound" xml:space="preserve">
+    <value>لم يتم العثور على سجلات اختبار محذوفة للتنظيف.</value>
+  </data>
+  <data name="OpeningImportService.CleanupDeletedRecordsCleared" xml:space="preserve">
+    <value>تم تنظيف السجلات المحذوفة بنجاح.</value>
+  </data>
+  <data name="OpeningImportService.CleanupCouldNotClearAutomatically" xml:space="preserve">
+    <value>تعذر تنظيف بعض السجلات المحذوفة تلقائيًا.</value>
+  </data>
+  <data name="OpeningImportService.CleanupHasRelations" xml:space="preserve">
+    <value>لا يمكن الحذف بسبب وجود علاقات مرتبطة: {0}</value>
+  </data>
+  <data name="OpeningImportService.ResetNoRecordsToClear" xml:space="preserve">
+    <value>لم يتم العثور على سجلات لإعادة التعيين.</value>
+  </data>
+  <data name="OpeningImportService.ResetPermanentClearCompleted" xml:space="preserve">
+    <value>تم حذف البيانات التشغيلية المرتبطة بشكل دائم.</value>
+  </data>
+  <data name="OpeningImportService.ResetClearFailed" xml:space="preserve">
+    <value>فشل الإعادة: {0}</value>
+  </data>
+  <data name="OpeningImportService.MortalityBatchNotFound" xml:space="preserve">
+    <value>لم يتم العثور على دفعة mortalité المقابلة.</value>
+  </data>
+  <data name="OpeningImportService.MortalityHeaderNotFound" xml:space="preserve">
+    <value>لم يتم العثور على رأس سجل الوفيات.</value>
+  </data>
+  <data name="OpeningImportService.MortalityAverageGramNotFound" xml:space="preserve">
+    <value>وزن المتوسط للوفيات مفقود.</value>
+  </data>
+  <data name="OpeningImportService.DerivedOpeningStockNotice" xml:space="preserve">
+    <value>تم اشتقاق رصيد الافتتاح من حركات الافتتاح.</value>
+  </data>
+  <data name="OpeningImportService.Validation.AverageGramMustBePositive" xml:space="preserve">
+    <value>يجب أن يكون الوزن المتوسط أكبر من صفر.</value>
+  </data>
+  <data name="OpeningImportService.Validation.BatchCodeRequired" xml:space="preserve">
+    <value>رمز الدفعة مطلوب.</value>
+  </data>
+  <data name="OpeningImportService.Validation.CageAlreadyExists" xml:space="preserve">
+    <value>رمز الحوض موجود مسبقًا لهذا المشروع: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.CageAssignedToDifferentProject" xml:space="preserve">
+    <value>الحوض مخصص لمشروع آخر: {0} (المشروع: {1})</value>
+  </data>
+  <data name="OpeningImportService.Validation.CageCodeRequired" xml:space="preserve">
+    <value>رمز الحوض مطلوب.</value>
+  </data>
+  <data name="OpeningImportService.Validation.CageDeletedExists" xml:space="preserve">
+    <value>الحوض موجود كمحذوف مسبقًا: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.CageNameRequired" xml:space="preserve">
+    <value>اسم الحوض مطلوب.</value>
+  </data>
+  <data name="OpeningImportService.Validation.CageNotFound" xml:space="preserve">
+    <value>الحوض غير موجود: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.DuplicateProjectCode" xml:space="preserve">
+    <value>رمز المشروع مكرر: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.DuplicateProjectCage" xml:space="preserve">
+    <value>تركيب مشروع/حوض مكرر: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.ExchangeRateMustBePositive" xml:space="preserve">
+    <value>سعر الصرف يجب أن يكون أكبر من صفر.</value>
+  </data>
+  <data name="OpeningImportService.Validation.FeedGramMustBePositive" xml:space="preserve">
+    <value>وزن العلف يجب أن يكون أكبر من صفر.</value>
+  </data>
+  <data name="OpeningImportService.Validation.FeedStockCodeRequired" xml:space="preserve">
+    <value>رمز مخزون العلف مطلوب.</value>
+  </data>
+  <data name="OpeningImportService.Validation.FeedStockNotFound" xml:space="preserve">
+    <value>مخزون العلف غير موجود: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.FeedingDateInvalid" xml:space="preserve">
+    <value>تاريخ التغذية غير صالح.</value>
+  </data>
+  <data name="OpeningImportService.Validation.FishCountMustBePositive" xml:space="preserve">
+    <value>عدد الأسماك يجب أن يكون أكبر من صفر.</value>
+  </data>
+  <data name="OpeningImportService.Validation.FishStockCodeRequired" xml:space="preserve">
+    <value>رمز مخزون السمك مطلوب.</value>
+  </data>
+  <data name="OpeningImportService.Validation.FishStockNotFound" xml:space="preserve">
+    <value>مخزون السمك غير موجود: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.MortalityCountMustBePositive" xml:space="preserve">
+    <value>عدد الوفيات يجب أن يكون أكبر من صفر.</value>
+  </data>
+  <data name="OpeningImportService.Validation.MortalityDateInvalid" xml:space="preserve">
+    <value>تاريخ الوفيات غير صالح.</value>
+  </data>
+  <data name="OpeningImportService.Validation.OpeningDateInvalid" xml:space="preserve">
+    <value>تاريخ الافتتاح غير صالح.</value>
+  </data>
+  <data name="OpeningImportService.Validation.OpeningStockLocationRequired" xml:space="preserve">
+    <value>سطر رصيد الافتتاح يحتاج رمز حوض أو مخزن.</value>
+  </data>
+  <data name="OpeningImportService.Validation.ProjectAlreadyExists" xml:space="preserve">
+    <value>المشروع موجود بالفعل: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.ProjectCodeRequired" xml:space="preserve">
+    <value>رمز المشروع مطلوب.</value>
+  </data>
+  <data name="OpeningImportService.Validation.ProjectDeletedExists" xml:space="preserve">
+    <value>المشروع موسوم كمحذوف: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.ProjectNameRequired" xml:space="preserve">
+    <value>اسم المشروع مطلوب.</value>
+  </data>
+  <data name="OpeningImportService.Validation.ProjectNotFound" xml:space="preserve">
+    <value>المشروع غير موجود: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.ReceiptDateInvalid" xml:space="preserve">
+    <value>تاريخ الإيصال غير صالح.</value>
+  </data>
+  <data name="OpeningImportService.Validation.ShipmentCountMustBePositive" xml:space="preserve">
+    <value>كمية الشحن يجب أن تكون أكبر من صفر.</value>
+  </data>
+  <data name="OpeningImportService.Validation.ShipmentDateInvalid" xml:space="preserve">
+    <value>تاريخ الشحن غير صالح.</value>
+  </data>
+  <data name="OpeningImportService.Validation.StartDateInvalid" xml:space="preserve">
+    <value>تاريخ البدء غير صالح.</value>
+  </data>
+  <data name="OpeningImportService.Validation.StockNotFound" xml:space="preserve">
+    <value>المخزون غير موجود: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.UnitPriceMustBeNonNegative" xml:space="preserve">
+    <value>سعر الوحدة لا يمكن أن يكون سالبًا.</value>
+  </data>
+  <data name="OpeningImportService.Validation.UnsupportedSheet" xml:space="preserve">
+    <value>ورقة غير مدعومة: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.WarehouseNotFound" xml:space="preserve">
+    <value>المخزن غير موجود: {0}</value>
   </data>
 </root>

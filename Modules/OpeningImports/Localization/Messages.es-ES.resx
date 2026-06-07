@@ -19,15 +19,162 @@
     <value>Se produjo un error inesperado durante el proceso de importación inicial.</value>
   </data>
   <data name="OpeningImportService.JobNotFound" xml:space="preserve">
-    <value>No se encontró el trabajo de importación inicial.</value>
+    <value>No se encontró la tarea de importación inicial.</value>
   </data>
   <data name="OpeningImportService.AlreadyApplied" xml:space="preserve">
-    <value>Este trabajo de importación inicial ya ha sido aplicado.</value>
+    <value>Esta importación inicial ya se aplicó.</value>
   </data>
   <data name="OpeningImportService.CommitHasErrors" xml:space="preserve">
-    <value>No se puede confirmar la importación mientras haya filas inválidas.</value>
+    <value>No se puede confirmar si hay filas inválidas.</value>
   </data>
   <data name="OpeningImportService.EmptyWorkbook" xml:space="preserve">
-    <value>No se encontró ninguna hoja procesable en el libro.</value>
+    <value>No se encontraron hojas procesables en el libro.</value>
+  </data>
+  <data name="OpeningImportService.GoodsReceiptHeaderConflict" xml:space="preserve">
+    <value>Los valores de encabezado deben ser consistentes por proyecto. Número de recibo, fecha y almacén deben coincidir.</value>
+  </data>
+  <data name="OpeningImportService.GoodsReceiptBatchConflict" xml:space="preserve">
+    <value>Dentro del mismo proyecto y lote, el stock de peces y el gramaje promedio deben ser consistentes.</value>
+  </data>
+  <data name="OpeningImportService.TemplateGeneratedByOpeningImport" xml:space="preserve">
+    <value>Esta plantilla fue generada para importación inicial.</value>
+  </data>
+  <data name="OpeningImportService.CleanupNoDeletedTestRecordFound" xml:space="preserve">
+    <value>No se encontraron registros de prueba eliminados para limpiar.</value>
+  </data>
+  <data name="OpeningImportService.CleanupDeletedRecordsCleared" xml:space="preserve">
+    <value>Registros de prueba eliminados limpiados correctamente.</value>
+  </data>
+  <data name="OpeningImportService.CleanupCouldNotClearAutomatically" xml:space="preserve">
+    <value>No se pudo limpiar automáticamente algunos registros de prueba.</value>
+  </data>
+  <data name="OpeningImportService.CleanupHasRelations" xml:space="preserve">
+    <value>No se puede eliminar porque hay relaciones: {0}</value>
+  </data>
+  <data name="OpeningImportService.ResetNoRecordsToClear" xml:space="preserve">
+    <value>No se encontraron registros para reiniciar.</value>
+  </data>
+  <data name="OpeningImportService.ResetPermanentClearCompleted" xml:space="preserve">
+    <value>Los datos operativos vinculados se eliminaron permanentemente.</value>
+  </data>
+  <data name="OpeningImportService.ResetClearFailed" xml:space="preserve">
+    <value>Error al reiniciar: {0}</value>
+  </data>
+  <data name="OpeningImportService.MortalityBatchNotFound" xml:space="preserve">
+    <value>No se encontró el lote de mortalidad correspondiente.</value>
+  </data>
+  <data name="OpeningImportService.MortalityHeaderNotFound" xml:space="preserve">
+    <value>No se encontró el encabezado de mortalidad.</value>
+  </data>
+  <data name="OpeningImportService.MortalityAverageGramNotFound" xml:space="preserve">
+    <value>Falta el gramaje promedio de mortalidad.</value>
+  </data>
+  <data name="OpeningImportService.DerivedOpeningStockNotice" xml:space="preserve">
+    <value>El stock de apertura se derivó a partir de movimientos de apertura.</value>
+  </data>
+  <data name="OpeningImportService.Validation.AverageGramMustBePositive" xml:space="preserve">
+    <value>El promedio de gramos debe ser mayor que cero.</value>
+  </data>
+  <data name="OpeningImportService.Validation.BatchCodeRequired" xml:space="preserve">
+    <value>El código de lote es obligatorio.</value>
+  </data>
+  <data name="OpeningImportService.Validation.CageAlreadyExists" xml:space="preserve">
+    <value>Código de jaula duplicado para este proyecto: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.CageAssignedToDifferentProject" xml:space="preserve">
+    <value>La jaula pertenece a otro proyecto: {0} (Proyecto: {1})</value>
+  </data>
+  <data name="OpeningImportService.Validation.CageCodeRequired" xml:space="preserve">
+    <value>El código de jaula es obligatorio.</value>
+  </data>
+  <data name="OpeningImportService.Validation.CageDeletedExists" xml:space="preserve">
+    <value>La jaula ya existe como eliminada: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.CageNameRequired" xml:space="preserve">
+    <value>El nombre de la jaula es obligatorio.</value>
+  </data>
+  <data name="OpeningImportService.Validation.CageNotFound" xml:space="preserve">
+    <value>No se encontró la jaula: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.DuplicateProjectCode" xml:space="preserve">
+    <value>Código de proyecto duplicado: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.DuplicateProjectCage" xml:space="preserve">
+    <value>Combinación proyecto-jaula duplicada: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.ExchangeRateMustBePositive" xml:space="preserve">
+    <value>La tasa de cambio debe ser mayor que cero.</value>
+  </data>
+  <data name="OpeningImportService.Validation.FeedGramMustBePositive" xml:space="preserve">
+    <value>La cantidad de alimento debe ser mayor que cero.</value>
+  </data>
+  <data name="OpeningImportService.Validation.FeedStockCodeRequired" xml:space="preserve">
+    <value>El código de stock de alimento es obligatorio.</value>
+  </data>
+  <data name="OpeningImportService.Validation.FeedStockNotFound" xml:space="preserve">
+    <value>No se encontró el stock de alimento: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.FeedingDateInvalid" xml:space="preserve">
+    <value>La fecha de alimentación no es válida.</value>
+  </data>
+  <data name="OpeningImportService.Validation.FishCountMustBePositive" xml:space="preserve">
+    <value>La cantidad de peces debe ser mayor que cero.</value>
+  </data>
+  <data name="OpeningImportService.Validation.FishStockCodeRequired" xml:space="preserve">
+    <value>El código de stock de peces es obligatorio.</value>
+  </data>
+  <data name="OpeningImportService.Validation.FishStockNotFound" xml:space="preserve">
+    <value>No se encontró el stock de peces: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.MortalityCountMustBePositive" xml:space="preserve">
+    <value>La mortalidad debe ser mayor que cero.</value>
+  </data>
+  <data name="OpeningImportService.Validation.MortalityDateInvalid" xml:space="preserve">
+    <value>La fecha de mortalidad no es válida.</value>
+  </data>
+  <data name="OpeningImportService.Validation.OpeningDateInvalid" xml:space="preserve">
+    <value>La fecha de apertura no es válida.</value>
+  </data>
+  <data name="OpeningImportService.Validation.OpeningStockLocationRequired" xml:space="preserve">
+    <value>La fila de stock de apertura debe tener código de jaula o almacén.</value>
+  </data>
+  <data name="OpeningImportService.Validation.ProjectAlreadyExists" xml:space="preserve">
+    <value>El proyecto ya existe: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.ProjectCodeRequired" xml:space="preserve">
+    <value>El código de proyecto es obligatorio.</value>
+  </data>
+  <data name="OpeningImportService.Validation.ProjectDeletedExists" xml:space="preserve">
+    <value>El proyecto está marcado como eliminado: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.ProjectNameRequired" xml:space="preserve">
+    <value>El nombre de proyecto es obligatorio.</value>
+  </data>
+  <data name="OpeningImportService.Validation.ProjectNotFound" xml:space="preserve">
+    <value>No se encontró el proyecto: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.ReceiptDateInvalid" xml:space="preserve">
+    <value>La fecha del recibo no es válida.</value>
+  </data>
+  <data name="OpeningImportService.Validation.ShipmentCountMustBePositive" xml:space="preserve">
+    <value>La cantidad de envío debe ser mayor que cero.</value>
+  </data>
+  <data name="OpeningImportService.Validation.ShipmentDateInvalid" xml:space="preserve">
+    <value>La fecha de envío no es válida.</value>
+  </data>
+  <data name="OpeningImportService.Validation.StartDateInvalid" xml:space="preserve">
+    <value>La fecha de inicio no es válida.</value>
+  </data>
+  <data name="OpeningImportService.Validation.StockNotFound" xml:space="preserve">
+    <value>No se encontró el stock: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.UnitPriceMustBeNonNegative" xml:space="preserve">
+    <value>El precio unitario no puede ser negativo.</value>
+  </data>
+  <data name="OpeningImportService.Validation.UnsupportedSheet" xml:space="preserve">
+    <value>Hoja no soportada: {0}</value>
+  </data>
+  <data name="OpeningImportService.Validation.WarehouseNotFound" xml:space="preserve">
+    <value>No se encontró el almacén: {0}</value>
   </data>
 </root>

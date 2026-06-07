@@ -5,13 +5,8 @@ using aqua_api.Shared.Common.Helpers;
 
 namespace aqua_api.Modules.OpeningImports.Application.Services
 {
-    public class OpeningImportService : IOpeningImportService
-    {
-        private const string OpeningGoodsReceiptHeaderConflictMessage =
-            "Bir proje icin acilis mal kabul satirlarinin mal kabul no, tarih ve depo bilgisi ayni olmalidir; tek mal kabul basligi olusturulur.";
-        private const string OpeningGoodsReceiptBatchConflictMessage =
-            "Ayni proje ve batch icin balik stok kodu ve ortalama gram ayni olmalidir; farkli urun veya agirlik icin farkli batch kodu kullanin.";
-
+public class OpeningImportService : IOpeningImportService
+{
         private static readonly JsonSerializerOptions JsonOptions = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -21,6 +16,11 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IBalanceLedgerManager _balanceLedgerManager;
         private readonly ILocalizationService _localizationService;
+
+        private string L(string key, params object[] args) =>
+            args.Length == 0
+                ? _localizationService.GetLocalizedString(key)
+                : _localizationService.GetLocalizedString(key, args);
 
         public OpeningImportService(
             IUnitOfWork unitOfWork,
@@ -143,8 +143,8 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
                 if (HasOpeningGoodsReceiptHeaderConflicts(job.Rows))
                 {
                     return ApiResponse<OpeningImportCommitResultDto>.ErrorResult(
-                        OpeningGoodsReceiptHeaderConflictMessage,
-                        OpeningGoodsReceiptHeaderConflictMessage,
+                        L("OpeningImportService.GoodsReceiptHeaderConflict"),
+                        L("OpeningImportService.GoodsReceiptHeaderConflict"),
                         StatusCodes.Status400BadRequest);
                 }
 
@@ -257,7 +257,7 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
                 {
                     return ApiResponse<OpeningImportCleanupSoftDeletedResultDto>.SuccessResult(
                         result,
-                        "Temizlenecek silinmiş test kaydı bulunamadı.");
+                        L("OpeningImportService.CleanupNoDeletedTestRecordFound"));
                 }
 
                 await _unitOfWork.BeginTransactionAsync();
@@ -275,15 +275,15 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
 
                 return ApiResponse<OpeningImportCleanupSoftDeletedResultDto>.SuccessResult(
                     result,
-                    "Silinmiş test kayıtları temizlendi. Lütfen önizlemeyi yeniden çalıştırın.");
+                    L("OpeningImportService.CleanupDeletedRecordsCleared"));
             }
             catch (DbUpdateException ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
 
                 return ApiResponse<OpeningImportCleanupSoftDeletedResultDto>.ErrorResult(
-                    "Silinmiş test kayıtları otomatik temizlenemedi.",
-                    $"Bu kayıtların ilişkili hareketleri olabilir. Önce bağlı kayıtları manuel kontrol edin. Detay: {ex.GetBaseException().Message}",
+                    L("OpeningImportService.CleanupCouldNotClearAutomatically"),
+                    L("OpeningImportService.CleanupHasRelations", ex.GetBaseException().Message),
                     StatusCodes.Status409Conflict);
             }
             catch (Exception ex)
@@ -345,7 +345,7 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
                 {
                     return ApiResponse<OpeningImportResetExistingDataResultDto>.SuccessResult(
                         result,
-                        "Bu önizleme için temizlenecek mevcut proje/kafes kaydı bulunamadı.");
+                        L("OpeningImportService.ResetNoRecordsToClear"));
                 }
 
                 await _unitOfWork.BeginTransactionAsync();
@@ -470,14 +470,14 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
 
                 return ApiResponse<OpeningImportResetExistingDataResultDto>.SuccessResult(
                     result,
-                    "İlk geçiş kapsamındaki mevcut proje, kafes ve bağlı hareket kayıtları kalıcı temizlendi. Lütfen önizlemeyi yeniden çalıştırın.");
+                    L("OpeningImportService.ResetPermanentClearCompleted"));
             }
             catch (Exception ex)
             {
                 await _unitOfWork.RollbackTransactionAsync();
 
                 return ApiResponse<OpeningImportResetExistingDataResultDto>.ErrorResult(
-                    "İlk geçiş mevcut kayıt temizliği tamamlanamadı.",
+                    L("OpeningImportService.ResetClearFailed"),
                     ex.GetBaseException().Message,
                     StatusCodes.Status409Conflict);
             }
@@ -555,10 +555,20 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
             var shipmentRows = rows.Where(x => IsSheet(x.SheetName, "OpeningShipments")).ToList();
 
             PropagateOpeningGoodsReceiptHeaderValues(goodsReceiptRows);
-            AppendDuplicateErrors(projectRows, "projectCode", value => $"Aynı proje kodu dosyada tekrar ediyor: {value}");
-            AppendDuplicateErrors(cageRows, row => $"{GetValue(row, "projectCode")}::{GetValue(row, "cageCode")}", value => $"Aynı proje/kafes eşleşmesi dosyada tekrar ediyor: {value}");
-            AppendOpeningGoodsReceiptHeaderErrors(goodsReceiptRows);
-            AppendOpeningGoodsReceiptBatchErrors(goodsReceiptRows);
+            AppendDuplicateErrors(
+                projectRows,
+                "projectCode",
+                value => L("OpeningImportService.Validation.DuplicateProjectCode", value));
+            AppendDuplicateErrors(
+                cageRows,
+                row => $"{GetValue(row, "projectCode")}::{GetValue(row, "cageCode")}",
+                value => L("OpeningImportService.Validation.DuplicateProjectCage", value));
+            AppendOpeningGoodsReceiptHeaderErrors(
+                goodsReceiptRows,
+                L("OpeningImportService.GoodsReceiptHeaderConflict"));
+            AppendOpeningGoodsReceiptBatchErrors(
+                goodsReceiptRows,
+                L("OpeningImportService.GoodsReceiptBatchConflict"));
 
             var referencedProjectCodes = rows
                 .Select(x => GetValue(x, "projectCode"))
@@ -580,11 +590,11 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
                 var projectCode = GetValue(row, "projectCode");
                 if (!string.IsNullOrWhiteSpace(projectCode) && existingProjects.ContainsKey(projectCode))
                 {
-                    row.Messages.Add($"Proje zaten mevcut, açılış importu tekrar uygulanamaz: {projectCode}");
+                    row.Messages.Add(L("OpeningImportService.Validation.ProjectAlreadyExists", projectCode));
                 }
                 else if (!string.IsNullOrWhiteSpace(projectCode) && deletedProjectCodeSet.Contains(projectCode))
                 {
-                    row.Messages.Add($"Proje kodu daha önce silinmiş kayıt olarak mevcut. İlk girişten önce bu test kaydını kalıcı temizleyin veya geri yükleyin: {projectCode}");
+                    row.Messages.Add(L("OpeningImportService.Validation.ProjectDeletedExists", projectCode));
                 }
             }
 
@@ -599,7 +609,7 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
                 var existsInFile = projectRows.Any(x => string.Equals(GetValue(x, "projectCode"), projectCode, StringComparison.OrdinalIgnoreCase));
                 if (!existsInFile && !existingProjects.ContainsKey(projectCode))
                 {
-                    row.Messages.Add($"Proje bulunamadı: {projectCode}");
+                    row.Messages.Add(L("OpeningImportService.Validation.ProjectNotFound", projectCode));
                 }
             }
 
@@ -622,7 +632,7 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
                 var stockCode = GetValue(row, "fishStockCode");
                 if (!string.IsNullOrWhiteSpace(stockCode) && !existingStocks.ContainsKey(stockCode))
                 {
-                    row.Messages.Add($"Stok bulunamadı: {stockCode}");
+                    row.Messages.Add(L("OpeningImportService.Validation.StockNotFound", stockCode));
                 }
             }
 
@@ -641,13 +651,13 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
                 var fishStockCode = GetValue(row, "fishStockCode");
                 if (!string.IsNullOrWhiteSpace(fishStockCode) && !existingStocks.ContainsKey(fishStockCode))
                 {
-                    row.Messages.Add($"Balık stoku bulunamadı: {fishStockCode}");
+                    row.Messages.Add(L("OpeningImportService.Validation.FishStockNotFound", fishStockCode));
                 }
 
                 var feedStockCode = GetValue(row, "feedStockCode");
                 if (!string.IsNullOrWhiteSpace(feedStockCode) && !existingFeedStocks.ContainsKey(feedStockCode))
                 {
-                    row.Messages.Add($"Yem stoku bulunamadı: {feedStockCode}");
+                    row.Messages.Add(L("OpeningImportService.Validation.FeedStockNotFound", feedStockCode));
                 }
             }
 
@@ -656,7 +666,7 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
                 var fishStockCode = GetValue(row, "fishStockCode");
                 if (!string.IsNullOrWhiteSpace(fishStockCode) && !existingStocks.ContainsKey(fishStockCode))
                 {
-                    row.Messages.Add($"Balık stoku bulunamadı: {fishStockCode}");
+                    row.Messages.Add(L("OpeningImportService.Validation.FishStockNotFound", fishStockCode));
                 }
             }
 
@@ -697,7 +707,7 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
                 if (!short.TryParse(warehouseCode, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedWarehouse) ||
                     !existingWarehouses.ContainsKey(parsedWarehouse))
                 {
-                    row.Messages.Add($"Depo bulunamadı: {warehouseCode}");
+                    row.Messages.Add(L("OpeningImportService.Validation.WarehouseNotFound", warehouseCode));
                 }
             }
 
@@ -721,11 +731,11 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
                 var cageCode = GetValue(row, "cageCode");
                 if (!string.IsNullOrWhiteSpace(cageCode) && existingCages.ContainsKey(cageCode))
                 {
-                    row.Messages.Add($"Kafes zaten mevcut, açılış importu tekrar uygulanamaz: {cageCode}");
+                    row.Messages.Add(L("OpeningImportService.Validation.CageAlreadyExists", cageCode));
                 }
                 else if (!string.IsNullOrWhiteSpace(cageCode) && deletedCageCodeSet.Contains(cageCode))
                 {
-                    row.Messages.Add($"Kafes kodu daha önce silinmiş kayıt olarak mevcut. İlk girişten önce bu test kaydını kalıcı temizleyin veya geri yükleyin: {cageCode}");
+                    row.Messages.Add(L("OpeningImportService.Validation.CageDeletedExists", cageCode));
                 }
             }
 
@@ -751,7 +761,7 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
 
                 if (!existsInFile && !existingCages.ContainsKey(cageCode))
                 {
-                    row.Messages.Add($"Kafes bulunamadı: {cageCode}");
+                    row.Messages.Add(L("OpeningImportService.Validation.CageNotFound", cageCode));
                 }
 
                 var conflictingAssignment = activeAssignments.FirstOrDefault(x =>
@@ -760,7 +770,7 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
 
                 if (conflictingAssignment != null)
                 {
-                    row.Messages.Add($"Kafes başka projeye aktif atanmış: {cageCode} -> {conflictingAssignment.Project?.ProjectCode}");
+                    row.Messages.Add(L("OpeningImportService.Validation.CageAssignedToDifferentProject", cageCode, conflictingAssignment.Project?.ProjectCode));
                 }
             }
         }
@@ -1019,13 +1029,13 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
                     continue;
                 }
 
-                await _unitOfWork.Repository<CageWarehouseMapping>().AddAsync(new CageWarehouseMapping
-                {
-                    CageId = cage.Id,
-                    WarehouseId = warehouse.Id,
-                    IsActive = true,
-                    Note = "İlk geçiş Excel şablonu üzerinden oluşturuldu."
-                });
+                    await _unitOfWork.Repository<CageWarehouseMapping>().AddAsync(new CageWarehouseMapping
+                    {
+                        CageId = cage.Id,
+                        WarehouseId = warehouse.Id,
+                        IsActive = true,
+                        Note = L("OpeningImportService.TemplateGeneratedByOpeningImport")
+                    });
                 activeCageIds.Add(cage.Id);
                 result.CreatedCageWarehouseMappings += 1;
                 createdAny = true;
@@ -1237,14 +1247,14 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
                     .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.BatchCode == batchCode && x.FishStockId == stock.Id);
                 if (batch == null)
                 {
-                    throw new InvalidOperationException("Fire kaydi icin batch bulunamadi.");
+                    throw new InvalidOperationException(L("OpeningImportService.MortalityBatchNotFound"));
                 }
 
                 var mortality = await _unitOfWork.Db.Mortalities
                     .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.MortalityDate.Date == mortalityDate.Date);
                 if (mortality == null)
                 {
-                    throw new InvalidOperationException("Fire kaydi icin mortality basligi bulunamadi.");
+                    throw new InvalidOperationException(L("OpeningImportService.MortalityHeaderNotFound"));
                 }
 
                 var ledgerExists = await _unitOfWork.Db.BatchMovements.AnyAsync(x =>
@@ -1266,7 +1276,7 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
                 var averageGram = ResolveAverageGram(balance);
                 if (averageGram <= 0)
                 {
-                    throw new InvalidOperationException("Fire kaydi icin batch/kafes ortalama gramaji bulunamadi.");
+                    throw new InvalidOperationException(L("OpeningImportService.MortalityAverageGramNotFound"));
                 }
 
                 await _balanceLedgerManager.ApplyDelta(
@@ -1362,8 +1372,8 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
                 .Where(x => x.Value.FishCount > 0)
                 .Select(x =>
                 {
-                    var row = new OpeningImportRow
-                    {
+                var row = new OpeningImportRow
+                {
                         SheetName = "OpeningStock",
                         RowNumber = 0,
                         Status = OpeningImportRowStatus.Valid,
@@ -1379,10 +1389,10 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
 
                     row.RawDataJson = JsonSerializer.Serialize(normalized, JsonOptions);
                     row.NormalizedDataJson = JsonSerializer.Serialize(normalized, JsonOptions);
-                    row.MessagesJson = JsonSerializer.Serialize(new List<string>
-                    {
-                        "Net açılış stok, özet mal kabul ve mortalite satırlarından türetildi."
-                    }, JsonOptions);
+                row.MessagesJson = JsonSerializer.Serialize(new List<string>
+                {
+                    L("OpeningImportService.DerivedOpeningStockNotice")
+                }, JsonOptions);
 
                     return row;
                 })
@@ -2042,39 +2052,39 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
             return normalized;
         }
 
-        private static List<string> ValidateSheetRow(string sheetName, Dictionary<string, string?> normalized)
+        private List<string> ValidateSheetRow(string sheetName, Dictionary<string, string?> normalized)
         {
             var messages = new List<string>();
 
             if (IsSheet(sheetName, "Projects"))
             {
-                Require(normalized, "projectCode", messages, "Proje kodu zorunludur.");
-                Require(normalized, "projectName", messages, "Proje adı zorunludur.");
-                ValidateDate(normalized, "startDate", messages, "Başlangıç tarihi geçersiz.");
+                Require(normalized, "projectCode", messages, "OpeningImportService.Validation.ProjectCodeRequired");
+                Require(normalized, "projectName", messages, "OpeningImportService.Validation.ProjectNameRequired");
+                ValidateDate(normalized, "startDate", messages, "OpeningImportService.Validation.StartDateInvalid");
                 return messages;
             }
 
             if (IsSheet(sheetName, "Cages"))
             {
-                Require(normalized, "projectCode", messages, "Proje kodu zorunludur.");
-                Require(normalized, "cageCode", messages, "Kafes kodu zorunludur.");
-                Require(normalized, "cageName", messages, "Kafes adı zorunludur.");
+                Require(normalized, "projectCode", messages, "OpeningImportService.Validation.ProjectCodeRequired");
+                Require(normalized, "cageCode", messages, "OpeningImportService.Validation.CageCodeRequired");
+                Require(normalized, "cageName", messages, "OpeningImportService.Validation.CageNameRequired");
                 return messages;
             }
 
             if (IsSheet(sheetName, "OpeningStock"))
             {
-                Require(normalized, "projectCode", messages, "Proje kodu zorunludur.");
-                Require(normalized, "fishStockCode", messages, "Balık stok kodu zorunludur.");
-                ValidatePositiveInt(normalized, "fishCount", messages, "Balık adedi 0'dan büyük olmalıdır.");
-                ValidatePositiveDecimal(normalized, "averageGram", messages, "Ortalama gram 0'dan büyük olmalıdır.");
-                ValidateDate(normalized, "asOfDate", messages, "Açılış tarihi geçersiz.");
+                Require(normalized, "projectCode", messages, "OpeningImportService.Validation.ProjectCodeRequired");
+                Require(normalized, "fishStockCode", messages, "OpeningImportService.Validation.FishStockCodeRequired");
+                ValidatePositiveInt(normalized, "fishCount", messages, "OpeningImportService.Validation.FishCountMustBePositive");
+                ValidatePositiveDecimal(normalized, "averageGram", messages, "OpeningImportService.Validation.AverageGramMustBePositive");
+                ValidateDate(normalized, "asOfDate", messages, "OpeningImportService.Validation.OpeningDateInvalid");
 
                 var hasCage = !string.IsNullOrWhiteSpace(normalized.TryGetValue("cageCode", out var cageCode) ? cageCode : null);
                 var hasWarehouse = !string.IsNullOrWhiteSpace(normalized.TryGetValue("warehouseCode", out var warehouseCode) ? warehouseCode : null);
                 if (!hasCage && !hasWarehouse)
                 {
-                    messages.Add("Açılış stok satırında ya kafes kodu ya da depo kodu verilmelidir.");
+                    messages.Add(L("OpeningImportService.Validation.OpeningStockLocationRequired"));
                 }
 
                 return messages;
@@ -2082,80 +2092,80 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
 
             if (IsSheet(sheetName, "OpeningGoodsReceipts"))
             {
-                Require(normalized, "projectCode", messages, "Proje kodu zorunludur.");
-                Require(normalized, "cageCode", messages, "Kafes kodu zorunludur.");
-                Require(normalized, "fishStockCode", messages, "Balık stok kodu zorunludur.");
-                ValidatePositiveInt(normalized, "fishCount", messages, "Balık adedi 0'dan büyük olmalıdır.");
-                ValidatePositiveDecimal(normalized, "averageGram", messages, "Ortalama gram 0'dan büyük olmalıdır.");
-                ValidateDate(normalized, "receiptDate", messages, "Mal kabul tarihi geçersiz.");
+                Require(normalized, "projectCode", messages, "OpeningImportService.Validation.ProjectCodeRequired");
+                Require(normalized, "cageCode", messages, "OpeningImportService.Validation.CageCodeRequired");
+                Require(normalized, "fishStockCode", messages, "OpeningImportService.Validation.FishStockCodeRequired");
+                ValidatePositiveInt(normalized, "fishCount", messages, "OpeningImportService.Validation.FishCountMustBePositive");
+                ValidatePositiveDecimal(normalized, "averageGram", messages, "OpeningImportService.Validation.AverageGramMustBePositive");
+                ValidateDate(normalized, "receiptDate", messages, "OpeningImportService.Validation.ReceiptDateInvalid");
                 return messages;
             }
 
             if (IsSheet(sheetName, "OpeningMortality"))
             {
-                Require(normalized, "projectCode", messages, "Proje kodu zorunludur.");
-                Require(normalized, "cageCode", messages, "Kafes kodu zorunludur.");
-                Require(normalized, "fishStockCode", messages, "Balık stok kodu zorunludur.");
-                ValidatePositiveInt(normalized, "deadCount", messages, "Mortalite adedi 0'dan büyük olmalıdır.");
-                ValidateDate(normalized, "mortalityDate", messages, "Mortalite tarihi geçersiz.");
+                Require(normalized, "projectCode", messages, "OpeningImportService.Validation.ProjectCodeRequired");
+                Require(normalized, "cageCode", messages, "OpeningImportService.Validation.CageCodeRequired");
+                Require(normalized, "fishStockCode", messages, "OpeningImportService.Validation.FishStockCodeRequired");
+                ValidatePositiveInt(normalized, "deadCount", messages, "OpeningImportService.Validation.MortalityCountMustBePositive");
+                ValidateDate(normalized, "mortalityDate", messages, "OpeningImportService.Validation.MortalityDateInvalid");
                 return messages;
             }
 
             if (IsSheet(sheetName, "OpeningFeedings"))
             {
-                Require(normalized, "projectCode", messages, "Proje kodu zorunludur.");
-                Require(normalized, "cageCode", messages, "Kafes kodu zorunludur.");
-                Require(normalized, "batchCode", messages, "Batch kodu zorunludur.");
-                Require(normalized, "fishStockCode", messages, "Balık stok kodu zorunludur.");
-                Require(normalized, "feedStockCode", messages, "Yem stok kodu zorunludur.");
-                ValidatePositiveDecimal(normalized, "feedGram", messages, "Yem gramı 0'dan büyük olmalıdır.");
-                ValidateDate(normalized, "feedingDate", messages, "Yemleme tarihi geçersiz.");
+                Require(normalized, "projectCode", messages, "OpeningImportService.Validation.ProjectCodeRequired");
+                Require(normalized, "cageCode", messages, "OpeningImportService.Validation.CageCodeRequired");
+                Require(normalized, "batchCode", messages, "OpeningImportService.Validation.BatchCodeRequired");
+                Require(normalized, "fishStockCode", messages, "OpeningImportService.Validation.FishStockCodeRequired");
+                Require(normalized, "feedStockCode", messages, "OpeningImportService.Validation.FeedStockCodeRequired");
+                ValidatePositiveDecimal(normalized, "feedGram", messages, "OpeningImportService.Validation.FeedGramMustBePositive");
+                ValidateDate(normalized, "feedingDate", messages, "OpeningImportService.Validation.FeedingDateInvalid");
                 return messages;
             }
 
             if (IsSheet(sheetName, "OpeningShipments"))
             {
-                Require(normalized, "projectCode", messages, "Proje kodu zorunludur.");
-                Require(normalized, "cageCode", messages, "Kafes kodu zorunludur.");
-                Require(normalized, "batchCode", messages, "Batch kodu zorunludur.");
-                Require(normalized, "fishStockCode", messages, "Balık stok kodu zorunludur.");
-                ValidatePositiveInt(normalized, "fishCount", messages, "Sevkiyat adedi 0'dan büyük olmalıdır.");
-                ValidatePositiveDecimal(normalized, "averageGram", messages, "Ortalama gram 0'dan büyük olmalıdır.");
-                ValidateDate(normalized, "shipmentDate", messages, "Sevkiyat tarihi geçersiz.");
-                ValidateNonNegativeDecimal(normalized, "unitPrice", messages, "Birim fiyat 0 veya daha büyük olmalıdır.");
-                ValidatePositiveDecimalWhenPresent(normalized, "exchangeRate", messages, "Kur 0'dan büyük olmalıdır.");
+                Require(normalized, "projectCode", messages, "OpeningImportService.Validation.ProjectCodeRequired");
+                Require(normalized, "cageCode", messages, "OpeningImportService.Validation.CageCodeRequired");
+                Require(normalized, "batchCode", messages, "OpeningImportService.Validation.BatchCodeRequired");
+                Require(normalized, "fishStockCode", messages, "OpeningImportService.Validation.FishStockCodeRequired");
+                ValidatePositiveInt(normalized, "fishCount", messages, "OpeningImportService.Validation.ShipmentCountMustBePositive");
+                ValidatePositiveDecimal(normalized, "averageGram", messages, "OpeningImportService.Validation.AverageGramMustBePositive");
+                ValidateDate(normalized, "shipmentDate", messages, "OpeningImportService.Validation.ShipmentDateInvalid");
+                ValidateNonNegativeDecimal(normalized, "unitPrice", messages, "OpeningImportService.Validation.UnitPriceMustBeNonNegative");
+                ValidatePositiveDecimalWhenPresent(normalized, "exchangeRate", messages, "OpeningImportService.Validation.ExchangeRateMustBePositive");
                 return messages;
             }
 
-            messages.Add($"Desteklenmeyen sheet: {sheetName}");
+            messages.Add(L("OpeningImportService.Validation.UnsupportedSheet", sheetName));
             return messages;
         }
 
-        private static void Require(Dictionary<string, string?> values, string key, List<string> messages, string message)
+        private void Require(Dictionary<string, string?> values, string key, List<string> messages, string messageKey)
         {
             if (!values.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
             {
-                messages.Add(message);
+                messages.Add(L(messageKey));
             }
         }
 
-        private static void ValidatePositiveInt(Dictionary<string, string?> values, string key, List<string> messages, string message)
+        private void ValidatePositiveInt(Dictionary<string, string?> values, string key, List<string> messages, string messageKey)
         {
             if (!values.TryGetValue(key, out var value) || !TryParseOpeningInt(value, out var parsed) || parsed <= 0)
             {
-                messages.Add(message);
+                messages.Add(L(messageKey));
             }
         }
 
-        private static void ValidatePositiveDecimal(Dictionary<string, string?> values, string key, List<string> messages, string message)
+        private void ValidatePositiveDecimal(Dictionary<string, string?> values, string key, List<string> messages, string messageKey)
         {
             if (!values.TryGetValue(key, out var value) || !TryParseOpeningDecimal(value, out var parsed) || parsed <= 0)
             {
-                messages.Add(message);
+                messages.Add(L(messageKey));
             }
         }
 
-        private static void ValidatePositiveDecimalWhenPresent(Dictionary<string, string?> values, string key, List<string> messages, string message)
+        private void ValidatePositiveDecimalWhenPresent(Dictionary<string, string?> values, string key, List<string> messages, string messageKey)
         {
             if (!values.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
             {
@@ -2164,11 +2174,11 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
 
             if (!TryParseOpeningDecimal(value, out var parsed) || parsed <= 0)
             {
-                messages.Add(message);
+                messages.Add(L(messageKey));
             }
         }
 
-        private static void ValidateNonNegativeDecimal(Dictionary<string, string?> values, string key, List<string> messages, string message)
+        private void ValidateNonNegativeDecimal(Dictionary<string, string?> values, string key, List<string> messages, string messageKey)
         {
             if (!values.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
             {
@@ -2177,11 +2187,11 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
 
             if (!TryParseOpeningDecimal(value, out var parsed) || parsed < 0)
             {
-                messages.Add(message);
+                messages.Add(L(messageKey));
             }
         }
 
-        private static void ValidateDate(Dictionary<string, string?> values, string key, List<string> messages, string message)
+        private void ValidateDate(Dictionary<string, string?> values, string key, List<string> messages, string messageKey)
         {
             if (!values.TryGetValue(key, out var value) || string.IsNullOrWhiteSpace(value))
             {
@@ -2190,7 +2200,7 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
 
             if (!TryParseOpeningDate(value, out _))
             {
-                messages.Add(message);
+                messages.Add(L(messageKey));
             }
         }
 
@@ -2215,7 +2225,7 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
             }
         }
 
-        private static void AppendOpeningGoodsReceiptHeaderErrors(IEnumerable<StagedRow> rows)
+        private static void AppendOpeningGoodsReceiptHeaderErrors(IEnumerable<StagedRow> rows, string message)
         {
             foreach (var group in rows
                          .Where(x => !string.IsNullOrWhiteSpace(GetValue(x, "projectCode")))
@@ -2241,7 +2251,7 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
 
                 foreach (var row in group)
                 {
-                    row.Messages.Add(OpeningGoodsReceiptHeaderConflictMessage);
+                    row.Messages.Add(message);
                 }
             }
         }
@@ -2270,7 +2280,7 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
             }
         }
 
-        private static void AppendOpeningGoodsReceiptBatchErrors(IEnumerable<StagedRow> rows)
+        private static void AppendOpeningGoodsReceiptBatchErrors(IEnumerable<StagedRow> rows, string message)
         {
             foreach (var group in rows
                          .Where(x => !string.IsNullOrWhiteSpace(GetValue(x, "projectCode")))
@@ -2296,7 +2306,7 @@ namespace aqua_api.Modules.OpeningImports.Application.Services
 
                 foreach (var row in group)
                 {
-                    row.Messages.Add(OpeningGoodsReceiptBatchConflictMessage);
+                    row.Messages.Add(message);
                 }
             }
         }
