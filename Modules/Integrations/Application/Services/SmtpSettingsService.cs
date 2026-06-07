@@ -179,7 +179,7 @@ namespace aqua_api.Modules.Integrations.Application.Services
             var username = section["Username"] ?? "";
             var password = section["Password"] ?? "";
             var fromEmail = section["FromEmail"] ?? username;
-            var fromName = section["FromName"] ?? "CRM AQUA SYSTEM";
+            var fromName = section["FromName"] ?? "V3RII AQUA SYSTEM";
             var timeout = section.GetValue<int?>("Timeout") ?? 30;
 
             entity = new SmtpSetting

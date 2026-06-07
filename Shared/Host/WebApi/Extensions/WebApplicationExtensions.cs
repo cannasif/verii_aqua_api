@@ -136,7 +136,7 @@ public static class WebApplicationExtensions
             app.UseSwagger();
             app.UseSwaggerUI(options =>
             {
-                options.SwaggerEndpoint("/swagger/v1/swagger.json", "CRM Web API v1");
+                options.SwaggerEndpoint("/swagger/v1/swagger.json", "Aqua Web API v1");
                 options.RoutePrefix = "swagger";
             });
         }

@@ -267,13 +267,13 @@ public static class ServiceCollectionExtensions
         {
             options.SwaggerDoc("v1", new OpenApiInfo
             {
-                Title = "CRM Web API",
+                Title = "Aqua Web API",
                 Version = "v1",
-                Description = "A comprehensive CRM Web API with JWT Authentication",
+                Description = "Aqua operations, reporting, integration, and administration API with JWT authentication",
                 Contact = new OpenApiContact
                 {
-                    Name = "CRM API Team",
-                    Email = "support@crmapi.com"
+                    Name = "V3RII Aqua API Team",
+                    Email = "support@v3rii.com"
                 }
             });
 

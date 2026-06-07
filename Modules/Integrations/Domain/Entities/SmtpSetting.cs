@@ -14,7 +14,7 @@ namespace aqua_api.Modules.Integrations.Domain.Entities
         public string PasswordEncrypted { get; set; } = string.Empty;
 
         public string FromEmail { get; set; } = string.Empty;
-        public string FromName { get; set; } = "V3RII CRM SYSTEM";
+        public string FromName { get; set; } = "V3RII AQUA SYSTEM";
 
         public int Timeout { get; set; } = 30;
     }
