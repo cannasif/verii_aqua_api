@@ -16,7 +16,7 @@
     <value>Operation erfolgreich.</value>
   </data>
   <data name="StockConvertService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Datensatz nicht gefunden.</value>
   </data>
   <data name="StockConvertService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>
@@ -25,7 +25,7 @@
     <value>Operation erfolgreich.</value>
   </data>
   <data name="StockConvertLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Datensatz nicht gefunden.</value>
   </data>
   <data name="StockConvertLineService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>

@@ -16,7 +16,7 @@
     <value>İşlem başarılı.</value>
   </data>
   <data name="StockConvertService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Stok dönüşüm kaydı bulunamadı.</value>
   </data>
   <data name="StockConvertService.InternalServerError" xml:space="preserve">
     <value>Dahili sunucu hatası oluştu.</value>
@@ -25,7 +25,7 @@
     <value>İşlem başarılı.</value>
   </data>
   <data name="StockConvertLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Satır kaydı bulunamadı.</value>
   </data>
   <data name="StockConvertLineService.InternalServerError" xml:space="preserve">
     <value>Dahili sunucu hatası oluştu.</value>
