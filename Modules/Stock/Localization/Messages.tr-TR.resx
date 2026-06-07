@@ -176,16 +176,16 @@
     <value>Depo getirilirken bir hata oluştu: {0}</value>
   </data>
   <data name="StockDetailService.CreateStockDetailExceptionMessage" xml:space="preserve">
-    <value>Stock Detail oluşturulurken bir hata oluştu: {0}</value>
+    <value>Stok detay eklenirken bir hata oluştu: {0}</value>
   </data>
   <data name="StockDetailService.DeleteStockDetailExceptionMessage" xml:space="preserve">
-    <value>Stock Detail silinirken bir hata oluştu: {0}</value>
+    <value>Stok detay silinirken bir hata oluştu: {0}</value>
   </data>
   <data name="StockDetailService.GetAllStockDetailsExceptionMessage" xml:space="preserve">
-    <value>Stock Detailler getirilirken bir hata oluştu: {0}</value>
+    <value>Stok detayları getirilirken bir hata oluştu: {0}</value>
   </data>
   <data name="StockDetailService.GetStockDetailByIdExceptionMessage" xml:space="preserve">
-    <value>Stock Detail getirilirken bir hata oluştu: {0}</value>
+    <value>Stok detay getirilirken bir hata oluştu: {0}</value>
   </data>
   <data name="StockDetailService.GetStockDetailByStockIdExceptionMessage" xml:space="preserve">
     <value>Bir hata oluştu: {0}</value>
@@ -194,30 +194,30 @@
     <value>Sunucu hatası oluştu.</value>
   </data>
   <data name="StockDetailService.StockDetailAlreadyExists" xml:space="preserve">
-    <value>Stock Detail zaten mevcut.</value>
+    <value>Stok detayı zaten mevcut.</value>
   </data>
   <data name="StockDetailService.StockDetailCreated" xml:space="preserve">
-    <value>Stock Detail başarıyla oluşturuldu.</value>
+    <value>Stok detayı başarıyla oluşturuldu.</value>
   </data>
   <data name="StockDetailService.StockDetailDeleted" xml:space="preserve">
-    <value>Stock Detail başarıyla silindi.</value>
+    <value>Stok detayı başarıyla silindi.</value>
   </data>
   <data name="StockDetailService.StockDetailNotFound" xml:space="preserve">
-    <value>Stock Detail bulunamadı.</value>
+    <value>Stok detayı bulunamadı.</value>
   </data>
   <data name="StockDetailService.StockDetailRetrieved" xml:space="preserve">
-    <value>Stock Detail başarıyla getirildi.</value>
+    <value>Stok detayı başarıyla getirildi.</value>
   </data>
   <data name="StockDetailService.StockDetailUpdated" xml:space="preserve">
-    <value>Stock Detail başarıyla güncellendi.</value>
+    <value>Stok detayı başarıyla güncellendi.</value>
   </data>
   <data name="StockDetailService.StockDetailsRetrieved" xml:space="preserve">
-    <value>Stock Detailler başarıyla getirildi.</value>
+    <value>Stok detayları başarıyla getirildi.</value>
   </data>
   <data name="StockDetailService.StockNotFound" xml:space="preserve">
-    <value>Stock Detail bulunamadı.</value>
+    <value>Stok detayı bulunamadı.</value>
   </data>
   <data name="StockDetailService.UpdateStockDetailExceptionMessage" xml:space="preserve">
-    <value>Stock Detail güncellenirken bir hata oluştu: {0}</value>
+    <value>Stok detay güncellenirken bir hata oluştu: {0}</value>
   </data>
 </root>

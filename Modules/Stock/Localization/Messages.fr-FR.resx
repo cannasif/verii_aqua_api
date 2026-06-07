@@ -157,6 +157,24 @@
   <data name="StockService.DeleteStockExceptionMessage" xml:space="preserve">
     <value>Une erreur est survenue lors de la suppression de stock: {0}</value>
   </data>
+  <data name="WarehouseService.WarehousesRetrieved" xml:space="preserve">
+    <value>Entrepôts récupérés avec succès.</value>
+  </data>
+  <data name="WarehouseService.WarehouseRetrieved" xml:space="preserve">
+    <value>Entrepôt récupéré avec succès.</value>
+  </data>
+  <data name="WarehouseService.WarehouseNotFound" xml:space="preserve">
+    <value>Entrepôt introuvable.</value>
+  </data>
+  <data name="WarehouseService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s’est produite.</value>
+  </data>
+  <data name="WarehouseService.GetAllWarehousesExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération des entrepôts: {0}</value>
+  </data>
+  <data name="WarehouseService.GetWarehouseByIdExceptionMessage" xml:space="preserve">
+    <value>Une erreur est survenue lors de la récupération de l'entrepôt: {0}</value>
+  </data>
   <data name="StockDetailService.CreateStockDetailExceptionMessage" xml:space="preserve">
     <value>Une erreur est survenue lors de la création de the Stock Detail: {0}</value>
   </data>

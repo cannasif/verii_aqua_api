@@ -157,6 +157,24 @@
   <data name="StockService.DeleteStockExceptionMessage" xml:space="preserve">
     <value>حدث خطأ أثناء حذف stock: {0}</value>
   </data>
+  <data name="WarehouseService.WarehousesRetrieved" xml:space="preserve">
+    <value>تم استرجاع المستودعات بنجاح.</value>
+  </data>
+  <data name="WarehouseService.WarehouseRetrieved" xml:space="preserve">
+    <value>تم استرجاع المستودع بنجاح.</value>
+  </data>
+  <data name="WarehouseService.WarehouseNotFound" xml:space="preserve">
+    <value>المستودع غير موجود.</value>
+  </data>
+  <data name="WarehouseService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="WarehouseService.GetAllWarehousesExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع المستودعات: {0}</value>
+  </data>
+  <data name="WarehouseService.GetWarehouseByIdExceptionMessage" xml:space="preserve">
+    <value>حدث خطأ أثناء استرجاع المستودع: {0}</value>
+  </data>
   <data name="StockDetailService.CreateStockDetailExceptionMessage" xml:space="preserve">
     <value>حدث خطأ أثناء إنشاء the مخزون Detail: {0}</value>
   </data>

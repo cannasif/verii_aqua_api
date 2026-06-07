@@ -157,6 +157,24 @@
   <data name="StockService.DeleteStockExceptionMessage" xml:space="preserve">
     <value>Ocurrió un error al eliminar stock: {0}</value>
   </data>
+  <data name="WarehouseService.WarehousesRetrieved" xml:space="preserve">
+    <value>Almacenes recuperados con éxito.</value>
+  </data>
+  <data name="WarehouseService.WarehouseRetrieved" xml:space="preserve">
+    <value>Almacén recuperado con éxito.</value>
+  </data>
+  <data name="WarehouseService.WarehouseNotFound" xml:space="preserve">
+    <value>Almacén no encontrado.</value>
+  </data>
+  <data name="WarehouseService.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno del servidor.</value>
+  </data>
+  <data name="WarehouseService.GetAllWarehousesExceptionMessage" xml:space="preserve">
+    <value>Ocurrió un error al recuperar almacenes: {0}</value>
+  </data>
+  <data name="WarehouseService.GetWarehouseByIdExceptionMessage" xml:space="preserve">
+    <value>Ocurrió un error al recuperar almacén: {0}</value>
+  </data>
   <data name="StockDetailService.CreateStockDetailExceptionMessage" xml:space="preserve">
     <value>Ocurrió un error al crear the Stock Detail: {0}</value>
   </data>

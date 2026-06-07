@@ -157,6 +157,24 @@
   <data name="StockService.DeleteStockExceptionMessage" xml:space="preserve">
     <value>Si è verificato un errore durante l'eliminazione di stock: {0}</value>
   </data>
+  <data name="WarehouseService.WarehousesRetrieved" xml:space="preserve">
+    <value>Magazzini recuperati con successo.</value>
+  </data>
+  <data name="WarehouseService.WarehouseRetrieved" xml:space="preserve">
+    <value>Magazzino recuperato con successo.</value>
+  </data>
+  <data name="WarehouseService.WarehouseNotFound" xml:space="preserve">
+    <value>Magazzino non trovato.</value>
+  </data>
+  <data name="WarehouseService.InternalServerError" xml:space="preserve">
+    <value>Si è verificato un errore interno del server.</value>
+  </data>
+  <data name="WarehouseService.GetAllWarehousesExceptionMessage" xml:space="preserve">
+    <value>Si è verificato un errore durante il recupero dei magazzini: {0}</value>
+  </data>
+  <data name="WarehouseService.GetWarehouseByIdExceptionMessage" xml:space="preserve">
+    <value>Si è verificato un errore durante il recupero del magazzino: {0}</value>
+  </data>
   <data name="StockDetailService.CreateStockDetailExceptionMessage" xml:space="preserve">
     <value>Si è verificato un errore durante la creazione di the Scorte Detail: {0}</value>
   </data>
