@@ -10,10 +10,12 @@ namespace aqua_api.Modules.AquaReports.Application.Services
         private const int LegacyOpenEndedYearThreshold = 1901;
 
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILocalizationService _localizationService;
 
-        public DashboardProjectReportService(IUnitOfWork unitOfWork)
+        public DashboardProjectReportService(IUnitOfWork unitOfWork, ILocalizationService localizationService)
         {
             _unitOfWork = unitOfWork;
+            _localizationService = localizationService;
         }
 
         public async Task<ApiResponse<DashboardProjectsResponseDto>> GetProjectSummariesAsync(IEnumerable<long> projectIds)
@@ -34,12 +36,12 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                             cage.DailyRows.Any(row => row.Date == ToDateOnly(yesterday) && HasDailyEntry(row))))
                 };
 
-                return ApiResponse<DashboardProjectsResponseDto>.SuccessResult(response, "Dashboard project summaries loaded.");
+                return ApiResponse<DashboardProjectsResponseDto>.SuccessResult(response, _localizationService.GetLocalizedString("DashboardProjectReportService.ProjectsLoaded"));
             }
             catch (Exception ex)
             {
                 return ApiResponse<DashboardProjectsResponseDto>.ErrorResult(
-                    "Dashboard project summaries could not be loaded.",
+                    _localizationService.GetLocalizedString("DashboardProjectReportService.ProjectsLoadFailed"),
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
@@ -53,8 +55,8 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 if (report == null)
                 {
                     return ApiResponse<DashboardProjectDetailDto>.ErrorResult(
-                        "Project not found.",
-                        "Project not found.",
+                        _localizationService.GetLocalizedString("DashboardProjectReportService.ProjectNotFound"),
+                        _localizationService.GetLocalizedString("DashboardProjectReportService.ProjectNotFound"),
                         StatusCodes.Status404NotFound);
                 }
 
@@ -66,12 +68,12 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                         .ToList()
                 };
 
-                return ApiResponse<DashboardProjectDetailDto>.SuccessResult(result, "Dashboard project detail loaded.");
+                return ApiResponse<DashboardProjectDetailDto>.SuccessResult(result, _localizationService.GetLocalizedString("DashboardProjectReportService.ProjectDetailLoaded"));
             }
             catch (Exception ex)
             {
                 return ApiResponse<DashboardProjectDetailDto>.ErrorResult(
-                    "Dashboard project detail could not be loaded.",
+                    _localizationService.GetLocalizedString("DashboardProjectReportService.ProjectDetailLoadFailed"),
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
@@ -284,9 +286,10 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     batchMovements,
                     stocks,
                     fishBatches.Where(x => x.ProjectId == project.Id).ToList(),
-                    warehouses))
+                    warehouses,
+                    _localizationService))
                 .ToList();
-        }
+            }
 
         private static ProjectDashboardReport BuildProjectReport(
             Project project,
@@ -312,7 +315,8 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             List<BatchMovement> batchMovements,
             List<StockEntity> stocks,
             List<FishBatch> fishBatches,
-            List<WarehouseEntity> warehouses)
+            List<WarehouseEntity> warehouses,
+            ILocalizationService localizationService)
         {
             var activeProjectCages = projectCages.Where(x => IsActiveProjectCage(x.ReleasedDate)).ToList();
             var projectHasEnded = project.EndDate.HasValue;
@@ -562,7 +566,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 var fromLabel = cageLabelById.GetValueOrDefault(row.FromProjectCageId, row.FromProjectCageId.ToString());
                 var targetWarehouseLabel = header?.TargetWarehouseId.HasValue == true
                     ? warehouseLabelById.GetValueOrDefault(header.TargetWarehouseId.Value, header.TargetWarehouseId.Value.ToString())
-                    : "ColdStorage";
+                    : localizationService.GetLocalizedString("KpiReportService.Detail.ColdStorage");
                 var detail = JoinDetail(new List<string?>
                 {
                     header?.ShipmentNo ?? $"#{row.ShipmentId}",

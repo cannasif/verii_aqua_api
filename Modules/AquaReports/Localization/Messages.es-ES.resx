@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="DashboardProjectReportService.ProjectsLoaded" xml:space="preserve"><value>Los resúmenes del proyecto del panel de control se cargaron.</value></data>
+  <data name="DashboardProjectReportService.ProjectsLoadFailed" xml:space="preserve"><value>No se pudieron cargar los resúmenes del proyecto del panel de control.</value></data>
+  <data name="DashboardProjectReportService.ProjectNotFound" xml:space="preserve"><value>Proyecto no encontrado.</value></data>
+  <data name="DashboardProjectReportService.ProjectDetailLoaded" xml:space="preserve"><value>El detalle del proyecto del panel de control se cargó.</value></data>
+  <data name="DashboardProjectReportService.ProjectDetailLoadFailed" xml:space="preserve"><value>No se pudo cargar el detalle del proyecto del panel de control.</value></data>
+</root>
