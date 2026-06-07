@@ -131,7 +131,8 @@ public static class ServiceCollectionExtensions
                 new CultureInfo("de-DE"),
                 new CultureInfo("fr-FR"),
                 new CultureInfo("es-ES"),
-                new CultureInfo("it-IT")
+                new CultureInfo("it-IT"),
+                new CultureInfo("ar-SA")
             };
 
             options.DefaultRequestCulture = new RequestCulture("tr-TR");

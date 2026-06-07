@@ -8,7 +8,7 @@ namespace aqua_api.Shared.Infrastructure.Services
     {
         private readonly ILogger<LocalizationService> _logger;
         private readonly IReadOnlyList<ResourceManager> _resourceManagers;
-        private static readonly string[] ResourceBaseNames =
+        private static readonly string[] ResourcePriority =
         {
             "aqua_api.Shared.Localization.Messages",
             "aqua_api.Modules.Identity.Localization.Messages",
@@ -24,7 +24,7 @@ namespace aqua_api.Shared.Infrastructure.Services
             _logger = logger;
 
             var assembly = Assembly.GetExecutingAssembly();
-            _resourceManagers = ResourceBaseNames
+            _resourceManagers = DiscoverResourceBaseNames(assembly)
                 .Select(resourceBaseName => new ResourceManager(resourceBaseName, assembly))
                 .ToArray();
         }
@@ -112,6 +112,7 @@ namespace aqua_api.Shared.Infrastructure.Services
                 "fr" or "fr-fr" => "fr-FR",
                 "es" or "es-es" => "es-ES",
                 "it" or "it-it" => "it-IT",
+                "ar" or "ar-sa" => "ar-SA",
                 _ => name
             };
 
@@ -123,6 +124,29 @@ namespace aqua_api.Shared.Infrastructure.Services
             {
                 return new CultureInfo("tr-TR");
             }
+        }
+
+        private static IReadOnlyList<string> DiscoverResourceBaseNames(Assembly assembly)
+        {
+            var resourceBaseNames = assembly
+                .GetTypes()
+                .Where(type => type is { IsClass: true, IsAbstract: false }
+                    && type.Name.EndsWith("LocalizationResource", StringComparison.Ordinal)
+                    && type.Namespace is not null)
+                .Select(type => $"{type.Namespace}.Messages")
+                .Distinct(StringComparer.Ordinal)
+                .ToArray();
+
+            var priority = ResourcePriority
+                .Where(resourceBaseNames.Contains)
+                .ToArray();
+
+            var remaining = resourceBaseNames
+                .Except(priority, StringComparer.Ordinal)
+                .OrderBy(resourceBaseName => resourceBaseName, StringComparer.Ordinal)
+                .ToArray();
+
+            return priority.Concat(remaining).ToArray();
         }
     }
 }

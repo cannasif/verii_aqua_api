@@ -1,0 +1,60 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="FeedingService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="FeedingService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="FeedingService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="FeedingLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="FeedingLineService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="FeedingLineService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="FeedingDistributionService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="FeedingDistributionService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="FeedingDistributionService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="FeedingLineService.QuantityMustBeGreaterThanZero" xml:space="preserve">
+    <value>Die Menge muss größer als 0 sein.</value>
+  </data>
+  <data name="FeedingLineService.HeaderNotFoundRetryWithProject" xml:space="preserve">
+    <value>Fütterungskopf nicht gefunden. Bitte versuchen Sie es erneut, nachdem Sie ein Projekt ausgewählt haben.</value>
+  </data>
+  <data name="FeedingLineService.PositiveValuesRequired" xml:space="preserve">
+    <value>Menge, Gramm pro Einheit und Gesamtgramm müssen in der Fütterungszeile größer als 0 sein.</value>
+  </data>
+  <data name="FeedingLineService.HeaderCreateRetryForToday" xml:space="preserve">
+    <value>Fütterungskopf nicht gefunden. Versuchen Sie erneut, für heute einen neuen projektbasierten Kopf zu erstellen.</value>
+  </data>
+  <data name="FeedingLineService.InvalidStockSelection" xml:space="preserve">
+    <value>Sie haben einen ungültigen Bestand ausgewählt.</value>
+  </data>
+  <data name="FeedingLineService.SaveFailed" xml:space="preserve">
+    <value>Besleme satırı kaydedilirken hata oluştu.</value>
+  </data>
+</root>

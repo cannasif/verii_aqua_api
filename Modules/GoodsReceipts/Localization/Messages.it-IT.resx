@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="GoodsReceiptLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operazione riuscita.</value>
+  </data>
+  <data name="GoodsReceiptLineService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="GoodsReceiptLineService.InternalServerError" xml:space="preserve">
+    <value>Si è verificato un errore interno del server.</value>
+  </data>
+  <data name="GoodsReceiptService.OperationSuccessful" xml:space="preserve">
+    <value>Operazione riuscita.</value>
+  </data>
+  <data name="GoodsReceiptService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="GoodsReceiptService.InternalServerError" xml:space="preserve">
+    <value>Si è verificato un errore interno del server.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.OperationSuccessful" xml:space="preserve">
+    <value>Operazione riuscita.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.InternalServerError" xml:space="preserve">
+    <value>Si è verificato un errore interno del server.</value>
+  </data>
+  <data name="GoodsReceiptService.ReceiptNumberRequired" xml:space="preserve">
+    <value>Il numero della ricevuta è obbligatorio.</value>
+  </data>
+  <data name="GoodsReceiptService.DuplicateReceiptNumber" xml:space="preserve">
+    <value>Hai inserito un numero di ricezione già esistente.</value>
+  </data>
+  <data name="GoodsReceiptService.ProjectNotFound" xml:space="preserve">
+    <value>Il progetto selezionato non è stato trovato.</value>
+  </data>
+  <data name="GoodsReceiptService.ProjectGoodsReceiptAlreadyExists" xml:space="preserve">
+    <value>Esiste già una registrazione di ricezione per questo progetto.</value>
+  </data>
+  <data name="GoodsReceiptService.GoodsReceiptNotFound" xml:space="preserve">
+    <value>Registrazione di ricezione non trovata.</value>
+  </data>
+  <data name="GoodsReceiptService.MustContainAtLeastOneLine" xml:space="preserve">
+    <value>La ricezione deve contenere almeno una riga.</value>
+  </data>
+  <data name="GoodsReceiptService.ProjectRequiredForFishLines" xml:space="preserve">
+    <value>La selezione del progetto è obbligatoria quando il documento contiene righe di pesce.</value>
+  </data>
+  <data name="GoodsReceiptService.FeedLineValuesRequired" xml:space="preserve">
+    <value>QtyUnit, GramPerUnit e TotalGram sono obbligatori per una riga di mangime.</value>
+  </data>
+  <data name="GoodsReceiptService.FishLineValuesRequired" xml:space="preserve">
+    <value>FishCount, FishAverageGram e FishTotalGram sono obbligatori per una riga di pesce.</value>
+  </data>
+  <data name="GoodsReceiptService.FishLineDistributionRequired" xml:space="preserve">
+    <value>Una riga di pesce richiede almeno una distribuzione nelle gabbie.</value>
+  </data>
+  <data name="GoodsReceiptService.FishDistributionTotalMustEqualFishCount" xml:space="preserve">
+    <value>Il totale della distribuzione dei pesci deve essere uguale a FishCount.</value>
+  </data>
+  <data name="GoodsReceiptService.BatchCageBalanceCannotGoNegative" xml:space="preserve">
+    <value>Il saldo della gabbia del lotto non può scendere sotto zero.</value>
+  </data>
+</root>

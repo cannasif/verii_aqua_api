@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="DailyWeatherService.OperationSuccessful" xml:space="preserve">
+    <value>Opération réussie.</value>
+  </data>
+  <data name="DailyWeatherService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="DailyWeatherService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="DailyWeatherService.ProjectDateAlreadyExists" xml:space="preserve">
+    <value>Un enregistrement météo quotidien existe déjà pour ce projet à cette date.</value>
+  </data>
+  <data name="DailyWeatherService.InvalidProjectSelection" xml:space="preserve">
+    <value>Vous avez sélectionné un projet non valide.</value>
+  </data>
+  <data name="DailyWeatherService.InvalidWeatherTypeSelection" xml:space="preserve">
+    <value>Vous avez sélectionné un type de météo non valide.</value>
+  </data>
+  <data name="DailyWeatherService.InvalidWeatherSeveritySelection" xml:space="preserve">
+    <value>Vous avez sélectionné un niveau de gravité météo non valide.</value>
+  </data>
+  <data name="DailyWeatherService.SaveFailed" xml:space="preserve">
+    <value>Une erreur s'est produite lors de l'enregistrement de la météo quotidienne.</value>
+  </data>
+</root>

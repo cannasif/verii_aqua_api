@@ -1,0 +1,78 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="GoodsReceiptLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="GoodsReceiptLineService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="GoodsReceiptLineService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="GoodsReceiptService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="GoodsReceiptService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="GoodsReceiptService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="GoodsReceiptService.ReceiptNumberRequired" xml:space="preserve">
+    <value>Die Belegnummer ist erforderlich.</value>
+  </data>
+  <data name="GoodsReceiptService.DuplicateReceiptNumber" xml:space="preserve">
+    <value>Sie haben eine bereits vorhandene Wareneingangsnummer eingegeben.</value>
+  </data>
+  <data name="GoodsReceiptService.ProjectNotFound" xml:space="preserve">
+    <value>Das ausgewählte Projekt wurde nicht gefunden.</value>
+  </data>
+  <data name="GoodsReceiptService.ProjectGoodsReceiptAlreadyExists" xml:space="preserve">
+    <value>Für dieses Projekt existiert bereits ein Wareneingangsdatensatz.</value>
+  </data>
+  <data name="GoodsReceiptService.GoodsReceiptNotFound" xml:space="preserve">
+    <value>Wareneingangsdatensatz nicht gefunden.</value>
+  </data>
+  <data name="GoodsReceiptService.MustContainAtLeastOneLine" xml:space="preserve">
+    <value>Der Wareneingang muss mindestens eine Zeile enthalten.</value>
+  </data>
+  <data name="GoodsReceiptService.ProjectRequiredForFishLines" xml:space="preserve">
+    <value>Wenn der Beleg Fischzeilen enthält, ist eine Projektauswahl erforderlich.</value>
+  </data>
+  <data name="GoodsReceiptService.FeedLineValuesRequired" xml:space="preserve">
+    <value>Für eine Futterzeile sind QtyUnit, GramPerUnit und TotalGram erforderlich.</value>
+  </data>
+  <data name="GoodsReceiptService.FishLineValuesRequired" xml:space="preserve">
+    <value>Für eine Fischzeile sind FishCount, FishAverageGram und FishTotalGram erforderlich.</value>
+  </data>
+  <data name="GoodsReceiptService.FishLineDistributionRequired" xml:space="preserve">
+    <value>Eine Fischzeile erfordert mindestens eine Käfigverteilung.</value>
+  </data>
+  <data name="GoodsReceiptService.FishDistributionTotalMustEqualFishCount" xml:space="preserve">
+    <value>Die gesamte Fischverteilung muss FishCount entsprechen.</value>
+  </data>
+  <data name="GoodsReceiptService.BatchCageBalanceCannotGoNegative" xml:space="preserve">
+    <value>Der Batch-Käfigbestand darf nicht unter null fallen.</value>
+  </data>
+</root>

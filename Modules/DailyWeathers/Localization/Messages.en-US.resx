@@ -1,0 +1,39 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="DailyWeatherService.OperationSuccessful" xml:space="preserve">
+    <value>Operation successful.</value>
+  </data>
+  <data name="DailyWeatherService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="DailyWeatherService.InternalServerError" xml:space="preserve">
+    <value>An internal server error occurred.</value>
+  </data>
+  <data name="DailyWeatherService.ProjectDateAlreadyExists" xml:space="preserve">
+    <value>A daily weather record already exists for this project on this date.</value>
+  </data>
+  <data name="DailyWeatherService.InvalidProjectSelection" xml:space="preserve">
+    <value>You selected an invalid project.</value>
+  </data>
+  <data name="DailyWeatherService.InvalidWeatherTypeSelection" xml:space="preserve">
+    <value>You selected an invalid weather type.</value>
+  </data>
+  <data name="DailyWeatherService.InvalidWeatherSeveritySelection" xml:space="preserve">
+    <value>You selected an invalid weather severity.</value>
+  </data>
+  <data name="DailyWeatherService.SaveFailed" xml:space="preserve">
+    <value>An error occurred while saving the daily weather record.</value>
+  </data>
+</root>

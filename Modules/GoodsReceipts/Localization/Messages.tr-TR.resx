@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="GoodsReceiptLineService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="GoodsReceiptLineService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="GoodsReceiptLineService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="GoodsReceiptService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="GoodsReceiptService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="GoodsReceiptService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="GoodsReceiptService.ReceiptNumberRequired" xml:space="preserve">
+    <value>Fiş numarası zorunludur.</value>
+  </data>
+  <data name="GoodsReceiptService.DuplicateReceiptNumber" xml:space="preserve">
+    <value>Var olan bir mal kabul numarası girdiniz.</value>
+  </data>
+  <data name="GoodsReceiptService.ProjectNotFound" xml:space="preserve">
+    <value>Seçilen proje bulunamadı.</value>
+  </data>
+  <data name="GoodsReceiptService.ProjectGoodsReceiptAlreadyExists" xml:space="preserve">
+    <value>Bu proje için zaten bir mal kabul kaydı mevcut.</value>
+  </data>
+  <data name="GoodsReceiptService.WarehouseNotFound" xml:space="preserve">
+    <value>Seçilen depo kodu bulunamadı.</value>
+  </data>
+  <data name="GoodsReceiptService.BranchCodeNotFound" xml:space="preserve">
+    <value>Şube bilgisi çözümlenemedi.</value>
+  </data>
+  <data name="GoodsReceiptService.GoodsReceiptNotFound" xml:space="preserve">
+    <value>Mal kabul kaydı bulunamadı.</value>
+  </data>
+  <data name="GoodsReceiptService.MustContainAtLeastOneLine" xml:space="preserve">
+    <value>Mal kabul en az bir satır içermelidir.</value>
+  </data>
+  <data name="GoodsReceiptService.ProjectRequiredForFishLines" xml:space="preserve">
+    <value>Belgede balık satırları varsa proje seçimi zorunludur.</value>
+  </data>
+  <data name="GoodsReceiptService.FeedLineValuesRequired" xml:space="preserve">
+    <value>Yem satırında miktar, birim gram ve toplam gram alanları zorunludur.</value>
+  </data>
+  <data name="GoodsReceiptService.FishLineValuesRequired" xml:space="preserve">
+    <value>Balık satırında adet, ortalama gram ve toplam gram alanları zorunludur.</value>
+  </data>
+  <data name="GoodsReceiptService.FishLineDistributionRequired" xml:space="preserve">
+    <value>Balık satırında en az bir kafes dağıtımı olmalıdır.</value>
+  </data>
+  <data name="GoodsReceiptService.FishDistributionTotalMustEqualFishCount" xml:space="preserve">
+    <value>Balık dağıtım toplamı balık adedine eşit olmalıdır.</value>
+  </data>
+  <data name="GoodsReceiptService.BatchCageBalanceCannotGoNegative" xml:space="preserve">
+    <value>Batch kafes bakiyesi sıfırın altına düşemez.</value>
+  </data>
+</root>

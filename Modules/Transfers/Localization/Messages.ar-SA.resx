@@ -1,0 +1,42 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="TransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="TransferLineService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="TransferLineService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="TransferService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="TransferService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="TransferService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="TransferService.TransferNotFound" xml:space="preserve">
+    <value>لم يتم العثور على سجل التحويل.</value>
+  </data>
+  <data name="TransferService.MustContainLines" xml:space="preserve">
+    <value>يجب أن يحتوي التحويل على سطور.</value>
+  </data>
+  <data name="TransferService.SourceAndTargetCageCannotBeSame" xml:space="preserve">
+    <value>لا يمكن أن يكون القفص المصدر والقفص الهدف متماثلين.</value>
+  </data>
+</root>
