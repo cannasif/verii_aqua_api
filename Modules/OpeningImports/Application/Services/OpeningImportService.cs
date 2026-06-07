@@ -770,7 +770,8 @@ public class OpeningImportService : IOpeningImportService
 
                 if (conflictingAssignment != null)
                 {
-                    row.Messages.Add(L("OpeningImportService.Validation.CageAssignedToDifferentProject", cageCode, conflictingAssignment.Project?.ProjectCode));
+                    var conflictingProjectCode = conflictingAssignment.Project?.ProjectCode ?? string.Empty;
+                    row.Messages.Add(L("OpeningImportService.Validation.CageAssignedToDifferentProject", cageCode, conflictingProjectCode));
                 }
             }
         }
