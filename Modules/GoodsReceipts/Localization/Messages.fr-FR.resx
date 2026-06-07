@@ -16,7 +16,7 @@
     <value>Opération réussie.</value>
   </data>
   <data name="GoodsReceiptLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Enregistrement introuvable.</value>
   </data>
   <data name="GoodsReceiptLineService.InternalServerError" xml:space="preserve">
     <value>Une erreur interne du serveur s'est produite.</value>
@@ -25,7 +25,7 @@
     <value>Opération réussie.</value>
   </data>
   <data name="GoodsReceiptService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Enregistrement introuvable.</value>
   </data>
   <data name="GoodsReceiptService.InternalServerError" xml:space="preserve">
     <value>Une erreur interne du serveur s'est produite.</value>
@@ -34,7 +34,7 @@
     <value>Opération réussie.</value>
   </data>
   <data name="GoodsReceiptFishDistributionService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Enregistrement introuvable.</value>
   </data>
   <data name="GoodsReceiptFishDistributionService.InternalServerError" xml:space="preserve">
     <value>Une erreur interne du serveur s'est produite.</value>
@@ -42,11 +42,17 @@
   <data name="GoodsReceiptService.ReceiptNumberRequired" xml:space="preserve">
     <value>Le numéro de reçu est requis.</value>
   </data>
+  <data name="GoodsReceiptService.BranchCodeNotFound" xml:space="preserve">
+    <value>Le contexte de la succursale n'a pas pu être résolu.</value>
+  </data>
   <data name="GoodsReceiptService.DuplicateReceiptNumber" xml:space="preserve">
     <value>Vous avez saisi un numéro de réception déjà existant.</value>
   </data>
   <data name="GoodsReceiptService.ProjectNotFound" xml:space="preserve">
     <value>Le projet sélectionné est introuvable.</value>
+  </data>
+  <data name="GoodsReceiptService.WarehouseNotFound" xml:space="preserve">
+    <value>Le code d'entrepôt sélectionné est introuvable.</value>
   </data>
   <data name="GoodsReceiptService.ProjectGoodsReceiptAlreadyExists" xml:space="preserve">
     <value>Un enregistrement de réception existe déjà pour ce projet.</value>

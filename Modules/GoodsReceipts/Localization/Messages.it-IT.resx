@@ -16,7 +16,7 @@
     <value>Operazione riuscita.</value>
   </data>
   <data name="GoodsReceiptLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Record non trovato.</value>
   </data>
   <data name="GoodsReceiptLineService.InternalServerError" xml:space="preserve">
     <value>Si è verificato un errore interno del server.</value>
@@ -25,7 +25,7 @@
     <value>Operazione riuscita.</value>
   </data>
   <data name="GoodsReceiptService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Record non trovato.</value>
   </data>
   <data name="GoodsReceiptService.InternalServerError" xml:space="preserve">
     <value>Si è verificato un errore interno del server.</value>
@@ -34,7 +34,7 @@
     <value>Operazione riuscita.</value>
   </data>
   <data name="GoodsReceiptFishDistributionService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Record non trovato.</value>
   </data>
   <data name="GoodsReceiptFishDistributionService.InternalServerError" xml:space="preserve">
     <value>Si è verificato un errore interno del server.</value>
@@ -42,11 +42,17 @@
   <data name="GoodsReceiptService.ReceiptNumberRequired" xml:space="preserve">
     <value>Il numero della ricevuta è obbligatorio.</value>
   </data>
+  <data name="GoodsReceiptService.BranchCodeNotFound" xml:space="preserve">
+    <value>Impossibile risolvere il contesto della filiale.</value>
+  </data>
   <data name="GoodsReceiptService.DuplicateReceiptNumber" xml:space="preserve">
     <value>Hai inserito un numero di ricezione già esistente.</value>
   </data>
   <data name="GoodsReceiptService.ProjectNotFound" xml:space="preserve">
     <value>Il progetto selezionato non è stato trovato.</value>
+  </data>
+  <data name="GoodsReceiptService.WarehouseNotFound" xml:space="preserve">
+    <value>Il codice magazzino selezionato non è stato trovato.</value>
   </data>
   <data name="GoodsReceiptService.ProjectGoodsReceiptAlreadyExists" xml:space="preserve">
     <value>Esiste già una registrazione di ricezione per questo progetto.</value>

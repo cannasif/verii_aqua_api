@@ -16,7 +16,7 @@
     <value>Operación exitosa.</value>
   </data>
   <data name="GoodsReceiptLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Registro no encontrado.</value>
   </data>
   <data name="GoodsReceiptLineService.InternalServerError" xml:space="preserve">
     <value>Ocurrió un error interno del server.</value>
@@ -25,7 +25,7 @@
     <value>Operación exitosa.</value>
   </data>
   <data name="GoodsReceiptService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Registro no encontrado.</value>
   </data>
   <data name="GoodsReceiptService.InternalServerError" xml:space="preserve">
     <value>Ocurrió un error interno del server.</value>
@@ -34,7 +34,7 @@
     <value>Operación exitosa.</value>
   </data>
   <data name="GoodsReceiptFishDistributionService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Registro no encontrado.</value>
   </data>
   <data name="GoodsReceiptFishDistributionService.InternalServerError" xml:space="preserve">
     <value>Ocurrió un error interno del server.</value>
@@ -42,11 +42,17 @@
   <data name="GoodsReceiptService.ReceiptNumberRequired" xml:space="preserve">
     <value>El número de recibo es obligatorio.</value>
   </data>
+  <data name="GoodsReceiptService.BranchCodeNotFound" xml:space="preserve">
+    <value>No se pudo resolver el contexto de la sucursal.</value>
+  </data>
   <data name="GoodsReceiptService.DuplicateReceiptNumber" xml:space="preserve">
     <value>Ha introducido un número de recepción ya existente.</value>
   </data>
   <data name="GoodsReceiptService.ProjectNotFound" xml:space="preserve">
     <value>No se encontró el proyecto seleccionado.</value>
+  </data>
+  <data name="GoodsReceiptService.WarehouseNotFound" xml:space="preserve">
+    <value>No se encontró el código de almacén seleccionado.</value>
   </data>
   <data name="GoodsReceiptService.ProjectGoodsReceiptAlreadyExists" xml:space="preserve">
     <value>Ya existe un registro de recepción para este proyecto.</value>

@@ -16,7 +16,7 @@
     <value>Operation erfolgreich.</value>
   </data>
   <data name="GoodsReceiptLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Datensatz nicht gefunden.</value>
   </data>
   <data name="GoodsReceiptLineService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>
@@ -25,7 +25,7 @@
     <value>Operation erfolgreich.</value>
   </data>
   <data name="GoodsReceiptService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Datensatz nicht gefunden.</value>
   </data>
   <data name="GoodsReceiptService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>
@@ -34,7 +34,7 @@
     <value>Operation erfolgreich.</value>
   </data>
   <data name="GoodsReceiptFishDistributionService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Datensatz nicht gefunden.</value>
   </data>
   <data name="GoodsReceiptFishDistributionService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>
@@ -42,11 +42,17 @@
   <data name="GoodsReceiptService.ReceiptNumberRequired" xml:space="preserve">
     <value>Die Belegnummer ist erforderlich.</value>
   </data>
+  <data name="GoodsReceiptService.BranchCodeNotFound" xml:space="preserve">
+    <value>Der Filialkontext konnte nicht ermittelt werden.</value>
+  </data>
   <data name="GoodsReceiptService.DuplicateReceiptNumber" xml:space="preserve">
     <value>Sie haben eine bereits vorhandene Wareneingangsnummer eingegeben.</value>
   </data>
   <data name="GoodsReceiptService.ProjectNotFound" xml:space="preserve">
     <value>Das ausgewählte Projekt wurde nicht gefunden.</value>
+  </data>
+  <data name="GoodsReceiptService.WarehouseNotFound" xml:space="preserve">
+    <value>Der ausgewählte Lagercode wurde nicht gefunden.</value>
   </data>
   <data name="GoodsReceiptService.ProjectGoodsReceiptAlreadyExists" xml:space="preserve">
     <value>Für dieses Projekt existiert bereits ein Wareneingangsdatensatz.</value>

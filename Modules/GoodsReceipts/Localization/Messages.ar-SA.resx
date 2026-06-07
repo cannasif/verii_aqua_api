@@ -16,7 +16,7 @@
     <value>العملية ناجحة.</value>
   </data>
   <data name="GoodsReceiptLineService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>السجل غير موجود.</value>
   </data>
   <data name="GoodsReceiptLineService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
@@ -25,7 +25,7 @@
     <value>العملية ناجحة.</value>
   </data>
   <data name="GoodsReceiptService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>السجل غير موجود.</value>
   </data>
   <data name="GoodsReceiptService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
@@ -34,7 +34,7 @@
     <value>العملية ناجحة.</value>
   </data>
   <data name="GoodsReceiptFishDistributionService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>السجل غير موجود.</value>
   </data>
   <data name="GoodsReceiptFishDistributionService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
@@ -44,6 +44,12 @@
   </data>
   <data name="GoodsReceiptService.DuplicateReceiptNumber" xml:space="preserve">
     <value>لقد أدخلت رقم إيصال استلام موجوداً بالفعل.</value>
+  </data>
+  <data name="GoodsReceiptService.BranchCodeNotFound" xml:space="preserve">
+    <value>تعذر تحديد سياق الفرع.</value>
+  </data>
+  <data name="GoodsReceiptService.WarehouseNotFound" xml:space="preserve">
+    <value>تعذر العثور على كود المستودع المحدد.</value>
   </data>
   <data name="GoodsReceiptService.ProjectNotFound" xml:space="preserve">
     <value>تعذر العثور على المشروع المحدد.</value>
