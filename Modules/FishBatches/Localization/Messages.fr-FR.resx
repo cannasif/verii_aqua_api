@@ -16,7 +16,7 @@
     <value>Opération réussie.</value>
   </data>
   <data name="FishBatchService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Enregistrement introuvable.</value>
   </data>
   <data name="FishBatchService.InternalServerError" xml:space="preserve">
     <value>Une erreur interne du serveur s'est produite.</value>

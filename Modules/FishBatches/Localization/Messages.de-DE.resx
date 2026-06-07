@@ -16,7 +16,7 @@
     <value>Operation erfolgreich.</value>
   </data>
   <data name="FishBatchService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Datensatz wurde nicht gefunden.</value>
   </data>
   <data name="FishBatchService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>
