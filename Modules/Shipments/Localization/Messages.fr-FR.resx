@@ -18,4 +18,31 @@
   <data name="ShipmentService.MustContainLines" xml:space="preserve">
     <value>L'expédition doit contenir des lignes.</value>
   </data>
+  <data name="ShipmentService.WarehouseNotFound" xml:space="preserve">
+    <value>Le code d'entrepôt sélectionné est introuvable.</value>
+  </data>
+  <data name="ShipmentService.BranchCodeNotFound" xml:space="preserve">
+    <value>Le contexte de la branche n'a pas pu être résolu.</value>
+  </data>
+  <data name="ShipmentService.OperationSuccessful" xml:space="preserve">
+    <value>Opération réussie.</value>
+  </data>
+  <data name="ShipmentService.NotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="ShipmentService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
+  <data name="ShipmentService.BusinessRuleError" xml:space="preserve">
+    <value>Une erreur de règle métier de l'expédition est survenue.</value>
+  </data>
+  <data name="ShipmentLineService.OperationSuccessful" xml:space="preserve">
+    <value>Opération réussie.</value>
+  </data>
+  <data name="ShipmentLineService.NotFound" xml:space="preserve">
+    <value>Enregistrement introuvable.</value>
+  </data>
+  <data name="ShipmentLineService.InternalServerError" xml:space="preserve">
+    <value>Une erreur interne du serveur s'est produite.</value>
+  </data>
 </root>

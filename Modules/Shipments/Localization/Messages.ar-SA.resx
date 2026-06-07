@@ -18,4 +18,31 @@
   <data name="ShipmentService.MustContainLines" xml:space="preserve">
     <value>يجب أن تحتوي الشحنة على سطور.</value>
   </data>
+  <data name="ShipmentService.WarehouseNotFound" xml:space="preserve">
+    <value>تعذر العثور على كود المخزن المحدد.</value>
+  </data>
+  <data name="ShipmentService.BranchCodeNotFound" xml:space="preserve">
+    <value>تعذر حل سياق الفرع.</value>
+  </data>
+  <data name="ShipmentService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="ShipmentService.NotFound" xml:space="preserve">
+    <value>السجل غير موجود.</value>
+  </data>
+  <data name="ShipmentService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="ShipmentService.BusinessRuleError" xml:space="preserve">
+    <value>حدث خطأ في قاعدة أعمال الشحنة.</value>
+  </data>
+  <data name="ShipmentLineService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="ShipmentLineService.NotFound" xml:space="preserve">
+    <value>السجل غير موجود.</value>
+  </data>
+  <data name="ShipmentLineService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
 </root>

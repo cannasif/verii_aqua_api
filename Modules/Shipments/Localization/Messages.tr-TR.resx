@@ -24,4 +24,25 @@
   <data name="ShipmentService.MustContainLines" xml:space="preserve">
     <value>Sevkiyat en az bir satır içermelidir.</value>
   </data>
+  <data name="ShipmentService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="ShipmentService.NotFound" xml:space="preserve">
+    <value>Kayıt bulunamadı.</value>
+  </data>
+  <data name="ShipmentService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
+  <data name="ShipmentService.BusinessRuleError" xml:space="preserve">
+    <value>Sevkiyat iş kuralı hatası oluştu.</value>
+  </data>
+  <data name="ShipmentLineService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="ShipmentLineService.NotFound" xml:space="preserve">
+    <value>Kayıt bulunamadı.</value>
+  </data>
+  <data name="ShipmentLineService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
+  </data>
 </root>

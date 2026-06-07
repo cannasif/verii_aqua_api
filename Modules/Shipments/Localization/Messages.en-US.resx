@@ -24,4 +24,25 @@
   <data name="ShipmentService.MustContainLines" xml:space="preserve">
     <value>The shipment must contain lines.</value>
   </data>
+  <data name="ShipmentService.OperationSuccessful" xml:space="preserve">
+    <value>Operation successful.</value>
+  </data>
+  <data name="ShipmentService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="ShipmentService.InternalServerError" xml:space="preserve">
+    <value>An internal server error occurred.</value>
+  </data>
+  <data name="ShipmentService.BusinessRuleError" xml:space="preserve">
+    <value>A shipment business rule error occurred.</value>
+  </data>
+  <data name="ShipmentLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operation successful.</value>
+  </data>
+  <data name="ShipmentLineService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="ShipmentLineService.InternalServerError" xml:space="preserve">
+    <value>An internal server error occurred.</value>
+  </data>
 </root>

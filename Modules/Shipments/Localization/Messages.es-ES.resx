@@ -18,4 +18,31 @@
   <data name="ShipmentService.MustContainLines" xml:space="preserve">
     <value>El envío debe contener líneas.</value>
   </data>
+  <data name="ShipmentService.WarehouseNotFound" xml:space="preserve">
+    <value>No se pudo encontrar el código de almacén seleccionado.</value>
+  </data>
+  <data name="ShipmentService.BranchCodeNotFound" xml:space="preserve">
+    <value>No se pudo resolver el contexto de la sucursal.</value>
+  </data>
+  <data name="ShipmentService.OperationSuccessful" xml:space="preserve">
+    <value>Operación exitosa.</value>
+  </data>
+  <data name="ShipmentService.NotFound" xml:space="preserve">
+    <value>Registro no encontrado.</value>
+  </data>
+  <data name="ShipmentService.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno del server.</value>
+  </data>
+  <data name="ShipmentService.BusinessRuleError" xml:space="preserve">
+    <value>Se produjo un error de regla de negocio en el envío.</value>
+  </data>
+  <data name="ShipmentLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operación exitosa.</value>
+  </data>
+  <data name="ShipmentLineService.NotFound" xml:space="preserve">
+    <value>Registro no encontrado.</value>
+  </data>
+  <data name="ShipmentLineService.InternalServerError" xml:space="preserve">
+    <value>Ocurrió un error interno del server.</value>
+  </data>
 </root>

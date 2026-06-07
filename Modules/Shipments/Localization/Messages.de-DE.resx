@@ -18,4 +18,31 @@
   <data name="ShipmentService.MustContainLines" xml:space="preserve">
     <value>Der Versand muss Zeilen enthalten.</value>
   </data>
+  <data name="ShipmentService.WarehouseNotFound" xml:space="preserve">
+    <value>Der ausgewählte Lagercode konnte nicht gefunden werden.</value>
+  </data>
+  <data name="ShipmentService.BranchCodeNotFound" xml:space="preserve">
+    <value>Der Zweigkontext konnte nicht aufgelöst werden.</value>
+  </data>
+  <data name="ShipmentService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="ShipmentService.NotFound" xml:space="preserve">
+    <value>Datensatz nicht gefunden.</value>
+  </data>
+  <data name="ShipmentService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="ShipmentService.BusinessRuleError" xml:space="preserve">
+    <value>Bei der Sendung ist ein Geschäftsregel-Fehler aufgetreten.</value>
+  </data>
+  <data name="ShipmentLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="ShipmentLineService.NotFound" xml:space="preserve">
+    <value>Datensatz nicht gefunden.</value>
+  </data>
+  <data name="ShipmentLineService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
 </root>
