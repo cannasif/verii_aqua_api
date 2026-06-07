@@ -33,4 +33,13 @@
   <data name="ProjectService.ProjectNameRequired" xml:space="preserve">
     <value>اسم المشروع مطلوب.</value>
   </data>
+  <data name="ProjectCageService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="ProjectCageService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="ProjectCageService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
 </root>

@@ -33,4 +33,13 @@
   <data name="ProjectService.ProjectNameRequired" xml:space="preserve">
     <value>Il nome progetto è obbligatorio.</value>
   </data>
+  <data name="ProjectCageService.OperationSuccessful" xml:space="preserve">
+    <value>Operazione riuscita.</value>
+  </data>
+  <data name="ProjectCageService.NotFound" xml:space="preserve">
+    <value>Record not found.</value>
+  </data>
+  <data name="ProjectCageService.InternalServerError" xml:space="preserve">
+    <value>Si è verificato un errore interno del server.</value>
+  </data>
 </root>

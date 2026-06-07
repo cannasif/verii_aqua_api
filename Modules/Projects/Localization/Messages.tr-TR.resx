@@ -16,7 +16,7 @@
     <value>İşlem başarılı.</value>
   </data>
   <data name="ProjectService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Kayıt bulunamadı.</value>
   </data>
   <data name="ProjectService.InternalServerError" xml:space="preserve">
     <value>Dahili sunucu hatası oluştu.</value>
@@ -32,5 +32,14 @@
   </data>
   <data name="ProjectService.ProjectNameRequired" xml:space="preserve">
     <value>Proje adı zorunludur.</value>
+  </data>
+  <data name="ProjectCageService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="ProjectCageService.NotFound" xml:space="preserve">
+    <value>Kayıt bulunamadı.</value>
+  </data>
+  <data name="ProjectCageService.InternalServerError" xml:space="preserve">
+    <value>Dahili sunucu hatası oluştu.</value>
   </data>
 </root>
