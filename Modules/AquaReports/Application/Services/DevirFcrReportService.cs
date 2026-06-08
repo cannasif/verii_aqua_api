@@ -212,9 +212,8 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     x.DeadCount * ResolveAverageGramAtMortalityDate(movementList, x, endingAverageGram),
                     3,
                     MidpointRounding.AwayFromZero));
-            var biomassGainKg = Math.Max(0m, (endingBiomassGram + mortalityFallbackBiomassGram + shippedBiomassGram - openingBiomassGram) / 1000m);
             var carriedOutputBiomassKg = Math.Max(0m, (endingBiomassGram + mortalityFallbackBiomassGram + shippedBiomassGram) / 1000m);
-            var producedBiomassKg = biomassGainKg > 0 ? biomassGainKg : carriedOutputBiomassKg;
+            var producedBiomassKg = carriedOutputBiomassKg;
 
             return new DevirFcrReportRowDto
             {

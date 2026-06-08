@@ -939,9 +939,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
         private static decimal? ComputeFcr(decimal totalFeedGram, decimal currentBiomassGram, decimal initialBiomassGram, decimal totalDeadBiomassGram, decimal totalShipmentBiomassGram)
         {
             var outputBiomassGram = currentBiomassGram + totalDeadBiomassGram + totalShipmentBiomassGram;
-            var biomassGainKg = Math.Max(0m, (outputBiomassGram - initialBiomassGram) / 1000m);
-            var carriedOutputBiomassKg = Math.Max(0m, outputBiomassGram / 1000m);
-            var producedBiomassKg = biomassGainKg > 0 ? biomassGainKg : carriedOutputBiomassKg;
+            var producedBiomassKg = Math.Max(0m, outputBiomassGram / 1000m);
             if (producedBiomassKg <= 0) return null;
             return RoundGram((totalFeedGram / 1000m) / producedBiomassKg);
         }
