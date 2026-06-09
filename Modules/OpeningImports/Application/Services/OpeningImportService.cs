@@ -162,8 +162,10 @@ public class OpeningImportService : IOpeningImportService
                 var committedRows = job.Rows.ToList();
                 var projectsByCode = await EnsureProjectsAsync(committedRows, result);
                 var cagesByCode = await EnsureCagesAsync(committedRows, projectsByCode, result);
-                await CreateSummaryDocumentsAsync(committedRows, projectsByCode, cagesByCode, result);
                 await ApplyOpeningBalancesAsync(committedRows, projectsByCode, cagesByCode, result);
+                await _unitOfWork.SaveChangesAsync();
+                await CreateSummaryDocumentsAsync(committedRows, projectsByCode, cagesByCode, result);
+                await _unitOfWork.SaveChangesAsync();
                 await ApplyOpeningMortalityLedgersAsync(committedRows, projectsByCode, cagesByCode);
 
                 job.Status = OpeningImportJobStatus.Applied;
@@ -726,7 +728,7 @@ public class OpeningImportService : IOpeningImportService
                 .ToListAsync();
             var deletedCageCodeSet = deletedCageCodes.ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var row in rows)
+            foreach (var row in cageRows)
             {
                 var cageCode = GetValue(row, "cageCode");
                 if (!string.IsNullOrWhiteSpace(cageCode) && existingCages.ContainsKey(cageCode))
@@ -1101,7 +1103,7 @@ public class OpeningImportService : IOpeningImportService
                 var batch = await _unitOfWork.Db.FishBatches
                     .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.BatchCode == batchCode);
 
-                var averageGram = ParseDecimalOrDefault(normalized.TryGetValue("averageGram", out var averageGramValue) ? averageGramValue : null, 0m);
+                var averageGram = ParseAverageGramOrDefault(normalized.TryGetValue("averageGram", out var averageGramValue) ? averageGramValue : null, 0m);
                 var openingDate = ParseDateOrDefault(normalized.TryGetValue("asOfDate", out var asOfDateValue) ? asOfDateValue : null, project.StartDate);
 
                 if (batch == null)
@@ -1522,7 +1524,7 @@ public class OpeningImportService : IOpeningImportService
                 var effectiveBatchCode = ResolveBatchCode(project.ProjectCode, batchCode);
                 var lineKey = $"{project.Id}:{effectiveBatchCode}";
                 var fishCount = ParseIntOrDefault(normalized.TryGetValue("fishCount", out var fishCountValue) ? fishCountValue : null, 0);
-                var fishAverageGram = ParseDecimalOrDefault(normalized.TryGetValue("averageGram", out var averageGramValue) ? averageGramValue : null, 0m);
+                var fishAverageGram = ParseAverageGramOrDefault(normalized.TryGetValue("averageGram", out var averageGramValue) ? averageGramValue : null, 0m);
 
                 if (!lineByKey.TryGetValue(lineKey, out var line))
                 {
@@ -1905,7 +1907,7 @@ public class OpeningImportService : IOpeningImportService
                 var batchCode = normalized.TryGetValue("batchCode", out var batchCodeValue) ? batchCodeValue : null;
                 var batch = await EnsureFishBatchAsync(project, stock, batchCode, normalized, batchesByKey, result);
                 var fishCount = ParseIntOrDefault(normalized.TryGetValue("fishCount", out var fishCountValue) ? fishCountValue : null, 0);
-                var averageGram = ParseDecimalOrDefault(normalized.TryGetValue("averageGram", out var averageGramValue) ? averageGramValue : null, 0m);
+                var averageGram = ParseAverageGramOrDefault(normalized.TryGetValue("averageGram", out var averageGramValue) ? averageGramValue : null, 0m);
                 var biomassGram = Math.Round(fishCount * averageGram, 3, MidpointRounding.AwayFromZero);
                 var pricing = AquaLinePricingMath.NormalizeShipmentLine(
                     biomassGram,
@@ -1968,7 +1970,7 @@ public class OpeningImportService : IOpeningImportService
                 return existingBatch;
             }
 
-            var averageGram = ParseDecimalOrDefault(normalized.TryGetValue("averageGram", out var averageGramValue) ? averageGramValue : null, 0m);
+            var averageGram = ParseAverageGramOrDefault(normalized.TryGetValue("averageGram", out var averageGramValue) ? averageGramValue : null, 0m);
             var startDate = ParseDateOrDefault(
                 normalized.TryGetValue("asOfDate", out var asOfDateValue) ? asOfDateValue :
                 normalized.TryGetValue("receiptDate", out var receiptDateValue) ? receiptDateValue :
@@ -2492,6 +2494,30 @@ public class OpeningImportService : IOpeningImportService
             return TryParseOpeningDecimal(rawValue, out var parsed)
                 ? parsed
                 : fallback;
+        }
+
+        private static decimal ParseAverageGramOrDefault(string? rawValue, decimal fallback)
+        {
+            if (!TryParseOpeningDecimal(rawValue, out var parsed))
+            {
+                return fallback;
+            }
+
+            if (parsed <= 10000m || string.IsNullOrWhiteSpace(rawValue))
+            {
+                return parsed;
+            }
+
+            var value = rawValue.Trim()
+                .Replace(" ", string.Empty)
+                .Replace("\u00A0", string.Empty)
+                .Replace(',', '.');
+
+            return decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var decimalParsed) &&
+                   decimalParsed > 0 &&
+                   decimalParsed <= 10000m
+                ? decimalParsed
+                : parsed;
         }
 
         private static decimal? ParseNullableDecimal(string? rawValue)

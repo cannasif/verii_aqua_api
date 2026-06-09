@@ -199,20 +199,35 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             var mortalityMovementBiomassGram = movementList
                 .Where(x => x.MovementType == BatchMovementType.Mortality && IsInRange(x.MovementDate, projectFromDate, toDate))
                 .Sum(x => Math.Max(0m, -x.SignedBiomassGram));
+            var hasMortalityMovement = movementList.Any(x =>
+                x.MovementType == BatchMovementType.Mortality &&
+                IsInRange(x.MovementDate, projectFromDate, toDate));
+            var shipmentMovementFishCount = movementList
+                .Where(x => x.MovementType == BatchMovementType.Shipment && IsInRange(x.MovementDate, projectFromDate, toDate))
+                .Sum(x => Math.Max(0, -x.SignedCount));
+            var shipmentMovementBiomassGram = movementList
+                .Where(x => x.MovementType == BatchMovementType.Shipment && IsInRange(x.MovementDate, projectFromDate, toDate))
+                .Sum(x => Math.Max(0m, -x.SignedBiomassGram));
 
             var shippedBiomassGram = shipmentList.Sum(x => x.BiomassGram);
+            var shipmentFishCount = shipmentList.Sum(x => x.FishCount);
+            var unrepresentedShipmentFishCount = Math.Max(0, shipmentFishCount - shipmentMovementFishCount);
+            var unrepresentedShipmentBiomassGram = Math.Max(0m, shippedBiomassGram - shipmentMovementBiomassGram);
             var totalFeedGram = feedingDistributions.Sum(x => x.FeedGram);
             var openingFish = Math.Max(0, openingFishCount);
-            var endingFish = Math.Max(0, endingFishCount);
+            var endingFish = Math.Max(0, endingFishCount - unrepresentedShipmentFishCount);
+            var adjustedEndingBiomassGram = endingFish > 0
+                ? Math.Max(0m, endingBiomassGram - unrepresentedShipmentBiomassGram)
+                : 0m;
             var mortalityFish = Math.Max(0, mortalityList.Sum(x => x.DeadCount));
-            var endingAverageGram = endingFish > 0 ? Round(endingBiomassGram / endingFish) : 0m;
-            var mortalityFallbackBiomassGram = mortalityMovementBiomassGram > 0
+            var endingAverageGram = endingFish > 0 ? Round(adjustedEndingBiomassGram / endingFish) : 0m;
+            var mortalityFallbackBiomassGram = hasMortalityMovement
                 ? mortalityMovementBiomassGram
                 : mortalityList.Sum(x => Math.Round(
                     x.DeadCount * ResolveAverageGramAtMortalityDate(movementList, x, endingAverageGram),
                     3,
                     MidpointRounding.AwayFromZero));
-            var carriedOutputBiomassKg = Math.Max(0m, (endingBiomassGram + mortalityFallbackBiomassGram + shippedBiomassGram) / 1000m);
+            var carriedOutputBiomassKg = Math.Max(0m, (adjustedEndingBiomassGram + mortalityFallbackBiomassGram + shippedBiomassGram) / 1000m);
             var producedBiomassKg = carriedOutputBiomassKg;
 
             return new DevirFcrReportRowDto
@@ -221,13 +236,13 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 ProjectCode = string.IsNullOrWhiteSpace(project.ProjectCode) ? project.Id.ToString() : project.ProjectCode.Trim(),
                 ProjectName = string.IsNullOrWhiteSpace(project.ProjectName) ? "-" : project.ProjectName.Trim(),
                 OpeningFishCount = openingFish,
-                ShipmentFishCount = Math.Max(0, shipmentList.Sum(x => x.FishCount)),
+                ShipmentFishCount = Math.Max(0, shipmentFishCount),
                 MortalityFishCount = mortalityFish,
                 MortalityPct = openingFish > 0 ? Round((decimal)mortalityFish / openingFish * 100m) : null,
                 EndingFishCount = endingFish,
                 EndingAverageGram = endingAverageGram,
                 OpeningBiomassKg = Round(Math.Max(0m, openingBiomassGram / 1000m)),
-                EndingBiomassKg = Round(Math.Max(0m, endingBiomassGram / 1000m)),
+                EndingBiomassKg = Round(Math.Max(0m, adjustedEndingBiomassGram / 1000m)),
                 ShippedBiomassKg = Round(Math.Max(0m, shippedBiomassGram / 1000m)),
                 MortalityBiomassKg = Round(Math.Max(0m, mortalityFallbackBiomassGram / 1000m)),
                 TotalFeedKg = Round(Math.Max(0m, totalFeedGram / 1000m)),

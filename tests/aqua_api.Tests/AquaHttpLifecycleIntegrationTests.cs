@@ -114,8 +114,8 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
         Assert.NotNull(preview.Data);
         Assert.Equal("Failed", preview.Data!.Status);
-        Assert.Contains(preview.Data.Rows, row => row.Messages.Any(message => message.Contains("Proje zaten mevcut")));
-        Assert.Contains(preview.Data.Rows, row => row.Messages.Any(message => message.Contains("Kafes zaten mevcut")));
+        Assert.Contains(preview.Data.Rows, row => row.Messages.Any(message => message.Contains("Proje zaten sistemde kayıtlı")));
+        Assert.Contains(preview.Data.Rows, row => row.Messages.Any(message => message.Contains("Aynı proje için kafes kodu zaten tanımlı")));
 
         using var commitResponse = await client.PostAsJsonAsync($"/api/aqua/OpeningImport/{preview.Data.JobId}/commit", new { });
         Assert.Equal(HttpStatusCode.BadRequest, commitResponse.StatusCode);
@@ -209,8 +209,8 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
         Assert.NotNull(preview.Data);
         Assert.Equal("Failed", preview.Data!.Status);
-        Assert.Contains(preview.Data.Rows, row => row.Messages.Any(message => message.Contains("Proje kodu daha önce silinmiş")));
-        Assert.Contains(preview.Data.Rows, row => row.Messages.Any(message => message.Contains("Kafes kodu daha önce silinmiş")));
+        Assert.Contains(preview.Data.Rows, row => row.Messages.Any(message => message.Contains("Proje daha önce silinmiş")));
+        Assert.Contains(preview.Data.Rows, row => row.Messages.Any(message => message.Contains("Silinmiş bir kafes kodu tekrar girilmiş")));
 
         var cleanup = await PostAsync<OpeningImportCleanupSoftDeletedResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data.JobId}/cleanup-soft-deleted", new { });
         Assert.True(cleanup.Success, $"{cleanup.Message} | {cleanup.ExceptionMessage}");
@@ -673,11 +673,11 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.Equal("Failed", preview.Data!.Status);
         Assert.Contains(
             preview.Data.Rows.Where(x => x.SheetName == "OpeningGoodsReceipts"),
-            row => row.Messages.Any(message => message.Contains("tek mal kabul basligi", StringComparison.OrdinalIgnoreCase)));
+            row => row.Messages.Any(message => message.Contains("fiş no, tarih ve depo", StringComparison.OrdinalIgnoreCase)));
 
         var commit = await PostAsync<OpeningImportCommitResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data.JobId}/commit", new { });
         Assert.False(commit.Success);
-        Assert.Contains("tek mal kabul basligi", commit.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("fiş no, tarih ve depo", commit.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -697,7 +697,7 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.Equal("Failed", preview.Data!.Status);
         Assert.Contains(
             preview.Data.Rows.Where(x => x.SheetName == "OpeningGoodsReceipts"),
-            row => row.Messages.Any(message => message.Contains("farkli urun veya agirlik", StringComparison.OrdinalIgnoreCase)));
+            row => row.Messages.Any(message => message.Contains("proje/batch bazında", StringComparison.OrdinalIgnoreCase)));
     }
 
     [Fact]
