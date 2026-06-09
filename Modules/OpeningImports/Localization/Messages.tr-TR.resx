@@ -129,6 +129,9 @@
   <data name="OpeningImportService.Validation.MortalityCountMustBePositive" xml:space="preserve">
     <value>Fire adedi sıfırdan büyük olmalıdır.</value>
   </data>
+  <data name="OpeningImportService.Validation.MortalityBiomassKgMustBeNonNegative" xml:space="preserve">
+    <value>Fire KG değeri negatif olamaz.</value>
+  </data>
   <data name="OpeningImportService.Validation.MortalityDateInvalid" xml:space="preserve">
     <value>Fire tarihi geçersiz.</value>
   </data>

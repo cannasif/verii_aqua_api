@@ -129,6 +129,9 @@
   <data name="OpeningImportService.Validation.MortalityCountMustBePositive" xml:space="preserve">
     <value>Le nombre de mortalité doit être supérieur à zéro.</value>
   </data>
+  <data name="OpeningImportService.Validation.MortalityBiomassKgMustBeNonNegative" xml:space="preserve">
+    <value>Les KG de mortalité ne peuvent pas être négatifs.</value>
+  </data>
   <data name="OpeningImportService.Validation.MortalityDateInvalid" xml:space="preserve">
     <value>Date de mortalité invalide.</value>
   </data>

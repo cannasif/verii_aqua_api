@@ -1271,21 +1271,35 @@ public class OpeningImportService : IOpeningImportService
                     continue;
                 }
 
-                var balance = await _unitOfWork.Db.BatchCageBalances
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(x => !x.IsDeleted && x.FishBatchId == batch.Id && x.ProjectCageId == projectCage.Id);
-                var averageGram = ResolveAverageGram(balance);
-                if (averageGram <= 0)
+                var explicitMortalityBiomassKg = ParseNullableDecimal(
+                    normalized.TryGetValue("mortalityBiomassKg", out var mortalityBiomassKgValue)
+                        ? mortalityBiomassKgValue
+                        : null);
+                var hasExplicitMortalityBiomass = explicitMortalityBiomassKg.HasValue && explicitMortalityBiomassKg.Value >= 0m;
+                var balance = hasExplicitMortalityBiomass
+                    ? null
+                    : await _unitOfWork.Db.BatchCageBalances
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(x => !x.IsDeleted && x.FishBatchId == batch.Id && x.ProjectCageId == projectCage.Id);
+                var averageGram = hasExplicitMortalityBiomass
+                    ? deadCount > 0 && explicitMortalityBiomassKg!.Value > 0m
+                        ? Math.Round(explicitMortalityBiomassKg.Value * 1000m / deadCount, 3, MidpointRounding.AwayFromZero)
+                        : 0m
+                    : ResolveAverageGram(balance);
+                if (!hasExplicitMortalityBiomass && averageGram <= 0)
                 {
                     throw new InvalidOperationException(L("OpeningImportService.MortalityAverageGramNotFound"));
                 }
+                var mortalityBiomassGram = hasExplicitMortalityBiomass
+                    ? Math.Round(explicitMortalityBiomassKg!.Value * 1000m, 3, MidpointRounding.AwayFromZero)
+                    : Math.Round(deadCount * averageGram, 3, MidpointRounding.AwayFromZero);
 
                 await _balanceLedgerManager.ApplyDelta(
                     project.Id,
                     batch.Id,
                     projectCage.Id,
                     -deadCount,
-                    -Math.Round(deadCount * averageGram, 3, MidpointRounding.AwayFromZero),
+                    -mortalityBiomassGram,
                     BatchMovementType.Mortality,
                     mortalityDate,
                     "Opening import mortality",
@@ -2108,6 +2122,7 @@ public class OpeningImportService : IOpeningImportService
                 Require(normalized, "cageCode", messages, "OpeningImportService.Validation.CageCodeRequired");
                 Require(normalized, "fishStockCode", messages, "OpeningImportService.Validation.FishStockCodeRequired");
                 ValidatePositiveInt(normalized, "deadCount", messages, "OpeningImportService.Validation.MortalityCountMustBePositive");
+                ValidateNonNegativeDecimal(normalized, "mortalityBiomassKg", messages, "OpeningImportService.Validation.MortalityBiomassKgMustBeNonNegative");
                 ValidateDate(normalized, "mortalityDate", messages, "OpeningImportService.Validation.MortalityDateInvalid");
                 return messages;
             }
