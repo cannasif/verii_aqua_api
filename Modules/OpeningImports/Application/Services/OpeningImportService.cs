@@ -947,6 +947,9 @@ public class OpeningImportService : IOpeningImportService
                     continue;
                 }
 
+                var assignedDate = ParseDateOrDefault(row.TryGetValue("assignedDate", out var assignedDateValue) ? assignedDateValue : null, project.StartDate);
+                var releasedDate = ParseNullableDate(row.TryGetValue("releasedDate", out var releasedDateValue) ? releasedDateValue : null);
+
                 if (activeCageOwners.TryGetValue(cage.Id, out var activeProjectId) && activeProjectId != project.Id)
                 {
                     continue;
@@ -956,12 +959,16 @@ public class OpeningImportService : IOpeningImportService
                 {
                     ProjectId = project.Id,
                     CageId = cage.Id,
-                    AssignedDate = ParseDateOrDefault(row.TryGetValue("assignedDate", out var assignedDate) ? assignedDate : null, project.StartDate)
+                    AssignedDate = assignedDate,
+                    ReleasedDate = releasedDate
                 });
                 result.CreatedProjectCages += 1;
                 createdAnyAssignment = true;
                 activeAssignmentKeys.Add(assignmentKey);
-                activeCageOwners[cage.Id] = project.Id;
+                if (!releasedDate.HasValue)
+                {
+                    activeCageOwners[cage.Id] = project.Id;
+                }
             }
 
             if (createdAnyAssignment)
@@ -1127,8 +1134,7 @@ public class OpeningImportService : IOpeningImportService
 
                 if (!string.IsNullOrWhiteSpace(cageCode) && cagesByCode.TryGetValue(cageCode, out var cage))
                 {
-                    var projectCage = await _unitOfWork.Db.ProjectCages
-                        .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.CageId == cage.Id && x.ReleasedDate == null);
+                    var projectCage = await FindProjectCageForDateAsync(project.Id, cage.Id, openingDate);
 
                     if (projectCage == null)
                     {
@@ -1231,14 +1237,13 @@ public class OpeningImportService : IOpeningImportService
                     continue;
                 }
 
-                var projectCage = await _unitOfWork.Db.ProjectCages
-                    .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.CageId == cage.Id && x.ReleasedDate == null);
+                var mortalityDate = ParseDateOrDefault(normalized.TryGetValue("mortalityDate", out var mortalityDateValue) ? mortalityDateValue : null, project.StartDate);
+                var projectCage = await FindProjectCageForDateAsync(project.Id, cage.Id, mortalityDate);
                 if (projectCage == null)
                 {
                     continue;
                 }
 
-                var mortalityDate = ParseDateOrDefault(normalized.TryGetValue("mortalityDate", out var mortalityDateValue) ? mortalityDateValue : null, project.StartDate);
                 var deadCount = ParseIntOrDefault(normalized.TryGetValue("deadCount", out var deadCountValue) ? deadCountValue : null, 0);
                 if (deadCount <= 0)
                 {
@@ -1554,8 +1559,7 @@ public class OpeningImportService : IOpeningImportService
                 if (!string.IsNullOrWhiteSpace(normalized.TryGetValue("cageCode", out var cageCodeValue) ? cageCodeValue : null) &&
                     cagesByCode.TryGetValue(cageCodeValue!, out var cage))
                 {
-                    var projectCage = await _unitOfWork.Db.ProjectCages
-                        .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.CageId == cage.Id && x.ReleasedDate == null);
+                    var projectCage = await FindProjectCageForDateAsync(project.Id, cage.Id, receiptDate);
 
                     if (projectCage != null)
                     {
@@ -1626,15 +1630,14 @@ public class OpeningImportService : IOpeningImportService
                     continue;
                 }
 
-                var projectCage = await _unitOfWork.Db.ProjectCages
-                    .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.CageId == cage.Id && x.ReleasedDate == null);
+                var mortalityDate = ParseDateOrDefault(normalized.TryGetValue("mortalityDate", out var mortalityDateValue) ? mortalityDateValue : null, project.StartDate);
+                var projectCage = await FindProjectCageForDateAsync(project.Id, cage.Id, mortalityDate);
                 if (projectCage == null)
                 {
                     result.SkippedRows += 1;
                     continue;
                 }
 
-                var mortalityDate = ParseDateOrDefault(normalized.TryGetValue("mortalityDate", out var mortalityDateValue) ? mortalityDateValue : null, project.StartDate);
                 var headerKey = $"{project.Id}:{mortalityDate:yyyyMMdd}";
                 if (!headerByKey.TryGetValue(headerKey, out var header))
                 {
@@ -1732,15 +1735,14 @@ public class OpeningImportService : IOpeningImportService
                     continue;
                 }
 
-                var projectCage = await _unitOfWork.Db.ProjectCages
-                    .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.CageId == cage.Id && x.ReleasedDate == null);
+                var feedingDate = ParseDateOrDefault(normalized.TryGetValue("feedingDate", out var feedingDateValue) ? feedingDateValue : null, project.StartDate);
+                var projectCage = await FindProjectCageForDateAsync(project.Id, cage.Id, feedingDate);
                 if (projectCage == null)
                 {
                     result.SkippedRows += 1;
                     continue;
                 }
 
-                var feedingDate = ParseDateOrDefault(normalized.TryGetValue("feedingDate", out var feedingDateValue) ? feedingDateValue : null, project.StartDate);
                 var feedingSlot = ParseFeedingSlot(normalized.TryGetValue("feedingSlot", out var feedingSlotValue) ? feedingSlotValue : null);
                 var headerKey = $"{project.Id}:{feedingDate:yyyyMMdd}:{(byte)feedingSlot}";
 
@@ -1863,15 +1865,14 @@ public class OpeningImportService : IOpeningImportService
                     continue;
                 }
 
-                var projectCage = await _unitOfWork.Db.ProjectCages
-                    .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.CageId == cage.Id && x.ReleasedDate == null);
+                var shipmentDate = ParseDateOrDefault(normalized.TryGetValue("shipmentDate", out var shipmentDateValue) ? shipmentDateValue : null, project.StartDate);
+                var projectCage = await FindProjectCageForDateAsync(project.Id, cage.Id, shipmentDate);
                 if (projectCage == null)
                 {
                     result.SkippedRows += 1;
                     continue;
                 }
 
-                var shipmentDate = ParseDateOrDefault(normalized.TryGetValue("shipmentDate", out var shipmentDateValue) ? shipmentDateValue : null, project.StartDate);
                 var targetWarehouseId = TryResolveWarehouseIdByField(normalized, "targetWarehouseCode", warehouses);
                 var headerKey = $"{project.Id}:{shipmentDate:yyyyMMdd}:{targetWarehouseId?.ToString() ?? "none"}";
 
@@ -1934,6 +1935,22 @@ public class OpeningImportService : IOpeningImportService
 
                 result.CreatedShipmentLines += 1;
             }
+        }
+
+        private Task<ProjectCage?> FindProjectCageForDateAsync(long projectId, long cageId, DateTime effectiveDate)
+        {
+            var date = effectiveDate.Date;
+            var nextDate = date.AddDays(1);
+
+            return _unitOfWork.Db.ProjectCages
+                .Where(x =>
+                    !x.IsDeleted &&
+                    x.ProjectId == projectId &&
+                    x.CageId == cageId &&
+                    x.AssignedDate < nextDate &&
+                    (x.ReleasedDate == null || x.ReleasedDate >= date))
+                .OrderByDescending(x => x.AssignedDate)
+                .FirstOrDefaultAsync();
         }
 
         private async Task<Dictionary<string, FishBatch>> LoadExistingBatchesByKeyAsync(
@@ -2432,6 +2449,13 @@ public class OpeningImportService : IOpeningImportService
             return TryParseOpeningDate(rawValue, out var parsed)
                 ? parsed
                 : fallback;
+        }
+
+        private static DateTime? ParseNullableDate(string? rawValue)
+        {
+            return TryParseOpeningDate(rawValue, out var parsed)
+                ? parsed
+                : null;
         }
 
         private static bool TryParseOpeningDate(string? rawValue, out DateTime parsed)
