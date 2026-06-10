@@ -256,17 +256,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                     ? dto.TotalGram
                     : Math.Round(dto.QtyUnit * gramPerUnit, 3, MidpointRounding.AwayFromZero);
 
-                var entity = await _unitOfWork.FeedingLines
-                    .Query(tracking: true)
-                    .Include(x => x.Feeding)
-                    .Include(x => x.Stock)
-                    .Include(x => x.Distributions)
-                        .ThenInclude(x => x.ProjectCage)
-                            .ThenInclude(x => x!.Cage)
-                    .FirstOrDefaultAsync(x =>
-                        !x.IsDeleted &&
-                        x.FeedingId == feeding.Id &&
-                        x.StockId == dto.StockId);
+                var entity = await FindAutoHeaderFeedingLineAsync(feeding.Id, dto.ProjectCageId, dto.StockId);
 
                 if (entity == null)
                 {
@@ -285,7 +275,15 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 }
                 else
                 {
-                    ApplyFeedingLineDelta(entity, dto.QtyUnit, totalGram);
+                    if (dto.ProjectCageId.HasValue && dto.ProjectCageId.Value > 0)
+                    {
+                        ApplyFeedingLineReplacement(entity, dto.StockId, dto.QtyUnit, gramPerUnit, totalGram);
+                    }
+                    else
+                    {
+                        ApplyFeedingLineDelta(entity, dto.QtyUnit, totalGram);
+                    }
+
                     await _unitOfWork.SaveChangesAsync();
                 }
 
@@ -305,6 +303,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
 
                 await _unitOfWork.CommitTransactionAsync();
 
+                await ReloadFeedingLineDetailsAsync(entity);
                 var result = MapFeedingLine(entity);
                 return ApiResponse<FeedingLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingLineService.OperationSuccessful"));
             }
@@ -507,6 +506,41 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 : entity.GramPerUnit;
         }
 
+        private static void ApplyFeedingLineReplacement(FeedingLine entity, long stockId, decimal qtyUnit, decimal gramPerUnit, decimal totalGram)
+        {
+            entity.StockId = stockId;
+            entity.QtyUnit = Math.Round(qtyUnit, 3, MidpointRounding.AwayFromZero);
+            entity.GramPerUnit = Math.Round(gramPerUnit, 3, MidpointRounding.AwayFromZero);
+            entity.TotalGram = Math.Round(totalGram, 3, MidpointRounding.AwayFromZero);
+        }
+
+        private async Task<FeedingLine?> FindAutoHeaderFeedingLineAsync(long feedingId, long? projectCageId, long stockId)
+        {
+            var query = _unitOfWork.FeedingLines
+                .Query(tracking: true)
+                .Include(x => x.Feeding)
+                .Include(x => x.Stock)
+                .Include(x => x.Distributions)
+                    .ThenInclude(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Cage)
+                .Where(x => !x.IsDeleted && x.FeedingId == feedingId);
+
+            if (projectCageId.HasValue && projectCageId.Value > 0)
+            {
+                return await query
+                    .Where(x => x.Distributions.Any(d =>
+                        !d.IsDeleted &&
+                        d.ProjectCageId == projectCageId.Value))
+                    .OrderByDescending(x => x.Id)
+                    .FirstOrDefaultAsync();
+            }
+
+            return await query
+                .Where(x => x.StockId == stockId)
+                .OrderByDescending(x => x.Id)
+                .FirstOrDefaultAsync();
+        }
+
         private async Task<long> ResolveActiveFishBatchIdAsync(long projectCageId)
         {
             return await _unitOfWork.Db.BatchCageBalances
@@ -527,8 +561,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 .FirstOrDefaultAsync(x =>
                     !x.IsDeleted &&
                     x.FeedingLineId == feedingLine.Id &&
-                    x.ProjectCageId == projectCageId &&
-                    x.FishBatchId == fishBatchId);
+                    x.ProjectCageId == projectCageId);
 
             if (distribution == null)
             {
@@ -546,9 +579,23 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 return;
             }
 
-            distribution.FeedGram = Math.Round(distribution.FeedGram + feedGram, 3, MidpointRounding.AwayFromZero);
+            distribution.FishBatchId = fishBatchId;
+            distribution.FeedGram = Math.Round(feedGram, 3, MidpointRounding.AwayFromZero);
             await _unitOfWork.SaveChangesAsync();
-            await AddOrUpdateFeedingMovementAsync(distribution, feedingLine, feedGram, replace: false);
+            await AddOrUpdateFeedingMovementAsync(distribution, feedingLine, feedGram, replace: true);
+        }
+
+        private async Task ReloadFeedingLineDetailsAsync(FeedingLine entity)
+        {
+            await _unitOfWork.Db.Entry(entity).Reference(x => x.Feeding).LoadAsync();
+            if (entity.Stock?.Id != entity.StockId)
+            {
+                entity.Stock = await _unitOfWork.Db.Stocks.FirstOrDefaultAsync(x => x.Id == entity.StockId);
+            }
+            await _unitOfWork.Db.Entry(entity).Collection(x => x.Distributions).Query()
+                .Include(x => x.ProjectCage)
+                    .ThenInclude(x => x!.Cage)
+                .LoadAsync();
         }
 
         private async Task AddOrUpdateFeedingMovementAsync(FeedingDistribution distribution, FeedingLine feedingLine, decimal feedGram, bool replace)
@@ -612,7 +659,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 dto.ProjectId,
                 dto.FeedingDate.Date.ToString("yyyyMMdd"),
                 (int)dto.FeedingSlot,
-                dto.StockId);
+                dto.ProjectCageId.GetValueOrDefault());
         }
     }
 }

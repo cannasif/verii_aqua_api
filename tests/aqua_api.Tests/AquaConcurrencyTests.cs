@@ -116,11 +116,30 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
 
         long projectId;
         long feedStockId;
+        long alternateFeedStockId;
+        long projectCageId;
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
             projectId = await db.Projects.Where(x => !x.IsDeleted && x.ProjectCode == projectCode).Select(x => x.Id).SingleAsync();
             feedStockId = await db.Stocks.Where(x => !x.IsDeleted && x.ErpStockCode == "YEM-STD").Select(x => x.Id).SingleAsync();
+            projectCageId = await db.ProjectCages
+                .Where(x => !x.IsDeleted && x.ProjectId == projectId && x.Cage != null && x.Cage.CageCode == cageCode)
+                .Select(x => x.Id)
+                .SingleAsync();
+
+            var alternateFeedStock = new aqua_api.Modules.Stock.Domain.Entities.Stock
+            {
+                ErpStockCode = $"YEM-ALT-{suffix}",
+                StockName = "Alternatif Yem",
+                Unit = "KG",
+                GrupKodu = "YEM",
+                GrupAdi = "Yem",
+                IsDeleted = false,
+            };
+            db.Stocks.Add(alternateFeedStock);
+            await db.SaveChangesAsync();
+            alternateFeedStockId = alternateFeedStock.Id;
         }
 
         var date = new DateTime(2026, 4, 6);
@@ -208,6 +227,51 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
         Assert.Equal(feedStockId, mergedManualLine.StockId);
         Assert.Equal(25m, mergedManualLine.QtyUnit);
         Assert.Equal(25_000m, mergedManualLine.TotalGram);
+
+        var cageScopedDate = new DateTime(2026, 4, 7);
+        var cageScopedFirst = await PostAsync<FeedingLineDto>(clientA, "/api/aqua/FeedingLine/auto-header", new CreateFeedingLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            ProjectCageId = projectCageId,
+            FeedingDate = cageScopedDate,
+            FeedingSlot = FeedingSlot.Morning,
+            StockId = feedStockId,
+            QtyUnit = 10m,
+            GramPerUnit = 1000m,
+            TotalGram = 10_000m,
+        });
+        Assert.True(cageScopedFirst.Success, $"{cageScopedFirst.Message} | {cageScopedFirst.ExceptionMessage}");
+
+        var cageScopedSecond = await PostAsync<FeedingLineDto>(clientA, "/api/aqua/FeedingLine/auto-header", new CreateFeedingLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            ProjectCageId = projectCageId,
+            FeedingDate = cageScopedDate,
+            FeedingSlot = FeedingSlot.Morning,
+            StockId = alternateFeedStockId,
+            QtyUnit = 12m,
+            GramPerUnit = 1000m,
+            TotalGram = 12_000m,
+        });
+        Assert.True(cageScopedSecond.Success, $"{cageScopedSecond.Message} | {cageScopedSecond.ExceptionMessage}");
+
+        using var cageScopedVerifyScope = _factory.Services.CreateScope();
+        var cageScopedVerifyDb = cageScopedVerifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        var cageScopedHeader = await cageScopedVerifyDb.Feedings
+            .SingleAsync(x => !x.IsDeleted && x.ProjectId == projectId && x.FeedingDate.Date == cageScopedDate.Date && x.FeedingSlot == FeedingSlot.Morning);
+        var cageScopedLines = await cageScopedVerifyDb.FeedingLines
+            .Where(x => !x.IsDeleted && x.FeedingId == cageScopedHeader.Id)
+            .ToListAsync();
+        var cageScopedDistributions = await cageScopedVerifyDb.FeedingDistributions
+            .Where(x => !x.IsDeleted && x.ProjectCageId == projectCageId && cageScopedLines.Select(l => l.Id).Contains(x.FeedingLineId))
+            .ToListAsync();
+
+        var cageScopedLine = Assert.Single(cageScopedLines);
+        Assert.Equal(alternateFeedStockId, cageScopedLine.StockId);
+        Assert.Equal(12m, cageScopedLine.QtyUnit);
+        Assert.Equal(12_000m, cageScopedLine.TotalGram);
+        var cageScopedDistribution = Assert.Single(cageScopedDistributions);
+        Assert.Equal(12_000m, cageScopedDistribution.FeedGram);
     }
 
     private static async Task<ApiResponse<T>> PostAsync<T>(HttpClient client, string url, object payload)

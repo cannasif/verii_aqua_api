@@ -11,6 +11,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
         private readonly ILocalizationService _localizationService;
         private static readonly IReadOnlyDictionary<string, string> ColumnMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
+            ["feedingId"] = "FeedingLine.FeedingId",
             ["batchCode"] = "FishBatch.BatchCode",
             ["projectCode"] = "ProjectCage.Project.ProjectCode",
             ["projectName"] = "ProjectCage.Project.ProjectName",
