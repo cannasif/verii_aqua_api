@@ -47,6 +47,8 @@ namespace aqua_api.Modules.Feedings.Application.Dtos
         public FeedingSlot FeedingSlot { get; set; }
         public FeedingSourceType SourceType { get; set; } = FeedingSourceType.Manual;
         public string? Note { get; set; }
+        public long? ProjectCageId { get; set; }
+        public long? FishBatchId { get; set; }
         public long StockId { get; set; }
         public decimal QtyUnit { get; set; }
         public decimal GramPerUnit { get; set; }

@@ -111,50 +111,47 @@ namespace aqua_api.Modules.Feedings.Application.Services
         {
             try
             {
-                var entity = _mapper.Map<FeedingDistribution>(dto);
-                await _unitOfWork.FeedingDistributions.AddAsync(entity);
-                await _unitOfWork.SaveChangesAsync();
-
                 var feedingLine = await _unitOfWork.FeedingLines
-                    .Query()
+                    .Query(tracking: true)
                     .Include(x => x.Feeding)
-                    .FirstOrDefaultAsync(x => x.Id == entity.FeedingLineId && !x.IsDeleted);
+                    .FirstOrDefaultAsync(x => x.Id == dto.FeedingLineId && !x.IsDeleted);
+
+                if (feedingLine == null)
+                {
+                    return ApiResponse<FeedingDistributionDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("FeedingLineService.NotFound"),
+                        _localizationService.GetLocalizedString("FeedingLineService.NotFound"),
+                        StatusCodes.Status404NotFound);
+                }
+
+                var entity = await _unitOfWork.FeedingDistributions
+                    .Query(tracking: true)
+                    .Include(x => x.FishBatch)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Project)
+                    .Include(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Cage)
+                    .FirstOrDefaultAsync(x =>
+                        !x.IsDeleted &&
+                        x.FeedingLineId == dto.FeedingLineId &&
+                        x.FishBatchId == dto.FishBatchId &&
+                        x.ProjectCageId == dto.ProjectCageId);
+
+                if (entity == null)
+                {
+                    entity = _mapper.Map<FeedingDistribution>(dto);
+                    await _unitOfWork.FeedingDistributions.AddAsync(entity);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+                else
+                {
+                    entity.FeedGram = Math.Round(entity.FeedGram + dto.FeedGram, 3, MidpointRounding.AwayFromZero);
+                    await _unitOfWork.SaveChangesAsync();
+                }
 
                 if (feedingLine?.Feeding != null && feedingLine.Feeding.Status == DocumentStatus.Posted)
                 {
-                    var activeBalance = await _unitOfWork.Db.BatchCageBalances
-                        .Where(x => !x.IsDeleted
-                            && x.ProjectCageId == entity.ProjectCageId
-                            && x.LiveCount > 0)
-                        .OrderByDescending(x => x.LiveCount)
-                        .ThenByDescending(x => x.Id)
-                        .FirstOrDefaultAsync();
-
-                    if (activeBalance != null)
-                    {
-                        var actorUserId = entity.CreatedBy
-                            ?? feedingLine.CreatedBy
-                            ?? feedingLine.Feeding.CreatedBy
-                            ?? 1L;
-                        await _unitOfWork.Db.BatchMovements.AddAsync(new BatchMovement
-                        {
-                            FishBatchId = activeBalance.FishBatchId,
-                            ProjectCageId = entity.ProjectCageId,
-                            MovementDate = feedingLine.Feeding.FeedingDate,
-                            MovementType = BatchMovementType.Feeding,
-                            SignedCount = 0,
-                            SignedBiomassGram = 0,
-                            FeedGram = entity.FeedGram,
-                            ActorUserId = actorUserId,
-                            ReferenceTable = "RII_FeedingDistribution",
-                            ReferenceId = entity.Id,
-                            Note = $"FeedingDistribution | feedGram={entity.FeedGram}",
-                            CreatedBy = actorUserId,
-                            IsDeleted = false
-                        });
-
-                        await _unitOfWork.SaveChangesAsync();
-                    }
+                    await AddOrUpdateFeedingMovementAsync(entity, feedingLine);
                 }
 
                 var result = MapFeedingDistribution(entity);
@@ -237,6 +234,48 @@ namespace aqua_api.Modules.Feedings.Application.Services
             dto.CageCode = entity.ProjectCage?.Cage?.CageCode;
             dto.CageName = entity.ProjectCage?.Cage?.CageName;
             return dto;
+        }
+
+        private async Task AddOrUpdateFeedingMovementAsync(FeedingDistribution entity, FeedingLine feedingLine)
+        {
+            var movement = await _unitOfWork.Db.BatchMovements
+                .FirstOrDefaultAsync(x =>
+                    !x.IsDeleted &&
+                    x.ReferenceTable == "RII_FeedingDistribution" &&
+                    x.ReferenceId == entity.Id &&
+                    x.MovementType == BatchMovementType.Feeding);
+
+            if (movement != null)
+            {
+                movement.FeedGram = entity.FeedGram;
+                movement.Note = $"FeedingDistribution | feedGram={entity.FeedGram}";
+                await _unitOfWork.SaveChangesAsync();
+                return;
+            }
+
+            var actorUserId = entity.CreatedBy
+                ?? feedingLine.CreatedBy
+                ?? feedingLine.Feeding?.CreatedBy
+                ?? 1L;
+
+            await _unitOfWork.Db.BatchMovements.AddAsync(new BatchMovement
+            {
+                FishBatchId = entity.FishBatchId,
+                ProjectCageId = entity.ProjectCageId,
+                MovementDate = feedingLine.Feeding?.FeedingDate ?? DateTime.UtcNow.Date,
+                MovementType = BatchMovementType.Feeding,
+                SignedCount = 0,
+                SignedBiomassGram = 0,
+                FeedGram = entity.FeedGram,
+                ActorUserId = actorUserId,
+                ReferenceTable = "RII_FeedingDistribution",
+                ReferenceId = entity.Id,
+                Note = $"FeedingDistribution | feedGram={entity.FeedGram}",
+                CreatedBy = actorUserId,
+                IsDeleted = false
+            });
+
+            await _unitOfWork.SaveChangesAsync();
         }
     }
 }

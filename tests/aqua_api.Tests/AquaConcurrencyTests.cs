@@ -24,7 +24,7 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
     }
 
     [Fact]
-    public async Task ConcurrentFeedingLineAutoHeader_CreatesSingleHeaderAndKeepsBothLines()
+    public async Task FeedingLineAutoHeader_MergesSameStockWithinSlotAndKeepsDifferentSlotsSeparate()
     {
         var clientA = _factory.CreateClient();
         var clientB = _factory.CreateClient();
@@ -158,8 +158,56 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
             .ToListAsync();
 
         Assert.Single(headers);
-        Assert.Equal(2, lines.Count);
-        Assert.Equal(22_000m, lines.Sum(x => x.TotalGram));
+        var line = Assert.Single(lines);
+        Assert.Equal(feedStockId, line.StockId);
+        Assert.Equal(22m, line.QtyUnit);
+        Assert.Equal(22_000m, line.TotalGram);
+
+        var evening = await PostAsync<FeedingLineDto>(clientA, "/api/aqua/FeedingLine/auto-header", new CreateFeedingLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            FeedingDate = date,
+            FeedingSlot = FeedingSlot.Evening,
+            StockId = feedStockId,
+            QtyUnit = 5m,
+            GramPerUnit = 1000m,
+            TotalGram = 5_000m,
+        });
+        Assert.True(evening.Success, $"{evening.Message} | {evening.ExceptionMessage}");
+
+        var allHeaders = await verifyDb.Feedings
+            .Where(x => !x.IsDeleted && x.ProjectId == projectId && x.FeedingDate.Date == date.Date)
+            .ToListAsync();
+        var allHeaderIds = allHeaders.Select(x => x.Id).ToList();
+        var allLines = await verifyDb.FeedingLines
+            .Where(x => !x.IsDeleted && allHeaderIds.Contains(x.FeedingId))
+            .ToListAsync();
+
+        Assert.Equal(2, allHeaders.Count);
+        Assert.Equal(2, allLines.Count);
+        Assert.Equal(22_000m, allLines.Single(x => x.FeedingId == headers.Single().Id).TotalGram);
+        Assert.Equal(5_000m, allLines.Single(x => x.FeedingId != headers.Single().Id).TotalGram);
+
+        var manualLine = await PostAsync<FeedingLineDto>(clientA, "/api/aqua/FeedingLine", new CreateFeedingLineDto
+        {
+            FeedingId = headers.Single().Id,
+            StockId = feedStockId,
+            QtyUnit = 3m,
+            GramPerUnit = 1000m,
+            TotalGram = 3_000m,
+        });
+        Assert.True(manualLine.Success, $"{manualLine.Message} | {manualLine.ExceptionMessage}");
+
+        using var manualVerifyScope = _factory.Services.CreateScope();
+        var manualVerifyDb = manualVerifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        var manualLines = await manualVerifyDb.FeedingLines
+            .Where(x => !x.IsDeleted && x.FeedingId == headers.Single().Id)
+            .ToListAsync();
+
+        var mergedManualLine = Assert.Single(manualLines);
+        Assert.Equal(feedStockId, mergedManualLine.StockId);
+        Assert.Equal(25m, mergedManualLine.QtyUnit);
+        Assert.Equal(25_000m, mergedManualLine.TotalGram);
     }
 
     private static async Task<ApiResponse<T>> PostAsync<T>(HttpClient client, string url, object payload)

@@ -9,6 +9,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
+        private static readonly global::System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> AutoHeaderMergeLocks = new();
         private static readonly IReadOnlyDictionary<string, string> ColumnMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
         {
             ["stockCode"] = "Stock.ErpStockCode",
@@ -128,8 +129,28 @@ namespace aqua_api.Modules.Feedings.Application.Services
                     dto.TotalGram = Math.Round(dto.QtyUnit * dto.GramPerUnit, 3, MidpointRounding.AwayFromZero);
                 }
 
-                var entity = _mapper.Map<FeedingLine>(dto);
-                await _unitOfWork.FeedingLines.AddAsync(entity);
+                var entity = await _unitOfWork.FeedingLines
+                    .Query(tracking: true)
+                    .Include(x => x.Feeding)
+                    .Include(x => x.Stock)
+                    .Include(x => x.Distributions)
+                        .ThenInclude(x => x.ProjectCage)
+                            .ThenInclude(x => x!.Cage)
+                    .FirstOrDefaultAsync(x =>
+                        !x.IsDeleted &&
+                        x.FeedingId == dto.FeedingId &&
+                        x.StockId == dto.StockId);
+
+                if (entity == null)
+                {
+                    entity = _mapper.Map<FeedingLine>(dto);
+                    await _unitOfWork.FeedingLines.AddAsync(entity);
+                }
+                else
+                {
+                    ApplyFeedingLineDelta(entity, dto.QtyUnit, dto.TotalGram);
+                }
+
                 await _unitOfWork.SaveChangesAsync();
 
                 var result = MapFeedingLine(entity);
@@ -161,12 +182,17 @@ namespace aqua_api.Modules.Feedings.Application.Services
 
         public async Task<ApiResponse<FeedingLineDto>> CreateWithAutoHeaderAsync(CreateFeedingLineWithAutoHeaderDto dto)
         {
+            SemaphoreSlim? mergeLock = null;
             try
             {
                 if (dto.QtyUnit <= 0)
                 {
                     throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingLineService.QuantityMustBeGreaterThanZero"));
                 }
+
+                var mergeLockKey = BuildAutoHeaderMergeLockKey(dto);
+                mergeLock = AutoHeaderMergeLocks.GetOrAdd(mergeLockKey, _ => new SemaphoreSlim(1, 1));
+                await mergeLock.WaitAsync();
 
                 await _unitOfWork.BeginTransactionAsync();
 
@@ -230,17 +256,53 @@ namespace aqua_api.Modules.Feedings.Application.Services
                     ? dto.TotalGram
                     : Math.Round(dto.QtyUnit * gramPerUnit, 3, MidpointRounding.AwayFromZero);
 
-                var entity = new FeedingLine
-                {
-                    FeedingId = feeding.Id,
-                    StockId = dto.StockId,
-                    QtyUnit = dto.QtyUnit,
-                    GramPerUnit = gramPerUnit,
-                    TotalGram = totalGram,
-                };
+                var entity = await _unitOfWork.FeedingLines
+                    .Query(tracking: true)
+                    .Include(x => x.Feeding)
+                    .Include(x => x.Stock)
+                    .Include(x => x.Distributions)
+                        .ThenInclude(x => x.ProjectCage)
+                            .ThenInclude(x => x!.Cage)
+                    .FirstOrDefaultAsync(x =>
+                        !x.IsDeleted &&
+                        x.FeedingId == feeding.Id &&
+                        x.StockId == dto.StockId);
 
-                await _unitOfWork.FeedingLines.AddAsync(entity);
-                await _unitOfWork.SaveChangesAsync();
+                if (entity == null)
+                {
+                    entity = new FeedingLine
+                    {
+                        FeedingId = feeding.Id,
+                        Feeding = feeding,
+                        StockId = dto.StockId,
+                        QtyUnit = dto.QtyUnit,
+                        GramPerUnit = gramPerUnit,
+                        TotalGram = totalGram,
+                    };
+
+                    await _unitOfWork.FeedingLines.AddAsync(entity);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+                else
+                {
+                    ApplyFeedingLineDelta(entity, dto.QtyUnit, totalGram);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                if (dto.ProjectCageId.HasValue && dto.ProjectCageId.Value > 0)
+                {
+                    var fishBatchId = dto.FishBatchId.GetValueOrDefault();
+                    if (fishBatchId <= 0)
+                    {
+                        fishBatchId = await ResolveActiveFishBatchIdAsync(dto.ProjectCageId.Value);
+                    }
+
+                    if (fishBatchId > 0)
+                    {
+                        await UpsertDistributionAsync(entity, dto.ProjectCageId.Value, fishBatchId, totalGram);
+                    }
+                }
+
                 await _unitOfWork.CommitTransactionAsync();
 
                 var result = MapFeedingLine(entity);
@@ -270,6 +332,10 @@ namespace aqua_api.Modules.Feedings.Application.Services
                     _localizationService.GetLocalizedString("FeedingLineService.InternalServerError"),
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
+            }
+            finally
+            {
+                mergeLock?.Release();
             }
         }
 
@@ -432,9 +498,121 @@ namespace aqua_api.Modules.Feedings.Application.Services
             return _localizationService.GetLocalizedString("FeedingLineService.SaveFailed");
         }
 
+        private static void ApplyFeedingLineDelta(FeedingLine entity, decimal qtyUnit, decimal totalGram)
+        {
+            entity.QtyUnit = Math.Round(entity.QtyUnit + qtyUnit, 3, MidpointRounding.AwayFromZero);
+            entity.TotalGram = Math.Round(entity.TotalGram + totalGram, 3, MidpointRounding.AwayFromZero);
+            entity.GramPerUnit = entity.QtyUnit > 0
+                ? Math.Round(entity.TotalGram / entity.QtyUnit, 3, MidpointRounding.AwayFromZero)
+                : entity.GramPerUnit;
+        }
+
+        private async Task<long> ResolveActiveFishBatchIdAsync(long projectCageId)
+        {
+            return await _unitOfWork.Db.BatchCageBalances
+                .Where(x =>
+                    !x.IsDeleted &&
+                    x.ProjectCageId == projectCageId &&
+                    x.LiveCount > 0)
+                .OrderByDescending(x => x.LiveCount)
+                .ThenByDescending(x => x.Id)
+                .Select(x => x.FishBatchId)
+                .FirstOrDefaultAsync();
+        }
+
+        private async Task UpsertDistributionAsync(FeedingLine feedingLine, long projectCageId, long fishBatchId, decimal feedGram)
+        {
+            var distribution = await _unitOfWork.FeedingDistributions
+                .Query(tracking: true)
+                .FirstOrDefaultAsync(x =>
+                    !x.IsDeleted &&
+                    x.FeedingLineId == feedingLine.Id &&
+                    x.ProjectCageId == projectCageId &&
+                    x.FishBatchId == fishBatchId);
+
+            if (distribution == null)
+            {
+                distribution = new FeedingDistribution
+                {
+                    FeedingLineId = feedingLine.Id,
+                    FishBatchId = fishBatchId,
+                    ProjectCageId = projectCageId,
+                    FeedGram = feedGram,
+                };
+
+                await _unitOfWork.FeedingDistributions.AddAsync(distribution);
+                await _unitOfWork.SaveChangesAsync();
+                await AddOrUpdateFeedingMovementAsync(distribution, feedingLine, feedGram, replace: true);
+                return;
+            }
+
+            distribution.FeedGram = Math.Round(distribution.FeedGram + feedGram, 3, MidpointRounding.AwayFromZero);
+            await _unitOfWork.SaveChangesAsync();
+            await AddOrUpdateFeedingMovementAsync(distribution, feedingLine, feedGram, replace: false);
+        }
+
+        private async Task AddOrUpdateFeedingMovementAsync(FeedingDistribution distribution, FeedingLine feedingLine, decimal feedGram, bool replace)
+        {
+            var movement = await _unitOfWork.Db.BatchMovements
+                .FirstOrDefaultAsync(x =>
+                    !x.IsDeleted &&
+                    x.ReferenceTable == "RII_FeedingDistribution" &&
+                    x.ReferenceId == distribution.Id &&
+                    x.MovementType == BatchMovementType.Feeding);
+
+            if (movement != null)
+            {
+                movement.FeedGram = replace
+                    ? distribution.FeedGram
+                    : Math.Round((movement.FeedGram ?? 0m) + feedGram, 3, MidpointRounding.AwayFromZero);
+                await _unitOfWork.SaveChangesAsync();
+                return;
+            }
+
+            var feedingDate = feedingLine.Feeding?.FeedingDate
+                ?? await _unitOfWork.Feedings
+                    .Query()
+                    .Where(x => x.Id == feedingLine.FeedingId)
+                    .Select(x => x.FeedingDate)
+                    .FirstOrDefaultAsync();
+
+            var actorUserId = distribution.CreatedBy
+                ?? feedingLine.CreatedBy
+                ?? feedingLine.Feeding?.CreatedBy
+                ?? 1L;
+
+            await _unitOfWork.Db.BatchMovements.AddAsync(new BatchMovement
+            {
+                FishBatchId = distribution.FishBatchId,
+                ProjectCageId = distribution.ProjectCageId,
+                MovementDate = feedingDate,
+                MovementType = BatchMovementType.Feeding,
+                SignedCount = 0,
+                SignedBiomassGram = 0,
+                FeedGram = distribution.FeedGram,
+                ActorUserId = actorUserId,
+                ReferenceTable = "RII_FeedingDistribution",
+                ReferenceId = distribution.Id,
+                Note = $"FeedingDistribution | feedGram={distribution.FeedGram}",
+                CreatedBy = actorUserId,
+                IsDeleted = false
+            });
+
+            await _unitOfWork.SaveChangesAsync();
+        }
+
         private static string BuildDocumentNo(long projectId, DateTime feedingDate)
         {
             return $"FD-{projectId}-{feedingDate:yyyyMMdd}-{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}";
+        }
+
+        private static string BuildAutoHeaderMergeLockKey(CreateFeedingLineWithAutoHeaderDto dto)
+        {
+            return string.Join('|',
+                dto.ProjectId,
+                dto.FeedingDate.Date.ToString("yyyyMMdd"),
+                (int)dto.FeedingSlot,
+                dto.StockId);
         }
     }
 }
