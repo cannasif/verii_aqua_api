@@ -1367,6 +1367,209 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.Equal(row.Fcr, dashboardProject.Fcr);
     }
 
+    [Fact]
+    public async Task DashboardProjectSummary_UnrepresentedShipment_DoesNotDoubleCountCurrentBiomassForFcr()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+        var projectCode = $"FCR-IDA-{suffix}";
+        const int openingFishCount = 590_000;
+        const int mortalityFishCount = 214_865;
+        const int shipmentFishCount = 375_135;
+        const decimal openingAndShipmentBiomassGram = 188_295_000m;
+        const decimal feedGram = 565_093_000m;
+        const decimal expectedFcr = 3.001m;
+
+        long projectId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var fishStockId = await db.Stocks
+                .Where(x => !x.IsDeleted && x.ErpStockCode == "PLAMUT-5G")
+                .Select(x => x.Id)
+                .SingleAsync();
+            var feedStockId = await db.Stocks
+                .Where(x => !x.IsDeleted && x.ErpStockCode == "YEM-STD")
+                .Select(x => x.Id)
+                .SingleAsync();
+
+            var project = new Project
+            {
+                ProjectCode = projectCode,
+                ProjectName = "IDA-like closed FCR project",
+                StartDate = new DateTime(2026, 2, 1),
+                EndDate = new DateTime(2026, 2, 28),
+                Status = DocumentStatus.Posted,
+            };
+            var cage = new Cage
+            {
+                CageCode = $"FCR-IDA-CAGE-{suffix}",
+                CageName = "IDA-like A2 Cage",
+            };
+
+            db.Projects.Add(project);
+            db.Cages.Add(cage);
+            await db.SaveChangesAsync();
+
+            var projectCage = new ProjectCage
+            {
+                ProjectId = project.Id,
+                CageId = cage.Id,
+                AssignedDate = project.StartDate,
+                ReleasedDate = project.EndDate,
+            };
+            var batch = new FishBatch
+            {
+                ProjectId = project.Id,
+                BatchCode = $"FCR-IDA-BATCH-{suffix}",
+                FishStockId = fishStockId,
+                CurrentAverageGram = openingAndShipmentBiomassGram / openingFishCount,
+                StartDate = project.StartDate,
+                TargetHarvestAverageGram = openingAndShipmentBiomassGram / shipmentFishCount,
+            };
+
+            db.ProjectCages.Add(projectCage);
+            db.FishBatches.Add(batch);
+            await db.SaveChangesAsync();
+
+            var feeding = new Feeding
+            {
+                ProjectId = project.Id,
+                FeedingNo = $"FCR-IDA-FEED-{suffix}",
+                FeedingDate = new DateTime(2026, 2, 15),
+                FeedingSlot = FeedingSlot.Morning,
+                SourceType = FeedingSourceType.Manual,
+                Status = DocumentStatus.Posted,
+            };
+            db.Feedings.Add(feeding);
+            await db.SaveChangesAsync();
+
+            var feedingLine = new FeedingLine
+            {
+                FeedingId = feeding.Id,
+                StockId = feedStockId,
+                QtyUnit = feedGram / 1000m,
+                GramPerUnit = 1000m,
+                TotalGram = feedGram,
+            };
+            db.FeedingLines.Add(feedingLine);
+            await db.SaveChangesAsync();
+
+            db.FeedingDistributions.Add(new FeedingDistribution
+            {
+                FeedingLineId = feedingLine.Id,
+                FishBatchId = batch.Id,
+                ProjectCageId = projectCage.Id,
+                FeedGram = feedGram,
+            });
+
+            var mortality = new Mortality
+            {
+                ProjectId = project.Id,
+                MortalityDate = new DateTime(2026, 2, 20),
+                Status = DocumentStatus.Posted,
+            };
+            var shipment = new Shipment
+            {
+                ProjectId = project.Id,
+                ShipmentNo = $"FCR-IDA-SHIP-{suffix}",
+                ShipmentDate = new DateTime(2026, 2, 28),
+                Status = DocumentStatus.Posted,
+            };
+            db.Mortalities.Add(mortality);
+            db.Shipments.Add(shipment);
+            await db.SaveChangesAsync();
+
+            db.MortalityLines.Add(new MortalityLine
+            {
+                MortalityId = mortality.Id,
+                FishBatchId = batch.Id,
+                ProjectCageId = projectCage.Id,
+                DeadCount = mortalityFishCount,
+            });
+            db.ShipmentLines.Add(new ShipmentLine
+            {
+                ShipmentId = shipment.Id,
+                FishBatchId = batch.Id,
+                FromProjectCageId = projectCage.Id,
+                FishCount = shipmentFishCount,
+                AverageGram = openingAndShipmentBiomassGram / shipmentFishCount,
+                BiomassGram = openingAndShipmentBiomassGram,
+                CurrencyCode = "TRY",
+                ExchangeRate = 1m,
+                UnitPrice = 200m,
+            });
+
+            db.BatchCageBalances.Add(new BatchCageBalance
+            {
+                FishBatchId = batch.Id,
+                ProjectCageId = projectCage.Id,
+                LiveCount = shipmentFishCount,
+                BiomassGram = openingAndShipmentBiomassGram,
+                AverageGram = openingAndShipmentBiomassGram / shipmentFishCount,
+            });
+            db.BatchMovements.AddRange(
+                new BatchMovement
+                {
+                    FishBatchId = batch.Id,
+                    ProjectCageId = projectCage.Id,
+                    MovementDate = project.StartDate,
+                    MovementType = BatchMovementType.OpeningImport,
+                    SignedCount = openingFishCount,
+                    SignedBiomassGram = openingAndShipmentBiomassGram,
+                    ReferenceTable = "FcrIdaLikeIntegrationTest",
+                    ReferenceId = project.Id,
+                },
+                new BatchMovement
+                {
+                    FishBatchId = batch.Id,
+                    ProjectCageId = projectCage.Id,
+                    MovementDate = mortality.MortalityDate,
+                    MovementType = BatchMovementType.Mortality,
+                    SignedCount = -mortalityFishCount,
+                    SignedBiomassGram = 0m,
+                    ReferenceTable = "FcrIdaLikeIntegrationTest",
+                    ReferenceId = mortality.Id,
+                });
+
+            await db.SaveChangesAsync();
+            projectId = project.Id;
+        }
+
+        var devirFcr = await PostAsync<DevirFcrReportDto>(client, "/api/kpi-report/devir-fcr", new DevirFcrReportRequestDto
+        {
+            ProjectIds = [projectId]
+        });
+        Assert.True(devirFcr.Success, $"{devirFcr.Message} | {devirFcr.ExceptionMessage}");
+
+        var row = Assert.Single(devirFcr.Data!.Rows);
+        Assert.Equal(shipmentFishCount, row.ShipmentFishCount);
+        Assert.Equal(mortalityFishCount, row.MortalityFishCount);
+        Assert.Equal(0, row.EndingFishCount);
+        Assert.Equal(188_295m, row.ProducedBiomassKg);
+        Assert.Equal(565_093m, row.TotalFeedKg);
+        Assert.Equal(expectedFcr, row.Fcr);
+
+        var dashboardSummary = await PostAsync<DashboardProjectsResponseDto>(client, "/api/aqua/dashboard-project/summary", new DashboardProjectsRequestDto
+        {
+            ProjectIds = [projectId]
+        });
+        Assert.True(dashboardSummary.Success, $"{dashboardSummary.Message} | {dashboardSummary.ExceptionMessage}");
+
+        var dashboardProject = Assert.Single(dashboardSummary.Data!.Projects);
+        Assert.Equal(0, dashboardProject.CageFish);
+        Assert.Equal(0m, dashboardProject.CageBiomassGram);
+        Assert.Equal(row.Fcr, dashboardProject.Fcr);
+
+        var dashboardCage = Assert.Single(dashboardProject.Cages);
+        Assert.Equal(0, dashboardCage.CurrentFishCount);
+        Assert.Equal(0m, dashboardCage.CurrentBiomassGram);
+        Assert.Equal(row.Fcr, dashboardCage.Fcr);
+    }
+
     private static async Task<ApiResponse<T>> PostAsync<T>(HttpClient client, string url, object payload)
     {
         using var response = await client.PostAsJsonAsync(url, payload);

@@ -750,6 +750,22 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 var totalCountDelta = countDeltaByDate.Values.Sum();
                 var totalBiomassDelta = biomassDeltaByDate.Values.Sum();
                 var totalDead = mortalityByCage.GetValueOrDefault(cageId);
+                var totalShipmentFish = shipmentFishByDate.Values.Sum();
+                var totalShipmentBiomass = shipmentBiomassByDate.Values.Sum();
+                var representedShipmentFish = batchMovements
+                    .Where(x =>
+                        x.ProjectCageId == cageId &&
+                        x.MovementType == BatchMovementType.Shipment &&
+                        x.SignedCount < 0)
+                    .Sum(x => Math.Max(0, -x.SignedCount));
+                var representedShipmentBiomass = batchMovements
+                    .Where(x =>
+                        x.ProjectCageId == cageId &&
+                        x.MovementType == BatchMovementType.Shipment &&
+                        x.SignedBiomassGram < 0)
+                    .Sum(x => Math.Max(0m, -x.SignedBiomassGram));
+                var unrepresentedShipmentFish = Math.Max(0, totalShipmentFish - representedShipmentFish);
+                var unrepresentedShipmentBiomass = Math.Max(0m, totalShipmentBiomass - representedShipmentBiomass);
                 var currentFishFromBalance = currentCountByCage.GetValueOrDefault(cageId);
                 var currentBiomassFromBalance = currentBiomassByCage.GetValueOrDefault(cageId);
                 var fallbackCurrentFish = Math.Max(0, initialFish - totalDead);
@@ -757,8 +773,14 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 var currentFishFromMovement = Math.Max(0, totalCountDelta);
                 var currentBiomassFromMovement = Math.Max(0m, totalBiomassDelta);
                 var hasMovementSnapshot = countDeltaByDate.Count > 0 || biomassDeltaByDate.Count > 0;
-                var currentFish = hasMovementSnapshot ? currentFishFromMovement : (currentFishFromBalance > 0 ? currentFishFromBalance : fallbackCurrentFish);
-                var currentBiomass = hasMovementSnapshot ? currentBiomassFromMovement : (currentBiomassFromBalance > 0 ? currentBiomassFromBalance : fallbackCurrentBiomass);
+                var currentFishBeforeShipmentAdjustment = hasMovementSnapshot
+                    ? currentFishFromMovement
+                    : (currentFishFromBalance > 0 ? currentFishFromBalance : fallbackCurrentFish);
+                var currentBiomassBeforeShipmentAdjustment = hasMovementSnapshot
+                    ? currentBiomassFromMovement
+                    : (currentBiomassFromBalance > 0 ? currentBiomassFromBalance : fallbackCurrentBiomass);
+                var currentFish = Math.Max(0, currentFishBeforeShipmentAdjustment - unrepresentedShipmentFish);
+                var currentBiomass = Math.Max(0m, currentBiomassBeforeShipmentAdjustment - unrepresentedShipmentBiomass);
                 var currentAvgGram = currentFish > 0 ? currentBiomass / currentFish : 0m;
 
                 return new CageProjectReport
