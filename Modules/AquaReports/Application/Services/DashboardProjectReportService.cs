@@ -11,11 +11,16 @@ namespace aqua_api.Modules.AquaReports.Application.Services
 
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILocalizationService _localizationService;
+        private readonly IDevirFcrReportService _devirFcrReportService;
 
-        public DashboardProjectReportService(IUnitOfWork unitOfWork, ILocalizationService localizationService)
+        public DashboardProjectReportService(
+            IUnitOfWork unitOfWork,
+            ILocalizationService localizationService,
+            IDevirFcrReportService devirFcrReportService)
         {
             _unitOfWork = unitOfWork;
             _localizationService = localizationService;
+            _devirFcrReportService = devirFcrReportService;
         }
 
         public async Task<ApiResponse<DashboardProjectsResponseDto>> GetProjectSummariesAsync(IEnumerable<long> projectIds)
@@ -23,11 +28,12 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             try
             {
                 var reports = await LoadProjectReportsAsync(projectIds);
+                var devirFcrByProjectId = await LoadDevirFcrByProjectIdAsync(reports.Select(x => x.Project.Id));
                 var yesterday = DateTimeProvider.Now.Date.AddDays(-1);
                 var response = new DashboardProjectsResponseDto
                 {
                     Projects = reports
-                        .Select(MapProjectSummary)
+                        .Select(report => MapProjectSummary(report, devirFcrByProjectId.GetValueOrDefault(report.Project.Id)))
                         .OrderBy(x => x.ProjectCode)
                         .ToList(),
                     YesterdayDate = yesterday,
@@ -45,6 +51,30 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private async Task<Dictionary<long, decimal?>> LoadDevirFcrByProjectIdAsync(IEnumerable<long> projectIds)
+        {
+            var uniqueProjectIds = projectIds
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+
+            if (uniqueProjectIds.Count == 0)
+            {
+                return new Dictionary<long, decimal?>();
+            }
+
+            var reportResponse = await _devirFcrReportService.GetReportAsync(new DevirFcrReportRequestDto
+            {
+                ProjectIds = uniqueProjectIds,
+                FromDate = DateTimeProvider.Now.Date,
+                ToDate = DateTimeProvider.Now.Date
+            });
+
+            return reportResponse.Success && reportResponse.Data != null
+                ? reportResponse.Data.Rows.ToDictionary(x => x.ProjectId, x => x.Fcr)
+                : new Dictionary<long, decimal?>();
         }
 
         public async Task<ApiResponse<DashboardProjectDetailDto>> GetProjectDetailAsync(long projectId)
@@ -775,7 +805,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             };
         }
 
-        private static DashboardProjectSummaryDto MapProjectSummary(ProjectDashboardReport report)
+        private static DashboardProjectSummaryDto MapProjectSummary(ProjectDashboardReport report, decimal? devirFcr)
         {
             var cages = report.Cages
                 .Select(MapCageSummary)
@@ -790,7 +820,6 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             var totalFeedGram = cages.Sum(x => x.TotalFeedGram);
             var cageBiomassGram = cages.Sum(x => x.CurrentBiomassGram);
             var totalSystemBiomassGram = report.WarehouseSummary.TotalSystemBiomassGram;
-            var initialBiomassGram = cages.Sum(x => x.InitialBiomassGram);
 
             return new DashboardProjectSummaryDto
             {
@@ -806,7 +835,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 TotalDeadCount = totalDeadCount,
                 TotalDeadBiomassGram = RoundGram(totalDeadBiomassGram),
                 ActiveCageCount = cages.Count,
-                Fcr = ComputeFcr(totalFeedGram, totalSystemBiomassGram, initialBiomassGram, totalDeadBiomassGram, totalShipmentBiomassGram),
+                Fcr = devirFcr ?? ComputeFcr(totalFeedGram, totalSystemBiomassGram, totalDeadBiomassGram, totalShipmentBiomassGram),
                 CageBiomassGram = RoundGram(cageBiomassGram),
                 WarehouseBiomassGram = report.WarehouseSummary.WarehouseBiomassGram,
                 TotalSystemBiomassGram = totalSystemBiomassGram,
@@ -834,7 +863,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 TotalDeadBiomassGram = RoundGram(totalDeadBiomassGram),
                 TotalFeedGram = RoundGram(cage.TotalFeedGram),
                 CurrentBiomassGram = RoundGram(cage.CurrentBiomassGram),
-                Fcr = ComputeFcr(cage.TotalFeedGram, cage.CurrentBiomassGram, cage.InitialBiomassGram, totalDeadBiomassGram, totalShipmentBiomassGram)
+                Fcr = ComputeFcr(cage.TotalFeedGram, cage.CurrentBiomassGram, totalDeadBiomassGram, totalShipmentBiomassGram)
             };
         }
 
@@ -857,7 +886,6 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 Fcr = ComputeFcr(
                     cage.TotalFeedGram,
                     cage.CurrentBiomassGram,
-                    cage.InitialBiomassGram,
                     cage.DailyRows.Sum(x => x.DeadBiomassGram),
                     cage.DailyRows.Sum(x => x.ShipmentBiomassGram)),
                 TotalCountDelta = cage.TotalCountDelta,
@@ -936,7 +964,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             return RoundGram(totalBiomassGram / fishCount);
         }
 
-        private static decimal? ComputeFcr(decimal totalFeedGram, decimal currentBiomassGram, decimal initialBiomassGram, decimal totalDeadBiomassGram, decimal totalShipmentBiomassGram)
+        private static decimal? ComputeFcr(decimal totalFeedGram, decimal currentBiomassGram, decimal totalDeadBiomassGram, decimal totalShipmentBiomassGram)
         {
             var outputBiomassGram = currentBiomassGram + totalDeadBiomassGram + totalShipmentBiomassGram;
             var producedBiomassKg = Math.Max(0m, outputBiomassGram / 1000m);
