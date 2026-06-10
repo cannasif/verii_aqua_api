@@ -1401,7 +1401,6 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
                 ProjectCode = projectCode,
                 ProjectName = "IDA-like closed FCR project",
                 StartDate = new DateTime(2026, 2, 1),
-                EndDate = new DateTime(2026, 2, 28),
                 Status = DocumentStatus.Posted,
             };
             var cage = new Cage
@@ -1419,7 +1418,7 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
                 ProjectId = project.Id,
                 CageId = cage.Id,
                 AssignedDate = project.StartDate,
-                ReleasedDate = project.EndDate,
+                ReleasedDate = new DateTime(2026, 2, 28),
             };
             var batch = new FishBatch
             {
@@ -1568,6 +1567,14 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.Equal(0, dashboardCage.CurrentFishCount);
         Assert.Equal(0m, dashboardCage.CurrentBiomassGram);
         Assert.Equal(row.Fcr, dashboardCage.Fcr);
+
+        var dashboardDetail = await GetAsync<DashboardProjectDetailDto>(client, $"/api/aqua/dashboard-project/detail/{projectId}");
+        Assert.True(dashboardDetail.Success, $"{dashboardDetail.Message} | {dashboardDetail.ExceptionMessage}");
+
+        var detailCage = Assert.Single(dashboardDetail.Data!.Cages);
+        Assert.Equal(0, detailCage.CurrentFishCount);
+        Assert.Equal(0m, detailCage.CurrentBiomassGram);
+        Assert.Equal(row.Fcr, detailCage.Fcr);
     }
 
     private static async Task<ApiResponse<T>> PostAsync<T>(HttpClient client, string url, object payload)
