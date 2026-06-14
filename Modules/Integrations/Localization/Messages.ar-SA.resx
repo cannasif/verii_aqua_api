@@ -172,4 +172,10 @@
   <data name="SmtpSettingsService.UpdateExceptionMessage" xml:space="preserve">
     <value>حدث خطأ أثناء العملية: {0}</value>
   </data>
+  <data name="ErpService.MalKabulVeSevkiyatRecordsRetrieved" xml:space="preserve">
+    <value>تم جلب حركات استلام البضائع والشحن بنجاح.</value>
+  </data>
+  <data name="ErpService.MalKabulVeSevkiyatRecordsRetrievalError" xml:space="preserve">
+    <value>حدث خطأ أثناء جلب حركات استلام البضائع والشحن: {0}</value>
+  </data>
   </root>

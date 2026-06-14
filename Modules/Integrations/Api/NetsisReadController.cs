@@ -165,6 +165,38 @@ namespace aqua_api.Modules.Integrations.Api
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpGet("getGoodsReceiptAndShipmentMovements")]
+        public async Task<ActionResult<ApiResponse<List<MalKabulVeSevkiyatDto>>>> GetGoodsReceiptAndShipmentMovements(
+            [FromQuery] DateTime? baslangicTarihi = null)
+        {
+            var result = await _netsisReadService.GetGoodsReceiptAndShipmentMovementsAsync(baslangicTarihi);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpGet("getGoodsReceiptAndShipmentMovements/paged")]
+        public async Task<ActionResult<ApiResponse<PagedResponse<MalKabulVeSevkiyatDto>>>> GetGoodsReceiptAndShipmentMovementsPaged(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? search = null,
+            [FromQuery] DateTime? baslangicTarihi = null)
+        {
+            var result = await _netsisReadService.GetGoodsReceiptAndShipmentMovementsAsync(baslangicTarihi);
+            var paged = ToPagedResponse(result, pageNumber, pageSize, search, x => new[]
+            {
+                x.FisNo,
+                x.KafesKodu?.ToString(),
+                x.ProjeKodu,
+                x.StokKodu,
+                x.StokAdi,
+                x.HareketTuru,
+                x.GcKodu,
+                x.GrupKodu,
+                x.IslemTuru,
+            });
+
+            return StatusCode(paged.StatusCode, paged);
+        }
+
         [HttpGet("health-check")]
         [AllowAnonymous]
         public IActionResult HealthCheckPublic()

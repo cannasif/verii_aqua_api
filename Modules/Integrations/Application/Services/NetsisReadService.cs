@@ -355,6 +355,35 @@ namespace aqua_api.Modules.Integrations.Application.Services
             }
         }
 
+        public async Task<ApiResponse<List<MalKabulVeSevkiyatDto>>> GetGoodsReceiptAndShipmentMovementsAsync(DateTime? startDate = null)
+        {
+            try
+            {
+                var query = startDate.HasValue
+                    ? _dbContext.RII_FN_MAL_KABUL_VE_SEVKIYAT
+                        .FromSqlRaw("SELECT * FROM dbo.fn_MalKabulVeSevkiyatListesi({0})", startDate.Value.Date)
+                    : _dbContext.RII_FN_MAL_KABUL_VE_SEVKIYAT
+                        .FromSqlRaw("SELECT * FROM dbo.fn_MalKabulVeSevkiyatListesi(DEFAULT)");
+
+                var result = await query
+                    .AsNoTracking()
+                    .OrderByDescending(x => x.Tarih)
+                    .ToListAsync();
+
+                var mappedResult = _mapper.Map<List<MalKabulVeSevkiyatDto>>(result);
+                return ApiResponse<List<MalKabulVeSevkiyatDto>>.SuccessResult(
+                    mappedResult,
+                    _localizationService.GetLocalizedString("ErpService.MalKabulVeSevkiyatRecordsRetrieved"));
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<List<MalKabulVeSevkiyatDto>>.ErrorResult(
+                    _localizationService.GetLocalizedString("ErpService.InternalServerError"),
+                    _localizationService.GetLocalizedString("ErpService.MalKabulVeSevkiyatRecordsRetrievalError", ex.Message),
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
         public async Task<ApiResponse<object>> HealthCheckAsync()
         {
             try

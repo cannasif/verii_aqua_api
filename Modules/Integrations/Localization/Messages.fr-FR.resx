@@ -172,4 +172,10 @@
   <data name="SmtpSettingsService.UpdateExceptionMessage" xml:space="preserve">
     <value>Une erreur s'est produite pendant l'opération : {0}</value>
   </data>
+  <data name="ErpService.MalKabulVeSevkiyatRecordsRetrieved" xml:space="preserve">
+    <value>Mouvements de réception de marchandises et d'expédition récupérés avec succès.</value>
+  </data>
+  <data name="ErpService.MalKabulVeSevkiyatRecordsRetrievalError" xml:space="preserve">
+    <value>Une erreur s'est produite lors de la récupération des mouvements de réception de marchandises et d'expédition : {0}</value>
+  </data>
   </root>

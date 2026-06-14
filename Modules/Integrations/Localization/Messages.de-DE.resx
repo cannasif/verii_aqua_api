@@ -172,4 +172,10 @@
   <data name="SmtpSettingsService.UpdateExceptionMessage" xml:space="preserve">
     <value>Beim Vorgang ist ein Fehler aufgetreten: {0}</value>
   </data>
+  <data name="ErpService.MalKabulVeSevkiyatRecordsRetrieved" xml:space="preserve">
+    <value>Wareneingangs- und Versandbewegungen wurden erfolgreich abgerufen.</value>
+  </data>
+  <data name="ErpService.MalKabulVeSevkiyatRecordsRetrievalError" xml:space="preserve">
+    <value>Beim Abrufen der Wareneingangs- und Versandbewegungen ist ein Fehler aufgetreten: {0}</value>
+  </data>
   </root>

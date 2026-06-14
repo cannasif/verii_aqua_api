@@ -184,4 +184,10 @@
   <data name="MailController.SmtpTestMailBody" xml:space="preserve">
     <value>SMTP test e-postası {0} tarihinde gönderildi.</value>
   </data>
+  <data name="ErpService.MalKabulVeSevkiyatRecordsRetrieved" xml:space="preserve">
+    <value>Goods receipt and shipment movements retrieved successfully.</value>
+  </data>
+  <data name="ErpService.MalKabulVeSevkiyatRecordsRetrievalError" xml:space="preserve">
+    <value>An error occurred while retrieving goods receipt and shipment movements: {0}</value>
+  </data>
 </root>

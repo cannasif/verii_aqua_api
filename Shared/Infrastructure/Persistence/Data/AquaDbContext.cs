@@ -30,6 +30,7 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<RII_FN_DEPO> RII_FN_DEPO { get; set; }
         public DbSet<RII_FN_BRANCHES> Branches { get; set; }
         public DbSet<RII_FN_PROJECTCODE> RII_FN_PROJECTCODE { get; set; }
+        public DbSet<RII_FN_MAL_KABUL_VE_SEVKIYAT> RII_FN_MAL_KABUL_VE_SEVKIYAT { get; set; }
 
         public DbSet<PermissionDefinition> PermissionDefinitions { get; set; }
         public DbSet<PermissionGroup> PermissionGroups { get; set; }
@@ -198,6 +199,24 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
                 entity.ToFunction("RII_FN_PROJECTCODE");
                 entity.Property(e => e.PROJE_KODU).HasMaxLength(15);
                 entity.Property(e => e.PROJE_ACIKLAMA).HasMaxLength(50);
+            });
+
+            modelBuilder.Entity<RII_FN_MAL_KABUL_VE_SEVKIYAT>(entity =>
+            {
+                entity.HasNoKey();
+                entity.ToTable("__EFMigrationsHistory_FN_MAL_KABUL_VE_SEVKIYAT", t => t.ExcludeFromMigrations());
+                entity.ToFunction("fn_MalKabulVeSevkiyatListesi");
+                entity.Property(e => e.Tarih).HasColumnName("Tarih").HasColumnType("datetime");
+                entity.Property(e => e.FisNo).HasColumnName("Fiş No").HasMaxLength(15);
+                entity.Property(e => e.KafesKodu).HasColumnName("Kafes Kodu");
+                entity.Property(e => e.ProjeKodu).HasColumnName("Proje Kodu").HasMaxLength(15);
+                entity.Property(e => e.StokKodu).HasColumnName("Stok Kodu").HasMaxLength(35);
+                entity.Property(e => e.StokAdi).HasColumnName("Stok Adı").HasMaxLength(200);
+                entity.Property(e => e.Miktar).HasColumnName("Miktar").HasColumnType("decimal(28,8)");
+                entity.Property(e => e.HareketTuru).HasColumnName("Hareket Türü").HasMaxLength(1);
+                entity.Property(e => e.GcKodu).HasColumnName("G/C Kodu").HasMaxLength(1);
+                entity.Property(e => e.GrupKodu).HasColumnName("Grup Kodu").HasMaxLength(8);
+                entity.Property(e => e.IslemTuru).HasColumnName("İşlem Türü").HasMaxLength(24);
             });
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AquaDbContext).Assembly);
