@@ -16,6 +16,7 @@ namespace aqua_api.Modules.System.Api
     {
         private const string StockSyncRecurringJobId = "erp-stock-sync-job";
         private const string WarehouseSyncRecurringJobId = "erp-warehouse-sync-job";
+        private const string ErpReceiptShipmentMovementSyncRecurringJobId = "erp-receipt-shipment-movement-sync-job";
 
         private readonly AquaDbContext _db;
         private readonly IBackgroundJobClient _backgroundJobClient;
@@ -278,6 +279,18 @@ namespace aqua_api.Modules.System.Api
             });
         }
 
+        [HttpPost("erp-receipt-shipment-movement-sync/run-now")]
+        public IActionResult RunErpReceiptShipmentMovementSyncNow()
+        {
+            var jobId = _backgroundJobClient.Enqueue<IErpReceiptShipmentMovementSyncJob>(job => job.ExecuteAsync());
+            return Ok(new
+            {
+                Message = _localizationService.GetLocalizedString("HangfireController.ErpReceiptShipmentMovementSyncJobEnqueued"),
+                JobId = jobId,
+                Timestamp = DateTime.UtcNow
+            });
+        }
+
         private static (int From, int Count) ResolvePaging(
             int? pageNumber,
             int? pageSize,
@@ -322,6 +335,12 @@ namespace aqua_api.Modules.System.Api
                 WarehouseSyncRecurringJobId,
                 nameof(WarehouseSyncJob),
                 nameof(IWarehouseSyncJob.ExecuteAsync));
+
+            AddManualJobIfMissing(
+                jobs,
+                ErpReceiptShipmentMovementSyncRecurringJobId,
+                nameof(ErpReceiptShipmentMovementSyncJob),
+                nameof(IErpReceiptShipmentMovementSyncJob.ExecuteAsync));
         }
 
         private static void AddManualJobIfMissing(
@@ -356,6 +375,11 @@ namespace aqua_api.Modules.System.Api
             if (string.Equals(jobId, WarehouseSyncRecurringJobId, StringComparison.OrdinalIgnoreCase))
             {
                 return _backgroundJobClient.Enqueue<IWarehouseSyncJob>(job => job.ExecuteAsync());
+            }
+
+            if (string.Equals(jobId, ErpReceiptShipmentMovementSyncRecurringJobId, StringComparison.OrdinalIgnoreCase))
+            {
+                return _backgroundJobClient.Enqueue<IErpReceiptShipmentMovementSyncJob>(job => job.ExecuteAsync());
             }
 
             return null;

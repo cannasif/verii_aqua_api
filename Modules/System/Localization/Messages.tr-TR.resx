@@ -262,4 +262,16 @@
   <data name="MailJob.BrandName" xml:space="preserve">
     <value>V3RII AQUA</value>
   </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.Started" xml:space="preserve">
+    <value>ERP mal kabul ve sevkiyat hareketleri mirror senkronizasyonu başlatıldı.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.Completed" xml:space="preserve">
+    <value>ERP mal kabul ve sevkiyat hareketleri mirror senkronizasyonu tamamlandı.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ErpFetchFailed" xml:space="preserve">
+    <value>ERP mal kabul ve sevkiyat hareketleri alınamadı.</value>
+  </data>
+  <data name="HangfireController.ErpReceiptShipmentMovementSyncJobEnqueued" xml:space="preserve">
+    <value>ERP mal kabul ve sevkiyat mirror senkronizasyon işi kuyruğa alındı.</value>
+  </data>
 </root>

@@ -250,4 +250,16 @@
   <data name="MailJob.BrandName" xml:space="preserve">
     <value>V3RII AQUA</value>
   </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.Started" xml:space="preserve">
+    <value>بدأت مزامنة المرآة لحركات استلام البضائع والشحن من نظام ERP.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.Completed" xml:space="preserve">
+    <value>اكتملت مزامنة المرآة لحركات استلام البضائع والشحن من نظام ERP.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ErpFetchFailed" xml:space="preserve">
+    <value>تعذر جلب حركات استلام البضائع والشحن من نظام ERP.</value>
+  </data>
+  <data name="HangfireController.ErpReceiptShipmentMovementSyncJobEnqueued" xml:space="preserve">
+    <value>تمت إضافة مهمة مزامنة المرآة لحركات استلام البضائع والشحن من نظام ERP إلى قائمة الانتظار.</value>
+  </data>
 </root>
