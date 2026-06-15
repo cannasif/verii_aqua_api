@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace aqua_api.Modules.Feedings.Api
 {
@@ -45,6 +46,19 @@ namespace aqua_api.Modules.Feedings.Api
         public async Task<ActionResult<ApiResponse<bool>>> Delete(long id)
         {            var result = await _service.SoftDeleteAsync(id);
             return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost("{id:long}/post")]
+        public async Task<ActionResult<ApiResponse<bool>>> Post(long id)
+        {
+            var result = await _service.Post(id, GetUserId());
+            return StatusCode(result.StatusCode, result);
+        }
+
+        private long GetUserId()
+        {
+            var raw = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return long.TryParse(raw, out var userId) ? userId : 1L;
         }
     }
 }

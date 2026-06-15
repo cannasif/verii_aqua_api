@@ -9,12 +9,18 @@ namespace aqua_api.Modules.Feedings.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
+        private readonly INetsisItemSlipService _netsisItemSlipService;
 
-        public FeedingService(IUnitOfWork unitOfWork, IMapper mapper, ILocalizationService localizationService)
+        public FeedingService(
+            IUnitOfWork unitOfWork,
+            IMapper mapper,
+            ILocalizationService localizationService,
+            INetsisItemSlipService netsisItemSlipService)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _localizationService = localizationService;
+            _netsisItemSlipService = netsisItemSlipService;
         }
 
         public async Task<ApiResponse<FeedingDto>> GetByIdAsync(long id)
@@ -167,6 +173,211 @@ namespace aqua_api.Modules.Feedings.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        public async Task<ApiResponse<bool>> Post(long feedingId, long userId)
+        {
+            try
+            {
+                var feeding = await LoadFeedingForPostingAsync(feedingId)
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingService.FeedingNotFound"));
+
+                if (feeding.Status == DocumentStatus.Cancelled)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingService.CancelledCannotBePosted"));
+                }
+
+                if (feeding.IsERPIntegrated)
+                {
+                    feeding.Status = DocumentStatus.Posted;
+                    await _unitOfWork.SaveChangesAsync();
+                    return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("FeedingService.OperationSuccessful"));
+                }
+
+                var itemSlipRequest = BuildFeedingWarehouseIssueRequest(feeding);
+                var itemSlipResponse = await _netsisItemSlipService.CreateWarehouseTransferOutAsync(itemSlipRequest);
+                var erpReferenceNumber = ResolveErpReferenceNumber(itemSlipResponse, feeding.FeedingNo);
+
+                await _unitOfWork.BeginTransactionAsync();
+
+                var trackedFeeding = await _unitOfWork.Feedings.GetByIdForUpdateAsync(feeding.Id)
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingService.FeedingNotFound"));
+
+                trackedFeeding.Status = DocumentStatus.Posted;
+                trackedFeeding.IsERPIntegrated = true;
+                trackedFeeding.ERPReferenceNumber = erpReferenceNumber;
+                trackedFeeding.ERPIntegrationDate = DateTimeProvider.UtcNow;
+                trackedFeeding.ERPIntegrationStatus = "Success";
+                trackedFeeding.ERPErrorMessage = null;
+                trackedFeeding.CountTriedBy = (trackedFeeding.CountTriedBy ?? 0) + 1;
+                trackedFeeding.UpdatedBy = userId;
+                trackedFeeding.UpdatedDate = DateTimeProvider.UtcNow;
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("FeedingService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                await MarkErpPostFailedAsync(feedingId, userId, ex.Message);
+                return ApiResponse<bool>.ErrorResult(
+                    _localizationService.GetLocalizedString("FeedingService.BusinessRuleError"),
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                await MarkErpPostFailedAsync(feedingId, userId, ex.Message);
+                return ApiResponse<bool>.ErrorResult(
+                    _localizationService.GetLocalizedString("FeedingService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        private async Task<Feeding?> LoadFeedingForPostingAsync(long feedingId)
+        {
+            return await _unitOfWork.Feedings
+                .Query()
+                .Include(x => x.Project)
+                .Include(x => x.Lines)
+                    .ThenInclude(x => x.Stock)
+                .Include(x => x.Lines)
+                    .ThenInclude(x => x.Distributions)
+                        .ThenInclude(x => x.ProjectCage)
+                            .ThenInclude(x => x!.Cage)
+                                .ThenInclude(x => x!.WarehouseMappings)
+                                    .ThenInclude(x => x.Warehouse)
+                .FirstOrDefaultAsync(x => x.Id == feedingId && !x.IsDeleted);
+        }
+
+        private NetsisItemSlipCreateDto BuildFeedingWarehouseIssueRequest(Feeding feeding)
+        {
+            var lines = feeding.Lines
+                .Where(x => !x.IsDeleted)
+                .SelectMany(line => line.Distributions
+                    .Where(distribution => !distribution.IsDeleted)
+                    .Select(distribution => BuildFeedingWarehouseIssueLine(feeding, line, distribution)))
+                .GroupBy(x => new { x.StokKodu, x.DepoKodu, x.ProjeKodu })
+                .Select(group => new NetsisItemSlipLineDto
+                {
+                    StokKodu = group.Key.StokKodu,
+                    DepoKodu = group.Key.DepoKodu,
+                    ProjeKodu = group.Key.ProjeKodu,
+                    Miktar = Math.Round(group.Sum(x => x.Miktar), 3, MidpointRounding.AwayFromZero),
+                    NetFiyat = 0,
+                    BrutFiyat = 0,
+                    Aciklama = $"Aqua yemleme {feeding.FeedingNo}",
+                })
+                .ToList();
+
+            if (lines.Count == 0)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingService.MustContainDistributedLines"));
+            }
+
+            return new NetsisItemSlipCreateDto
+            {
+                SipDepoKodKullan = 1,
+                FatUst = new NetsisItemSlipHeaderDto
+                {
+                    FatirsNo = feeding.FeedingNo,
+                    Tarih = feeding.FeedingDate.ToString("yyyy-MM-dd"),
+                    FiyatTarihi = feeding.FeedingDate.ToString("yyyy-MM-dd"),
+                    ProjeKodu = feeding.Project?.ProjectCode,
+                    Aciklama = $"Aqua yemleme {feeding.FeedingNo}",
+                    EkAciklama1 = feeding.Project?.ProjectCode,
+                    EkAciklama2 = feeding.Project?.ProjectName,
+                },
+                Kalems = lines
+            };
+        }
+
+        private NetsisItemSlipLineDto BuildFeedingWarehouseIssueLine(Feeding feeding, FeedingLine line, FeedingDistribution distribution)
+        {
+            var stockCode = line.Stock?.ErpStockCode?.Trim();
+            if (string.IsNullOrWhiteSpace(stockCode))
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingService.StockCodeRequired"));
+            }
+
+            if (distribution.FeedGram <= 0)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingService.InvalidFeedQuantity"));
+            }
+
+            var warehouse = distribution.ProjectCage?.Cage?.WarehouseMappings
+                .Where(x => x.IsActive && !x.IsDeleted && x.Warehouse != null)
+                .OrderByDescending(x => x.Id)
+                .Select(x => x.Warehouse)
+                .FirstOrDefault();
+
+            if (warehouse == null || warehouse.ErpWarehouseCode <= 0)
+            {
+                var cageCode = distribution.ProjectCage?.Cage?.CageCode ?? "-";
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingService.WarehouseMappingRequired", cageCode));
+            }
+
+            return new NetsisItemSlipLineDto
+            {
+                StokKodu = stockCode,
+                DepoKodu = warehouse.ErpWarehouseCode,
+                ProjeKodu = feeding.Project?.ProjectCode,
+                Miktar = Math.Round(distribution.FeedGram / 1000m, 3, MidpointRounding.AwayFromZero),
+                NetFiyat = 0,
+                BrutFiyat = 0,
+                Aciklama = $"Aqua yemleme {feeding.FeedingNo}",
+            };
+        }
+
+        private async Task MarkErpPostFailedAsync(long feedingId, long userId, string message)
+        {
+            try
+            {
+                var feeding = await _unitOfWork.Feedings.GetByIdForUpdateAsync(feedingId);
+                if (feeding == null)
+                {
+                    return;
+                }
+
+                feeding.ERPIntegrationStatus = "Failed";
+                feeding.ERPErrorMessage = message.Length > 1000 ? message[..1000] : message;
+                feeding.CountTriedBy = (feeding.CountTriedBy ?? 0) + 1;
+                feeding.UpdatedBy = userId;
+                feeding.UpdatedDate = DateTimeProvider.UtcNow;
+
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch
+            {
+                // The original posting error is more useful to the caller than a secondary status update failure.
+            }
+        }
+
+        private static string ResolveErpReferenceNumber(NetsisItemSlipCreateResponseDto response, string fallback)
+        {
+            return FirstNonEmpty(
+                response.Data?.FisNo,
+                response.Data?.BelgeNo,
+                response.Data?.KayitNo,
+                response.Data?.ReferenceNumber,
+                fallback) ?? fallback;
+        }
+
+        private static string? FirstNonEmpty(params string?[] values)
+        {
+            foreach (var value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value.Trim();
+                }
+            }
+
+            return null;
         }
     }
 }

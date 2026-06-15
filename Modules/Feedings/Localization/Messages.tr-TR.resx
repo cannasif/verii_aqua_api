@@ -21,6 +21,27 @@
   <data name="FeedingService.InternalServerError" xml:space="preserve">
     <value>Dahili sunucu hatası oluştu.</value>
   </data>
+  <data name="FeedingService.FeedingNotFound" xml:space="preserve">
+    <value>Yemleme kaydı bulunamadı.</value>
+  </data>
+  <data name="FeedingService.BusinessRuleError" xml:space="preserve">
+    <value>Yemleme işlemi tamamlanamadı.</value>
+  </data>
+  <data name="FeedingService.CancelledCannotBePosted" xml:space="preserve">
+    <value>İptal edilmiş yemleme kaydı ERP'ye aktarılamaz.</value>
+  </data>
+  <data name="FeedingService.MustContainDistributedLines" xml:space="preserve">
+    <value>ERP ambar çıkışı için yemleme satırlarının kafes dağılımı olmalıdır.</value>
+  </data>
+  <data name="FeedingService.StockCodeRequired" xml:space="preserve">
+    <value>ERP ambar çıkışı için yem stok kodu zorunludur.</value>
+  </data>
+  <data name="FeedingService.InvalidFeedQuantity" xml:space="preserve">
+    <value>ERP ambar çıkışı için yem miktarı 0'dan büyük olmalıdır.</value>
+  </data>
+  <data name="FeedingService.WarehouseMappingRequired" xml:space="preserve">
+    <value>{0} kafesi için aktif ERP depo eşlemesi bulunamadı.</value>
+  </data>
   <data name="FeedingLineService.OperationSuccessful" xml:space="preserve">
     <value>İşlem başarılı.</value>
   </data>

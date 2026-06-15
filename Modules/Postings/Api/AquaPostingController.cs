@@ -21,6 +21,7 @@ namespace aqua_api.Modules.Postings.Api
         private readonly INetOperationService _netOperationService;
         private readonly IDailyWeatherService _dailyWeatherService;
         private readonly IDailyEnvironmentalEntryService _dailyEnvironmentalEntryService;
+        private readonly IFeedingService _feedingService;
 
         public AquaPostingController(
             IGoodsReceiptService goodsReceiptService,
@@ -34,7 +35,8 @@ namespace aqua_api.Modules.Postings.Api
             IWarehouseCageTransferService warehouseCageTransferService,
             INetOperationService netOperationService,
             IDailyWeatherService dailyWeatherService,
-            IDailyEnvironmentalEntryService dailyEnvironmentalEntryService)
+            IDailyEnvironmentalEntryService dailyEnvironmentalEntryService,
+            IFeedingService feedingService)
         {
             _goodsReceiptService = goodsReceiptService;
             _transferService = transferService;
@@ -48,6 +50,7 @@ namespace aqua_api.Modules.Postings.Api
             _netOperationService = netOperationService;
             _dailyWeatherService = dailyWeatherService;
             _dailyEnvironmentalEntryService = dailyEnvironmentalEntryService;
+            _feedingService = feedingService;
         }
 
         [HttpPost("goods-receipt/{id:long}")]
@@ -117,6 +120,13 @@ namespace aqua_api.Modules.Postings.Api
         public async Task<IActionResult> PostNetOperation(long id)
         {
             var result = await _netOperationService.Post(id, GetUserId());
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost("feeding/{id:long}")]
+        public async Task<IActionResult> PostFeeding(long id)
+        {
+            var result = await _feedingService.Post(id, GetUserId());
             return StatusCode(result.StatusCode, result);
         }
 

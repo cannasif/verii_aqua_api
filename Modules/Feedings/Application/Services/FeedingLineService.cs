@@ -7,6 +7,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
     public class FeedingLineService : IFeedingLineService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IFeedingService _feedingService;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
         private static readonly global::System.Collections.Concurrent.ConcurrentDictionary<string, SemaphoreSlim> AutoHeaderMergeLocks = new();
@@ -17,9 +18,14 @@ namespace aqua_api.Modules.Feedings.Application.Services
             ["feedingSlot"] = "Feeding.FeedingSlot"
         };
 
-        public FeedingLineService(IUnitOfWork unitOfWork, IMapper mapper, ILocalizationService localizationService)
+        public FeedingLineService(
+            IUnitOfWork unitOfWork,
+            IFeedingService feedingService,
+            IMapper mapper,
+            ILocalizationService localizationService)
         {
             _unitOfWork = unitOfWork;
+            _feedingService = feedingService;
             _mapper = mapper;
             _localizationService = localizationService;
         }
@@ -216,7 +222,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                         FeedingDate = dto.FeedingDate.Date,
                         FeedingSlot = dto.FeedingSlot,
                         SourceType = dto.SourceType,
-                        Status = DocumentStatus.Posted,
+                        Status = DocumentStatus.Draft,
                         Note = dto.Note,
                     };
 
@@ -302,6 +308,16 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 }
 
                 await _unitOfWork.CommitTransactionAsync();
+
+                var userId = entity.CreatedBy ?? feeding.CreatedBy ?? 1L;
+                var postResult = await _feedingService.Post(feeding.Id, userId);
+                if (!postResult.Success)
+                {
+                    return ApiResponse<FeedingLineDto>.ErrorResult(
+                        postResult.Message,
+                        postResult.ExceptionMessage,
+                        postResult.StatusCode);
+                }
 
                 await ReloadFeedingLineDetailsAsync(entity);
                 var result = MapFeedingLine(entity);

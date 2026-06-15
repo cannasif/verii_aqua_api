@@ -21,6 +21,27 @@
   <data name="FeedingService.InternalServerError" xml:space="preserve">
     <value>An internal server error occurred.</value>
   </data>
+  <data name="FeedingService.FeedingNotFound" xml:space="preserve">
+    <value>Feeding record not found.</value>
+  </data>
+  <data name="FeedingService.BusinessRuleError" xml:space="preserve">
+    <value>The feeding operation could not be completed.</value>
+  </data>
+  <data name="FeedingService.CancelledCannotBePosted" xml:space="preserve">
+    <value>A cancelled feeding record cannot be posted to ERP.</value>
+  </data>
+  <data name="FeedingService.MustContainDistributedLines" xml:space="preserve">
+    <value>Feeding lines must have cage distributions before creating an ERP warehouse issue.</value>
+  </data>
+  <data name="FeedingService.StockCodeRequired" xml:space="preserve">
+    <value>Feed stock code is required for the ERP warehouse issue.</value>
+  </data>
+  <data name="FeedingService.InvalidFeedQuantity" xml:space="preserve">
+    <value>Feed quantity must be greater than 0 for the ERP warehouse issue.</value>
+  </data>
+  <data name="FeedingService.WarehouseMappingRequired" xml:space="preserve">
+    <value>No active ERP warehouse mapping was found for cage {0}.</value>
+  </data>
   <data name="FeedingLineService.OperationSuccessful" xml:space="preserve">
     <value>Operation successful.</value>
   </data>
