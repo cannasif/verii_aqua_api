@@ -106,6 +106,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             try
             {
                 var entity = _mapper.Map<Mortality>(dto);
+                entity.MortalityNo = BuildDocumentNo(entity.ProjectId, entity.MortalityDate);
                 await _unitOfWork.Mortalities.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
@@ -137,6 +138,9 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 }
 
                 _mapper.Map(dto, entity);
+                entity.MortalityNo = string.IsNullOrWhiteSpace(entity.MortalityNo)
+                    ? BuildDocumentNo(entity.ProjectId, entity.MortalityDate)
+                    : entity.MortalityNo.Trim();
                 await repo.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
@@ -280,6 +284,9 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 ? Math.Round(balance.BiomassGram / balance.LiveCount, 3, MidpointRounding.AwayFromZero)
                 : 0m;
         }
+
+        private static string BuildDocumentNo(long projectId, DateTime mortalityDate)
+            => $"MORT-{projectId}-{mortalityDate:yyyyMMdd}";
 
     }
 }

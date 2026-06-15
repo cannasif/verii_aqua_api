@@ -16,6 +16,7 @@ namespace aqua_api.Modules.Shipments.Infrastructure.Persistence.Configurations
             builder.Property(x => x.TargetWarehouseId).IsRequired(false);
             builder.Property(x => x.Status).HasConversion<byte>().IsRequired();
             builder.Property(x => x.Note).HasMaxLength(500);
+            builder.ConfigureErpPostableHeader();
 
             builder.HasOne(x => x.Project)
                 .WithMany(x => x.Shipments)

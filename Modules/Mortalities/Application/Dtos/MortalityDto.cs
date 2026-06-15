@@ -8,9 +8,16 @@ namespace aqua_api.Modules.Mortalities.Application.Dtos
         public long ProjectId { get; set; }
         public string? ProjectCode { get; set; }
         public string? ProjectName { get; set; }
+        public string? MortalityNo { get; set; }
         public DateTime MortalityDate { get; set; }
         public DocumentStatus Status { get; set; }
         public string? Note { get; set; }
+        public bool IsERPIntegrated { get; set; }
+        public string? ERPReferenceNumber { get; set; }
+        public DateTime? ERPIntegrationDate { get; set; }
+        public string? ERPIntegrationStatus { get; set; }
+        public string? ERPErrorMessage { get; set; }
+        public int? CountTriedBy { get; set; }
     }
 
     public class CreateMortalityDto

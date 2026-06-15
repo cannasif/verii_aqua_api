@@ -18,6 +18,7 @@ namespace aqua_api.Modules.Feedings.Infrastructure.Persistence.Configurations
             builder.Property(x => x.SourceType).HasConversion<byte>().IsRequired();
             builder.Property(x => x.Status).HasConversion<byte>().IsRequired();
             builder.Property(x => x.Note).HasMaxLength(500);
+            builder.ConfigureErpPostableHeader();
 
             builder.Property<DateTime>("FeedingDateOnly")
                 .HasColumnType("date")

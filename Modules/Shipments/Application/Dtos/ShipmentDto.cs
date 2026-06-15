@@ -14,6 +14,12 @@ namespace aqua_api.Modules.Shipments.Application.Dtos
         public string? TargetWarehouseName { get; set; }
         public DocumentStatus Status { get; set; }
         public string? Note { get; set; }
+        public bool IsERPIntegrated { get; set; }
+        public string? ERPReferenceNumber { get; set; }
+        public DateTime? ERPIntegrationDate { get; set; }
+        public string? ERPIntegrationStatus { get; set; }
+        public string? ERPErrorMessage { get; set; }
+        public int? CountTriedBy { get; set; }
     }
 
     public class CreateShipmentDto

@@ -187,6 +187,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     mortality = new Mortality
                     {
                         ProjectId = dto.ProjectId,
+                        MortalityNo = BuildDocumentNo(dto.ProjectId, dto.MortalityDate),
                         MortalityDate = dto.MortalityDate,
                         Status = DocumentStatus.Draft,
                     };
@@ -290,5 +291,8 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     StatusCodes.Status500InternalServerError);
             }
         }
+
+        private static string BuildDocumentNo(long projectId, DateTime mortalityDate)
+            => $"MORT-{projectId}-{mortalityDate:yyyyMMdd}";
     }
 }
