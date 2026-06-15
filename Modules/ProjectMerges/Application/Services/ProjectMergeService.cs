@@ -238,9 +238,13 @@ namespace aqua_api.Modules.ProjectMerges.Application.Services
                     }
 
                     var mergeStateLabel = dto.SourceProjectStateAfterMerge == ProjectMergeSourceState.Passive
-                        ? "Passive"
-                        : "Archived";
-                    var mergeNote = $"Merged into {targetProject.ProjectCode} on {dto.MergeDate:yyyy-MM-dd} ({mergeStateLabel}).";
+                        ? _localizationService.GetLocalizedString("ProjectMergeService.SourceProjectStateAfterMergePassive")
+                        : _localizationService.GetLocalizedString("ProjectMergeService.SourceProjectStateAfterMergeArchived");
+                    var mergeNote = _localizationService.GetLocalizedString(
+                        "ProjectMergeService.SourceProjectMergeNote",
+                        targetProject.ProjectCode,
+                        dto.MergeDate.ToString("yyyy-MM-dd"),
+                        mergeStateLabel);
                     sourceProject.Note = string.IsNullOrWhiteSpace(sourceProject.Note)
                         ? mergeNote
                         : $"{sourceProject.Note} {mergeNote}".Trim();

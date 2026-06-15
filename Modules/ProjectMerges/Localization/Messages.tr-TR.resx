@@ -39,4 +39,13 @@
   <data name="ProjectMergeService.SourceProjectNotFound" xml:space="preserve">
     <value>Kaynak projelerden biri bulunamadı.</value>
   </data>
+  <data name="ProjectMergeService.SourceProjectStateAfterMergePassive" xml:space="preserve">
+    <value>Pasif</value>
+  </data>
+  <data name="ProjectMergeService.SourceProjectStateAfterMergeArchived" xml:space="preserve">
+    <value>Arşivlenmiş</value>
+  </data>
+  <data name="ProjectMergeService.SourceProjectMergeNote" xml:space="preserve">
+    <value>{0} projesine {1} tarihinden itibaren birleştirildi. Kaynak proje durumu: {2}.</value>
+  </data>
 </root>

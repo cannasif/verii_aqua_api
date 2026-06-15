@@ -39,4 +39,13 @@
   <data name="ProjectMergeService.SourceProjectNotFound" xml:space="preserve">
     <value>One of the source projects could not be found.</value>
   </data>
+  <data name="ProjectMergeService.SourceProjectStateAfterMergePassive" xml:space="preserve">
+    <value>Passive</value>
+  </data>
+  <data name="ProjectMergeService.SourceProjectStateAfterMergeArchived" xml:space="preserve">
+    <value>Archived</value>
+  </data>
+  <data name="ProjectMergeService.SourceProjectMergeNote" xml:space="preserve">
+    <value>Merged into {0} effective from {1}. Source project state: {2}.</value>
+  </data>
 </root>
