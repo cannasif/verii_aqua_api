@@ -7,6 +7,9 @@ namespace aqua_api.Modules.Integrations.Infrastructure.Options
         public string ItemSlipsPath { get; set; } = "/api/v2/ItemSlips";
         public string ItemsPath { get; set; } = "/api/v2/Items";
         public string ArpsPath { get; set; } = "/api/v2/ARPs";
+        public int WarehouseTransferInDocumentType { get; set; }
+        public int WarehouseTransferOutDocumentType { get; set; }
+        public int? DefaultWarehouseCode { get; set; }
         public int TimeoutSeconds { get; set; } = 30;
         public bool AllowInvalidSslCertificate { get; set; }
         public int DefaultTokenLifetimeMinutes { get; set; } = 60;

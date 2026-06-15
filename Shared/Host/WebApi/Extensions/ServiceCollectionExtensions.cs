@@ -114,6 +114,13 @@ public static class ServiceCollectionExtensions
             options.Rest.ArpsPath = string.IsNullOrWhiteSpace(options.Rest.ArpsPath)
                 ? legacySection.GetValue<string>("ArpsPath") ?? string.Empty
                 : options.Rest.ArpsPath;
+            options.Rest.WarehouseTransferInDocumentType = options.Rest.WarehouseTransferInDocumentType > 0
+                ? options.Rest.WarehouseTransferInDocumentType
+                : legacySection.GetValue<int?>("WarehouseTransferInDocumentType") ?? 8;
+            options.Rest.WarehouseTransferOutDocumentType = options.Rest.WarehouseTransferOutDocumentType > 0
+                ? options.Rest.WarehouseTransferOutDocumentType
+                : legacySection.GetValue<int?>("WarehouseTransferOutDocumentType") ?? 9;
+            options.Rest.DefaultWarehouseCode ??= legacySection.GetValue<int?>("DefaultWarehouseCode");
             options.Rest.TimeoutSeconds = options.Rest.TimeoutSeconds > 0
                 ? options.Rest.TimeoutSeconds
                 : legacySection.GetValue<int?>("TimeoutSeconds") ?? 30;

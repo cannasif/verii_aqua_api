@@ -7,6 +7,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddScoped<INetsisReadService, NetsisReadService>();
         services.AddScoped<IErpService, ErpService>();
+        services.AddScoped<INetsisItemSlipService, NetsisItemSlipService>();
         services.AddScoped<IMailService, MailService>();
         services.AddScoped<ISmtpSettingsService, SmtpSettingsService>();
 
