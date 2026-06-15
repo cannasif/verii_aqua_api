@@ -251,15 +251,15 @@
     <value>V3RII AQUA</value>
   </data>
   <data name="ErpReceiptShipmentMovementSyncJob.Started" xml:space="preserve">
-    <value>Die ERP-Mirror-Synchronisierung für Wareneingangs- und Versandbewegungen wurde gestartet.</value>
+    <value>Die ERP-Operationssynchronisierung für Wareneingangs- und Versandbewegungen wurde gestartet.</value>
   </data>
   <data name="ErpReceiptShipmentMovementSyncJob.Completed" xml:space="preserve">
-    <value>Die ERP-Mirror-Synchronisierung für Wareneingangs- und Versandbewegungen wurde abgeschlossen.</value>
+    <value>Die ERP-Operationssynchronisierung für Wareneingangs- und Versandbewegungen wurde abgeschlossen.</value>
   </data>
   <data name="ErpReceiptShipmentMovementSyncJob.ErpFetchFailed" xml:space="preserve">
     <value>ERP-Wareneingangs- und Versandbewegungen konnten nicht abgerufen werden.</value>
   </data>
   <data name="HangfireController.ErpReceiptShipmentMovementSyncJobEnqueued" xml:space="preserve">
-    <value>Der ERP-Mirror-Synchronisierungsjob für Wareneingangs- und Versandbewegungen wurde in die Warteschlange gestellt.</value>
+    <value>Der ERP-Operationssynchronisierungsjob für Wareneingangs- und Versandbewegungen wurde in die Warteschlange gestellt.</value>
   </data>
 </root>

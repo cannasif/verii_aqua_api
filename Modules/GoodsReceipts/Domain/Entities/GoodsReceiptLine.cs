@@ -24,6 +24,7 @@ namespace aqua_api.Modules.GoodsReceipts.Domain.Entities
         public decimal? LocalUnitPrice { get; set; }
         public decimal? LineAmount { get; set; }
         public decimal? LocalLineAmount { get; set; }
+        public string? ErpSourceMovementKey { get; set; }
 
         public GoodsReceipt? GoodsReceipt { get; set; }
         public StockEntity? Stock { get; set; }

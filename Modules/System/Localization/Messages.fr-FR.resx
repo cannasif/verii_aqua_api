@@ -251,15 +251,15 @@
     <value>V3RII AQUA</value>
   </data>
   <data name="ErpReceiptShipmentMovementSyncJob.Started" xml:space="preserve">
-    <value>La synchronisation miroir des mouvements ERP de réception et d'expédition a démarré.</value>
+    <value>La synchronisation opérationnelle ERP des réceptions et expéditions a démarré.</value>
   </data>
   <data name="ErpReceiptShipmentMovementSyncJob.Completed" xml:space="preserve">
-    <value>La synchronisation miroir des mouvements ERP de réception et d'expédition est terminée.</value>
+    <value>La synchronisation opérationnelle ERP des réceptions et expéditions est terminée.</value>
   </data>
   <data name="ErpReceiptShipmentMovementSyncJob.ErpFetchFailed" xml:space="preserve">
     <value>Les mouvements ERP de réception et d'expédition n'ont pas pu être récupérés.</value>
   </data>
   <data name="HangfireController.ErpReceiptShipmentMovementSyncJobEnqueued" xml:space="preserve">
-    <value>Le job de synchronisation miroir des mouvements ERP de réception et d'expédition a été mis en file d'attente.</value>
+    <value>Le job de synchronisation opérationnelle ERP des réceptions et expéditions a été mis en file d'attente.</value>
   </data>
 </root>

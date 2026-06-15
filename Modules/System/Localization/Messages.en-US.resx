@@ -263,15 +263,15 @@
     <value>V3RII AQUA</value>
   </data>
   <data name="ErpReceiptShipmentMovementSyncJob.Started" xml:space="preserve">
-    <value>ERP goods receipt and shipment movement mirror synchronization has started.</value>
+    <value>ERP goods receipt and shipment operation synchronization has started.</value>
   </data>
   <data name="ErpReceiptShipmentMovementSyncJob.Completed" xml:space="preserve">
-    <value>ERP goods receipt and shipment movement mirror synchronization has completed.</value>
+    <value>ERP goods receipt and shipment operation synchronization has completed.</value>
   </data>
   <data name="ErpReceiptShipmentMovementSyncJob.ErpFetchFailed" xml:space="preserve">
     <value>ERP goods receipt and shipment movements could not be retrieved.</value>
   </data>
   <data name="HangfireController.ErpReceiptShipmentMovementSyncJobEnqueued" xml:space="preserve">
-    <value>ERP goods receipt and shipment mirror synchronization job has been queued.</value>
+    <value>ERP goods receipt and shipment operation synchronization job has been queued.</value>
   </data>
 </root>

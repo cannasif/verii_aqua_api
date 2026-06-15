@@ -14,6 +14,7 @@ namespace aqua_api.Modules.Shipments.Domain.Entities
         public decimal? LocalUnitPrice { get; set; }
         public decimal? LineAmount { get; set; }
         public decimal? LocalLineAmount { get; set; }
+        public string? ErpSourceMovementKey { get; set; }
 
         public Shipment? Shipment { get; set; }
         public FishBatch? FishBatch { get; set; }

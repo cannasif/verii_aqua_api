@@ -19,6 +19,7 @@ namespace aqua_api.Modules.Shipments.Infrastructure.Persistence.Configurations
             builder.Property(x => x.LocalUnitPrice).HasPrecision(18, 6);
             builder.Property(x => x.LineAmount).HasPrecision(18, 6);
             builder.Property(x => x.LocalLineAmount).HasPrecision(18, 6);
+            builder.Property(x => x.ErpSourceMovementKey).HasMaxLength(300);
 
             builder.HasOne(x => x.Shipment)
                 .WithMany(x => x.Lines)
@@ -34,6 +35,11 @@ namespace aqua_api.Modules.Shipments.Infrastructure.Persistence.Configurations
                 .WithMany()
                 .HasForeignKey(x => x.FromProjectCageId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            builder.HasIndex(x => x.ErpSourceMovementKey)
+                .IsUnique()
+                .HasFilter("[IsDeleted] = 0 AND [ErpSourceMovementKey] IS NOT NULL")
+                .HasDatabaseName("UX_RII_ShipmentLine_ErpSourceMovementKey_Active");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }
