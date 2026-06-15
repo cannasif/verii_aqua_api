@@ -22,6 +22,7 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<StockRelation> StockRelations { get; set; }
 
         public DbSet<SmtpSetting> SmtpSettings { get; set; }
+        public DbSet<ErpReceiptShipmentMovement> ErpReceiptShipmentMovements { get; set; }
         public DbSet<AquaSetting> AquaSettings { get; set; }
         public DbSet<JobFailureLog> JobFailureLogs { get; set; }
         public DbSet<JobExecutionLog> JobExecutionLogs { get; set; }
