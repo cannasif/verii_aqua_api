@@ -16,7 +16,7 @@
     <value>Operation erfolgreich.</value>
   </data>
   <data name="ProjectService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Datensatz nicht gefunden.</value>
   </data>
   <data name="ProjectService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>
@@ -37,7 +37,7 @@
     <value>Operation erfolgreich.</value>
   </data>
   <data name="ProjectCageService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Datensatz nicht gefunden.</value>
   </data>
   <data name="ProjectCageService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>

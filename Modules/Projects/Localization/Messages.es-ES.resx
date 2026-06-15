@@ -16,7 +16,7 @@
     <value>Operación exitosa.</value>
   </data>
   <data name="ProjectService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Registro no encontrado.</value>
   </data>
   <data name="ProjectService.InternalServerError" xml:space="preserve">
     <value>Ocurrió un error interno del server.</value>
@@ -37,7 +37,7 @@
     <value>Operación exitosa.</value>
   </data>
   <data name="ProjectCageService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>Registro no encontrado.</value>
   </data>
   <data name="ProjectCageService.InternalServerError" xml:space="preserve">
     <value>Ocurrió un error interno del server.</value>

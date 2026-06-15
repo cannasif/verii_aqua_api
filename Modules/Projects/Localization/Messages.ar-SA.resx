@@ -16,7 +16,7 @@
     <value>العملية ناجحة.</value>
   </data>
   <data name="ProjectService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>تعذر العثور على السجل.</value>
   </data>
   <data name="ProjectService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
@@ -37,7 +37,7 @@
     <value>العملية ناجحة.</value>
   </data>
   <data name="ProjectCageService.NotFound" xml:space="preserve">
-    <value>Record not found.</value>
+    <value>تعذر العثور على السجل.</value>
   </data>
   <data name="ProjectCageService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
