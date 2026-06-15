@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 using aqua_api.Modules.System.Infrastructure.BackgroundJobs;
 using aqua_api.Modules.System.Infrastructure.BackgroundJobs.Interfaces;
+using aqua_api.Modules.System.Infrastructure.Monitoring;
 
 namespace aqua_api.Modules.System.Api
 {
@@ -35,17 +36,29 @@ namespace aqua_api.Modules.System.Api
             using var connection = JobStorage.Current.GetConnection();
             var jobs = connection.GetRecurringJobs()
                 .OrderBy(x => x.Id)
-                .Select(x => new RecurringJobListItem
+                .Select(x =>
                 {
-                    Id = x.Id,
-                    JobName = x.Job?.Type?.Name ?? x.Id,
-                    Method = x.Job?.Method?.Name,
-                    Cron = x.Cron,
-                    Queue = x.Queue,
-                    NextExecution = x.NextExecution?.ToString("o"),
-                    LastExecution = x.LastExecution?.ToString("o"),
-                    LastJobId = x.LastJobId,
-                    Error = x.Error,
+                    var displayInfo = HangfireJobDisplayNameResolver.ResolveInfo(
+                        x.Id,
+                        x.Job?.Type,
+                        x.Job?.Method?.Name,
+                        x.Job?.Type?.Name ?? x.Id);
+
+                    return new RecurringJobListItem
+                    {
+                        Id = x.Id,
+                        JobName = displayInfo.Name,
+                        TechnicalJobName = x.Job?.Type?.FullName ?? x.Id,
+                        Description = displayInfo.Description,
+                        Category = displayInfo.Category,
+                        Method = x.Job?.Method?.Name,
+                        Cron = x.Cron,
+                        Queue = x.Queue,
+                        NextExecution = x.NextExecution?.ToString("o"),
+                        LastExecution = x.LastExecution?.ToString("o"),
+                        LastJobId = x.LastJobId,
+                        Error = x.Error,
+                    };
                 })
                 .ToList();
 
@@ -78,6 +91,7 @@ namespace aqua_api.Modules.System.Api
                 return Ok(new
                 {
                     JobId = jobId,
+                    JobName = HangfireJobDisplayNameResolver.Resolve(jobId, jobId),
                     TriggeredAt = DateTime.UtcNow,
                     Message = "Recurring job triggered successfully.",
                 });
@@ -93,6 +107,7 @@ namespace aqua_api.Modules.System.Api
             {
                 JobId = enqueuedJobId,
                 RecurringJobId = jobId,
+                JobName = HangfireJobDisplayNameResolver.Resolve(jobId, jobId),
                 TriggeredAt = DateTime.UtcNow,
                 Message = "Sync job enqueued successfully.",
             });
@@ -150,7 +165,7 @@ namespace aqua_api.Modules.System.Api
         {
             var (resolvedFrom, resolvedCount) = ResolvePaging(pageNumber, pageSize, from, count, 50);
 
-            var items = await _db.JobFailureLogs
+            var rawItems = await _db.JobFailureLogs
                 .AsNoTracking()
                 .OrderByDescending(x => x.FailedAt)
                 .Skip(resolvedFrom)
@@ -167,6 +182,19 @@ namespace aqua_api.Modules.System.Api
                     x.Queue
                 })
                 .ToListAsync();
+            var items = rawItems
+                .Select(x => new
+                {
+                    x.JobId,
+                    JobName = HangfireJobDisplayNameResolver.Resolve(null, x.JobName),
+                    x.FailedAt,
+                    x.State,
+                    x.Reason,
+                    x.ExceptionType,
+                    x.RetryCount,
+                    x.Queue
+                })
+                .ToList();
 
             var total = await _db.JobFailureLogs.CountAsync();
 
@@ -191,7 +219,7 @@ namespace aqua_api.Modules.System.Api
                 .AsNoTracking()
                 .Where(x => !x.IsDeleted && x.Status == "Succeeded");
 
-            var items = await successQuery
+            var rawItems = await successQuery
                 .OrderByDescending(x => x.FinishedAt)
                 .Skip(resolvedFrom)
                 .Take(resolvedCount)
@@ -206,6 +234,18 @@ namespace aqua_api.Modules.System.Api
                     x.RetryCount
                 })
                 .ToListAsync();
+            var items = rawItems
+                .Select(x => new
+                {
+                    x.JobId,
+                    x.RecurringJobId,
+                    JobName = HangfireJobDisplayNameResolver.Resolve(x.RecurringJobId, x.JobName),
+                    x.FinishedAt,
+                    x.DurationMs,
+                    x.Queue,
+                    x.RetryCount
+                })
+                .ToList();
 
             var total = await successQuery.CountAsync();
 
@@ -230,7 +270,7 @@ namespace aqua_api.Modules.System.Api
                 .AsNoTracking()
                 .Where(x => x.Queue == "dead-letter");
 
-            var items = await deadLetterQuery
+            var rawItems = await deadLetterQuery
                 .OrderByDescending(x => x.FailedAt)
                 .Skip(resolvedFrom)
                 .Take(resolvedCount)
@@ -243,6 +283,16 @@ namespace aqua_api.Modules.System.Api
                     Reason = x.ExceptionMessage ?? x.Reason
                 })
                 .ToListAsync();
+            var items = rawItems
+                .Select(x => new
+                {
+                    x.JobId,
+                    JobName = HangfireJobDisplayNameResolver.Resolve(null, x.JobName),
+                    x.EnqueuedAt,
+                    x.State,
+                    x.Reason
+                })
+                .ToList();
 
             var total = await deadLetterQuery.CountAsync();
 
@@ -354,10 +404,15 @@ namespace aqua_api.Modules.System.Api
                 return;
             }
 
+            var displayInfo = HangfireJobDisplayNameResolver.ResolveInfo(id, jobName);
+
             jobs.Add(new RecurringJobListItem
             {
                 Id = id,
-                JobName = jobName,
+                JobName = displayInfo.Name,
+                TechnicalJobName = jobName,
+                Description = displayInfo.Description,
+                Category = displayInfo.Category,
                 Method = method,
                 Cron = "-",
                 Queue = "default",
@@ -389,6 +444,9 @@ namespace aqua_api.Modules.System.Api
         {
             public string Id { get; set; } = string.Empty;
             public string JobName { get; set; } = string.Empty;
+            public string? TechnicalJobName { get; set; }
+            public string? Description { get; set; }
+            public string? Category { get; set; }
             public string? Method { get; set; }
             public string? Cron { get; set; }
             public string? Queue { get; set; }

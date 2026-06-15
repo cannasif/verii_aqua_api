@@ -3,6 +3,7 @@ using Hangfire.Storage;
 using Hangfire;
 using aqua_api.Modules.System.Infrastructure.BackgroundJobs;
 using aqua_api.Modules.System.Infrastructure.BackgroundJobs.Interfaces;
+using aqua_api.Modules.System.Infrastructure.Monitoring;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -34,9 +35,10 @@ namespace aqua_api.Shared.Host.WebApi.Filters
         {
             var jobId = context.BackgroundJob?.Id ?? "unknown";
             var job = context.BackgroundJob?.Job;
-            var jobName = job == null ? "unknown" : $"{job.Type.FullName}.{job.Method.Name}";
             var queue = context.GetJobParameter<string>("Queue");
             var recurringJobId = context.GetJobParameter<string>("RecurringJobId");
+            var technicalJobName = job == null ? "unknown" : $"{job.Type.FullName}.{job.Method.Name}";
+            var jobName = HangfireJobDisplayNameResolver.Resolve(recurringJobId, job?.Type, job?.Method.Name, technicalJobName);
             var createdAt = context.BackgroundJob?.CreatedAt ?? DateTime.UtcNow;
 
             if (context.NewState is FailedState failedState)
