@@ -415,4 +415,166 @@
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
     <value>Besleme satırı kaydedilirken hata oluştu.</value>
   </data>
+  <data name="CageWarehouseMappingService.ActiveMappingAlreadyExists" xml:space="preserve">
+    <value>Für diesen Kasten gibt es bereits eine aktive Netsis-Lagerzuordnung.</value>
+  </data>
+  <data name="CageWarehouseMappingService.CageNotFound" xml:space="preserve">
+    <value>Der ausgewählte Kasten wurde nicht gefunden.</value>
+  </data>
+  <data name="CageWarehouseMappingService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="CageWarehouseMappingService.NotFound" xml:space="preserve">
+    <value>Die Kasten-Lager-Mapping-Zuordnung wurde nicht gefunden.</value>
+  </data>
+  <data name="CageWarehouseMappingService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="CageWarehouseMappingService.WarehouseNotFound" xml:space="preserve">
+    <value>Das ausgewählte Netsis-Lager wurde nicht gefunden. Führen Sie zuerst die Lagersynchronisierung aus.</value>
+  </data>
+  <data name="GoodsReceiptService.BranchCodeNotFound" xml:space="preserve">
+    <value>Der Filialkontext konnte nicht ermittelt werden.</value>
+  </data>
+  <data name="GoodsReceiptService.WarehouseNotFound" xml:space="preserve">
+    <value>Der ausgewählte Lagercode wurde nicht gefunden.</value>
+  </data>
+  <data name="OpeningImportService.AlreadyApplied" xml:space="preserve">
+    <value>Dieser Eröffnungsimport wurde bereits ausgeführt.</value>
+  </data>
+  <data name="OpeningImportService.CommitHasErrors" xml:space="preserve">
+    <value>Der Commit ist nicht möglich, solange ungültige Zeilen vorhanden sind.</value>
+  </data>
+  <data name="OpeningImportService.EmptyWorkbook" xml:space="preserve">
+    <value>Im Arbeitsbuch wurden keine verarbeitbaren Tabellenblätter gefunden.</value>
+  </data>
+  <data name="OpeningImportService.InternalServerError" xml:space="preserve">
+    <value>Während des Eröffnungsimports ist ein unerwarteter Fehler aufgetreten.</value>
+  </data>
+  <data name="OpeningImportService.JobNotFound" xml:space="preserve">
+    <value>Eröffnungsimportjob wurde nicht gefunden.</value>
+  </data>
+  <data name="OpeningImportService.OperationSuccessful" xml:space="preserve">
+    <value>Vorgang erfolgreich.</value>
+  </data>
+  <data name="ProjectMergeService.InternalServerError" xml:space="preserve">
+    <value>An internal server error occurred.</value>
+  </data>
+  <data name="ProjectMergeService.MergeDisabled" xml:space="preserve">
+    <value>Project merge is disabled in settings.</value>
+  </data>
+  <data name="ProjectMergeService.NotFound" xml:space="preserve">
+    <value>Project merge record not found.</value>
+  </data>
+  <data name="ProjectMergeService.OperationSuccessful" xml:space="preserve">
+    <value>Operation successful.</value>
+  </data>
+  <data name="ProjectMergeService.SourceProjectNotFound" xml:space="preserve">
+    <value>One of the source projects could not be found.</value>
+  </data>
+  <data name="ProjectMergeService.SourceProjectsRequired" xml:space="preserve">
+    <value>At least one source project must be selected.</value>
+  </data>
+  <data name="ProjectMergeService.TargetProjectCannotBeSource" xml:space="preserve">
+    <value>The target project cannot also be a source project.</value>
+  </data>
+  <data name="ProjectMergeService.TargetProjectNotFound" xml:space="preserve">
+    <value>Target project not found.</value>
+  </data>
+  <data name="ProjectMergeService.TargetProjectRequired" xml:space="preserve">
+    <value>Target project selection is required.</value>
+  </data>
+  <data name="ShipmentService.BranchCodeNotFound" xml:space="preserve">
+    <value>Der Zweigkontext konnte nicht aufgelöst werden.</value>
+  </data>
+  <data name="ShipmentService.WarehouseNotFound" xml:space="preserve">
+    <value>Der ausgewählte Lagercode konnte nicht gefunden werden.</value>
+  </data>
+  <data name="TransferService.FullTransferRequired" xml:space="preserve">
+    <value>Es darf bei einer Übertragung kein Rest verbleiben. Alle Fische müssen bewegt werden.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageNotAllowed" xml:space="preserve">
+    <value>Eine Teilübertragung zu einem belegten Käfig ist nicht erlaubt.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageOnlySameBatchAllowed" xml:space="preserve">
+    <value>Teilübertragungen zu einem belegten Käfig sind nur für dieselbe Charge erlaubt.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageInactive" xml:space="preserve">
+    <value>Quellprojektkäfig ist nicht aktiv.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageMustBelongToTransferProject" xml:space="preserve">
+    <value>Quellprojektkäfig muss zum Transferprojekt gehören.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageNotFound" xml:space="preserve">
+    <value>Quellprojektkäfig nicht gefunden.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageInactive" xml:space="preserve">
+    <value>Zielprojektkäfig ist nicht aktiv.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageNotFound" xml:space="preserve">
+    <value>Zielprojektkäfig nicht gefunden.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.NotFound" xml:space="preserve">
+    <value>Datensatz nicht gefunden.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="WarehouseCageTransferService.BusinessRuleError" xml:space="preserve">
+    <value>Bei der Lager-zu-Käfig-Übertragung ist ein Geschäftsregel-Fehler aufgetreten.</value>
+  </data>
+  <data name="WarehouseCageTransferService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="WarehouseCageTransferService.MustContainLines" xml:space="preserve">
+    <value>Das Dokument für den Lager-zu-Käfig-Transfer muss mindestens eine Zeile enthalten.</value>
+  </data>
+  <data name="WarehouseCageTransferService.NotFound" xml:space="preserve">
+    <value>Datensatz nicht gefunden.</value>
+  </data>
+  <data name="WarehouseCageTransferService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="WarehouseTransferLineService.BranchCodeNotFound" xml:space="preserve">
+    <value>Der Zweigkontext konnte nicht aufgelöst werden.</value>
+  </data>
+  <data name="WarehouseTransferLineService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="WarehouseTransferLineService.NotFound" xml:space="preserve">
+    <value>Datensatz nicht gefunden.</value>
+  </data>
+  <data name="WarehouseTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="WarehouseTransferLineService.SourceAndTargetWarehouseCannotBeSame" xml:space="preserve">
+    <value>Quell- und Ziellager dürfen nicht identisch sein.</value>
+  </data>
+  <data name="WarehouseTransferLineService.WarehouseNotFound" xml:space="preserve">
+    <value>Der ausgewählte Lagercode wurde nicht gefunden.</value>
+  </data>
+  <data name="WarehouseTransferService.BusinessRuleError" xml:space="preserve">
+    <value>Bei der Bestandsübertragung ist ein Geschäftsregel-Fehler aufgetreten.</value>
+  </data>
+  <data name="WarehouseTransferService.InternalServerError" xml:space="preserve">
+    <value>Ein interner Serverfehler ist aufgetreten.</value>
+  </data>
+  <data name="WarehouseTransferService.MustContainLines" xml:space="preserve">
+    <value>Das Dokument für die Transferbuchung muss mindestens eine Zeile enthalten.</value>
+  </data>
+  <data name="WarehouseTransferService.NotFound" xml:space="preserve">
+    <value>Datensatz nicht gefunden.</value>
+  </data>
+  <data name="WarehouseTransferService.OperationSuccessful" xml:space="preserve">
+    <value>Operation erfolgreich.</value>
+  </data>
+  <data name="BalanceLedgerManager.BatchWarehouseCountCannotGoNegative" xml:space="preserve">
+    <value>Der Saldo der Lagerfischmenge darf nicht unter Null fallen.</value>
+  </data>
+  <data name="BalanceLedgerManager.BatchWarehouseBiomassCannotGoNegative" xml:space="preserve">
+    <value>Der Saldo der Lagerfischbiomasse darf nicht unter Null fallen.</value>
+  </data>
 </root>

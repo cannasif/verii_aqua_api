@@ -73,6 +73,9 @@
   <data name="HangfireController.StockSyncJobEnqueued" xml:space="preserve">
     <value>Stok senkronizasyon işi kuyruğa alındı.</value>
   </data>
+  <data name="HangfireController.WarehouseSyncJobEnqueued" xml:space="preserve">
+    <value>La tarea de sincronización del almacén ha sido puesta en cola.</value>
+  </data>
   <data name="MailJob.EmailSendFailedForRecipient" xml:space="preserve">
     <value>{0} alıcısına e-posta gönderilemedi.</value>
   </data>
@@ -261,5 +264,14 @@
   </data>
   <data name="HangfireController.ErpReceiptShipmentMovementSyncJobEnqueued" xml:space="preserve">
     <value>El trabajo de sincronización operativa ERP de recepción y envío se puso en cola.</value>
+  </data>
+  <data name="WarehouseSyncJob.Started" xml:space="preserve">
+    <value>La sincronización de almacén de ERP se inició.</value>
+  </data>
+  <data name="WarehouseSyncJob.Completed" xml:space="preserve">
+    <value>La sincronización de almacén de ERP se completó.</value>
+  </data>
+  <data name="WarehouseSyncJob.ErpFetchFailed" xml:space="preserve">
+    <value>No se pudieron obtener los datos del almacén de ERP.</value>
   </data>
 </root>

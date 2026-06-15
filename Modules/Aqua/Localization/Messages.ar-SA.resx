@@ -415,4 +415,166 @@
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
     <value>Besleme satırı kaydedilirken hata oluştu.</value>
   </data>
+  <data name="CageWarehouseMappingService.ActiveMappingAlreadyExists" xml:space="preserve">
+    <value>هذا القفص يحتوي بالفعل على تعيين فعال لمستودع Netsis.</value>
+  </data>
+  <data name="CageWarehouseMappingService.CageNotFound" xml:space="preserve">
+    <value>القفص المختار غير موجود.</value>
+  </data>
+  <data name="CageWarehouseMappingService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="CageWarehouseMappingService.NotFound" xml:space="preserve">
+    <value>لم يتم العثور على مطابقة بين القفص والمستودع.</value>
+  </data>
+  <data name="CageWarehouseMappingService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="CageWarehouseMappingService.WarehouseNotFound" xml:space="preserve">
+    <value>المستودع المختار لنظام Netsis غير موجود. نفذ أولاً مزامنة المستودعات.</value>
+  </data>
+  <data name="GoodsReceiptService.BranchCodeNotFound" xml:space="preserve">
+    <value>تعذر تحديد سياق الفرع.</value>
+  </data>
+  <data name="GoodsReceiptService.WarehouseNotFound" xml:space="preserve">
+    <value>تعذر العثور على كود المستودع المحدد.</value>
+  </data>
+  <data name="OpeningImportService.AlreadyApplied" xml:space="preserve">
+    <value>تم تنفيذ عملية استيراد الافتتاح بالفعل.</value>
+  </data>
+  <data name="OpeningImportService.CommitHasErrors" xml:space="preserve">
+    <value>لا يمكن الإرسال إذا وُجدت صفوف غير صالحة.</value>
+  </data>
+  <data name="OpeningImportService.EmptyWorkbook" xml:space="preserve">
+    <value>لم يتم العثور على أوراق قابلة للمعالجة في الملف.</value>
+  </data>
+  <data name="OpeningImportService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ غير متوقع أثناء عملية استيراد الافتتاح.</value>
+  </data>
+  <data name="OpeningImportService.JobNotFound" xml:space="preserve">
+    <value>لم يتم العثور على مهمة استيراد الافتتاح.</value>
+  </data>
+  <data name="OpeningImportService.OperationSuccessful" xml:space="preserve">
+    <value>تمت العملية بنجاح.</value>
+  </data>
+  <data name="ProjectMergeService.InternalServerError" xml:space="preserve">
+    <value>An internal server error occurred.</value>
+  </data>
+  <data name="ProjectMergeService.MergeDisabled" xml:space="preserve">
+    <value>Project merge is disabled in settings.</value>
+  </data>
+  <data name="ProjectMergeService.NotFound" xml:space="preserve">
+    <value>Project merge record not found.</value>
+  </data>
+  <data name="ProjectMergeService.OperationSuccessful" xml:space="preserve">
+    <value>Operation successful.</value>
+  </data>
+  <data name="ProjectMergeService.SourceProjectNotFound" xml:space="preserve">
+    <value>One of the source projects could not be found.</value>
+  </data>
+  <data name="ProjectMergeService.SourceProjectsRequired" xml:space="preserve">
+    <value>At least one source project must be selected.</value>
+  </data>
+  <data name="ProjectMergeService.TargetProjectCannotBeSource" xml:space="preserve">
+    <value>The target project cannot also be a source project.</value>
+  </data>
+  <data name="ProjectMergeService.TargetProjectNotFound" xml:space="preserve">
+    <value>Target project not found.</value>
+  </data>
+  <data name="ProjectMergeService.TargetProjectRequired" xml:space="preserve">
+    <value>Target project selection is required.</value>
+  </data>
+  <data name="ShipmentService.BranchCodeNotFound" xml:space="preserve">
+    <value>تعذر حل سياق الفرع.</value>
+  </data>
+  <data name="ShipmentService.WarehouseNotFound" xml:space="preserve">
+    <value>تعذر العثور على كود المخزن المحدد.</value>
+  </data>
+  <data name="TransferService.FullTransferRequired" xml:space="preserve">
+    <value>لا يمكن ترك أي بقايا أثناء النقل. يجب نقل جميع الأسماك.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageNotAllowed" xml:space="preserve">
+    <value>النقل الجزئي إلى قفص مشغول غير مسموح.</value>
+  </data>
+  <data name="TransferService.PartialTransferToOccupiedCageOnlySameBatchAllowed" xml:space="preserve">
+    <value>النقل الجزئي إلى قفص مشغول مسموح فقط لنفس الدُفعة.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageInactive" xml:space="preserve">
+    <value>قفص مشروع المصدر غير نشط.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageMustBelongToTransferProject" xml:space="preserve">
+    <value>يجب أن ينتمي قفص مشروع المصدر إلى مشروع التحويل.</value>
+  </data>
+  <data name="TransferService.SourceProjectCageNotFound" xml:space="preserve">
+    <value>قفص مشروع المصدر غير موجود.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageInactive" xml:space="preserve">
+    <value>قفص مشروع الهدف غير نشط.</value>
+  </data>
+  <data name="TransferService.TargetProjectCageNotFound" xml:space="preserve">
+    <value>قفص مشروع الهدف غير موجود.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.NotFound" xml:space="preserve">
+    <value>السجل غير موجود.</value>
+  </data>
+  <data name="WarehouseCageTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="WarehouseCageTransferService.BusinessRuleError" xml:space="preserve">
+    <value>حدث خطأ في قاعدة أعمال نقل القفص إلى المخزن.</value>
+  </data>
+  <data name="WarehouseCageTransferService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="WarehouseCageTransferService.MustContainLines" xml:space="preserve">
+    <value>يجب أن يحتوي مستند نقل القفص إلى المخزن على سطر واحد على الأقل.</value>
+  </data>
+  <data name="WarehouseCageTransferService.NotFound" xml:space="preserve">
+    <value>السجل غير موجود.</value>
+  </data>
+  <data name="WarehouseCageTransferService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="WarehouseTransferLineService.BranchCodeNotFound" xml:space="preserve">
+    <value>تعذر تحديد فرع المستخدم.</value>
+  </data>
+  <data name="WarehouseTransferLineService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="WarehouseTransferLineService.NotFound" xml:space="preserve">
+    <value>السجل غير موجود.</value>
+  </data>
+  <data name="WarehouseTransferLineService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="WarehouseTransferLineService.SourceAndTargetWarehouseCannotBeSame" xml:space="preserve">
+    <value>لا يمكن أن يكون المخزن المصدر والمستهدف متماثلين.</value>
+  </data>
+  <data name="WarehouseTransferLineService.WarehouseNotFound" xml:space="preserve">
+    <value>تعذر العثور على كود المخزن المحدد.</value>
+  </data>
+  <data name="WarehouseTransferService.BusinessRuleError" xml:space="preserve">
+    <value>حدث خطأ في قاعدة أعمال تحويل المخزون.</value>
+  </data>
+  <data name="WarehouseTransferService.InternalServerError" xml:space="preserve">
+    <value>حدث خطأ داخلي في الخادم.</value>
+  </data>
+  <data name="WarehouseTransferService.MustContainLines" xml:space="preserve">
+    <value>يجب أن يحتوي مستند تحويل المخزون على سطر واحد على الأقل.</value>
+  </data>
+  <data name="WarehouseTransferService.NotFound" xml:space="preserve">
+    <value>السجل غير موجود.</value>
+  </data>
+  <data name="WarehouseTransferService.OperationSuccessful" xml:space="preserve">
+    <value>العملية ناجحة.</value>
+  </data>
+  <data name="BalanceLedgerManager.BatchWarehouseCountCannotGoNegative" xml:space="preserve">
+    <value>لا يمكن أن ينخفض رصيد عدد الأسماك في المخزن عن الصفر.</value>
+  </data>
+  <data name="BalanceLedgerManager.BatchWarehouseBiomassCannotGoNegative" xml:space="preserve">
+    <value>لا يمكن أن ينخفض رصيد كتلة الأسماك في المخزن عن الصفر.</value>
+  </data>
 </root>
