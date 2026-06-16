@@ -187,7 +187,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     mortality = new Mortality
                     {
                         ProjectId = dto.ProjectId,
-                        MortalityNo = BuildDocumentNo(dto.ProjectId, dto.MortalityDate),
+                        MortalityNo = await BuildDocumentNoAsync(dto.ProjectId, dto.MortalityDate),
                         MortalityDate = dto.MortalityDate,
                         Status = DocumentStatus.Draft,
                     };
@@ -309,7 +309,35 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             }
         }
 
-        private static string BuildDocumentNo(long projectId, DateTime mortalityDate)
-            => $"MORT-{projectId}-{mortalityDate:yyyyMMdd}";
+        private async Task<string> BuildDocumentNoAsync(long projectId, DateTime mortalityDate)
+        {
+            var baseDocumentNo = $"MORT-{projectId}-{mortalityDate:yyyyMMdd}";
+            var existingNumbers = await _unitOfWork.Mortalities
+                .Query()
+                .AsNoTracking()
+                .Where(x =>
+                    x.ProjectId == projectId &&
+                    x.MortalityDate.Date == mortalityDate.Date &&
+                    x.MortalityNo != null &&
+                    x.MortalityNo.StartsWith(baseDocumentNo))
+                .Select(x => x.MortalityNo!)
+                .ToListAsync();
+
+            if (!existingNumbers.Contains(baseDocumentNo))
+            {
+                return baseDocumentNo;
+            }
+
+            var sequence = 2;
+            string candidate;
+            do
+            {
+                candidate = $"{baseDocumentNo}-{sequence}";
+                sequence++;
+            }
+            while (existingNumbers.Contains(candidate));
+
+            return candidate;
+        }
     }
 }
