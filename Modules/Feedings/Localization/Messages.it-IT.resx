@@ -21,6 +21,9 @@
   <data name="FeedingService.InternalServerError" xml:space="preserve">
     <value>Si è verificato un errore interno del server.</value>
   </data>
+  <data name="FeedingService.FeedWarehouseRequired" xml:space="preserve">
+    <value>Non è stato trovato un magazzino di uscita ERP per lo stock mangime {0}. Controllare il magazzino di ricevimento mangime o l'impostazione del magazzino ERP predefinito.</value>
+  </data>
   <data name="FeedingLineService.OperationSuccessful" xml:space="preserve">
     <value>Operazione riuscita.</value>
   </data>

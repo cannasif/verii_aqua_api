@@ -21,6 +21,9 @@
   <data name="FeedingService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>
   </data>
+  <data name="FeedingService.FeedWarehouseRequired" xml:space="preserve">
+    <value>Für den Futterbestand {0} wurde kein ERP-Ausgangslager gefunden. Prüfen Sie das Lager des Futter-Wareneingangs oder die Standard-ERP-Lagereinstellung.</value>
+  </data>
   <data name="FeedingLineService.OperationSuccessful" xml:space="preserve">
     <value>Operation erfolgreich.</value>
   </data>

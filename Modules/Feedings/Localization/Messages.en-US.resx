@@ -42,6 +42,9 @@
   <data name="FeedingService.WarehouseMappingRequired" xml:space="preserve">
     <value>No active ERP warehouse mapping was found for cage {0}.</value>
   </data>
+  <data name="FeedingService.FeedWarehouseRequired" xml:space="preserve">
+    <value>No ERP issue warehouse was found for feed stock {0}. Check the feed goods receipt warehouse or the default ERP warehouse setting.</value>
+  </data>
   <data name="FeedingLineService.OperationSuccessful" xml:space="preserve">
     <value>Operation successful.</value>
   </data>

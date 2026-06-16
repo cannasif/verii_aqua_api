@@ -21,6 +21,9 @@
   <data name="FeedingService.InternalServerError" xml:space="preserve">
     <value>Une erreur interne du serveur s'est produite.</value>
   </data>
+  <data name="FeedingService.FeedWarehouseRequired" xml:space="preserve">
+    <value>Aucun entrepôt de sortie ERP n'a été trouvé pour le stock d'aliment {0}. Vérifiez l'entrepôt de réception d'aliment ou le paramètre d'entrepôt ERP par défaut.</value>
+  </data>
   <data name="FeedingLineService.OperationSuccessful" xml:space="preserve">
     <value>Opération réussie.</value>
   </data>

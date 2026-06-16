@@ -21,6 +21,9 @@
   <data name="FeedingService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
   </data>
+  <data name="FeedingService.FeedWarehouseRequired" xml:space="preserve">
+    <value>لم يتم العثور على مستودع صرف ERP لمخزون العلف {0}. تحقق من مستودع استلام العلف أو إعداد مستودع ERP الافتراضي.</value>
+  </data>
   <data name="FeedingLineService.OperationSuccessful" xml:space="preserve">
     <value>العملية ناجحة.</value>
   </data>

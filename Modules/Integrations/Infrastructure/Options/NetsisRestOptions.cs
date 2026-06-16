@@ -14,6 +14,7 @@ namespace aqua_api.Modules.Integrations.Infrastructure.Options
         public string? WarehouseTransferOutExpenseCode { get; set; }
         public string? FeedWarehouseTransferOutExpenseCode { get; set; }
         public string? MortalityWarehouseTransferOutExpenseCode { get; set; }
+        public int? FeedWarehouseTransferOutWarehouseCode { get; set; }
         public bool UseRestGeneratedWarehouseTransferNumbers { get; set; } = true;
         public int? DefaultWarehouseCode { get; set; }
         public int TimeoutSeconds { get; set; } = 30;

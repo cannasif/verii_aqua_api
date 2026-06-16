@@ -3,6 +3,7 @@ using aqua_api.Modules.Integrations.Infrastructure.Options;
 using aqua_api.Shared.Infrastructure.Persistence.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using WarehouseEntity = aqua_api.Modules.Warehouse.Domain.Entities.Warehouse;
 
 namespace aqua_api.Modules.Feedings.Application.Services
 {
@@ -199,7 +200,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                     return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("FeedingService.OperationSuccessful"));
                 }
 
-                var itemSlipRequest = BuildFeedingWarehouseIssueRequest(feeding);
+                var itemSlipRequest = await BuildFeedingWarehouseIssueRequestAsync(feeding);
                 var itemSlipResponse = await _netsisItemSlipService.CreateWarehouseTransferOutAsync(itemSlipRequest);
                 var erpReferenceNumber = ResolveErpReferenceNumber(itemSlipResponse, feeding.FeedingNo);
 
@@ -259,13 +260,18 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 .FirstOrDefaultAsync(x => x.Id == feedingId && !x.IsDeleted);
         }
 
-        private NetsisItemSlipCreateDto BuildFeedingWarehouseIssueRequest(Feeding feeding)
+        private async Task<NetsisItemSlipCreateDto> BuildFeedingWarehouseIssueRequestAsync(Feeding feeding)
         {
-            var lines = feeding.Lines
-                .Where(x => !x.IsDeleted)
-                .SelectMany(line => line.Distributions
-                    .Where(distribution => !distribution.IsDeleted)
-                    .Select(distribution => BuildFeedingWarehouseIssueLine(feeding, line, distribution)))
+            var itemSlipLines = new List<NetsisItemSlipLineDto>();
+            foreach (var line in feeding.Lines.Where(x => !x.IsDeleted))
+            {
+                foreach (var distribution in line.Distributions.Where(distribution => !distribution.IsDeleted))
+                {
+                    itemSlipLines.Add(await BuildFeedingWarehouseIssueLineAsync(feeding, line, distribution));
+                }
+            }
+
+            var lines = itemSlipLines
                 .GroupBy(x => new { x.StokKodu, x.DepoKodu, x.ProjeKodu })
                 .Select(group => new NetsisItemSlipLineDto
                 {
@@ -318,7 +324,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 _netsisOptions.Rest.FeedWarehouseTransferOutExpenseCode,
                 _netsisOptions.Rest.WarehouseTransferOutExpenseCode);
 
-        private NetsisItemSlipLineDto BuildFeedingWarehouseIssueLine(Feeding feeding, FeedingLine line, FeedingDistribution distribution)
+        private async Task<NetsisItemSlipLineDto> BuildFeedingWarehouseIssueLineAsync(Feeding feeding, FeedingLine line, FeedingDistribution distribution)
         {
             var stockCode = line.Stock?.ErpStockCode?.Trim();
             if (string.IsNullOrWhiteSpace(stockCode))
@@ -331,16 +337,11 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingService.InvalidFeedQuantity"));
             }
 
-            var warehouse = distribution.ProjectCage?.Cage?.WarehouseMappings
-                .Where(x => x.IsActive && !x.IsDeleted && x.Warehouse != null)
-                .OrderByDescending(x => x.Id)
-                .Select(x => x.Warehouse)
-                .FirstOrDefault();
+            var warehouse = await ResolveFeedIssueWarehouseAsync(line.StockId);
 
             if (warehouse == null || warehouse.ErpWarehouseCode <= 0)
             {
-                var cageCode = distribution.ProjectCage?.Cage?.CageCode ?? "-";
-                throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingService.WarehouseMappingRequired", cageCode));
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingService.FeedWarehouseRequired", stockCode));
             }
 
             return new NetsisItemSlipLineDto
@@ -354,6 +355,46 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 CikisDepoKodu = warehouse.ErpWarehouseCode,
                 Aciklama = $"Aqua yemleme {feeding.FeedingNo}",
             };
+        }
+
+        private async Task<WarehouseEntity?> ResolveFeedIssueWarehouseAsync(long stockId)
+        {
+            var receiptWarehouseId = await _unitOfWork.Db.GoodsReceiptLines
+                .AsNoTracking()
+                .Where(line =>
+                    !line.IsDeleted &&
+                    line.StockId == stockId &&
+                    line.ItemType == GoodsReceiptItemType.Feed &&
+                    line.GoodsReceipt != null &&
+                    !line.GoodsReceipt.IsDeleted &&
+                    line.GoodsReceipt.Status == DocumentStatus.Posted &&
+                    line.GoodsReceipt.WarehouseId.HasValue)
+                .OrderByDescending(line => line.GoodsReceipt!.ReceiptDate)
+                .ThenByDescending(line => line.GoodsReceiptId)
+                .Select(line => line.GoodsReceipt!.WarehouseId)
+                .FirstOrDefaultAsync();
+
+            if (receiptWarehouseId.HasValue)
+            {
+                return await _unitOfWork.Db.Warehouses
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x =>
+                        !x.IsDeleted &&
+                        x.Id == receiptWarehouseId.Value);
+            }
+
+            var defaultWarehouseCode = _netsisOptions.Rest.FeedWarehouseTransferOutWarehouseCode
+                ?? _netsisOptions.Rest.DefaultWarehouseCode;
+            if (!defaultWarehouseCode.HasValue || defaultWarehouseCode.Value <= 0)
+            {
+                return null;
+            }
+
+            return await _unitOfWork.Db.Warehouses
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x =>
+                    !x.IsDeleted &&
+                    x.ErpWarehouseCode == defaultWarehouseCode.Value);
         }
 
         private async Task MarkErpPostFailedAsync(long feedingId, long userId, string message)

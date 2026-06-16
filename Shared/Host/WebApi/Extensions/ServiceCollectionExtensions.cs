@@ -135,6 +135,7 @@ public static class ServiceCollectionExtensions
             options.Rest.MortalityWarehouseTransferOutExpenseCode = string.IsNullOrWhiteSpace(options.Rest.MortalityWarehouseTransferOutExpenseCode)
                 ? legacySection.GetValue<string>("MortalityWarehouseTransferOutExpenseCode")
                 : options.Rest.MortalityWarehouseTransferOutExpenseCode;
+            options.Rest.FeedWarehouseTransferOutWarehouseCode ??= legacySection.GetValue<int?>("FeedWarehouseTransferOutWarehouseCode");
             options.Rest.UseRestGeneratedWarehouseTransferNumbers = legacySection.GetValue<bool?>("UseRestGeneratedWarehouseTransferNumbers")
                 ?? options.Rest.UseRestGeneratedWarehouseTransferNumbers;
             options.Rest.DefaultWarehouseCode ??= legacySection.GetValue<int?>("DefaultWarehouseCode");
