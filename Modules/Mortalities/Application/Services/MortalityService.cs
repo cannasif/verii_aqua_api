@@ -325,6 +325,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 {
                     Seri = ResolveMortalitySeries(),
                     FatirsNo = ResolveRestDocumentNo(mortality.MortalityNo ?? $"MORT-{mortality.Id}"),
+                    CariKod = ResolveMortalityExpenseCode(),
                     Tarih = mortality.MortalityDate.ToString("yyyy-MM-dd"),
                     FiyatTarihi = mortality.MortalityDate.ToString("yyyy-MM-dd"),
                     ProjeKodu = mortality.Project?.ProjectCode,
@@ -402,6 +403,11 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             => string.IsNullOrWhiteSpace(_netsisOptions.Rest.MortalityWarehouseTransferOutSeries)
                 ? "FIR"
                 : _netsisOptions.Rest.MortalityWarehouseTransferOutSeries.Trim();
+
+        private string? ResolveMortalityExpenseCode()
+            => FirstNonEmpty(
+                _netsisOptions.Rest.MortalityWarehouseTransferOutExpenseCode,
+                _netsisOptions.Rest.WarehouseTransferOutExpenseCode);
 
         private static string ResolveErpReferenceNumber(NetsisItemSlipCreateResponseDto response, string fallback)
             => FirstNonEmpty(

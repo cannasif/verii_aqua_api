@@ -292,6 +292,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 {
                     Seri = ResolveFeedSeries(),
                     FatirsNo = ResolveRestDocumentNo(feeding.FeedingNo),
+                    CariKod = ResolveFeedExpenseCode(),
                     Tarih = feeding.FeedingDate.ToString("yyyy-MM-dd"),
                     FiyatTarihi = feeding.FeedingDate.ToString("yyyy-MM-dd"),
                     ProjeKodu = feeding.Project?.ProjectCode,
@@ -311,6 +312,11 @@ namespace aqua_api.Modules.Feedings.Application.Services
             => string.IsNullOrWhiteSpace(_netsisOptions.Rest.FeedWarehouseTransferOutSeries)
                 ? "YEM"
                 : _netsisOptions.Rest.FeedWarehouseTransferOutSeries.Trim();
+
+        private string? ResolveFeedExpenseCode()
+            => FirstNonEmpty(
+                _netsisOptions.Rest.FeedWarehouseTransferOutExpenseCode,
+                _netsisOptions.Rest.WarehouseTransferOutExpenseCode);
 
         private NetsisItemSlipLineDto BuildFeedingWarehouseIssueLine(Feeding feeding, FeedingLine line, FeedingDistribution distribution)
         {

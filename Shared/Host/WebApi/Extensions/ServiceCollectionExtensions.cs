@@ -126,6 +126,15 @@ public static class ServiceCollectionExtensions
             options.Rest.MortalityWarehouseTransferOutSeries = string.IsNullOrWhiteSpace(options.Rest.MortalityWarehouseTransferOutSeries)
                 ? legacySection.GetValue<string>("MortalityWarehouseTransferOutSeries") ?? "FIR"
                 : options.Rest.MortalityWarehouseTransferOutSeries;
+            options.Rest.WarehouseTransferOutExpenseCode = string.IsNullOrWhiteSpace(options.Rest.WarehouseTransferOutExpenseCode)
+                ? legacySection.GetValue<string>("WarehouseTransferOutExpenseCode")
+                : options.Rest.WarehouseTransferOutExpenseCode;
+            options.Rest.FeedWarehouseTransferOutExpenseCode = string.IsNullOrWhiteSpace(options.Rest.FeedWarehouseTransferOutExpenseCode)
+                ? legacySection.GetValue<string>("FeedWarehouseTransferOutExpenseCode")
+                : options.Rest.FeedWarehouseTransferOutExpenseCode;
+            options.Rest.MortalityWarehouseTransferOutExpenseCode = string.IsNullOrWhiteSpace(options.Rest.MortalityWarehouseTransferOutExpenseCode)
+                ? legacySection.GetValue<string>("MortalityWarehouseTransferOutExpenseCode")
+                : options.Rest.MortalityWarehouseTransferOutExpenseCode;
             options.Rest.UseRestGeneratedWarehouseTransferNumbers = legacySection.GetValue<bool?>("UseRestGeneratedWarehouseTransferNumbers")
                 ?? options.Rest.UseRestGeneratedWarehouseTransferNumbers;
             options.Rest.DefaultWarehouseCode ??= legacySection.GetValue<int?>("DefaultWarehouseCode");
