@@ -365,7 +365,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 DepoKodu = warehouse.ErpWarehouseCode,
                 CikisDepoKodu = warehouse.ErpWarehouseCode,
                 ProjeKodu = mortality.Project?.ProjectCode,
-                Miktar = Math.Round(Math.Abs(postLine.BiomassDelta) / 1000m, 3, MidpointRounding.AwayFromZero),
+                Miktar = line.DeadCount,
                 NetFiyat = 0,
                 BrutFiyat = 0,
                 Aciklama = $"Aqua fire {mortality.MortalityNo}",

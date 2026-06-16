@@ -349,7 +349,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 StokKodu = stockCode,
                 DepoKodu = warehouse.ErpWarehouseCode,
                 ProjeKodu = feeding.Project?.ProjectCode,
-                Miktar = Math.Round(distribution.FeedGram / 1000m, 3, MidpointRounding.AwayFromZero),
+                Miktar = Math.Round(distribution.FeedGram, 3, MidpointRounding.AwayFromZero),
                 NetFiyat = 0,
                 BrutFiyat = 0,
                 CikisDepoKodu = warehouse.ErpWarehouseCode,
