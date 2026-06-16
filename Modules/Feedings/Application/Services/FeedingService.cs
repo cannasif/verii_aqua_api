@@ -337,7 +337,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingService.InvalidFeedQuantity"));
             }
 
-            var warehouse = await ResolveFeedIssueWarehouseAsync(line.StockId);
+            var warehouse = await ResolveFeedIssueWarehouseAsync(line.StockId, distribution);
 
             if (warehouse == null || warehouse.ErpWarehouseCode <= 0)
             {
@@ -357,7 +357,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
             };
         }
 
-        private async Task<WarehouseEntity?> ResolveFeedIssueWarehouseAsync(long stockId)
+        private async Task<WarehouseEntity?> ResolveFeedIssueWarehouseAsync(long stockId, FeedingDistribution distribution)
         {
             var receiptWarehouseId = await _unitOfWork.Db.GoodsReceiptLines
                 .AsNoTracking()
@@ -381,6 +381,17 @@ namespace aqua_api.Modules.Feedings.Application.Services
                     .FirstOrDefaultAsync(x =>
                         !x.IsDeleted &&
                         x.Id == receiptWarehouseId.Value);
+            }
+
+            var cageWarehouse = distribution.ProjectCage?.Cage?.WarehouseMappings
+                .Where(x => x.IsActive && !x.IsDeleted && x.Warehouse != null)
+                .OrderByDescending(x => x.Id)
+                .Select(x => x.Warehouse)
+                .FirstOrDefault();
+
+            if (cageWarehouse != null)
+            {
+                return cageWarehouse;
             }
 
             var defaultWarehouseCode = _netsisOptions.Rest.FeedWarehouseTransferOutWarehouseCode
