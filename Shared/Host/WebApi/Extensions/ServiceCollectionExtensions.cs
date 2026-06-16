@@ -120,6 +120,14 @@ public static class ServiceCollectionExtensions
             options.Rest.WarehouseTransferOutDocumentType = options.Rest.WarehouseTransferOutDocumentType > 0
                 ? options.Rest.WarehouseTransferOutDocumentType
                 : legacySection.GetValue<int?>("WarehouseTransferOutDocumentType") ?? 9;
+            options.Rest.FeedWarehouseTransferOutSeries = string.IsNullOrWhiteSpace(options.Rest.FeedWarehouseTransferOutSeries)
+                ? legacySection.GetValue<string>("FeedWarehouseTransferOutSeries") ?? "YEM"
+                : options.Rest.FeedWarehouseTransferOutSeries;
+            options.Rest.MortalityWarehouseTransferOutSeries = string.IsNullOrWhiteSpace(options.Rest.MortalityWarehouseTransferOutSeries)
+                ? legacySection.GetValue<string>("MortalityWarehouseTransferOutSeries") ?? "FIR"
+                : options.Rest.MortalityWarehouseTransferOutSeries;
+            options.Rest.UseRestGeneratedWarehouseTransferNumbers = legacySection.GetValue<bool?>("UseRestGeneratedWarehouseTransferNumbers")
+                ?? options.Rest.UseRestGeneratedWarehouseTransferNumbers;
             options.Rest.DefaultWarehouseCode ??= legacySection.GetValue<int?>("DefaultWarehouseCode");
             options.Rest.TimeoutSeconds = options.Rest.TimeoutSeconds > 0
                 ? options.Rest.TimeoutSeconds

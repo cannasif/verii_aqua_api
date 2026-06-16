@@ -30,6 +30,12 @@
   <data name="MortalityService.InsufficientBalance" xml:space="preserve">
     <value>Fire kaydı için batch/kafes bakiyesi yetersiz.</value>
   </data>
+  <data name="MortalityService.StockCodeRequired" xml:space="preserve">
+    <value>Fire ambar çıkışı için balık stok kodu bulunamadı.</value>
+  </data>
+  <data name="MortalityService.WarehouseMappingRequired" xml:space="preserve">
+    <value>{0} kafesi için ERP depo eşlemesi bulunamadı.</value>
+  </data>
   <data name="MortalityLineService.OperationSuccessful" xml:space="preserve">
     <value>İşlem başarılı.</value>
   </data>

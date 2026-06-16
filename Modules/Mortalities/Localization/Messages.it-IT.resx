@@ -30,6 +30,12 @@
   <data name="MortalityService.InsufficientBalance" xml:space="preserve">
     <value>Saldo insufficiente per il lotto/vasca nel record di mortalità.</value>
   </data>
+  <data name="MortalityService.StockCodeRequired" xml:space="preserve">
+    <value>Impossibile trovare il codice stock pesce per l'uscita di magazzino della mortalità.</value>
+  </data>
+  <data name="MortalityService.WarehouseMappingRequired" xml:space="preserve">
+    <value>Impossibile trovare la mappatura magazzino ERP per la gabbia {0}.</value>
+  </data>
   <data name="MortalityLineService.OperationSuccessful" xml:space="preserve">
     <value>Operazione riuscita.</value>
   </data>

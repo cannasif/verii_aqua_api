@@ -15,8 +15,15 @@ namespace aqua_api.Modules.Aqua.Infrastructure.Persistence.Repositories
         public Task<Mortality?> GetForPost(long id)
         {
             return _db.Mortalities
+                .Include(x => x.Project)
                 .Include(x => x.Lines)
-                .ThenInclude(x => x.FishBatch)
+                    .ThenInclude(x => x.FishBatch)
+                        .ThenInclude(x => x!.FishStock)
+                .Include(x => x.Lines)
+                    .ThenInclude(x => x.ProjectCage)
+                        .ThenInclude(x => x!.Cage)
+                            .ThenInclude(x => x!.WarehouseMappings)
+                                .ThenInclude(x => x.Warehouse)
                 .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
         }
     }

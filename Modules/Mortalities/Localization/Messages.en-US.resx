@@ -30,6 +30,12 @@
   <data name="MortalityService.InsufficientBalance" xml:space="preserve">
     <value>Insufficient batch/cage balance for mortality entry.</value>
   </data>
+  <data name="MortalityService.StockCodeRequired" xml:space="preserve">
+    <value>Fish stock code could not be found for the mortality warehouse issue.</value>
+  </data>
+  <data name="MortalityService.WarehouseMappingRequired" xml:space="preserve">
+    <value>ERP warehouse mapping could not be found for cage {0}.</value>
+  </data>
   <data name="MortalityLineService.OperationSuccessful" xml:space="preserve">
     <value>Operation successful.</value>
   </data>

@@ -30,6 +30,12 @@
   <data name="MortalityService.InsufficientBalance" xml:space="preserve">
     <value>Solde de lot/cage insuffisant pour l'enregistrement de mortalité.</value>
   </data>
+  <data name="MortalityService.StockCodeRequired" xml:space="preserve">
+    <value>Le code stock poisson est introuvable pour la sortie d'entrepôt de mortalité.</value>
+  </data>
+  <data name="MortalityService.WarehouseMappingRequired" xml:space="preserve">
+    <value>Aucune correspondance d'entrepôt ERP n'a été trouvée pour la cage {0}.</value>
+  </data>
   <data name="MortalityLineService.OperationSuccessful" xml:space="preserve">
     <value>Opération réussie.</value>
   </data>

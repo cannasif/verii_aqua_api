@@ -9,6 +9,9 @@ namespace aqua_api.Modules.Integrations.Infrastructure.Options
         public string ArpsPath { get; set; } = "/api/v2/ARPs";
         public int WarehouseTransferInDocumentType { get; set; }
         public int WarehouseTransferOutDocumentType { get; set; }
+        public string FeedWarehouseTransferOutSeries { get; set; } = "YEM";
+        public string MortalityWarehouseTransferOutSeries { get; set; } = "FIR";
+        public bool UseRestGeneratedWarehouseTransferNumbers { get; set; } = true;
         public int? DefaultWarehouseCode { get; set; }
         public int TimeoutSeconds { get; set; } = 30;
         public bool AllowInvalidSslCertificate { get; set; }

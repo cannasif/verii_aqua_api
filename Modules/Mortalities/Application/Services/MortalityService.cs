@@ -1,7 +1,9 @@
 using AutoMapper;
+using aqua_api.Modules.Integrations.Infrastructure.Options;
 using aqua_api.Shared.Infrastructure.Time;
 using aqua_api.Shared.Infrastructure.Persistence.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace aqua_api.Modules.Mortalities.Application.Services
 {
@@ -12,19 +14,25 @@ namespace aqua_api.Modules.Mortalities.Application.Services
         private readonly IBalanceLedgerManager _balanceLedgerManager;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
+        private readonly INetsisItemSlipService _netsisItemSlipService;
+        private readonly NetsisOptions _netsisOptions;
 
         public MortalityService(
             IUnitOfWork unitOfWork,
             IMortalityRepository mortalityRepository,
             IBalanceLedgerManager balanceLedgerManager,
             IMapper mapper,
-            ILocalizationService localizationService)
+            ILocalizationService localizationService,
+            INetsisItemSlipService netsisItemSlipService,
+            IOptions<NetsisOptions> netsisOptions)
         {
             _unitOfWork = unitOfWork;
             _mortalityRepository = mortalityRepository;
             _balanceLedgerManager = balanceLedgerManager;
             _mapper = mapper;
             _localizationService = localizationService;
+            _netsisItemSlipService = netsisItemSlipService;
+            _netsisOptions = netsisOptions.Value;
         }
 
         public async Task<ApiResponse<MortalityDto>> GetByIdAsync(long id)
@@ -187,13 +195,12 @@ namespace aqua_api.Modules.Mortalities.Application.Services
         {
             try
             {
-                await _unitOfWork.BeginTransaction();
-
                 var mortality = await _mortalityRepository.GetForPost(mortalityId)
                     ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.MortalityNotFound"));
 
                 EnsureDraftStatus(mortality.Status, nameof(Mortality));
 
+                var postLines = new List<MortalityPostLine>();
                 foreach (var line in mortality.Lines.Where(x => !x.IsDeleted))
                 {
                     var balance = await _unitOfWork.Db.BatchCageBalances
@@ -212,30 +219,53 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     }
 
                     var biomassDelta = -Math.Round(averageGram * line.DeadCount, 3, MidpointRounding.AwayFromZero);
+                    postLines.Add(new MortalityPostLine(line, averageGram, biomassDelta));
+                }
 
+                var itemSlipRequest = BuildMortalityWarehouseIssueRequest(mortality, postLines);
+                var itemSlipResponse = mortality.IsERPIntegrated
+                    ? null
+                    : await _netsisItemSlipService.CreateWarehouseTransferOutAsync(itemSlipRequest);
+                var erpReferenceNumber = itemSlipResponse == null
+                    ? mortality.ERPReferenceNumber ?? mortality.MortalityNo
+                    : ResolveErpReferenceNumber(itemSlipResponse, mortality.MortalityNo ?? $"MORT-{mortality.Id}");
+
+                await _unitOfWork.BeginTransaction();
+
+                foreach (var postLine in postLines)
+                {
                     await _balanceLedgerManager.ApplyDelta(
                         mortality.ProjectId,
-                        line.FishBatchId,
-                        line.ProjectCageId,
-                        -line.DeadCount,
-                        biomassDelta,
+                        postLine.Line.FishBatchId,
+                        postLine.Line.ProjectCageId,
+                        -postLine.Line.DeadCount,
+                        postLine.BiomassDelta,
                         BatchMovementType.Mortality,
                         mortality.MortalityDate,
                         "Mortality",
                         "RII_Mortality",
                         mortality.Id,
-                        line.ProjectCageId,
+                        postLine.Line.ProjectCageId,
                         null,
                         null,
                         null,
-                        averageGram,
-                        averageGram,
+                        postLine.AverageGram,
+                        postLine.AverageGram,
                         userId);
                 }
 
-                mortality.Status = DocumentStatus.Posted;
-                mortality.UpdatedBy = userId;
-                mortality.UpdatedDate = DateTimeProvider.UtcNow;
+                var trackedMortality = await _unitOfWork.Mortalities.GetByIdForUpdateAsync(mortality.Id)
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.MortalityNotFound"));
+
+                trackedMortality.Status = DocumentStatus.Posted;
+                trackedMortality.IsERPIntegrated = true;
+                trackedMortality.ERPReferenceNumber = erpReferenceNumber;
+                trackedMortality.ERPIntegrationDate = DateTimeProvider.UtcNow;
+                trackedMortality.ERPIntegrationStatus = "Success";
+                trackedMortality.ERPErrorMessage = null;
+                trackedMortality.CountTriedBy = (trackedMortality.CountTriedBy ?? 0) + 1;
+                trackedMortality.UpdatedBy = userId;
+                trackedMortality.UpdatedDate = DateTimeProvider.UtcNow;
 
                 await _unitOfWork.SaveChanges();
                 await _unitOfWork.Commit();
@@ -247,6 +277,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             catch (InvalidOperationException ex)
             {
                 await _unitOfWork.Rollback();
+                await MarkErpPostFailedAsync(mortalityId, userId, ex.Message);
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("MortalityService.BusinessRuleError"),
                     ex.Message,
@@ -255,12 +286,135 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             catch (Exception ex)
             {
                 await _unitOfWork.Rollback();
+                await MarkErpPostFailedAsync(mortalityId, userId, ex.Message);
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("MortalityService.InternalServerError"),
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
         }
+
+        private NetsisItemSlipCreateDto BuildMortalityWarehouseIssueRequest(Mortality mortality, IReadOnlyCollection<MortalityPostLine> postLines)
+        {
+            var lines = postLines
+                .Select(x => BuildMortalityWarehouseIssueLine(mortality, x))
+                .GroupBy(x => new { x.StokKodu, x.DepoKodu, x.ProjeKodu })
+                .Select(group => new NetsisItemSlipLineDto
+                {
+                    StokKodu = group.Key.StokKodu,
+                    DepoKodu = group.Key.DepoKodu,
+                    CikisDepoKodu = group.Key.DepoKodu,
+                    ProjeKodu = group.Key.ProjeKodu,
+                    Miktar = Math.Round(group.Sum(x => x.Miktar), 3, MidpointRounding.AwayFromZero),
+                    NetFiyat = 0,
+                    BrutFiyat = 0,
+                    Aciklama = $"Aqua fire {mortality.MortalityNo}",
+                })
+                .ToList();
+
+            if (lines.Count == 0)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.MortalityNotFound"));
+            }
+
+            return new NetsisItemSlipCreateDto
+            {
+                SipDepoKodKullan = 1,
+                Seri = ResolveMortalitySeries(),
+                FatUst = new NetsisItemSlipHeaderDto
+                {
+                    Seri = ResolveMortalitySeries(),
+                    FatirsNo = ResolveRestDocumentNo(mortality.MortalityNo ?? $"MORT-{mortality.Id}"),
+                    Tarih = mortality.MortalityDate.ToString("yyyy-MM-dd"),
+                    FiyatTarihi = mortality.MortalityDate.ToString("yyyy-MM-dd"),
+                    ProjeKodu = mortality.Project?.ProjectCode,
+                    DepoKodu = lines.Select(x => x.CikisDepoKodu ?? x.DepoKodu).FirstOrDefault(x => x.HasValue),
+                    Aciklama = $"Aqua fire {mortality.MortalityNo}",
+                    EkAciklama1 = mortality.Project?.ProjectCode,
+                    EkAciklama2 = mortality.Project?.ProjectName,
+                },
+                Kalems = lines
+            };
+        }
+
+        private NetsisItemSlipLineDto BuildMortalityWarehouseIssueLine(Mortality mortality, MortalityPostLine postLine)
+        {
+            var line = postLine.Line;
+            var stockCode = line.FishBatch?.FishStock?.ErpStockCode?.Trim();
+            if (string.IsNullOrWhiteSpace(stockCode))
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.StockCodeRequired"));
+            }
+
+            var warehouse = line.ProjectCage?.Cage?.WarehouseMappings
+                .Where(x => x.IsActive && !x.IsDeleted && x.Warehouse != null)
+                .OrderByDescending(x => x.Id)
+                .Select(x => x.Warehouse)
+                .FirstOrDefault();
+
+            if (warehouse == null || warehouse.ErpWarehouseCode <= 0)
+            {
+                var cageCode = line.ProjectCage?.Cage?.CageCode ?? "-";
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.WarehouseMappingRequired", cageCode));
+            }
+
+            return new NetsisItemSlipLineDto
+            {
+                StokKodu = stockCode,
+                DepoKodu = warehouse.ErpWarehouseCode,
+                CikisDepoKodu = warehouse.ErpWarehouseCode,
+                ProjeKodu = mortality.Project?.ProjectCode,
+                Miktar = Math.Round(Math.Abs(postLine.BiomassDelta) / 1000m, 3, MidpointRounding.AwayFromZero),
+                NetFiyat = 0,
+                BrutFiyat = 0,
+                Aciklama = $"Aqua fire {mortality.MortalityNo}",
+            };
+        }
+
+        private async Task MarkErpPostFailedAsync(long mortalityId, long userId, string message)
+        {
+            try
+            {
+                var mortality = await _unitOfWork.Mortalities.GetByIdForUpdateAsync(mortalityId);
+                if (mortality == null)
+                {
+                    return;
+                }
+
+                mortality.ERPIntegrationStatus = "Failed";
+                mortality.ERPErrorMessage = message.Length > 1000 ? message[..1000] : message;
+                mortality.CountTriedBy = (mortality.CountTriedBy ?? 0) + 1;
+                mortality.UpdatedBy = userId;
+                mortality.UpdatedDate = DateTimeProvider.UtcNow;
+
+                await _unitOfWork.SaveChangesAsync();
+            }
+            catch
+            {
+                // Preserve the original posting error for the caller.
+            }
+        }
+
+        private string? ResolveRestDocumentNo(string fallbackDocumentNo)
+            => _netsisOptions.Rest.UseRestGeneratedWarehouseTransferNumbers ? null : fallbackDocumentNo;
+
+        private string? ResolveMortalitySeries()
+            => string.IsNullOrWhiteSpace(_netsisOptions.Rest.MortalityWarehouseTransferOutSeries)
+                ? "FIR"
+                : _netsisOptions.Rest.MortalityWarehouseTransferOutSeries.Trim();
+
+        private static string ResolveErpReferenceNumber(NetsisItemSlipCreateResponseDto response, string fallback)
+            => FirstNonEmpty(
+                response.Data?.ReferenceNumber,
+                response.Data?.FisNo,
+                response.Data?.BelgeNo,
+                response.Data?.KayitNo,
+                fallback) ?? fallback;
+
+        private static string? FirstNonEmpty(params string?[] values)
+            => values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+
+        private sealed record MortalityPostLine(MortalityLine Line, decimal AverageGram, decimal BiomassDelta);
 
         private void EnsureDraftStatus(DocumentStatus status, string documentName)
         {

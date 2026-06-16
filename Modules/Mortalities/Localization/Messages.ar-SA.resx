@@ -30,6 +30,12 @@
   <data name="MortalityService.InsufficientBalance" xml:space="preserve">
     <value>رصيد غير كافٍ للدفعة/القفص لسجل النفوق.</value>
   </data>
+  <data name="MortalityService.StockCodeRequired" xml:space="preserve">
+    <value>تعذر العثور على كود مخزون السمك لإخراج مستودع النفوق.</value>
+  </data>
+  <data name="MortalityService.WarehouseMappingRequired" xml:space="preserve">
+    <value>تعذر العثور على ربط مستودع ERP للقفص {0}.</value>
+  </data>
   <data name="MortalityLineService.OperationSuccessful" xml:space="preserve">
     <value>العملية ناجحة.</value>
   </data>

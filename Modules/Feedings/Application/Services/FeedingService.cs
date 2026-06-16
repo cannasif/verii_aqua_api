@@ -1,6 +1,8 @@
 using AutoMapper;
+using aqua_api.Modules.Integrations.Infrastructure.Options;
 using aqua_api.Shared.Infrastructure.Persistence.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace aqua_api.Modules.Feedings.Application.Services
 {
@@ -10,17 +12,20 @@ namespace aqua_api.Modules.Feedings.Application.Services
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
         private readonly INetsisItemSlipService _netsisItemSlipService;
+        private readonly NetsisOptions _netsisOptions;
 
         public FeedingService(
             IUnitOfWork unitOfWork,
             IMapper mapper,
             ILocalizationService localizationService,
-            INetsisItemSlipService netsisItemSlipService)
+            INetsisItemSlipService netsisItemSlipService,
+            IOptions<NetsisOptions> netsisOptions)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _localizationService = localizationService;
             _netsisItemSlipService = netsisItemSlipService;
+            _netsisOptions = netsisOptions.Value;
         }
 
         public async Task<ApiResponse<FeedingDto>> GetByIdAsync(long id)
@@ -282,9 +287,11 @@ namespace aqua_api.Modules.Feedings.Application.Services
             return new NetsisItemSlipCreateDto
             {
                 SipDepoKodKullan = 1,
+                Seri = ResolveFeedSeries(),
                 FatUst = new NetsisItemSlipHeaderDto
                 {
-                    FatirsNo = feeding.FeedingNo,
+                    Seri = ResolveFeedSeries(),
+                    FatirsNo = ResolveRestDocumentNo(feeding.FeedingNo),
                     Tarih = feeding.FeedingDate.ToString("yyyy-MM-dd"),
                     FiyatTarihi = feeding.FeedingDate.ToString("yyyy-MM-dd"),
                     ProjeKodu = feeding.Project?.ProjectCode,
@@ -296,6 +303,14 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 Kalems = lines
             };
         }
+
+        private string? ResolveRestDocumentNo(string fallbackDocumentNo)
+            => _netsisOptions.Rest.UseRestGeneratedWarehouseTransferNumbers ? null : fallbackDocumentNo;
+
+        private string? ResolveFeedSeries()
+            => string.IsNullOrWhiteSpace(_netsisOptions.Rest.FeedWarehouseTransferOutSeries)
+                ? "YEM"
+                : _netsisOptions.Rest.FeedWarehouseTransferOutSeries.Trim();
 
         private NetsisItemSlipLineDto BuildFeedingWarehouseIssueLine(Feeding feeding, FeedingLine line, FeedingDistribution distribution)
         {

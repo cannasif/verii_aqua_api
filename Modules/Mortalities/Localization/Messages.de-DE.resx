@@ -30,6 +30,12 @@
   <data name="MortalityService.InsufficientBalance" xml:space="preserve">
     <value>Unzureichender Charge/Käfig-Bestand für den Mortalitätseintrag.</value>
   </data>
+  <data name="MortalityService.StockCodeRequired" xml:space="preserve">
+    <value>Der Fisch-Artikelcode für die Mortalitäts-Lagerausgabe konnte nicht gefunden werden.</value>
+  </data>
+  <data name="MortalityService.WarehouseMappingRequired" xml:space="preserve">
+    <value>Für Käfig {0} wurde keine ERP-Lagerzuordnung gefunden.</value>
+  </data>
   <data name="MortalityLineService.OperationSuccessful" xml:space="preserve">
     <value>Operation erfolgreich.</value>
   </data>
