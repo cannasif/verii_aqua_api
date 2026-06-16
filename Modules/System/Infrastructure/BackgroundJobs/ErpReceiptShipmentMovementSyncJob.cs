@@ -77,6 +77,10 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 var sourceMovementKey = BuildSourceMovementKey(erpMovement);
                 if (string.IsNullOrWhiteSpace(erpMovement.StokKodu) || erpMovement.Tarih == default || (erpMovement.Miktar ?? 0) <= 0)
                 {
+                    await MarkMirrorFailureAsync(
+                        erpMovement,
+                        sourceMovementKey,
+                        new InvalidOperationException("ERP movement skipped because stock code, movement date or quantity is invalid."));
                     skippedCount++;
                     continue;
                 }
@@ -91,7 +95,9 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 {
                     await _unitOfWork.BeginTransactionAsync();
 
+                    var mirrorMovement = await UpsertMirrorMovementAsync(erpMovement, sourceMovementKey);
                     var outcome = await ApplyMovementAsync(erpMovement, sourceMovementKey);
+                    await EnrichMirrorMovementAsync(mirrorMovement, erpMovement, sourceMovementKey, outcome);
 
                     await _unitOfWork.SaveChangesAsync();
                     await _unitOfWork.CommitTransactionAsync();
@@ -113,6 +119,8 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 {
                     failedCount++;
                     await _unitOfWork.RollbackTransactionAsync();
+                    _db.ChangeTracker.Clear();
+                    await MarkMirrorFailureAsync(erpMovement, sourceMovementKey, ex);
                     await LogRecordFailureAsync(sourceMovementKey, ex);
                     _db.ChangeTracker.Clear();
                 }
@@ -141,6 +149,137 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             }
 
             return ApplyOutcome.Skipped;
+        }
+
+        private async Task<ErpReceiptShipmentMovement> UpsertMirrorMovementAsync(MalKabulVeSevkiyatDto movement, string sourceMovementKey)
+        {
+            var now = DateTimeProvider.Now;
+            var mirrorMovement = await _db.ErpReceiptShipmentMovements
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => x.SourceMovementKey == sourceMovementKey);
+
+            if (mirrorMovement == null)
+            {
+                mirrorMovement = new ErpReceiptShipmentMovement
+                {
+                    SourceSystem = "Netsis",
+                    SourceMovementKey = sourceMovementKey,
+                    CreatedDate = now,
+                    IsDeleted = false
+                };
+                await _db.ErpReceiptShipmentMovements.AddAsync(mirrorMovement);
+            }
+
+            mirrorMovement.SourceSystem = "Netsis";
+            mirrorMovement.MovementDate = movement.Tarih;
+            mirrorMovement.DocumentNo = OptionalShorten(movement.FisNo, 15);
+            mirrorMovement.ErpWarehouseCode = movement.KafesKodu;
+            mirrorMovement.ErpProjectCode = OptionalShorten(movement.ProjeKodu, 15);
+            mirrorMovement.ErpStockCode = Shorten(Clean(movement.StokKodu), 35);
+            mirrorMovement.ErpStockName = OptionalShorten(movement.StokAdi, 200);
+            mirrorMovement.Quantity = movement.Miktar ?? 0;
+            mirrorMovement.MovementKind = Shorten(Clean(movement.HareketTuru), 1);
+            mirrorMovement.InOutCode = Shorten(Clean(movement.GcKodu), 1);
+            mirrorMovement.StockGroupCode = OptionalShorten(movement.GrupKodu, 8);
+            mirrorMovement.OperationType = Shorten(Clean(movement.IslemTuru), 50);
+            mirrorMovement.LastSyncedAt = now;
+            mirrorMovement.ProcessingAttemptCount += 1;
+            mirrorMovement.UpdatedDate = mirrorMovement.Id > 0 ? now : null;
+            mirrorMovement.IsDeleted = false;
+
+            return mirrorMovement;
+        }
+
+        private async Task EnrichMirrorMovementAsync(
+            ErpReceiptShipmentMovement mirrorMovement,
+            MalKabulVeSevkiyatDto movement,
+            string sourceMovementKey,
+            ApplyOutcome outcome)
+        {
+            var now = DateTimeProvider.Now;
+            var project = await ResolveProjectAsync(movement);
+            var stock = await ResolveStockOrDefaultAsync(movement);
+            var cage = await ResolveCageAsync(movement.KafesKodu);
+            var projectCage = await ResolveProjectCageAsync(project, movement.KafesKodu);
+
+            mirrorMovement.ProjectId = project?.Id;
+            mirrorMovement.StockId = stock?.Id;
+            mirrorMovement.CageId = cage?.Id;
+            mirrorMovement.ProjectCageId = projectCage?.Id;
+            mirrorMovement.GoodsReceiptId = null;
+            mirrorMovement.GoodsReceiptLineId = null;
+            mirrorMovement.ShipmentId = null;
+            mirrorMovement.ShipmentLineId = null;
+            mirrorMovement.BatchMovementId = null;
+            mirrorMovement.FishBatchId = null;
+
+            var goodsReceiptLine = await _db.GoodsReceiptLines
+                .AsNoTracking()
+                .Include(x => x.GoodsReceipt)
+                .FirstOrDefaultAsync(x => !x.IsDeleted && x.ErpSourceMovementKey == sourceMovementKey);
+
+            if (goodsReceiptLine != null)
+            {
+                mirrorMovement.GoodsReceiptLineId = goodsReceiptLine.Id;
+                mirrorMovement.GoodsReceiptId = goodsReceiptLine.GoodsReceiptId;
+                mirrorMovement.FishBatchId = goodsReceiptLine.FishBatchId;
+            }
+
+            var shipmentLine = await _db.ShipmentLines
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => !x.IsDeleted && x.ErpSourceMovementKey == sourceMovementKey);
+
+            if (shipmentLine != null)
+            {
+                mirrorMovement.ShipmentLineId = shipmentLine.Id;
+                mirrorMovement.ShipmentId = shipmentLine.ShipmentId;
+                mirrorMovement.FishBatchId = shipmentLine.FishBatchId;
+            }
+
+            var lineId = mirrorMovement.GoodsReceiptLineId ?? mirrorMovement.ShipmentLineId;
+            var refTable = mirrorMovement.GoodsReceiptLineId.HasValue ? GoodsReceiptRefTable : ShipmentRefTable;
+            if (lineId.HasValue)
+            {
+                mirrorMovement.BatchMovementId = await _db.BatchMovements
+                    .AsNoTracking()
+                    .Where(x => !x.IsDeleted && x.ReferenceTable == refTable && x.ReferenceId == lineId.Value)
+                    .OrderByDescending(x => x.Id)
+                    .Select(x => (long?)x.Id)
+                    .FirstOrDefaultAsync();
+            }
+
+            mirrorMovement.IsMatched =
+                mirrorMovement.ProjectId.HasValue ||
+                mirrorMovement.CageId.HasValue ||
+                mirrorMovement.StockId.HasValue ||
+                mirrorMovement.GoodsReceiptLineId.HasValue ||
+                mirrorMovement.ShipmentLineId.HasValue;
+            mirrorMovement.IsProcessed = mirrorMovement.GoodsReceiptLineId.HasValue || mirrorMovement.ShipmentLineId.HasValue;
+            mirrorMovement.MatchedAt = mirrorMovement.IsMatched ? now : null;
+            mirrorMovement.ProcessedAt = mirrorMovement.IsProcessed ? now : null;
+            mirrorMovement.MatchError = mirrorMovement.IsMatched ? null : "ERP movement could not be matched to Aqua project, cage or stock records.";
+            mirrorMovement.ProcessError = outcome == ApplyOutcome.Skipped && !mirrorMovement.IsProcessed
+                ? "ERP movement skipped because operation type is not supported."
+                : null;
+            mirrorMovement.UpdatedDate = now;
+        }
+
+        private async Task MarkMirrorFailureAsync(MalKabulVeSevkiyatDto movement, string sourceMovementKey, Exception ex)
+        {
+            try
+            {
+                var mirrorMovement = await UpsertMirrorMovementAsync(movement, sourceMovementKey);
+                mirrorMovement.IsProcessed = false;
+                mirrorMovement.ProcessedAt = null;
+                mirrorMovement.ProcessError = Shorten(ex.Message, 2000);
+                mirrorMovement.MatchError ??= "ERP movement could not be fully matched or processed.";
+                mirrorMovement.UpdatedDate = DateTimeProvider.Now;
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception mirrorEx)
+            {
+                _logger.LogWarning(mirrorEx, "ERP receipt/shipment movement mirror could not be updated. SourceMovementKey: {SourceMovementKey}", sourceMovementKey);
+            }
         }
 
         private async Task<ApplyOutcome> ApplyGoodsReceiptMovementAsync(MalKabulVeSevkiyatDto movement, string sourceMovementKey)
@@ -506,6 +645,14 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 ?? throw new InvalidOperationException($"ERP stock could not be matched. StockCode={stockCode}");
         }
 
+        private async Task<StockEntity?> ResolveStockOrDefaultAsync(MalKabulVeSevkiyatDto movement)
+        {
+            var stockCode = Clean(movement.StokKodu);
+            return string.IsNullOrWhiteSpace(stockCode)
+                ? null
+                : await _db.Stocks.IgnoreQueryFilters().FirstOrDefaultAsync(x => !x.IsDeleted && x.ErpStockCode == stockCode);
+        }
+
         private async Task<ProjectCage?> ResolveProjectCageAsync(Project? project, short? erpWarehouseCode)
         {
             if (project == null)
@@ -695,6 +842,12 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 
         private static string Shorten(string value, int maxLength)
             => value.Length <= maxLength ? value : value[..maxLength];
+
+        private static string? OptionalShorten(string? value, int maxLength)
+        {
+            var cleanValue = Clean(value);
+            return string.IsNullOrWhiteSpace(cleanValue) ? null : Shorten(cleanValue, maxLength);
+        }
 
         private static string Clean(string? value)
             => string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();

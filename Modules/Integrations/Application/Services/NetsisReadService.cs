@@ -384,6 +384,75 @@ namespace aqua_api.Modules.Integrations.Application.Services
             }
         }
 
+        public async Task<ApiResponse<List<ErpReceiptShipmentMovementDto>>> GetReceiptShipmentMovementMirrorAsync()
+        {
+            try
+            {
+                var result = await _dbContext.ErpReceiptShipmentMovements
+                    .AsNoTracking()
+                    .Include(x => x.Project)
+                    .Include(x => x.Cage)
+                    .Include(x => x.Stock)
+                    .Include(x => x.FishBatch)
+                    .OrderByDescending(x => x.MovementDate)
+                    .ThenByDescending(x => x.Id)
+                    .Select(x => new ErpReceiptShipmentMovementDto
+                    {
+                        Id = x.Id,
+                        SourceSystem = x.SourceSystem,
+                        SourceMovementKey = x.SourceMovementKey,
+                        MovementDate = x.MovementDate,
+                        DocumentNo = x.DocumentNo,
+                        ErpWarehouseCode = x.ErpWarehouseCode,
+                        ErpProjectCode = x.ErpProjectCode,
+                        ErpStockCode = x.ErpStockCode,
+                        ErpStockName = x.ErpStockName,
+                        Quantity = x.Quantity,
+                        MovementKind = x.MovementKind,
+                        InOutCode = x.InOutCode,
+                        StockGroupCode = x.StockGroupCode,
+                        OperationType = x.OperationType,
+                        ProjectId = x.ProjectId,
+                        ProjectCode = x.Project != null ? x.Project.ProjectCode : null,
+                        ProjectName = x.Project != null ? x.Project.ProjectName : null,
+                        CageId = x.CageId,
+                        CageCode = x.Cage != null ? x.Cage.CageCode : null,
+                        CageName = x.Cage != null ? x.Cage.CageName : null,
+                        ProjectCageId = x.ProjectCageId,
+                        StockId = x.StockId,
+                        StockCode = x.Stock != null ? x.Stock.ErpStockCode : null,
+                        StockName = x.Stock != null ? x.Stock.StockName : null,
+                        FishBatchId = x.FishBatchId,
+                        BatchCode = x.FishBatch != null ? x.FishBatch.BatchCode : null,
+                        GoodsReceiptId = x.GoodsReceiptId,
+                        GoodsReceiptLineId = x.GoodsReceiptLineId,
+                        ShipmentId = x.ShipmentId,
+                        ShipmentLineId = x.ShipmentLineId,
+                        BatchMovementId = x.BatchMovementId,
+                        IsMatched = x.IsMatched,
+                        IsProcessed = x.IsProcessed,
+                        ProcessingAttemptCount = x.ProcessingAttemptCount,
+                        LastSyncedAt = x.LastSyncedAt,
+                        MatchedAt = x.MatchedAt,
+                        ProcessedAt = x.ProcessedAt,
+                        MatchError = x.MatchError,
+                        ProcessError = x.ProcessError
+                    })
+                    .ToListAsync();
+
+                return ApiResponse<List<ErpReceiptShipmentMovementDto>>.SuccessResult(
+                    result,
+                    _localizationService.GetLocalizedString("ErpService.ReceiptShipmentMovementMirrorRetrieved"));
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<List<ErpReceiptShipmentMovementDto>>.ErrorResult(
+                    _localizationService.GetLocalizedString("ErpService.InternalServerError"),
+                    _localizationService.GetLocalizedString("ErpService.ReceiptShipmentMovementMirrorRetrievalError", ex.Message),
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
         public async Task<ApiResponse<object>> HealthCheckAsync()
         {
             try

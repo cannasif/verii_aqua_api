@@ -178,4 +178,10 @@
   <data name="ErpService.MalKabulVeSevkiyatRecordsRetrievalError" xml:space="preserve">
     <value>Beim Abrufen der Wareneingangs- und Versandbewegungen ist ein Fehler aufgetreten: {0}</value>
   </data>
+  <data name="ErpService.ReceiptShipmentMovementMirrorRetrieved" xml:space="preserve">
+    <value>ERP-Mirror-Datensätze für Wareneingang und Versand wurden erfolgreich abgerufen.</value>
+  </data>
+  <data name="ErpService.ReceiptShipmentMovementMirrorRetrievalError" xml:space="preserve">
+    <value>Beim Abrufen der ERP-Mirror-Datensätze für Wareneingang und Versand ist ein Fehler aufgetreten: {0}</value>
+  </data>
   </root>

@@ -178,4 +178,10 @@
   <data name="ErpService.MalKabulVeSevkiyatRecordsRetrievalError" xml:space="preserve">
     <value>Se produjo un error al recuperar los movimientos de recepción de mercancías y envíos: {0}</value>
   </data>
+  <data name="ErpService.ReceiptShipmentMovementMirrorRetrieved" xml:space="preserve">
+    <value>Registros mirror ERP de recepción y envío obtenidos correctamente.</value>
+  </data>
+  <data name="ErpService.ReceiptShipmentMovementMirrorRetrievalError" xml:space="preserve">
+    <value>Se produjo un error al obtener los registros mirror ERP de recepción y envío: {0}</value>
+  </data>
   </root>

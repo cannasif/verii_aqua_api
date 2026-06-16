@@ -18,6 +18,7 @@ namespace aqua_api.Modules.Integrations.Application.Services
         Task<ApiResponse<List<StokGroupDto>>> GetStockGroupsAsync(string? groupCode);
         Task<ApiResponse<List<ProjeDto>>> GetProjectsAsync();
         Task<ApiResponse<List<MalKabulVeSevkiyatDto>>> GetGoodsReceiptAndShipmentMovementsAsync(DateTime? startDate = null);
+        Task<ApiResponse<List<ErpReceiptShipmentMovementDto>>> GetReceiptShipmentMovementMirrorAsync();
         Task<ApiResponse<object>> HealthCheckAsync();
     }
 }

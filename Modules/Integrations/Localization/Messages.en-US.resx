@@ -190,4 +190,10 @@
   <data name="ErpService.MalKabulVeSevkiyatRecordsRetrievalError" xml:space="preserve">
     <value>An error occurred while retrieving goods receipt and shipment movements: {0}</value>
   </data>
+  <data name="ErpService.ReceiptShipmentMovementMirrorRetrieved" xml:space="preserve">
+    <value>ERP goods receipt and shipment mirror records retrieved successfully.</value>
+  </data>
+  <data name="ErpService.ReceiptShipmentMovementMirrorRetrievalError" xml:space="preserve">
+    <value>An error occurred while retrieving ERP goods receipt and shipment mirror records: {0}</value>
+  </data>
 </root>

@@ -197,6 +197,38 @@ namespace aqua_api.Modules.Integrations.Api
             return StatusCode(paged.StatusCode, paged);
         }
 
+        [HttpGet("getReceiptShipmentMovementMirror/paged")]
+        public async Task<ActionResult<ApiResponse<PagedResponse<ErpReceiptShipmentMovementDto>>>> GetReceiptShipmentMovementMirrorPaged(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? search = null)
+        {
+            var result = await _netsisReadService.GetReceiptShipmentMovementMirrorAsync();
+            var paged = ToPagedResponse(result, pageNumber, pageSize, search, x => new[]
+            {
+                x.DocumentNo,
+                x.ErpWarehouseCode?.ToString(),
+                x.ErpProjectCode,
+                x.ErpStockCode,
+                x.ErpStockName,
+                x.MovementKind,
+                x.InOutCode,
+                x.StockGroupCode,
+                x.OperationType,
+                x.ProjectCode,
+                x.ProjectName,
+                x.CageCode,
+                x.CageName,
+                x.StockCode,
+                x.StockName,
+                x.BatchCode,
+                x.MatchError,
+                x.ProcessError,
+            });
+
+            return StatusCode(paged.StatusCode, paged);
+        }
+
         [HttpGet("health-check")]
         [AllowAnonymous]
         public IActionResult HealthCheckPublic()
