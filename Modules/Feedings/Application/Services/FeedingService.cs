@@ -288,6 +288,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                     Tarih = feeding.FeedingDate.ToString("yyyy-MM-dd"),
                     FiyatTarihi = feeding.FeedingDate.ToString("yyyy-MM-dd"),
                     ProjeKodu = feeding.Project?.ProjectCode,
+                    DepoKodu = lines.Select(x => x.CikisDepoKodu ?? x.DepoKodu).FirstOrDefault(x => x.HasValue),
                     Aciklama = $"Aqua yemleme {feeding.FeedingNo}",
                     EkAciklama1 = feeding.Project?.ProjectCode,
                     EkAciklama2 = feeding.Project?.ProjectName,
@@ -329,6 +330,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 Miktar = Math.Round(distribution.FeedGram / 1000m, 3, MidpointRounding.AwayFromZero),
                 NetFiyat = 0,
                 BrutFiyat = 0,
+                CikisDepoKodu = warehouse.ErpWarehouseCode,
                 Aciklama = $"Aqua yemleme {feeding.FeedingNo}",
             };
         }

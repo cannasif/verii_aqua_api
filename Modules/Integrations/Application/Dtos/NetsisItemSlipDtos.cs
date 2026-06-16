@@ -80,6 +80,9 @@ public sealed class NetsisItemSlipHeaderDto
     [JsonPropertyName("SIPDEPOKODKULLAN")]
     public int? SipDepoKodKullan { get; set; }
 
+    [JsonPropertyName("DEPO_KODU")]
+    public int? DepoKodu { get; set; }
+
     [JsonPropertyName("KDV_DAHILMI")]
     public bool? KdvDahilMi { get; set; }
 
@@ -209,6 +212,12 @@ public sealed class NetsisItemSlipLineDto
 
     [JsonPropertyName("DEPO_KODU")]
     public int? DepoKodu { get; set; }
+
+    [JsonPropertyName("GirisDepoKodu")]
+    public int? GirisDepoKodu { get; set; }
+
+    [JsonPropertyName("CikisDepoKodu")]
+    public int? CikisDepoKodu { get; set; }
 
     [JsonPropertyName("ReferansKodu")]
     public string? ReferansKodu { get; set; }
