@@ -3991,7 +3991,7 @@ namespace aqua_api.Migrations
                     b.HasIndex("ProjectId", "MortalityDate")
                         .IsUnique()
                         .HasDatabaseName("UX_RII_Mortality_ProjectDate_Active")
-                        .HasFilter("[IsDeleted] = 0 AND [Status] = 0");
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("RII_Mortality", null, t =>
                         {

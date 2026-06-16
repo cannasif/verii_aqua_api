@@ -24,7 +24,7 @@ namespace aqua_api.Modules.Mortalities.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(x => new { x.ProjectId, x.MortalityDate })
                 .IsUnique()
-                .HasFilter("[IsDeleted] = 0 AND [Status] = 0")
+                .HasFilter("[IsDeleted] = 0")
                 .HasDatabaseName("UX_RII_Mortality_ProjectDate_Active");
 
             builder.HasIndex(x => x.MortalityNo)
