@@ -102,7 +102,9 @@ public sealed class NetsisItemSlipService : INetsisItemSlipService
     private static void ValidateRequest(NetsisItemSlipCreateDto request, NetsisItemSlipDocumentType documentType)
     {
         request.FatUst.Tip = documentType;
-        request.FatUst.Tipi ??= NetsisItemSlipInvoiceType.DomesticClosed;
+        request.FatUst.Tipi ??= documentType is NetsisItemSlipDocumentType.WarehouseTransferIn or NetsisItemSlipDocumentType.WarehouseTransferOut
+            ? NetsisItemSlipInvoiceType.Miscellaneous
+            : NetsisItemSlipInvoiceType.DomesticClosed;
 
         if (request.Kalems.Count == 0)
         {

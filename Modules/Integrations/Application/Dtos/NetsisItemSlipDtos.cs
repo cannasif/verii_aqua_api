@@ -75,7 +75,7 @@ public sealed class NetsisItemSlipHeaderDto
     public NetsisItemSlipDocumentType? Tip { get; set; }
 
     [JsonPropertyName("TIPI")]
-    public NetsisItemSlipInvoiceType? Tipi { get; set; } = NetsisItemSlipInvoiceType.DomesticClosed;
+    public NetsisItemSlipInvoiceType? Tipi { get; set; }
 
     [JsonPropertyName("SIPDEPOKODKULLAN")]
     public int? SipDepoKodKullan { get; set; }
