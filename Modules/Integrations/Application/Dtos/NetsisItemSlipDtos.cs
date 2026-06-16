@@ -27,6 +27,24 @@ public enum NetsisItemSlipInvoiceType
     ImportExport = 6
 }
 
+public enum NetsisWarehouseMovementType
+{
+    Opening = 0,
+    Warehouses = 1,
+    Production = 2,
+    Miscellaneous = 3,
+    Consignment = 4
+}
+
+public enum NetsisWarehouseIssuePlace
+{
+    CostCenter = 0,
+    StockCode = 1,
+    MainProductGroup = 2,
+    ProductGroup = 3,
+    Free = 4
+}
+
 public sealed class NetsisItemSlipCreateDto
 {
     [JsonPropertyName("SIPDEPOKODKULLAN")]
@@ -76,6 +94,12 @@ public sealed class NetsisItemSlipHeaderDto
 
     [JsonPropertyName("TIPI")]
     public NetsisItemSlipInvoiceType? Tipi { get; set; }
+
+    [JsonPropertyName("AMBHARTUR")]
+    public NetsisWarehouseMovementType? WarehouseMovementType { get; set; }
+
+    [JsonPropertyName("CikisYeri")]
+    public NetsisWarehouseIssuePlace? IssuePlace { get; set; }
 
     [JsonPropertyName("SIPDEPOKODKULLAN")]
     public int? SipDepoKodKullan { get; set; }

@@ -106,6 +106,12 @@ public sealed class NetsisItemSlipService : INetsisItemSlipService
             ? NetsisItemSlipInvoiceType.Miscellaneous
             : NetsisItemSlipInvoiceType.DomesticClosed;
 
+        if (documentType is NetsisItemSlipDocumentType.WarehouseTransferIn or NetsisItemSlipDocumentType.WarehouseTransferOut)
+        {
+            request.FatUst.WarehouseMovementType ??= NetsisWarehouseMovementType.Production;
+            request.FatUst.IssuePlace ??= NetsisWarehouseIssuePlace.CostCenter;
+        }
+
         if (request.Kalems.Count == 0)
         {
             throw new NetsisIntegrationValidationException("Netsis ambar fişi için en az bir kalem olmalıdır.");
