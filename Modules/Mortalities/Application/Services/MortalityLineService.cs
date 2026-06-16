@@ -196,15 +196,32 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     await _unitOfWork.SaveChangesAsync();
                 }
 
-                var entity = new MortalityLine
-                {
-                    MortalityId = mortality.Id,
-                    FishBatchId = dto.FishBatchId,
-                    ProjectCageId = dto.ProjectCageId,
-                    DeadCount = dto.DeadCount,
-                };
+                var entity = await _unitOfWork.MortalityLines
+                    .Query()
+                    .FirstOrDefaultAsync(x =>
+                        !x.IsDeleted &&
+                        x.MortalityId == mortality.Id &&
+                        x.FishBatchId == dto.FishBatchId &&
+                        x.ProjectCageId == dto.ProjectCageId);
 
-                await _unitOfWork.MortalityLines.AddAsync(entity);
+                if (entity == null)
+                {
+                    entity = new MortalityLine
+                    {
+                        MortalityId = mortality.Id,
+                        FishBatchId = dto.FishBatchId,
+                        ProjectCageId = dto.ProjectCageId,
+                        DeadCount = dto.DeadCount,
+                    };
+
+                    await _unitOfWork.MortalityLines.AddAsync(entity);
+                }
+                else
+                {
+                    entity.DeadCount = dto.DeadCount;
+                    await _unitOfWork.MortalityLines.UpdateAsync(entity);
+                }
+
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
