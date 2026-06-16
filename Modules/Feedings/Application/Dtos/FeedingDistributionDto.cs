@@ -15,6 +15,11 @@ namespace aqua_api.Modules.Feedings.Application.Dtos
         public string? CageCode { get; set; }
         public string? CageName { get; set; }
         public decimal FeedGram { get; set; }
+        public bool IsERPIntegrated { get; set; }
+        public string? ERPReferenceNumber { get; set; }
+        public DateTime? ERPIntegrationDate { get; set; }
+        public string? ERPIntegrationStatus { get; set; }
+        public string? ERPErrorMessage { get; set; }
     }
 
     public class CreateFeedingDistributionDto

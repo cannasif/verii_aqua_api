@@ -10,6 +10,19 @@ namespace aqua_api.Modules.Mortalities.Application.Services
         private readonly IMortalityService _mortalityService;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
+        private static readonly IReadOnlyDictionary<string, string> ColumnMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["batchCode"] = "FishBatch.BatchCode",
+            ["projectCode"] = "ProjectCage.Project.ProjectCode",
+            ["projectName"] = "ProjectCage.Project.ProjectName",
+            ["cageCode"] = "ProjectCage.Cage.CageCode",
+            ["cageName"] = "ProjectCage.Cage.CageName",
+            ["isERPIntegrated"] = "Mortality.IsERPIntegrated",
+            ["erpReferenceNumber"] = "Mortality.ERPReferenceNumber",
+            ["erpIntegrationDate"] = "Mortality.ERPIntegrationDate",
+            ["erpIntegrationStatus"] = "Mortality.ERPIntegrationStatus",
+            ["erpErrorMessage"] = "Mortality.ERPErrorMessage"
+        };
 
         public MortalityLineService(
             IUnitOfWork unitOfWork,
@@ -29,6 +42,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             {
                 var entity = await _unitOfWork.MortalityLines
                     .Query()
+                    .Include(x => x.Mortality)
                     .Include(x => x.FishBatch)
                     .Include(x => x.ProjectCage)
                         .ThenInclude(x => x!.Project)
@@ -65,16 +79,17 @@ namespace aqua_api.Modules.Mortalities.Application.Services
 
                 var query = _unitOfWork.MortalityLines
                     .Query()
+                    .Include(x => x.Mortality)
                     .Include(x => x.FishBatch)
                     .Include(x => x.ProjectCage)
                         .ThenInclude(x => x!.Project)
                     .Include(x => x.ProjectCage)
                         .ThenInclude(x => x!.Cage)
                     .Where(x => !x.IsDeleted)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplyFilters(request.Filters, request.FilterLogic, ColumnMapping);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(MortalityLine.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, ColumnMapping);
 
                 var totalCount = await query.CountAsync();
 
@@ -113,6 +128,11 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             dto.ProjectName = entity.ProjectCage?.Project?.ProjectName;
             dto.CageCode = entity.ProjectCage?.Cage?.CageCode;
             dto.CageName = entity.ProjectCage?.Cage?.CageName;
+            dto.IsERPIntegrated = entity.Mortality?.IsERPIntegrated ?? false;
+            dto.ERPReferenceNumber = entity.Mortality?.ERPReferenceNumber;
+            dto.ERPIntegrationDate = entity.Mortality?.ERPIntegrationDate;
+            dto.ERPIntegrationStatus = entity.Mortality?.ERPIntegrationStatus;
+            dto.ERPErrorMessage = entity.Mortality?.ERPErrorMessage;
             return dto;
         }
 

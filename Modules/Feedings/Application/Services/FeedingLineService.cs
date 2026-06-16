@@ -15,7 +15,12 @@ namespace aqua_api.Modules.Feedings.Application.Services
         {
             ["stockCode"] = "Stock.ErpStockCode",
             ["stockName"] = "Stock.StockName",
-            ["feedingSlot"] = "Feeding.FeedingSlot"
+            ["feedingSlot"] = "Feeding.FeedingSlot",
+            ["isERPIntegrated"] = "Feeding.IsERPIntegrated",
+            ["erpReferenceNumber"] = "Feeding.ERPReferenceNumber",
+            ["erpIntegrationDate"] = "Feeding.ERPIntegrationDate",
+            ["erpIntegrationStatus"] = "Feeding.ERPIntegrationStatus",
+            ["erpErrorMessage"] = "Feeding.ERPErrorMessage"
         };
 
         public FeedingLineService(
@@ -478,6 +483,11 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 .Select(x => x.ProjectCage?.Cage?.CageCode));
             dto.CageName = JoinDistinct(entity.Distributions
                 .Select(x => x.ProjectCage?.Cage?.CageName));
+            dto.IsERPIntegrated = entity.Feeding?.IsERPIntegrated ?? false;
+            dto.ERPReferenceNumber = entity.Feeding?.ERPReferenceNumber;
+            dto.ERPIntegrationDate = entity.Feeding?.ERPIntegrationDate;
+            dto.ERPIntegrationStatus = entity.Feeding?.ERPIntegrationStatus;
+            dto.ERPErrorMessage = entity.Feeding?.ERPErrorMessage;
             return dto;
         }
 

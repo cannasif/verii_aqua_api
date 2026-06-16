@@ -16,7 +16,12 @@ namespace aqua_api.Modules.Feedings.Application.Services
             ["projectCode"] = "ProjectCage.Project.ProjectCode",
             ["projectName"] = "ProjectCage.Project.ProjectName",
             ["cageCode"] = "ProjectCage.Cage.CageCode",
-            ["cageName"] = "ProjectCage.Cage.CageName"
+            ["cageName"] = "ProjectCage.Cage.CageName",
+            ["isERPIntegrated"] = "FeedingLine.Feeding.IsERPIntegrated",
+            ["erpReferenceNumber"] = "FeedingLine.Feeding.ERPReferenceNumber",
+            ["erpIntegrationDate"] = "FeedingLine.Feeding.ERPIntegrationDate",
+            ["erpIntegrationStatus"] = "FeedingLine.Feeding.ERPIntegrationStatus",
+            ["erpErrorMessage"] = "FeedingLine.Feeding.ERPErrorMessage"
         };
 
         public FeedingDistributionService(IUnitOfWork unitOfWork, IMapper mapper, ILocalizationService localizationService)
@@ -32,6 +37,8 @@ namespace aqua_api.Modules.Feedings.Application.Services
             {
                 var entity = await _unitOfWork.FeedingDistributions
                     .Query()
+                    .Include(x => x.FeedingLine)
+                        .ThenInclude(x => x!.Feeding)
                     .Include(x => x.FishBatch)
                     .Include(x => x.ProjectCage)
                         .ThenInclude(x => x!.Project)
@@ -78,6 +85,8 @@ namespace aqua_api.Modules.Feedings.Application.Services
 
                 var entities = await query
                     .ApplyPagination(request.PageNumber, request.PageSize)
+                    .Include(x => x.FeedingLine)
+                        .ThenInclude(x => x!.Feeding)
                     .Include(x => x.FishBatch)
                     .Include(x => x.ProjectCage)
                         .ThenInclude(x => x!.Project)
@@ -234,6 +243,11 @@ namespace aqua_api.Modules.Feedings.Application.Services
             dto.ProjectName = entity.ProjectCage?.Project?.ProjectName;
             dto.CageCode = entity.ProjectCage?.Cage?.CageCode;
             dto.CageName = entity.ProjectCage?.Cage?.CageName;
+            dto.IsERPIntegrated = entity.FeedingLine?.Feeding?.IsERPIntegrated ?? false;
+            dto.ERPReferenceNumber = entity.FeedingLine?.Feeding?.ERPReferenceNumber;
+            dto.ERPIntegrationDate = entity.FeedingLine?.Feeding?.ERPIntegrationDate;
+            dto.ERPIntegrationStatus = entity.FeedingLine?.Feeding?.ERPIntegrationStatus;
+            dto.ERPErrorMessage = entity.FeedingLine?.Feeding?.ERPErrorMessage;
             return dto;
         }
 

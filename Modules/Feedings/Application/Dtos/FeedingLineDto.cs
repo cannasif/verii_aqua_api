@@ -16,6 +16,11 @@ namespace aqua_api.Modules.Feedings.Application.Dtos
         public decimal QtyUnit { get; set; }
         public decimal GramPerUnit { get; set; }
         public decimal TotalGram { get; set; }
+        public bool IsERPIntegrated { get; set; }
+        public string? ERPReferenceNumber { get; set; }
+        public DateTime? ERPIntegrationDate { get; set; }
+        public string? ERPIntegrationStatus { get; set; }
+        public string? ERPErrorMessage { get; set; }
         public StockEntity? Stock { get; set; }
     }
 
