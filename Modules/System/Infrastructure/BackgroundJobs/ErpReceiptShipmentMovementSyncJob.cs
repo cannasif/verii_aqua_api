@@ -206,6 +206,8 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             mirrorMovement.StockId = stock?.Id;
             mirrorMovement.CageId = cage?.Id;
             mirrorMovement.ProjectCageId = projectCage?.Id;
+            mirrorMovement.StockGroupCode = OptionalShorten(movement.GrupKodu, 8)
+                ?? OptionalShorten(stock?.GrupKodu, 8);
             mirrorMovement.GoodsReceiptId = null;
             mirrorMovement.GoodsReceiptLineId = null;
             mirrorMovement.ShipmentId = null;
@@ -273,7 +275,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 var mirrorMovement = await UpsertMirrorMovementAsync(movement, sourceMovementKey);
                 mirrorMovement.IsProcessed = false;
                 mirrorMovement.ProcessedAt = null;
-                mirrorMovement.ProcessError = Shorten(ex.Message, 2000);
+                mirrorMovement.ProcessError = Shorten(BuildDiagnosticMessage(ex), 2000);
                 mirrorMovement.MatchError ??= _localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.MatchOrProcessFailed");
                 mirrorMovement.UpdatedDate = DateTimeProvider.Now;
                 await _db.SaveChangesAsync();
@@ -288,10 +290,11 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
         {
             var stock = await ResolveStockAsync(movement);
             var warehouse = await ResolveWarehouseAsync(movement.KafesKodu);
-            var project = IsFeedReceipt(movement)
+            var isFeedReceipt = IsFeedReceipt(movement, stock);
+            var project = isFeedReceipt
                 ? await ResolveProjectAsync(movement)
                 : await ResolveOrCreateProjectAsync(movement);
-            var projectCage = IsFeedReceipt(movement)
+            var projectCage = isFeedReceipt
                 ? await ResolveProjectCageAsync(project, movement.KafesKodu)
                 : await ResolveOrCreateProjectCageAsync(project, movement.KafesKodu);
             var receiptNo = BuildDocumentNo("ERP-GR", movement);
@@ -324,7 +327,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 receipt.UpdatedDate = now;
             }
 
-            return IsFeedReceipt(movement)
+            return isFeedReceipt
                 ? await UpsertFeedReceiptLineAsync(receipt, stock, movement, sourceMovementKey)
                 : await UpsertFishReceiptLineAsync(receipt, stock, project, projectCage, warehouse, movement, sourceMovementKey);
         }
@@ -1009,7 +1012,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                     FailedAt = DateTimeProvider.Now,
                     Reason = $"SourceMovementKey={key}",
                     ExceptionType = ex.GetType().FullName,
-                    ExceptionMessage = ex.Message,
+                    ExceptionMessage = BuildDiagnosticMessage(ex),
                     StackTrace = ex.StackTrace?.Length > 8000 ? ex.StackTrace[..8000] : ex.StackTrace,
                     Queue = "default",
                     RetryCount = 0,
@@ -1030,8 +1033,9 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
         private static bool IsShipment(MalKabulVeSevkiyatDto movement)
             => string.Equals(Clean(movement.GcKodu), "C", StringComparison.OrdinalIgnoreCase);
 
-        private static bool IsFeedReceipt(MalKabulVeSevkiyatDto movement)
+        private static bool IsFeedReceipt(MalKabulVeSevkiyatDto movement, StockEntity? stock = null)
             => string.Equals(Clean(movement.GrupKodu), "YEM", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(Clean(stock?.GrupKodu), "YEM", StringComparison.OrdinalIgnoreCase)
                || Clean(movement.IslemTuru).Contains("Yem", StringComparison.OrdinalIgnoreCase);
 
         private static int ResolveCount(MalKabulVeSevkiyatDto movement)
@@ -1074,6 +1078,28 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 
         private static string Shorten(string value, int maxLength)
             => value.Length <= maxLength ? value : value[..maxLength];
+
+        private static string BuildDiagnosticMessage(Exception ex)
+        {
+            var messages = new List<string>();
+            for (var current = ex; current != null; current = current.InnerException)
+            {
+                if (!string.IsNullOrWhiteSpace(current.Message) &&
+                    !messages.Contains(current.Message, StringComparer.OrdinalIgnoreCase))
+                {
+                    messages.Add(current.Message);
+                }
+            }
+
+            var baseMessage = ex.GetBaseException().Message;
+            if (!string.IsNullOrWhiteSpace(baseMessage) &&
+                !messages.Contains(baseMessage, StringComparer.OrdinalIgnoreCase))
+            {
+                messages.Add(baseMessage);
+            }
+
+            return string.Join(" | ", messages);
+        }
 
         private static string? OptionalShorten(string? value, int maxLength)
         {
