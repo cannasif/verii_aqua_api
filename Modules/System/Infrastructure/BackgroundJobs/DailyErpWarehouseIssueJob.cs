@@ -23,6 +23,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
         }
 
         [DisableConcurrentExecution(timeoutInSeconds: 3600)]
+        [AutomaticRetry(Attempts = 0, LogEvents = true, OnAttemptsExceeded = AttemptsExceededAction.Fail)]
         public async Task ExecuteAsync()
         {
             var operationDate = DateTimeProvider.UtcNow.Date;

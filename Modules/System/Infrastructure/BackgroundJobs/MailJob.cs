@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 {
     [DisableConcurrentExecution(timeoutInSeconds: 60)]
-    [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 30, 60, 120 })]
+    [AutomaticRetry(Attempts = 0, LogEvents = true, OnAttemptsExceeded = AttemptsExceededAction.Fail)]
     public class MailJob : IMailJob
     {
         private readonly IMailService _mailService;

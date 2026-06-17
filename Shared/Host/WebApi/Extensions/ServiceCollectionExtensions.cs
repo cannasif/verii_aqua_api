@@ -192,8 +192,7 @@ public static class ServiceCollectionExtensions
 
             GlobalJobFilters.Filters.Add(new AutomaticRetryAttribute
             {
-                Attempts = 3,
-                DelaysInSeconds = new[] { 60, 300, 900 },
+                Attempts = 0,
                 LogEvents = true,
                 OnAttemptsExceeded = AttemptsExceededAction.Fail
             });

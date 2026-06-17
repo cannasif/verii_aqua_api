@@ -186,14 +186,7 @@ public static class WebApplicationExtensions
                     "erp-receipt-shipment-movement-sync-job",
                     job => job.ExecuteAsync(),
                     "25,55 * * * *");
-                RecurringJob.AddOrUpdate<IDailyErpWarehouseIssueJob>(
-                    "daily-erp-warehouse-issue-job",
-                    job => job.ExecuteAsync(),
-                    "50 23 * * *",
-                    new RecurringJobOptions
-                    {
-                        TimeZone = ResolveTurkeyTimeZone()
-                    });
+                RecurringJob.RemoveIfExists("daily-erp-warehouse-issue-job");
             }
             else
             {

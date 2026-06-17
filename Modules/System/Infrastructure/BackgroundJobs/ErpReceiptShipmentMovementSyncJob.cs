@@ -14,7 +14,7 @@ using WarehouseEntity = aqua_api.Modules.Warehouse.Domain.Entities.Warehouse;
 namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 {
     [DisableConcurrentExecution(timeoutInSeconds: 3600)]
-    [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 60, 120, 300 })]
+    [AutomaticRetry(Attempts = 0, LogEvents = true, OnAttemptsExceeded = AttemptsExceededAction.Fail)]
     public class ErpReceiptShipmentMovementSyncJob : IErpReceiptShipmentMovementSyncJob
     {
         private const string RecurringJobId = "erp-receipt-shipment-movement-sync-job";
