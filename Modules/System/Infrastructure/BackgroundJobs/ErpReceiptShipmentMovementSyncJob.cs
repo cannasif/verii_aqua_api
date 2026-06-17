@@ -91,6 +91,12 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                     continue;
                 }
 
+                if (await IsSourceMovementAlreadyProcessedAsync(sourceMovementKey))
+                {
+                    skippedCount++;
+                    continue;
+                }
+
                 try
                 {
                     await _unitOfWork.BeginTransactionAsync();
@@ -134,6 +140,14 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 skippedCount,
                 duplicatePayloadCount);
             _logger.LogInformation(_localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.Completed"));
+        }
+
+        private async Task<bool> IsSourceMovementAlreadyProcessedAsync(string sourceMovementKey)
+        {
+            return await _db.ErpReceiptShipmentMovements
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .AnyAsync(x => !x.IsDeleted && x.SourceMovementKey == sourceMovementKey && x.IsProcessed);
         }
 
         private async Task<ApplyOutcome> ApplyMovementAsync(MalKabulVeSevkiyatDto movement, string sourceMovementKey)
