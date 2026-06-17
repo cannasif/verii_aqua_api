@@ -51,4 +51,10 @@
   <data name="MortalityService.MortalityNotFound" xml:space="preserve">
     <value>لم يتم العثور على سجل النفوق.</value>
   </data>
+  <data name="MortalityService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>لا يمكن تعديل أو حذف سجل نفوق تم ترحيله إلى Netsis.</value>
+  </data>
+  <data name="MortalityLineService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>لا يمكن تعديل أو حذف بند نفوق تم ترحيله إلى Netsis.</value>
+  </data>
 </root>

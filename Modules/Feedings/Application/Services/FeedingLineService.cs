@@ -127,6 +127,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 }
 
                 dto.FeedingId = await EnsureFeedingIdAsync(dto);
+                await EnsureFeedingCanBeChangedAsync(dto.FeedingId);
 
                 if (dto.GramPerUnit <= 0)
                 {
@@ -257,6 +258,8 @@ namespace aqua_api.Modules.Feedings.Application.Services
                     }
                 }
 
+                EnsureFeedingCanBeChanged(feeding);
+
                 var gramPerUnit = dto.GramPerUnit > 0
                     ? dto.GramPerUnit
                     : dto.TotalGram > 0
@@ -363,8 +366,10 @@ namespace aqua_api.Modules.Feedings.Application.Services
         {
             try
             {
-                var repo = _unitOfWork.FeedingLines;
-                var entity = await repo.GetByIdForUpdateAsync(id);
+                var entity = await _unitOfWork.FeedingLines
+                    .Query(tracking: true)
+                    .Include(x => x.Feeding)
+                    .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
                 {
@@ -374,12 +379,21 @@ namespace aqua_api.Modules.Feedings.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                EnsureFeedingCanBeChanged(entity.Feeding);
+
                 _mapper.Map(dto, entity);
-                await repo.UpdateAsync(entity);
+                await _unitOfWork.FeedingLines.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
                 var result = MapFeedingLine(entity);
                 return ApiResponse<FeedingLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingLineService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResponse<FeedingLineDto>.ErrorResult(
+                    ex.Message,
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {
@@ -395,6 +409,21 @@ namespace aqua_api.Modules.Feedings.Application.Services
             try
             {
                 var repo = _unitOfWork.FeedingLines;
+                var entity = await _unitOfWork.FeedingLines
+                    .Query(tracking: true)
+                    .Include(x => x.Feeding)
+                    .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+                if (entity == null)
+                {
+                    return ApiResponse<bool>.ErrorResult(
+                        _localizationService.GetLocalizedString("FeedingLineService.NotFound"),
+                        _localizationService.GetLocalizedString("FeedingLineService.NotFound"),
+                        StatusCodes.Status404NotFound);
+                }
+
+                EnsureFeedingCanBeChanged(entity.Feeding);
+
                 var isDeleted = await repo.SoftDeleteAsync(id);
 
                 if (!isDeleted)
@@ -408,12 +437,40 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 await _unitOfWork.SaveChangesAsync();
                 return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("FeedingLineService.OperationSuccessful"));
             }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResponse<bool>.ErrorResult(
+                    ex.Message,
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
+            }
             catch (Exception ex)
             {
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("FeedingLineService.InternalServerError"),
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        private void EnsureFeedingCanBeChanged(Feeding? feeding)
+        {
+            if (feeding?.IsERPIntegrated == true)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingLineService.ErpIntegratedCannotBeChanged"));
+            }
+        }
+
+        private async Task EnsureFeedingCanBeChangedAsync(long feedingId)
+        {
+            var isErpIntegrated = await _unitOfWork.Feedings
+                .Query()
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == feedingId && !x.IsDeleted && x.IsERPIntegrated);
+
+            if (isErpIntegrated)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingLineService.ErpIntegratedCannotBeChanged"));
             }
         }
 

@@ -51,4 +51,10 @@
   <data name="MortalityService.MortalityNotFound" xml:space="preserve">
     <value>No se encontró el registro de mortalidad.</value>
   </data>
+  <data name="MortalityService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Un registro de mortalidad ya transferido a Netsis no se puede modificar ni eliminar.</value>
+  </data>
+  <data name="MortalityLineService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Una línea de mortalidad ya transferida a Netsis no se puede modificar ni eliminar.</value>
+  </data>
 </root>

@@ -81,4 +81,13 @@
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
     <value>An error occurred while saving the feeding line.</value>
   </data>
+  <data name="FeedingService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>A feeding record already transferred to Netsis cannot be changed or deleted.</value>
+  </data>
+  <data name="FeedingLineService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>A feeding line already transferred to Netsis cannot be changed or deleted.</value>
+  </data>
+  <data name="FeedingDistributionService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>A feeding distribution already transferred to Netsis cannot be changed or deleted.</value>
+  </data>
 </root>

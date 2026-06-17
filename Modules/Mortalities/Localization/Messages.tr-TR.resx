@@ -51,4 +51,10 @@
   <data name="MortalityService.MortalityNotFound" xml:space="preserve">
     <value>Ölüm kaydı bulunamadı.</value>
   </data>
+  <data name="MortalityService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Netsis'e aktarılmış fire kaydı değiştirilemez veya silinemez.</value>
+  </data>
+  <data name="MortalityLineService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Netsis'e aktarılmış fire satırı değiştirilemez veya silinemez.</value>
+  </data>
 </root>

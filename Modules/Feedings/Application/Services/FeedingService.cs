@@ -138,6 +138,14 @@ namespace aqua_api.Modules.Feedings.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                if (entity.IsERPIntegrated)
+                {
+                    return ApiResponse<FeedingDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("FeedingService.ErpIntegratedCannotBeChanged"),
+                        _localizationService.GetLocalizedString("FeedingService.ErpIntegratedCannotBeChanged"),
+                        StatusCodes.Status400BadRequest);
+                }
+
                 _mapper.Map(dto, entity);
                 await repo.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
@@ -159,6 +167,24 @@ namespace aqua_api.Modules.Feedings.Application.Services
             try
             {
                 var repo = _unitOfWork.Feedings;
+                var entity = await repo.GetByIdForUpdateAsync(id);
+
+                if (entity == null)
+                {
+                    return ApiResponse<bool>.ErrorResult(
+                        _localizationService.GetLocalizedString("FeedingService.NotFound"),
+                        _localizationService.GetLocalizedString("FeedingService.NotFound"),
+                        StatusCodes.Status404NotFound);
+                }
+
+                if (entity.IsERPIntegrated)
+                {
+                    return ApiResponse<bool>.ErrorResult(
+                        _localizationService.GetLocalizedString("FeedingService.ErpIntegratedCannotBeChanged"),
+                        _localizationService.GetLocalizedString("FeedingService.ErpIntegratedCannotBeChanged"),
+                        StatusCodes.Status400BadRequest);
+                }
+
                 var isDeleted = await repo.SoftDeleteAsync(id);
 
                 if (!isDeleted)

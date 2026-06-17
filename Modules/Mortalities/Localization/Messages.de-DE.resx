@@ -51,4 +51,10 @@
   <data name="MortalityService.MortalityNotFound" xml:space="preserve">
     <value>Sterblichkeitsdatensatz nicht gefunden.</value>
   </data>
+  <data name="MortalityService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Ein bereits an Netsis übertragener Mortalitätsdatensatz kann nicht geändert oder gelöscht werden.</value>
+  </data>
+  <data name="MortalityLineService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Eine bereits an Netsis übertragene Mortalitätszeile kann nicht geändert oder gelöscht werden.</value>
+  </data>
 </root>

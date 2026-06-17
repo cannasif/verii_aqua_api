@@ -60,4 +60,13 @@
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
     <value>حدث خطأ أثناء حفظ سطر التغذية.</value>
   </data>
+  <data name="FeedingService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>لا يمكن تعديل أو حذف سجل تغذية تم ترحيله إلى Netsis.</value>
+  </data>
+  <data name="FeedingLineService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>لا يمكن تعديل أو حذف بند تغذية تم ترحيله إلى Netsis.</value>
+  </data>
+  <data name="FeedingDistributionService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>لا يمكن تعديل أو حذف توزيع تغذية تم ترحيله إلى Netsis.</value>
+  </data>
 </root>

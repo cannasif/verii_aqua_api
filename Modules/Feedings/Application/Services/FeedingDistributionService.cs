@@ -134,6 +134,8 @@ namespace aqua_api.Modules.Feedings.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                EnsureFeedingCanBeChanged(feedingLine.Feeding);
+
                 var entity = await _unitOfWork.FeedingDistributions
                     .Query(tracking: true)
                     .Include(x => x.FishBatch)
@@ -167,6 +169,13 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 var result = MapFeedingDistribution(entity);
                 return ApiResponse<FeedingDistributionDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingDistributionService.OperationSuccessful"));
             }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResponse<FeedingDistributionDto>.ErrorResult(
+                    ex.Message,
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
+            }
             catch (Exception ex)
             {
                 return ApiResponse<FeedingDistributionDto>.ErrorResult(
@@ -180,8 +189,11 @@ namespace aqua_api.Modules.Feedings.Application.Services
         {
             try
             {
-                var repo = _unitOfWork.FeedingDistributions;
-                var entity = await repo.GetByIdForUpdateAsync(id);
+                var entity = await _unitOfWork.FeedingDistributions
+                    .Query(tracking: true)
+                    .Include(x => x.FeedingLine)
+                        .ThenInclude(x => x!.Feeding)
+                    .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
                 {
@@ -191,12 +203,21 @@ namespace aqua_api.Modules.Feedings.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                EnsureFeedingCanBeChanged(entity.FeedingLine?.Feeding);
+
                 _mapper.Map(dto, entity);
-                await repo.UpdateAsync(entity);
+                await _unitOfWork.FeedingDistributions.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
                 var result = MapFeedingDistribution(entity);
                 return ApiResponse<FeedingDistributionDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingDistributionService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResponse<FeedingDistributionDto>.ErrorResult(
+                    ex.Message,
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {
@@ -212,6 +233,22 @@ namespace aqua_api.Modules.Feedings.Application.Services
             try
             {
                 var repo = _unitOfWork.FeedingDistributions;
+                var entity = await _unitOfWork.FeedingDistributions
+                    .Query(tracking: true)
+                    .Include(x => x.FeedingLine)
+                        .ThenInclude(x => x!.Feeding)
+                    .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+                if (entity == null)
+                {
+                    return ApiResponse<bool>.ErrorResult(
+                        _localizationService.GetLocalizedString("FeedingDistributionService.NotFound"),
+                        _localizationService.GetLocalizedString("FeedingDistributionService.NotFound"),
+                        StatusCodes.Status404NotFound);
+                }
+
+                EnsureFeedingCanBeChanged(entity.FeedingLine?.Feeding);
+
                 var isDeleted = await repo.SoftDeleteAsync(id);
 
                 if (!isDeleted)
@@ -225,12 +262,27 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 await _unitOfWork.SaveChangesAsync();
                 return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("FeedingDistributionService.OperationSuccessful"));
             }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResponse<bool>.ErrorResult(
+                    ex.Message,
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
+            }
             catch (Exception ex)
             {
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("FeedingDistributionService.InternalServerError"),
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        private void EnsureFeedingCanBeChanged(Feeding? feeding)
+        {
+            if (feeding?.IsERPIntegrated == true)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingDistributionService.ErpIntegratedCannotBeChanged"));
             }
         }
 

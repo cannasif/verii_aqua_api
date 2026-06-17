@@ -145,6 +145,14 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                if (entity.IsERPIntegrated)
+                {
+                    return ApiResponse<MortalityDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("MortalityService.ErpIntegratedCannotBeChanged"),
+                        _localizationService.GetLocalizedString("MortalityService.ErpIntegratedCannotBeChanged"),
+                        StatusCodes.Status400BadRequest);
+                }
+
                 _mapper.Map(dto, entity);
                 entity.MortalityNo = string.IsNullOrWhiteSpace(entity.MortalityNo)
                     ? BuildDocumentNo(entity.ProjectId, entity.MortalityDate)
@@ -169,6 +177,24 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             try
             {
                 var repo = _unitOfWork.Mortalities;
+                var entity = await repo.GetByIdForUpdateAsync(id);
+
+                if (entity == null)
+                {
+                    return ApiResponse<bool>.ErrorResult(
+                        _localizationService.GetLocalizedString("MortalityService.NotFound"),
+                        _localizationService.GetLocalizedString("MortalityService.NotFound"),
+                        StatusCodes.Status404NotFound);
+                }
+
+                if (entity.IsERPIntegrated)
+                {
+                    return ApiResponse<bool>.ErrorResult(
+                        _localizationService.GetLocalizedString("MortalityService.ErpIntegratedCannotBeChanged"),
+                        _localizationService.GetLocalizedString("MortalityService.ErpIntegratedCannotBeChanged"),
+                        StatusCodes.Status400BadRequest);
+                }
+
                 var isDeleted = await repo.SoftDeleteAsync(id);
 
                 if (!isDeleted)

@@ -60,4 +60,13 @@
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
     <value>Si è verificato un errore durante il salvataggio della riga di alimentazione.</value>
   </data>
+  <data name="FeedingService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Un record di alimentazione già trasferito a Netsis non può essere modificato o eliminato.</value>
+  </data>
+  <data name="FeedingLineService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Una riga di alimentazione già trasferita a Netsis non può essere modificata o eliminata.</value>
+  </data>
+  <data name="FeedingDistributionService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Una distribuzione di alimentazione già trasferita a Netsis non può essere modificata o eliminata.</value>
+  </data>
 </root>

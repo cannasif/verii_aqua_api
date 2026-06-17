@@ -60,4 +60,13 @@
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
     <value>Fehler beim Speichern der Fütterungszeile aufgetreten.</value>
   </data>
+  <data name="FeedingService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Ein bereits an Netsis übertragener Fütterungsdatensatz kann nicht geändert oder gelöscht werden.</value>
+  </data>
+  <data name="FeedingLineService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Eine bereits an Netsis übertragene Fütterungszeile kann nicht geändert oder gelöscht werden.</value>
+  </data>
+  <data name="FeedingDistributionService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Eine bereits an Netsis übertragene Fütterungsverteilung kann nicht geändert oder gelöscht werden.</value>
+  </data>
 </root>

@@ -81,4 +81,13 @@
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
     <value>Yemleme satırı kaydedilirken hata oluştu.</value>
   </data>
+  <data name="FeedingService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Netsis'e aktarılmış yemleme kaydı değiştirilemez veya silinemez.</value>
+  </data>
+  <data name="FeedingLineService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Netsis'e aktarılmış yemleme satırı değiştirilemez veya silinemez.</value>
+  </data>
+  <data name="FeedingDistributionService.ErpIntegratedCannotBeChanged" xml:space="preserve">
+    <value>Netsis'e aktarılmış yemleme dağılımı değiştirilemez veya silinemez.</value>
+  </data>
 </root>

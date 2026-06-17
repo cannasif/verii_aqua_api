@@ -140,13 +140,17 @@ namespace aqua_api.Modules.Mortalities.Application.Services
         {
             try
             {
+                var mortality = await _unitOfWork.Mortalities
+                    .Query()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Id == dto.MortalityId && !x.IsDeleted);
+
+                EnsureMortalityCanBeChanged(mortality);
+
                 var entity = _mapper.Map<MortalityLine>(dto);
                 await _unitOfWork.MortalityLines.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
-                var mortality = await _unitOfWork.Mortalities
-                    .Query()
-                    .FirstOrDefaultAsync(x => x.Id == entity.MortalityId && !x.IsDeleted);
                 if (mortality != null && mortality.Status == DocumentStatus.Draft)
                 {
                     var userId = entity.CreatedBy ?? mortality.CreatedBy ?? 1L;
@@ -163,6 +167,13 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 var result = _mapper.Map<MortalityLineDto>(entity);
                 return ApiResponse<MortalityLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("MortalityLineService.OperationSuccessful"));
             }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResponse<MortalityLineDto>.ErrorResult(
+                    ex.Message,
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
+            }
             catch (Exception ex)
             {
                 return ApiResponse<MortalityLineDto>.ErrorResult(
@@ -176,6 +187,23 @@ namespace aqua_api.Modules.Mortalities.Application.Services
         {
             try
             {
+                var hasErpIntegratedMortality = await _unitOfWork.Mortalities
+                    .Query()
+                    .AsNoTracking()
+                    .AnyAsync(x =>
+                        !x.IsDeleted &&
+                        x.ProjectId == dto.ProjectId &&
+                        x.MortalityDate.Date == dto.MortalityDate.Date &&
+                        x.IsERPIntegrated);
+
+                if (hasErpIntegratedMortality)
+                {
+                    return ApiResponse<MortalityLineDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("MortalityLineService.ErpIntegratedCannotBeChanged"),
+                        _localizationService.GetLocalizedString("MortalityLineService.ErpIntegratedCannotBeChanged"),
+                        StatusCodes.Status400BadRequest);
+                }
+
                 await _unitOfWork.BeginTransactionAsync();
 
                 var mortality = await _unitOfWork.Mortalities
@@ -275,8 +303,10 @@ namespace aqua_api.Modules.Mortalities.Application.Services
         {
             try
             {
-                var repo = _unitOfWork.MortalityLines;
-                var entity = await repo.GetByIdForUpdateAsync(id);
+                var entity = await _unitOfWork.MortalityLines
+                    .Query(tracking: true)
+                    .Include(x => x.Mortality)
+                    .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
                 {
@@ -286,12 +316,21 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                EnsureMortalityCanBeChanged(entity.Mortality);
+
                 _mapper.Map(dto, entity);
-                await repo.UpdateAsync(entity);
+                await _unitOfWork.MortalityLines.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
                 var result = _mapper.Map<MortalityLineDto>(entity);
                 return ApiResponse<MortalityLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("MortalityLineService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResponse<MortalityLineDto>.ErrorResult(
+                    ex.Message,
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {
@@ -307,6 +346,21 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             try
             {
                 var repo = _unitOfWork.MortalityLines;
+                var entity = await _unitOfWork.MortalityLines
+                    .Query(tracking: true)
+                    .Include(x => x.Mortality)
+                    .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+                if (entity == null)
+                {
+                    return ApiResponse<bool>.ErrorResult(
+                        _localizationService.GetLocalizedString("MortalityLineService.NotFound"),
+                        _localizationService.GetLocalizedString("MortalityLineService.NotFound"),
+                        StatusCodes.Status404NotFound);
+                }
+
+                EnsureMortalityCanBeChanged(entity.Mortality);
+
                 var isDeleted = await repo.SoftDeleteAsync(id);
 
                 if (!isDeleted)
@@ -320,12 +374,27 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 await _unitOfWork.SaveChangesAsync();
                 return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("MortalityLineService.OperationSuccessful"));
             }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResponse<bool>.ErrorResult(
+                    ex.Message,
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
+            }
             catch (Exception ex)
             {
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("MortalityLineService.InternalServerError"),
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        private void EnsureMortalityCanBeChanged(Mortality? mortality)
+        {
+            if (mortality?.IsERPIntegrated == true)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityLineService.ErpIntegratedCannotBeChanged"));
             }
         }
 
