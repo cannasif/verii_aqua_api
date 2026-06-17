@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 {
-    [DisableConcurrentExecution(timeoutInSeconds: 300)]
+    [DisableConcurrentExecution(timeoutInSeconds: 3600)]
     [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 60, 120, 300 })]
     public class StockSyncJob : IStockSyncJob
     {

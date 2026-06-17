@@ -177,15 +177,15 @@ public static class WebApplicationExtensions
                 RecurringJob.AddOrUpdate<IStockSyncJob>(
                     "erp-stock-sync-job",
                     job => job.ExecuteAsync(),
-                    Cron.MinuteInterval(30));
+                    "5,35 * * * *");
                 RecurringJob.AddOrUpdate<IWarehouseSyncJob>(
                     "erp-warehouse-sync-job",
                     job => job.ExecuteAsync(),
-                    Cron.MinuteInterval(30));
+                    "15,45 * * * *");
                 RecurringJob.AddOrUpdate<IErpReceiptShipmentMovementSyncJob>(
                     "erp-receipt-shipment-movement-sync-job",
                     job => job.ExecuteAsync(),
-                    Cron.MinuteInterval(30));
+                    "25,55 * * * *");
             }
             else
             {

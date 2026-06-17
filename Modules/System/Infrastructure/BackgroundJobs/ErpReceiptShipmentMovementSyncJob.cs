@@ -13,7 +13,7 @@ using WarehouseEntity = aqua_api.Modules.Warehouse.Domain.Entities.Warehouse;
 
 namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 {
-    [DisableConcurrentExecution(timeoutInSeconds: 600)]
+    [DisableConcurrentExecution(timeoutInSeconds: 3600)]
     [AutomaticRetry(Attempts = 3, DelaysInSeconds = new[] { 60, 120, 300 })]
     public class ErpReceiptShipmentMovementSyncJob : IErpReceiptShipmentMovementSyncJob
     {

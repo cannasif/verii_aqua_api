@@ -200,6 +200,7 @@ public static class ServiceCollectionExtensions
 
             services.AddHangfireServer(options =>
             {
+                options.WorkerCount = Math.Max(1, configuration.GetValue<int?>("Hangfire:WorkerCount") ?? 2);
                 options.Queues = new[] { "default", "dead-letter" };
             });
 
