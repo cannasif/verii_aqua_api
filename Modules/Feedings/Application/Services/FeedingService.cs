@@ -257,6 +257,11 @@ namespace aqua_api.Modules.Feedings.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                if (feeding.IsERPIntegrated)
+                {
+                    return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("FeedingService.OperationSuccessful"));
+                }
+
                 if (feeding.Status != DocumentStatus.Cancelled)
                 {
                     feeding.Status = DocumentStatus.Posted;

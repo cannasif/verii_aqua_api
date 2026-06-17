@@ -301,6 +301,13 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 var mortality = await _mortalityRepository.GetForPost(mortalityId)
                     ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.MortalityNotFound"));
 
+                if (mortality.IsERPIntegrated)
+                {
+                    return ApiResponse<bool>.SuccessResult(
+                        true,
+                        _localizationService.GetLocalizedString("MortalityService.OperationSuccessful"));
+                }
+
                 if (mortality.Status == DocumentStatus.Posted)
                 {
                     await MarkErpPendingAsync(mortality.Id, userId);
