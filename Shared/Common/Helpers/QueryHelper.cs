@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -39,6 +40,30 @@ namespace aqua_api.Shared.Common.Helpers
             if (columnMapping == null) return column;
             var mappingKey = columnMapping.Keys.FirstOrDefault(k => string.Equals(k, column, StringComparison.OrdinalIgnoreCase));
             return mappingKey != null ? columnMapping[mappingKey] : column;
+        }
+
+        private static Type GetNonNullableType(Type type)
+        {
+            return Nullable.GetUnderlyingType(type) ?? type;
+        }
+
+        private static Expression CreateTypedConstant(Type propertyType, object value)
+        {
+            var targetType = GetNonNullableType(propertyType);
+            var constant = Expression.Constant(value, targetType);
+            return targetType == propertyType ? constant : Expression.Convert(constant, propertyType);
+        }
+
+        private static bool TryParseDecimal(string value, out decimal result)
+        {
+            return decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out result)
+                   || decimal.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out result);
+        }
+
+        private static bool TryParseDateTime(string value, out DateTime result)
+        {
+            return DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out result)
+                   || DateTime.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.None, out result);
         }
 
         /// <summary>
@@ -84,7 +109,9 @@ namespace aqua_api.Shared.Common.Helpers
 
                 var operatorLower = filter.Operator.ToLowerInvariant();
 
-                if (property.PropertyType == typeof(string))
+                var propertyType = GetNonNullableType(property.PropertyType);
+
+                if (propertyType == typeof(string))
                 {
                     var method = operatorLower switch
                     {
@@ -103,74 +130,78 @@ namespace aqua_api.Shared.Common.Helpers
                         exp = Expression.Equal(left, Expression.Constant(filter.Value));
                     }
                 }
-                else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(int?))
+                else if (propertyType == typeof(int))
                 {
                     if (int.TryParse(filter.Value, out int val))
                     {
+                        var typedValue = CreateTypedConstant(property.PropertyType, val);
                         exp = operatorLower switch
                         {
-                            ">" or "gt" => Expression.GreaterThan(left, Expression.Constant(val)),
-                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, Expression.Constant(val)),
-                            "<" or "lt" => Expression.LessThan(left, Expression.Constant(val)),
-                            "<=" or "lte" => Expression.LessThanOrEqual(left, Expression.Constant(val)),
-                            _ => Expression.Equal(left, Expression.Constant(val))
+                            ">" or "gt" => Expression.GreaterThan(left, typedValue),
+                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, typedValue),
+                            "<" or "lt" => Expression.LessThan(left, typedValue),
+                            "<=" or "lte" => Expression.LessThanOrEqual(left, typedValue),
+                            _ => Expression.Equal(left, typedValue)
                         };
                     }
                 }
-                else if (property.PropertyType == typeof(long) || property.PropertyType == typeof(long?))
+                else if (propertyType == typeof(long))
                 {
                     if (long.TryParse(filter.Value, out long val))
                     {
+                        var typedValue = CreateTypedConstant(property.PropertyType, val);
                         exp = operatorLower switch
                         {
-                            ">" or "gt" => Expression.GreaterThan(left, Expression.Constant(val)),
-                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, Expression.Constant(val)),
-                            "<" or "lt" => Expression.LessThan(left, Expression.Constant(val)),
-                            "<=" or "lte" => Expression.LessThanOrEqual(left, Expression.Constant(val)),
-                            _ => Expression.Equal(left, Expression.Constant(val))
+                            ">" or "gt" => Expression.GreaterThan(left, typedValue),
+                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, typedValue),
+                            "<" or "lt" => Expression.LessThan(left, typedValue),
+                            "<=" or "lte" => Expression.LessThanOrEqual(left, typedValue),
+                            _ => Expression.Equal(left, typedValue)
                         };
                     }
                 }
-                else if (property.PropertyType == typeof(decimal) || property.PropertyType == typeof(decimal?))
+                else if (propertyType == typeof(decimal))
                 {
-                    if (decimal.TryParse(filter.Value, out decimal val))
+                    if (TryParseDecimal(filter.Value, out decimal val))
                     {
+                        var typedValue = CreateTypedConstant(property.PropertyType, val);
                         exp = operatorLower switch
                         {
-                            ">" or "gt" => Expression.GreaterThan(left, Expression.Constant(val)),
-                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, Expression.Constant(val)),
-                            "<" or "lt" => Expression.LessThan(left, Expression.Constant(val)),
-                            "<=" or "lte" => Expression.LessThanOrEqual(left, Expression.Constant(val)),
-                            _ => Expression.Equal(left, Expression.Constant(val))
+                            ">" or "gt" => Expression.GreaterThan(left, typedValue),
+                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, typedValue),
+                            "<" or "lt" => Expression.LessThan(left, typedValue),
+                            "<=" or "lte" => Expression.LessThanOrEqual(left, typedValue),
+                            _ => Expression.Equal(left, typedValue)
                         };
                     }
                 }
-                else if (property.PropertyType == typeof(DateTime) || property.PropertyType == typeof(DateTime?))
+                else if (propertyType == typeof(DateTime))
                 {
-                    if (DateTime.TryParse(filter.Value, out DateTime val))
+                    if (TryParseDateTime(filter.Value, out DateTime val))
                     {
+                        var typedValue = CreateTypedConstant(property.PropertyType, val);
                         exp = operatorLower switch
                         {
-                            ">" or "gt" => Expression.GreaterThan(left, Expression.Constant(val)),
-                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, Expression.Constant(val)),
-                            "<" or "lt" => Expression.LessThan(left, Expression.Constant(val)),
-                            "<=" or "lte" => Expression.LessThanOrEqual(left, Expression.Constant(val)),
-                            _ => Expression.Equal(left, Expression.Constant(val))
+                            ">" or "gt" => Expression.GreaterThan(left, typedValue),
+                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, typedValue),
+                            "<" or "lt" => Expression.LessThan(left, typedValue),
+                            "<=" or "lte" => Expression.LessThanOrEqual(left, typedValue),
+                            _ => Expression.Equal(left, typedValue)
                         };
                     }
                 }
-                else if (property.PropertyType == typeof(bool) || property.PropertyType == typeof(bool?))
+                else if (propertyType == typeof(bool))
                 {
                     if (bool.TryParse(filter.Value, out bool val))
                     {
-                        exp = Expression.Equal(left, Expression.Constant(val));
+                        exp = Expression.Equal(left, CreateTypedConstant(property.PropertyType, val));
                     }
                 }
-                else if (property.PropertyType.IsEnum)
+                else if (propertyType.IsEnum)
                 {
-                    if (Enum.TryParse(property.PropertyType, filter.Value, true, out var enumVal))
+                    if (Enum.TryParse(propertyType, filter.Value, true, out var enumVal) && enumVal != null)
                     {
-                        exp = Expression.Equal(left, Expression.Constant(enumVal));
+                        exp = Expression.Equal(left, CreateTypedConstant(property.PropertyType, enumVal));
                     }
                 }
 
