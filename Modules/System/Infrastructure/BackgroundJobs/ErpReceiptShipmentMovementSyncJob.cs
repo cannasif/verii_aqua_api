@@ -286,10 +286,14 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 
         private async Task<ApplyOutcome> ApplyGoodsReceiptMovementAsync(MalKabulVeSevkiyatDto movement, string sourceMovementKey)
         {
-            var project = await ResolveProjectAsync(movement);
             var stock = await ResolveStockAsync(movement);
             var warehouse = await ResolveWarehouseAsync(movement.KafesKodu);
-            var projectCage = await ResolveProjectCageAsync(project, movement.KafesKodu);
+            var project = IsFeedReceipt(movement)
+                ? await ResolveProjectAsync(movement)
+                : await ResolveOrCreateProjectAsync(movement);
+            var projectCage = IsFeedReceipt(movement)
+                ? await ResolveProjectCageAsync(project, movement.KafesKodu)
+                : await ResolveOrCreateProjectCageAsync(project, movement.KafesKodu);
             var receiptNo = BuildDocumentNo("ERP-GR", movement);
             var now = DateTimeProvider.Now;
 
@@ -322,7 +326,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 
             return IsFeedReceipt(movement)
                 ? await UpsertFeedReceiptLineAsync(receipt, stock, movement, sourceMovementKey)
-                : await UpsertFishReceiptLineAsync(receipt, stock, project, projectCage, movement, sourceMovementKey);
+                : await UpsertFishReceiptLineAsync(receipt, stock, project, projectCage, warehouse, movement, sourceMovementKey);
         }
 
         private async Task<ApplyOutcome> UpsertFeedReceiptLineAsync(
@@ -373,6 +377,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             StockEntity stock,
             Project? project,
             ProjectCage? projectCage,
+            WarehouseEntity? warehouse,
             MalKabulVeSevkiyatDto movement,
             string sourceMovementKey)
         {
@@ -383,7 +388,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                     Clean(movement.ProjeKodu)));
             }
 
-            if (projectCage == null)
+            if (projectCage == null && warehouse == null)
             {
                 throw new InvalidOperationException(_localizationService.GetLocalizedString(
                     "ErpReceiptShipmentMovementSyncJob.FishReceiptCageNotMatched",
@@ -393,14 +398,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 
             var fishCount = ResolveCount(movement);
             var fishBatch = await ResolveOrCreateFishBatchAsync(project, stock, receipt, movement);
-            var averageGram = await ResolveAverageGramAsync(fishBatch, projectCage);
-            if (averageGram <= 0)
-            {
-                throw new InvalidOperationException(_localizationService.GetLocalizedString(
-                    "ErpReceiptShipmentMovementSyncJob.FishReceiptAverageGramMissing",
-                    sourceMovementKey));
-            }
-
+            var averageGram = await ResolveAverageGramAsync(fishBatch, projectCage, warehouse);
             var biomassGram = Math.Round(fishCount * averageGram, 3, MidpointRounding.AwayFromZero);
             var existingLine = await _db.GoodsReceiptLines
                 .Include(x => x.FishDistributions)
@@ -426,33 +424,56 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 await _db.GoodsReceiptLines.AddAsync(line);
                 await _db.SaveChangesAsync();
 
-                await _db.GoodsReceiptFishDistributions.AddAsync(new GoodsReceiptFishDistribution
+                if (projectCage != null)
                 {
-                    GoodsReceiptLineId = line.Id,
-                    ProjectCageId = projectCage.Id,
-                    FishBatchId = fishBatch.Id,
-                    FishCount = fishCount,
-                    CreatedDate = DateTimeProvider.Now,
-                    IsDeleted = false
-                });
+                    await _db.GoodsReceiptFishDistributions.AddAsync(new GoodsReceiptFishDistribution
+                    {
+                        GoodsReceiptLineId = line.Id,
+                        ProjectCageId = projectCage.Id,
+                        FishBatchId = fishBatch.Id,
+                        FishCount = fishCount,
+                        CreatedDate = DateTimeProvider.Now,
+                        IsDeleted = false
+                    });
 
-                await _balanceLedgerManager.ApplyDelta(
-                    project.Id,
-                    fishBatch.Id,
-                    projectCage.Id,
-                    fishCount,
-                    biomassGram,
-                    BatchMovementType.Stocking,
-                    movement.Tarih,
-                    "ERP fish receipt",
-                    GoodsReceiptRefTable,
-                    line.Id,
-                    null,
-                    projectCage.Id,
-                    null,
-                    stock.Id,
-                    null,
-                    averageGram);
+                    await _balanceLedgerManager.ApplyDelta(
+                        project.Id,
+                        fishBatch.Id,
+                        projectCage.Id,
+                        fishCount,
+                        biomassGram,
+                        BatchMovementType.Stocking,
+                        movement.Tarih,
+                        "ERP fish receipt",
+                        GoodsReceiptRefTable,
+                        line.Id,
+                        null,
+                        projectCage.Id,
+                        null,
+                        stock.Id,
+                        null,
+                        averageGram);
+                }
+                else if (warehouse != null)
+                {
+                    await _balanceLedgerManager.ApplyWarehouseDelta(
+                        project.Id,
+                        fishBatch.Id,
+                        warehouse.Id,
+                        fishCount,
+                        biomassGram,
+                        BatchMovementType.Stocking,
+                        movement.Tarih,
+                        "ERP fish warehouse receipt",
+                        GoodsReceiptRefTable,
+                        line.Id,
+                        null,
+                        warehouse.Id,
+                        null,
+                        stock.Id,
+                        null,
+                        averageGram);
+                }
 
                 return ApplyOutcome.Created;
             }
@@ -469,45 +490,71 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             existingLine.FishTotalGram = biomassGram;
             existingLine.UpdatedDate = DateTimeProvider.Now;
 
-            var distribution = existingLine.FishDistributions.FirstOrDefault(x => !x.IsDeleted && x.ProjectCageId == projectCage.Id);
-            if (distribution == null)
+            if (projectCage != null)
             {
-                await _db.GoodsReceiptFishDistributions.AddAsync(new GoodsReceiptFishDistribution
+                var distribution = existingLine.FishDistributions.FirstOrDefault(x => !x.IsDeleted && x.ProjectCageId == projectCage.Id);
+                if (distribution == null)
                 {
-                    GoodsReceiptLineId = existingLine.Id,
-                    ProjectCageId = projectCage.Id,
-                    FishBatchId = fishBatch.Id,
-                    FishCount = fishCount,
-                    CreatedDate = DateTimeProvider.Now,
-                    IsDeleted = false
-                });
-            }
-            else
-            {
-                distribution.FishBatchId = fishBatch.Id;
-                distribution.FishCount = fishCount;
-                distribution.UpdatedDate = DateTimeProvider.Now;
+                    await _db.GoodsReceiptFishDistributions.AddAsync(new GoodsReceiptFishDistribution
+                    {
+                        GoodsReceiptLineId = existingLine.Id,
+                        ProjectCageId = projectCage.Id,
+                        FishBatchId = fishBatch.Id,
+                        FishCount = fishCount,
+                        CreatedDate = DateTimeProvider.Now,
+                        IsDeleted = false
+                    });
+                }
+                else
+                {
+                    distribution.FishBatchId = fishBatch.Id;
+                    distribution.FishCount = fishCount;
+                    distribution.UpdatedDate = DateTimeProvider.Now;
+                }
             }
 
             if (deltaCount != 0 || deltaBiomass != 0)
             {
-                await _balanceLedgerManager.ApplyDelta(
-                    project.Id,
-                    fishBatch.Id,
-                    projectCage.Id,
-                    deltaCount,
-                    deltaBiomass,
-                    BatchMovementType.Stocking,
-                    movement.Tarih,
-                    "ERP fish receipt delta",
-                    GoodsReceiptRefTable,
-                    existingLine.Id,
-                    null,
-                    projectCage.Id,
-                    null,
-                    stock.Id,
-                    null,
-                    averageGram);
+                if (projectCage != null)
+                {
+                    await _balanceLedgerManager.ApplyDelta(
+                        project.Id,
+                        fishBatch.Id,
+                        projectCage.Id,
+                        deltaCount,
+                        deltaBiomass,
+                        BatchMovementType.Stocking,
+                        movement.Tarih,
+                        "ERP fish receipt delta",
+                        GoodsReceiptRefTable,
+                        existingLine.Id,
+                        null,
+                        projectCage.Id,
+                        null,
+                        stock.Id,
+                        null,
+                        averageGram);
+                }
+                else if (warehouse != null)
+                {
+                    await _balanceLedgerManager.ApplyWarehouseDelta(
+                        project.Id,
+                        fishBatch.Id,
+                        warehouse.Id,
+                        deltaCount,
+                        deltaBiomass,
+                        BatchMovementType.Stocking,
+                        movement.Tarih,
+                        "ERP fish warehouse receipt delta",
+                        GoodsReceiptRefTable,
+                        existingLine.Id,
+                        null,
+                        warehouse.Id,
+                        null,
+                        stock.Id,
+                        null,
+                        averageGram);
+                }
 
                 return ApplyOutcome.Updated;
             }
@@ -655,6 +702,39 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 : await _db.Projects.IgnoreQueryFilters().FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectCode == projectCode);
         }
 
+        private async Task<Project?> ResolveOrCreateProjectAsync(MalKabulVeSevkiyatDto movement)
+        {
+            var projectCode = Clean(movement.ProjeKodu);
+            if (string.IsNullOrWhiteSpace(projectCode))
+            {
+                return null;
+            }
+
+            var existingProject = await _db.Projects
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectCode == projectCode);
+
+            if (existingProject != null)
+            {
+                return existingProject;
+            }
+
+            var project = new Project
+            {
+                ProjectCode = Shorten(projectCode, 50),
+                ProjectName = Shorten(projectCode, 200),
+                StartDate = movement.Tarih.Date,
+                Status = DocumentStatus.Posted,
+                Note = Shorten($"ERP hareketinden otomatik oluşturuldu. Fiş={Clean(movement.FisNo)}", 500),
+                CreatedDate = DateTimeProvider.Now,
+                IsDeleted = false
+            };
+
+            await _db.Projects.AddAsync(project);
+            await _db.SaveChangesAsync();
+            return project;
+        }
+
         private async Task<StockEntity> ResolveStockAsync(MalKabulVeSevkiyatDto movement)
         {
             var stockCode = Clean(movement.StokKodu);
@@ -687,6 +767,48 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                     .Where(x => !x.IsDeleted && x.ProjectId == project.Id && x.CageId == cage.Id)
                     .OrderByDescending(x => x.AssignedDate)
                     .FirstOrDefaultAsync();
+        }
+
+        private async Task<ProjectCage?> ResolveOrCreateProjectCageAsync(Project? project, short? erpWarehouseCode)
+        {
+            if (project == null)
+            {
+                return null;
+            }
+
+            var existingProjectCage = await ResolveProjectCageAsync(project, erpWarehouseCode);
+            if (existingProjectCage != null)
+            {
+                return existingProjectCage;
+            }
+
+            var cage = await ResolveCageAsync(erpWarehouseCode);
+            if (cage == null)
+            {
+                return null;
+            }
+
+            var activeAssignment = await _db.ProjectCages
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => !x.IsDeleted && x.ReleasedDate == null && x.CageId == cage.Id);
+
+            if (activeAssignment != null)
+            {
+                return null;
+            }
+
+            var projectCage = new ProjectCage
+            {
+                ProjectId = project.Id,
+                CageId = cage.Id,
+                AssignedDate = project.StartDate,
+                CreatedDate = DateTimeProvider.Now,
+                IsDeleted = false
+            };
+
+            await _db.ProjectCages.AddAsync(projectCage);
+            await _db.SaveChangesAsync();
+            return projectCage;
         }
 
         private async Task<Cage?> ResolveCageAsync(short? erpWarehouseCode)
@@ -821,20 +943,42 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             return batch;
         }
 
-        private async Task<decimal> ResolveAverageGramAsync(FishBatch fishBatch, ProjectCage projectCage)
+        private async Task<decimal> ResolveAverageGramAsync(FishBatch fishBatch, ProjectCage? projectCage, WarehouseEntity? warehouse)
         {
             if (fishBatch.CurrentAverageGram > 0)
             {
                 return fishBatch.CurrentAverageGram;
             }
 
-            var latestBalance = await _db.BatchCageBalances
-                .AsNoTracking()
-                .Where(x => !x.IsDeleted && x.FishBatchId == fishBatch.Id && x.ProjectCageId == projectCage.Id && x.AverageGram > 0)
-                .OrderByDescending(x => x.AsOfDate)
-                .FirstOrDefaultAsync();
+            if (projectCage != null)
+            {
+                var latestCageBalance = await _db.BatchCageBalances
+                    .AsNoTracking()
+                    .Where(x => !x.IsDeleted && x.FishBatchId == fishBatch.Id && x.ProjectCageId == projectCage.Id && x.AverageGram > 0)
+                    .OrderByDescending(x => x.AsOfDate)
+                    .FirstOrDefaultAsync();
 
-            return latestBalance?.AverageGram ?? 0;
+                if (latestCageBalance != null)
+                {
+                    return latestCageBalance.AverageGram;
+                }
+            }
+
+            if (warehouse != null)
+            {
+                var latestWarehouseBalance = await _db.BatchWarehouseBalances
+                    .AsNoTracking()
+                    .Where(x => !x.IsDeleted && x.FishBatchId == fishBatch.Id && x.WarehouseId == warehouse.Id && x.AverageGram > 0)
+                    .OrderByDescending(x => x.AsOfDate)
+                    .FirstOrDefaultAsync();
+
+                if (latestWarehouseBalance != null)
+                {
+                    return latestWarehouseBalance.AverageGram;
+                }
+            }
+
+            return 0;
         }
 
         private async Task<BatchCageBalance?> ResolveShipmentBalanceAsync(long projectCageId, long stockId)
