@@ -277,4 +277,37 @@
   <data name="HangfireController.DailyErpWarehouseIssueJobEnqueued" xml:space="preserve">
     <value>تمت إضافة مهمة إخراج المخزون اليومية من ERP إلى قائمة الانتظار.</value>
   </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.InvalidMovementData" xml:space="preserve">
+    <value>تعذرت معالجة حركة ERP: كود المخزون أو تاريخ الحركة أو الكمية مفقود أو غير صالح.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.MatchFailed" xml:space="preserve">
+    <value>تعذر ربط حركة ERP بسجلات المشروع أو القفص/المستودع أو المخزون في Aqua.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.UnsupportedOperationType" xml:space="preserve">
+    <value>تم تخطي حركة ERP لأن نوع العملية غير مدعوم.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.MatchOrProcessFailed" xml:space="preserve">
+    <value>تعذر ربط حركة ERP أو معالجتها بالكامل.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptProjectNotMatched" xml:space="preserve">
+    <value>تعذرت معالجة استلام السمك من ERP: كود المشروع {0} غير مرتبط بمشروع Aqua.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptCageNotMatched" xml:space="preserve">
+    <value>تعذرت معالجة استلام السمك من ERP: كود مستودع ERP {0} غير مرتبط بقفص Aqua نشط في المشروع {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptAverageGramMissing" xml:space="preserve">
+    <value>تعذرت معالجة استلام السمك من ERP: تعذر تحديد متوسط الوزن بالجرام. مفتاح المصدر: {0}</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentProjectNotMatched" xml:space="preserve">
+    <value>تعذرت معالجة شحنة ERP: كود المشروع {0} غير مرتبط بمشروع Aqua.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentCageNotMatched" xml:space="preserve">
+    <value>تعذرت معالجة شحنة ERP: كود مستودع ERP {0} غير مرتبط بقفص Aqua نشط في المشروع {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentLiveBalanceNotFound" xml:space="preserve">
+    <value>تعذرت معالجة شحنة ERP: لم يتم العثور على رصيد حي لقفص المشروع {0} والمخزون {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.StockNotMatched" xml:space="preserve">
+    <value>تعذرت معالجة حركة ERP: كود المخزون {0} غير مرتبط بسجل مخزون Aqua.</value>
+  </data>
 </root>

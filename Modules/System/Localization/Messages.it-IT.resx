@@ -277,4 +277,37 @@
   <data name="HangfireController.DailyErpWarehouseIssueJobEnqueued" xml:space="preserve">
     <value>Il job giornaliero di uscita magazzino ERP è stato accodato.</value>
   </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.InvalidMovementData" xml:space="preserve">
+    <value>Il movimento ERP non può essere elaborato: codice stock, data movimento o quantità mancanti o non validi.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.MatchFailed" xml:space="preserve">
+    <value>Il movimento ERP non può essere abbinato ai record progetto, gabbia/magazzino o stock di Aqua.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.UnsupportedOperationType" xml:space="preserve">
+    <value>Il movimento ERP è stato saltato perché il tipo operazione non è supportato.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.MatchOrProcessFailed" xml:space="preserve">
+    <value>Il movimento ERP non può essere completamente abbinato o elaborato.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptProjectNotMatched" xml:space="preserve">
+    <value>Il ricevimento pesce ERP non può essere elaborato: il codice progetto {0} non corrisponde a un progetto Aqua.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptCageNotMatched" xml:space="preserve">
+    <value>Il ricevimento pesce ERP non può essere elaborato: il codice magazzino ERP {0} non corrisponde a una gabbia Aqua attiva nel progetto {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptAverageGramMissing" xml:space="preserve">
+    <value>Il ricevimento pesce ERP non può essere elaborato: il peso medio non può essere determinato. Chiave origine: {0}</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentProjectNotMatched" xml:space="preserve">
+    <value>La spedizione ERP non può essere elaborata: il codice progetto {0} non corrisponde a un progetto Aqua.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentCageNotMatched" xml:space="preserve">
+    <value>La spedizione ERP non può essere elaborata: il codice magazzino ERP {0} non corrisponde a una gabbia Aqua attiva nel progetto {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentLiveBalanceNotFound" xml:space="preserve">
+    <value>La spedizione ERP non può essere elaborata: saldo vivo non trovato per la gabbia progetto {0} e lo stock {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.StockNotMatched" xml:space="preserve">
+    <value>Il movimento ERP non può essere elaborato: il codice stock {0} non corrisponde a un record stock Aqua.</value>
+  </data>
 </root>

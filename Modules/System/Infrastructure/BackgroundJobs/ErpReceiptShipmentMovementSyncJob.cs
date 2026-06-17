@@ -80,7 +80,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                     await MarkMirrorFailureAsync(
                         erpMovement,
                         sourceMovementKey,
-                        new InvalidOperationException("ERP movement skipped because stock code, movement date or quantity is invalid."));
+                        new InvalidOperationException(_localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.InvalidMovementData")));
                     skippedCount++;
                     continue;
                 }
@@ -257,9 +257,11 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             mirrorMovement.IsProcessed = mirrorMovement.GoodsReceiptLineId.HasValue || mirrorMovement.ShipmentLineId.HasValue;
             mirrorMovement.MatchedAt = mirrorMovement.IsMatched ? now : null;
             mirrorMovement.ProcessedAt = mirrorMovement.IsProcessed ? now : null;
-            mirrorMovement.MatchError = mirrorMovement.IsMatched ? null : "ERP movement could not be matched to Aqua project, cage or stock records.";
+            mirrorMovement.MatchError = mirrorMovement.IsMatched
+                ? null
+                : _localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.MatchFailed");
             mirrorMovement.ProcessError = outcome == ApplyOutcome.Skipped && !mirrorMovement.IsProcessed
-                ? "ERP movement skipped because operation type is not supported."
+                ? _localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.UnsupportedOperationType")
                 : null;
             mirrorMovement.UpdatedDate = now;
         }
@@ -272,7 +274,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 mirrorMovement.IsProcessed = false;
                 mirrorMovement.ProcessedAt = null;
                 mirrorMovement.ProcessError = Shorten(ex.Message, 2000);
-                mirrorMovement.MatchError ??= "ERP movement could not be fully matched or processed.";
+                mirrorMovement.MatchError ??= _localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.MatchOrProcessFailed");
                 mirrorMovement.UpdatedDate = DateTimeProvider.Now;
                 await _db.SaveChangesAsync();
             }
@@ -376,12 +378,17 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
         {
             if (project == null)
             {
-                throw new InvalidOperationException($"ERP fish receipt project could not be matched. ProjectCode={Clean(movement.ProjeKodu)}");
+                throw new InvalidOperationException(_localizationService.GetLocalizedString(
+                    "ErpReceiptShipmentMovementSyncJob.FishReceiptProjectNotMatched",
+                    Clean(movement.ProjeKodu)));
             }
 
             if (projectCage == null)
             {
-                throw new InvalidOperationException($"ERP fish receipt cage could not be matched. CageCode={movement.KafesKodu?.ToString() ?? "null"}");
+                throw new InvalidOperationException(_localizationService.GetLocalizedString(
+                    "ErpReceiptShipmentMovementSyncJob.FishReceiptCageNotMatched",
+                    movement.KafesKodu?.ToString(CultureInfo.InvariantCulture) ?? "null",
+                    Clean(movement.ProjeKodu)));
             }
 
             var fishCount = ResolveCount(movement);
@@ -389,7 +396,9 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             var averageGram = await ResolveAverageGramAsync(fishBatch, projectCage);
             if (averageGram <= 0)
             {
-                throw new InvalidOperationException($"ERP fish receipt average gram could not be resolved. SourceMovementKey={sourceMovementKey}");
+                throw new InvalidOperationException(_localizationService.GetLocalizedString(
+                    "ErpReceiptShipmentMovementSyncJob.FishReceiptAverageGramMissing",
+                    sourceMovementKey));
             }
 
             var biomassGram = Math.Round(fishCount * averageGram, 3, MidpointRounding.AwayFromZero);
@@ -509,16 +518,24 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
         private async Task<ApplyOutcome> ApplyShipmentMovementAsync(MalKabulVeSevkiyatDto movement, string sourceMovementKey)
         {
             var project = await ResolveProjectAsync(movement)
-                ?? throw new InvalidOperationException($"ERP shipment project could not be matched. ProjectCode={Clean(movement.ProjeKodu)}");
+                ?? throw new InvalidOperationException(_localizationService.GetLocalizedString(
+                    "ErpReceiptShipmentMovementSyncJob.ShipmentProjectNotMatched",
+                    Clean(movement.ProjeKodu)));
             var stock = await ResolveStockAsync(movement);
             var projectCage = await ResolveProjectCageAsync(project, movement.KafesKodu)
-                ?? throw new InvalidOperationException($"ERP shipment cage could not be matched. CageCode={movement.KafesKodu?.ToString() ?? "null"}");
+                ?? throw new InvalidOperationException(_localizationService.GetLocalizedString(
+                    "ErpReceiptShipmentMovementSyncJob.ShipmentCageNotMatched",
+                    movement.KafesKodu?.ToString(CultureInfo.InvariantCulture) ?? "null",
+                    Clean(movement.ProjeKodu)));
 
             var fishCount = ResolveCount(movement);
             var activeBalance = await ResolveShipmentBalanceAsync(projectCage.Id, stock.Id);
             if (activeBalance == null)
             {
-                throw new InvalidOperationException($"ERP shipment live balance could not be found. ProjectCageId={projectCage.Id}, StockId={stock.Id}");
+                throw new InvalidOperationException(_localizationService.GetLocalizedString(
+                    "ErpReceiptShipmentMovementSyncJob.ShipmentLiveBalanceNotFound",
+                    projectCage.Id,
+                    stock.Id));
             }
 
             var averageGram = activeBalance.AverageGram > 0 ? activeBalance.AverageGram : activeBalance.FishBatch?.CurrentAverageGram ?? 0;
@@ -642,7 +659,9 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
         {
             var stockCode = Clean(movement.StokKodu);
             return await _db.Stocks.IgnoreQueryFilters().FirstOrDefaultAsync(x => !x.IsDeleted && x.ErpStockCode == stockCode)
-                ?? throw new InvalidOperationException($"ERP stock could not be matched. StockCode={stockCode}");
+                ?? throw new InvalidOperationException(_localizationService.GetLocalizedString(
+                    "ErpReceiptShipmentMovementSyncJob.StockNotMatched",
+                    stockCode));
         }
 
         private async Task<StockEntity?> ResolveStockOrDefaultAsync(MalKabulVeSevkiyatDto movement)

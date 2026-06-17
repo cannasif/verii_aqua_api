@@ -277,4 +277,37 @@
   <data name="HangfireController.DailyErpWarehouseIssueJobEnqueued" xml:space="preserve">
     <value>Günlük ERP ambar çıkış işi kuyruğa alındı.</value>
   </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.InvalidMovementData" xml:space="preserve">
+    <value>ERP hareketi işlenemedi: stok kodu, hareket tarihi veya miktar bilgisi eksik ya da geçersiz.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.MatchFailed" xml:space="preserve">
+    <value>ERP hareketi Aqua proje, kafes/depo veya stok kayıtlarıyla eşleştirilemedi.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.UnsupportedOperationType" xml:space="preserve">
+    <value>ERP hareketi desteklenmeyen işlem türü nedeniyle atlandı.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.MatchOrProcessFailed" xml:space="preserve">
+    <value>ERP hareketi tam olarak eşleştirilemedi veya işlenemedi.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptProjectNotMatched" xml:space="preserve">
+    <value>ERP balık mal kabul hareketi işlenemedi: {0} proje kodu Aqua projesiyle eşleşmedi.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptCageNotMatched" xml:space="preserve">
+    <value>ERP balık mal kabul hareketi işlenemedi: ERP depo kodu {0}, {1} projesinde aktif bir Aqua kafesiyle eşleşmedi.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptAverageGramMissing" xml:space="preserve">
+    <value>ERP balık mal kabul hareketi işlenemedi: ortalama gram bilgisi çözülemedi. Kaynak anahtar: {0}</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentProjectNotMatched" xml:space="preserve">
+    <value>ERP sevkiyat hareketi işlenemedi: {0} proje kodu Aqua projesiyle eşleşmedi.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentCageNotMatched" xml:space="preserve">
+    <value>ERP sevkiyat hareketi işlenemedi: ERP depo kodu {0}, {1} projesinde aktif bir Aqua kafesiyle eşleşmedi.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentLiveBalanceNotFound" xml:space="preserve">
+    <value>ERP sevkiyat hareketi işlenemedi: proje kafesi {0} ve stok {1} için canlı bakiye bulunamadı.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.StockNotMatched" xml:space="preserve">
+    <value>ERP hareketi işlenemedi: {0} stok kodu Aqua stok kaydıyla eşleşmedi.</value>
+  </data>
 </root>

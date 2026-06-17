@@ -277,4 +277,37 @@
   <data name="HangfireController.DailyErpWarehouseIssueJobEnqueued" xml:space="preserve">
     <value>Le job quotidien de sortie d'entrepôt ERP a été mis en file d'attente.</value>
   </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.InvalidMovementData" xml:space="preserve">
+    <value>Le mouvement ERP n'a pas pu être traité : le code stock, la date du mouvement ou la quantité est manquant ou invalide.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.MatchFailed" xml:space="preserve">
+    <value>Le mouvement ERP n'a pas pu être rapproché avec les enregistrements projet, cage/entrepôt ou stock Aqua.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.UnsupportedOperationType" xml:space="preserve">
+    <value>Le mouvement ERP a été ignoré car le type d'opération n'est pas pris en charge.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.MatchOrProcessFailed" xml:space="preserve">
+    <value>Le mouvement ERP n'a pas pu être entièrement rapproché ou traité.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptProjectNotMatched" xml:space="preserve">
+    <value>La réception poisson ERP n'a pas pu être traitée : le code projet {0} ne correspond à aucun projet Aqua.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptCageNotMatched" xml:space="preserve">
+    <value>La réception poisson ERP n'a pas pu être traitée : le code entrepôt ERP {0} ne correspond à aucune cage Aqua active dans le projet {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptAverageGramMissing" xml:space="preserve">
+    <value>La réception poisson ERP n'a pas pu être traitée : le poids moyen n'a pas pu être déterminé. Clé source : {0}</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentProjectNotMatched" xml:space="preserve">
+    <value>L'expédition ERP n'a pas pu être traitée : le code projet {0} ne correspond à aucun projet Aqua.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentCageNotMatched" xml:space="preserve">
+    <value>L'expédition ERP n'a pas pu être traitée : le code entrepôt ERP {0} ne correspond à aucune cage Aqua active dans le projet {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentLiveBalanceNotFound" xml:space="preserve">
+    <value>L'expédition ERP n'a pas pu être traitée : aucun solde vivant trouvé pour la cage projet {0} et le stock {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.StockNotMatched" xml:space="preserve">
+    <value>Le mouvement ERP n'a pas pu être traité : le code stock {0} ne correspond à aucun stock Aqua.</value>
+  </data>
 </root>

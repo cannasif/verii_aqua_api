@@ -277,4 +277,37 @@
   <data name="HangfireController.DailyErpWarehouseIssueJobEnqueued" xml:space="preserve">
     <value>Daily ERP warehouse issue job has been queued.</value>
   </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.InvalidMovementData" xml:space="preserve">
+    <value>ERP movement could not be processed: stock code, movement date, or quantity is missing or invalid.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.MatchFailed" xml:space="preserve">
+    <value>ERP movement could not be matched with Aqua project, cage/warehouse, or stock records.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.UnsupportedOperationType" xml:space="preserve">
+    <value>ERP movement was skipped because the operation type is not supported.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.MatchOrProcessFailed" xml:space="preserve">
+    <value>ERP movement could not be fully matched or processed.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptProjectNotMatched" xml:space="preserve">
+    <value>ERP fish receipt movement could not be processed: project code {0} was not matched with an Aqua project.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptCageNotMatched" xml:space="preserve">
+    <value>ERP fish receipt movement could not be processed: ERP warehouse code {0} was not matched with an active Aqua cage in project {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptAverageGramMissing" xml:space="preserve">
+    <value>ERP fish receipt movement could not be processed: average gram could not be resolved. Source key: {0}</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentProjectNotMatched" xml:space="preserve">
+    <value>ERP shipment movement could not be processed: project code {0} was not matched with an Aqua project.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentCageNotMatched" xml:space="preserve">
+    <value>ERP shipment movement could not be processed: ERP warehouse code {0} was not matched with an active Aqua cage in project {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentLiveBalanceNotFound" xml:space="preserve">
+    <value>ERP shipment movement could not be processed: live balance was not found for project cage {0} and stock {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.StockNotMatched" xml:space="preserve">
+    <value>ERP movement could not be processed: stock code {0} was not matched with an Aqua stock record.</value>
+  </data>
 </root>

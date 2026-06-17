@@ -277,4 +277,37 @@
   <data name="HangfireController.DailyErpWarehouseIssueJobEnqueued" xml:space="preserve">
     <value>Der tägliche ERP-Lagerausgangsjob wurde in die Warteschlange gestellt.</value>
   </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.InvalidMovementData" xml:space="preserve">
+    <value>Die ERP-Bewegung konnte nicht verarbeitet werden: Artikelcode, Bewegungsdatum oder Menge fehlt oder ist ungültig.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.MatchFailed" xml:space="preserve">
+    <value>Die ERP-Bewegung konnte keinem Aqua-Projekt, Käfig/Lager oder Artikel zugeordnet werden.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.UnsupportedOperationType" xml:space="preserve">
+    <value>Die ERP-Bewegung wurde übersprungen, weil der Vorgangstyp nicht unterstützt wird.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.MatchOrProcessFailed" xml:space="preserve">
+    <value>Die ERP-Bewegung konnte nicht vollständig zugeordnet oder verarbeitet werden.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptProjectNotMatched" xml:space="preserve">
+    <value>Der ERP-Fischwareneingang konnte nicht verarbeitet werden: Projektcode {0} wurde keinem Aqua-Projekt zugeordnet.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptCageNotMatched" xml:space="preserve">
+    <value>Der ERP-Fischwareneingang konnte nicht verarbeitet werden: ERP-Lagercode {0} wurde keinem aktiven Aqua-Käfig im Projekt {1} zugeordnet.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptAverageGramMissing" xml:space="preserve">
+    <value>Der ERP-Fischwareneingang konnte nicht verarbeitet werden: Durchschnittsgewicht konnte nicht ermittelt werden. Quellschlüssel: {0}</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentProjectNotMatched" xml:space="preserve">
+    <value>Die ERP-Versandbewegung konnte nicht verarbeitet werden: Projektcode {0} wurde keinem Aqua-Projekt zugeordnet.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentCageNotMatched" xml:space="preserve">
+    <value>Die ERP-Versandbewegung konnte nicht verarbeitet werden: ERP-Lagercode {0} wurde keinem aktiven Aqua-Käfig im Projekt {1} zugeordnet.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentLiveBalanceNotFound" xml:space="preserve">
+    <value>Die ERP-Versandbewegung konnte nicht verarbeitet werden: Für Projektkäfig {0} und Artikel {1} wurde kein Livebestand gefunden.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.StockNotMatched" xml:space="preserve">
+    <value>Die ERP-Bewegung konnte nicht verarbeitet werden: Artikelcode {0} wurde keinem Aqua-Artikel zugeordnet.</value>
+  </data>
 </root>

@@ -277,4 +277,37 @@
   <data name="HangfireController.DailyErpWarehouseIssueJobEnqueued" xml:space="preserve">
     <value>El trabajo diario de salida de almacén ERP se puso en cola.</value>
   </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.InvalidMovementData" xml:space="preserve">
+    <value>No se pudo procesar el movimiento ERP: falta el código de stock, la fecha del movimiento o la cantidad, o son inválidos.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.MatchFailed" xml:space="preserve">
+    <value>El movimiento ERP no pudo vincularse con registros de proyecto, jaula/almacén o stock de Aqua.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.UnsupportedOperationType" xml:space="preserve">
+    <value>El movimiento ERP se omitió porque el tipo de operación no está soportado.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.MatchOrProcessFailed" xml:space="preserve">
+    <value>El movimiento ERP no pudo vincularse o procesarse por completo.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptProjectNotMatched" xml:space="preserve">
+    <value>No se pudo procesar la recepción de pescado ERP: el código de proyecto {0} no coincide con un proyecto Aqua.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptCageNotMatched" xml:space="preserve">
+    <value>No se pudo procesar la recepción de pescado ERP: el código de almacén ERP {0} no coincide con una jaula Aqua activa en el proyecto {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.FishReceiptAverageGramMissing" xml:space="preserve">
+    <value>No se pudo procesar la recepción de pescado ERP: no se pudo resolver el gramaje promedio. Clave de origen: {0}</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentProjectNotMatched" xml:space="preserve">
+    <value>No se pudo procesar el envío ERP: el código de proyecto {0} no coincide con un proyecto Aqua.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentCageNotMatched" xml:space="preserve">
+    <value>No se pudo procesar el envío ERP: el código de almacén ERP {0} no coincide con una jaula Aqua activa en el proyecto {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.ShipmentLiveBalanceNotFound" xml:space="preserve">
+    <value>No se pudo procesar el envío ERP: no se encontró saldo vivo para la jaula de proyecto {0} y el stock {1}.</value>
+  </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.StockNotMatched" xml:space="preserve">
+    <value>No se pudo procesar el movimiento ERP: el código de stock {0} no coincide con un registro de stock de Aqua.</value>
+  </data>
 </root>
