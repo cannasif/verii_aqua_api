@@ -714,6 +714,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 var cageByWarehouseName = await ResolveCageFromWarehouseNameAsync(warehouse.WarehouseName);
                 if (cageByWarehouseName != null)
                 {
+                    await EnsureCageWarehouseMappingAsync(cageByWarehouseName, warehouse);
                     return cageByWarehouseName;
                 }
             }
@@ -752,6 +753,36 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                    warehouseName.StartsWith($"{cageCode} ", StringComparison.OrdinalIgnoreCase) ||
                    warehouseName.StartsWith($"{cageCode}-", StringComparison.OrdinalIgnoreCase) ||
                    warehouseName.StartsWith($"{cageCode}_", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private async Task EnsureCageWarehouseMappingAsync(Cage cage, WarehouseEntity warehouse)
+        {
+            var activeMapping = await _db.CageWarehouseMappings
+                .IgnoreQueryFilters()
+                .FirstOrDefaultAsync(x => !x.IsDeleted && x.IsActive && x.CageId == cage.Id);
+
+            if (activeMapping == null)
+            {
+                await _db.CageWarehouseMappings.AddAsync(new CageWarehouseMapping
+                {
+                    CageId = cage.Id,
+                    WarehouseId = warehouse.Id,
+                    IsActive = true,
+                    Note = _localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.CageWarehouseMappingAutoRepaired"),
+                    CreatedDate = DateTimeProvider.Now,
+                    IsDeleted = false
+                });
+                return;
+            }
+
+            if (activeMapping.WarehouseId == warehouse.Id)
+            {
+                return;
+            }
+
+            activeMapping.WarehouseId = warehouse.Id;
+            activeMapping.Note = _localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.CageWarehouseMappingAutoRepaired");
+            activeMapping.UpdatedDate = DateTimeProvider.Now;
         }
 
         private async Task<WarehouseEntity?> ResolveWarehouseAsync(short? erpWarehouseCode)

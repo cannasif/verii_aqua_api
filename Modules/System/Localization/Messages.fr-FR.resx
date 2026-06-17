@@ -310,4 +310,7 @@
   <data name="ErpReceiptShipmentMovementSyncJob.StockNotMatched" xml:space="preserve">
     <value>Le mouvement ERP n'a pas pu être traité : le code stock {0} ne correspond à aucun stock Aqua.</value>
   </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.CageWarehouseMappingAutoRepaired" xml:space="preserve">
+    <value>La correspondance active de l'entrepôt a été automatiquement mise à jour après détection de la cage depuis le nom d'entrepôt ERP lors du rapprochement du mouvement.</value>
+  </data>
 </root>

@@ -310,4 +310,7 @@
   <data name="ErpReceiptShipmentMovementSyncJob.StockNotMatched" xml:space="preserve">
     <value>No se pudo procesar el movimiento ERP: el código de stock {0} no coincide con un registro de stock de Aqua.</value>
   </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.CageWarehouseMappingAutoRepaired" xml:space="preserve">
+    <value>La asignación activa de almacén se actualizó automáticamente al detectar la jaula desde el nombre del almacén ERP durante la vinculación del movimiento.</value>
+  </data>
 </root>

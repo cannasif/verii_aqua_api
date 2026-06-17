@@ -310,4 +310,7 @@
   <data name="ErpReceiptShipmentMovementSyncJob.StockNotMatched" xml:space="preserve">
     <value>Die ERP-Bewegung konnte nicht verarbeitet werden: Artikelcode {0} wurde keinem Aqua-Artikel zugeordnet.</value>
   </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.CageWarehouseMappingAutoRepaired" xml:space="preserve">
+    <value>Die aktive Lagerzuordnung wurde automatisch aktualisiert, nachdem der Käfig beim Bewegungsabgleich aus dem ERP-Lagernamen erkannt wurde.</value>
+  </data>
 </root>

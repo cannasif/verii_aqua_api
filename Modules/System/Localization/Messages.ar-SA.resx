@@ -310,4 +310,7 @@
   <data name="ErpReceiptShipmentMovementSyncJob.StockNotMatched" xml:space="preserve">
     <value>تعذرت معالجة حركة ERP: كود المخزون {0} غير مرتبط بسجل مخزون Aqua.</value>
   </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.CageWarehouseMappingAutoRepaired" xml:space="preserve">
+    <value>تم تحديث ربط المستودع النشط تلقائياً بعد اكتشاف القفص من اسم مستودع ERP أثناء مطابقة الحركة.</value>
+  </data>
 </root>

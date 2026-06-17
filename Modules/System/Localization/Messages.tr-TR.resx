@@ -310,4 +310,7 @@
   <data name="ErpReceiptShipmentMovementSyncJob.StockNotMatched" xml:space="preserve">
     <value>ERP hareketi işlenemedi: {0} stok kodu Aqua stok kaydıyla eşleşmedi.</value>
   </data>
+  <data name="ErpReceiptShipmentMovementSyncJob.CageWarehouseMappingAutoRepaired" xml:space="preserve">
+    <value>ERP hareket eşlemesi sırasında depo adından kafes tespit edilerek aktif depo eşlemesi otomatik güncellendi.</value>
+  </data>
 </root>
