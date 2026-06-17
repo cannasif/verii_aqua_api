@@ -400,7 +400,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             }
 
             var fishCount = ResolveCount(movement);
-            var fishBatch = await ResolveOrCreateFishBatchAsync(project, stock, receipt, movement);
+            var fishBatch = await ResolveOrCreateFishBatchAsync(project, stock, receipt, movement, projectCage, warehouse);
             var averageGram = await ResolveAverageGramAsync(fishBatch, projectCage, warehouse);
             var biomassGram = Math.Round(fishCount * averageGram, 3, MidpointRounding.AwayFromZero);
             var existingLine = await _db.GoodsReceiptLines
@@ -917,7 +917,13 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 : null;
         }
 
-        private async Task<FishBatch> ResolveOrCreateFishBatchAsync(Project project, StockEntity stock, GoodsReceipt receipt, MalKabulVeSevkiyatDto movement)
+        private async Task<FishBatch> ResolveOrCreateFishBatchAsync(
+            Project project,
+            StockEntity stock,
+            GoodsReceipt receipt,
+            MalKabulVeSevkiyatDto movement,
+            ProjectCage? projectCage,
+            WarehouseEntity? warehouse)
         {
             var existingBatch = await _db.FishBatches
                 .IgnoreQueryFilters()
@@ -930,12 +936,13 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 return existingBatch;
             }
 
+            var initialAverageGram = await ResolveInitialAverageGramAsync(project.Id, stock.Id, projectCage, warehouse);
             var batch = new FishBatch
             {
                 ProjectId = project.Id,
                 BatchCode = receipt.ReceiptNo,
                 FishStockId = stock.Id,
-                CurrentAverageGram = 0,
+                CurrentAverageGram = initialAverageGram,
                 StartDate = movement.Tarih,
                 CreatedDate = DateTimeProvider.Now,
                 IsDeleted = false
@@ -944,6 +951,72 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             await _db.FishBatches.AddAsync(batch);
             await _db.SaveChangesAsync();
             return batch;
+        }
+
+        private async Task<decimal> ResolveInitialAverageGramAsync(
+            long projectId,
+            long stockId,
+            ProjectCage? projectCage,
+            WarehouseEntity? warehouse)
+        {
+            if (projectCage != null)
+            {
+                var cageAverageGram = await _db.BatchCageBalances
+                    .AsNoTracking()
+                    .Include(x => x.FishBatch)
+                    .Where(x =>
+                        !x.IsDeleted &&
+                        x.ProjectCageId == projectCage.Id &&
+                        x.AverageGram > 0 &&
+                        x.FishBatch != null &&
+                        !x.FishBatch.IsDeleted &&
+                        x.FishBatch.ProjectId == projectId &&
+                        x.FishBatch.FishStockId == stockId)
+                    .OrderByDescending(x => x.AsOfDate)
+                    .Select(x => (decimal?)x.AverageGram)
+                    .FirstOrDefaultAsync();
+
+                if (cageAverageGram.GetValueOrDefault() > 0)
+                {
+                    return cageAverageGram.Value;
+                }
+            }
+
+            if (warehouse != null)
+            {
+                var warehouseAverageGram = await _db.BatchWarehouseBalances
+                    .AsNoTracking()
+                    .Include(x => x.FishBatch)
+                    .Where(x =>
+                        !x.IsDeleted &&
+                        x.ProjectId == projectId &&
+                        x.WarehouseId == warehouse.Id &&
+                        x.AverageGram > 0 &&
+                        x.FishBatch != null &&
+                        !x.FishBatch.IsDeleted &&
+                        x.FishBatch.FishStockId == stockId)
+                    .OrderByDescending(x => x.AsOfDate)
+                    .Select(x => (decimal?)x.AverageGram)
+                    .FirstOrDefaultAsync();
+
+                if (warehouseAverageGram.GetValueOrDefault() > 0)
+                {
+                    return warehouseAverageGram.Value;
+                }
+            }
+
+            var projectAverageGram = await _db.FishBatches
+                .AsNoTracking()
+                .Where(x =>
+                    !x.IsDeleted &&
+                    x.ProjectId == projectId &&
+                    x.FishStockId == stockId &&
+                    x.CurrentAverageGram > 0)
+                .OrderByDescending(x => x.StartDate)
+                .Select(x => (decimal?)x.CurrentAverageGram)
+                .FirstOrDefaultAsync();
+
+            return projectAverageGram.GetValueOrDefault() > 0 ? projectAverageGram.Value : 1m;
         }
 
         private async Task<decimal> ResolveAverageGramAsync(FishBatch fishBatch, ProjectCage? projectCage, WarehouseEntity? warehouse)
