@@ -274,4 +274,7 @@
   <data name="WarehouseSyncJob.ErpFetchFailed" xml:space="preserve">
     <value>Impossibile recuperare i dati del magazzino ERP.</value>
   </data>
+  <data name="HangfireController.DailyErpWarehouseIssueJobEnqueued" xml:space="preserve">
+    <value>Il job giornaliero di uscita magazzino ERP è stato accodato.</value>
+  </data>
 </root>

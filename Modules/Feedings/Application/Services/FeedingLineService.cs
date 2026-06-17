@@ -315,13 +315,13 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 await _unitOfWork.CommitTransactionAsync();
 
                 var userId = entity.CreatedBy ?? feeding.CreatedBy ?? 1L;
-                var postResult = await _feedingService.Post(feeding.Id, userId);
-                if (!postResult.Success)
+                var queueResult = await _feedingService.QueueErpIntegrationAsync(feeding.Id, userId);
+                if (!queueResult.Success)
                 {
                     return ApiResponse<FeedingLineDto>.ErrorResult(
-                        postResult.Message,
-                        postResult.ExceptionMessage,
-                        postResult.StatusCode);
+                        queueResult.Message,
+                        queueResult.ExceptionMessage,
+                        queueResult.StatusCode);
                 }
 
                 await ReloadFeedingLineDetailsAsync(entity);

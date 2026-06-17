@@ -186,12 +186,21 @@ public static class WebApplicationExtensions
                     "erp-receipt-shipment-movement-sync-job",
                     job => job.ExecuteAsync(),
                     "25,55 * * * *");
+                RecurringJob.AddOrUpdate<IDailyErpWarehouseIssueJob>(
+                    "daily-erp-warehouse-issue-job",
+                    job => job.ExecuteAsync(),
+                    "50 23 * * *",
+                    new RecurringJobOptions
+                    {
+                        TimeZone = ResolveTurkeyTimeZone()
+                    });
             }
             else
             {
                 RecurringJob.RemoveIfExists("erp-stock-sync-job");
                 RecurringJob.RemoveIfExists("erp-warehouse-sync-job");
                 RecurringJob.RemoveIfExists("erp-receipt-shipment-movement-sync-job");
+                RecurringJob.RemoveIfExists("daily-erp-warehouse-issue-job");
                 app.Logger.LogInformation("Skipping recurring ERP sync jobs in Development environment. Set Hangfire:StockSync:EnableInDevelopment=true to enable.");
             }
         }
@@ -218,6 +227,18 @@ public static class WebApplicationExtensions
                 .Any(value => string.Equals(value, "Origin", StringComparison.OrdinalIgnoreCase)))
         {
             ctx.Response.Headers.Vary = string.IsNullOrWhiteSpace(vary) ? "Origin" : $"{vary}, Origin";
+        }
+    }
+
+    private static TimeZoneInfo ResolveTurkeyTimeZone()
+    {
+        try
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Europe/Istanbul");
+        }
+        catch (TimeZoneNotFoundException)
+        {
+            return TimeZoneInfo.FindSystemTimeZoneById("Turkey Standard Time");
         }
     }
 

@@ -17,6 +17,10 @@ namespace aqua_api.Modules.System.Infrastructure.Monitoring
                     "ERP mal kabul ve sevkiyat hareketleri",
                     "Netsis mal kabul, yem girişi ve sevkiyat hareketlerini okuyup Aqua operasyon kayıtlarıyla eşleştirir.",
                     "ERP Operasyon"),
+                ["daily-erp-warehouse-issue-job"] = new(
+                    "Günlük ERP ambar çıkışları",
+                    "Günün bekleyen yemleme ve fire kayıtlarını Netsis ambar çıkışı olarak arka planda gönderir.",
+                    "ERP Operasyon"),
             };
 
         private static readonly IReadOnlyDictionary<string, HangfireJobDisplayInfo> TypeNames =
@@ -25,6 +29,7 @@ namespace aqua_api.Modules.System.Infrastructure.Monitoring
                 ["StockSyncJob"] = RecurringJobs["erp-stock-sync-job"],
                 ["WarehouseSyncJob"] = RecurringJobs["erp-warehouse-sync-job"],
                 ["ErpReceiptShipmentMovementSyncJob"] = RecurringJobs["erp-receipt-shipment-movement-sync-job"],
+                ["DailyErpWarehouseIssueJob"] = RecurringJobs["daily-erp-warehouse-issue-job"],
                 ["MailJob"] = new("E-posta gönderimi", "Sistem e-posta bildirimlerini arka planda gönderir.", "Sistem"),
                 ["HangfireDeadLetterJob"] = new("Başarısız job arşivleme", "Kritik seviyede başarısız olan işleri dead-letter kuyruğuna taşır.", "Sistem"),
             };

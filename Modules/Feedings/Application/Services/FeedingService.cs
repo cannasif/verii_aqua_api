@@ -244,6 +244,75 @@ namespace aqua_api.Modules.Feedings.Application.Services
             }
         }
 
+        public async Task<ApiResponse<bool>> QueueErpIntegrationAsync(long feedingId, long userId)
+        {
+            try
+            {
+                var feeding = await _unitOfWork.Feedings.GetByIdForUpdateAsync(feedingId);
+                if (feeding == null)
+                {
+                    return ApiResponse<bool>.ErrorResult(
+                        _localizationService.GetLocalizedString("FeedingService.FeedingNotFound"),
+                        _localizationService.GetLocalizedString("FeedingService.FeedingNotFound"),
+                        StatusCodes.Status404NotFound);
+                }
+
+                if (feeding.Status != DocumentStatus.Cancelled)
+                {
+                    feeding.Status = DocumentStatus.Posted;
+                    feeding.IsERPIntegrated = false;
+                    feeding.ERPReferenceNumber = null;
+                    feeding.ERPIntegrationDate = null;
+                    feeding.ERPIntegrationStatus = "Pending";
+                    feeding.ERPErrorMessage = null;
+                    feeding.UpdatedBy = userId;
+                    feeding.UpdatedDate = DateTimeProvider.UtcNow;
+
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("FeedingService.OperationSuccessful"));
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<bool>.ErrorResult(
+                    _localizationService.GetLocalizedString("FeedingService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        public async Task<int> ProcessPendingErpIntegrationsAsync(DateTime operationDate, long userId)
+        {
+            var targetDate = operationDate.Date;
+            var feedingIds = await _unitOfWork.Feedings
+                .Query()
+                .AsNoTracking()
+                .Where(x =>
+                    !x.IsDeleted &&
+                    x.Status == DocumentStatus.Posted &&
+                    !x.IsERPIntegrated &&
+                    x.FeedingDate.Date <= targetDate &&
+                    (x.ERPIntegrationStatus == null ||
+                     x.ERPIntegrationStatus == "Pending" ||
+                     x.ERPIntegrationStatus == "Failed"))
+                .OrderBy(x => x.Id)
+                .Select(x => x.Id)
+                .ToListAsync();
+
+            var successCount = 0;
+            foreach (var feedingId in feedingIds)
+            {
+                var result = await Post(feedingId, userId);
+                if (result.Success)
+                {
+                    successCount++;
+                }
+            }
+
+            return successCount;
+        }
+
         private async Task<Feeding?> LoadFeedingForPostingAsync(long feedingId)
         {
             return await _unitOfWork.Feedings

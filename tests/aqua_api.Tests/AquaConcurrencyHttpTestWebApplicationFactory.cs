@@ -35,6 +35,7 @@ public sealed class AquaConcurrencyHttpTestWebApplicationFactory : WebApplicatio
             services.RemoveAll(typeof(DbContextOptions<AquaDbContext>));
             services.RemoveAll(typeof(AquaDbContext));
             services.RemoveAll(typeof(IErpService));
+            services.RemoveAll(typeof(INetsisItemSlipService));
 
             services.AddScoped<AquaDbContext>(_ =>
             {
@@ -54,6 +55,7 @@ public sealed class AquaConcurrencyHttpTestWebApplicationFactory : WebApplicatio
                 _ => { });
 
             services.AddScoped<IErpService, FakeErpService>();
+            services.AddScoped<INetsisItemSlipService, FakeNetsisItemSlipService>();
         });
     }
 

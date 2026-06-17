@@ -48,6 +48,7 @@ public sealed class AquaHttpTestWebApplicationFactory : WebApplicationFactory<Pr
             services.RemoveAll(typeof(DbContextOptions<AquaDbContext>));
             services.RemoveAll(typeof(AquaDbContext));
             services.RemoveAll(typeof(IErpService));
+            services.RemoveAll(typeof(INetsisItemSlipService));
 
             services.AddSingleton(_connection);
             services.AddScoped<AquaDbContext>(sp =>
@@ -69,6 +70,7 @@ public sealed class AquaHttpTestWebApplicationFactory : WebApplicationFactory<Pr
                 _ => { });
 
             services.AddScoped<IErpService, FakeErpService>();
+            services.AddScoped<INetsisItemSlipService, FakeNetsisItemSlipService>();
         });
     }
 
@@ -253,6 +255,31 @@ internal sealed class FakeErpService : IErpService
 
     public Task<ApiResponse<object>> HealthCheckAsync()
         => Task.FromResult(ApiResponse<object>.SuccessResult(new { healthy = true }, "ok"));
+}
+
+internal sealed class FakeNetsisItemSlipService : INetsisItemSlipService
+{
+    public Task<NetsisItemSlipCreateResponseDto> CreateWarehouseTransferOutAsync(NetsisItemSlipCreateDto request, CancellationToken cancellationToken = default)
+        => CreateDocumentAsync(request, NetsisItemSlipDocumentType.WarehouseTransferOut, cancellationToken);
+
+    public Task<NetsisItemSlipCreateResponseDto> CreateWarehouseTransferInAsync(NetsisItemSlipCreateDto request, CancellationToken cancellationToken = default)
+        => CreateDocumentAsync(request, NetsisItemSlipDocumentType.WarehouseTransferIn, cancellationToken);
+
+    public Task<NetsisItemSlipCreateResponseDto> CreateDocumentAsync(
+        NetsisItemSlipCreateDto request,
+        NetsisItemSlipDocumentType documentType,
+        CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(new NetsisItemSlipCreateResponseDto
+        {
+            IsSuccessful = true,
+            IsSuccessStatusCode = true,
+            Data = new NetsisItemSlipResponseDataDto
+            {
+                FisNo = request.FatUst.FatirsNo ?? $"TEST-{documentType}-{Guid.NewGuid():N}"[..20]
+            }
+        });
+    }
 }
 
 internal sealed class SqliteHttpTestAquaDbContext : AquaDbContext

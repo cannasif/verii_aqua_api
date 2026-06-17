@@ -60,6 +60,7 @@ public class AquaSeededLifecycleIntegrationTests
         services.AddAquaReportsModule();
         services.AddAquaModule();
         services.AddScoped<IErpService, FakeErpService>();
+        services.AddScoped<INetsisItemSlipService, FakeNetsisItemSlipService>();
 
         await using var provider = services.BuildServiceProvider();
         await using var scope = provider.CreateAsyncScope();
@@ -598,6 +599,31 @@ public class AquaSeededLifecycleIntegrationTests
 
         public Task<ApiResponse<object>> HealthCheckAsync()
             => Task.FromResult(ApiResponse<object>.SuccessResult(new { healthy = true }, "ok"));
+    }
+
+    private sealed class FakeNetsisItemSlipService : INetsisItemSlipService
+    {
+        public Task<NetsisItemSlipCreateResponseDto> CreateWarehouseTransferOutAsync(NetsisItemSlipCreateDto request, CancellationToken cancellationToken = default)
+            => CreateDocumentAsync(request, NetsisItemSlipDocumentType.WarehouseTransferOut, cancellationToken);
+
+        public Task<NetsisItemSlipCreateResponseDto> CreateWarehouseTransferInAsync(NetsisItemSlipCreateDto request, CancellationToken cancellationToken = default)
+            => CreateDocumentAsync(request, NetsisItemSlipDocumentType.WarehouseTransferIn, cancellationToken);
+
+        public Task<NetsisItemSlipCreateResponseDto> CreateDocumentAsync(
+            NetsisItemSlipCreateDto request,
+            NetsisItemSlipDocumentType documentType,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new NetsisItemSlipCreateResponseDto
+            {
+                IsSuccessful = true,
+                IsSuccessStatusCode = true,
+                Data = new NetsisItemSlipResponseDataDto
+                {
+                    FisNo = request.FatUst.FatirsNo ?? $"TEST-{documentType}-{Guid.NewGuid():N}"[..20]
+                }
+            });
+        }
     }
 
     private sealed class SqliteTestAquaDbContext : AquaDbContext

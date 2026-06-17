@@ -274,4 +274,7 @@
   <data name="WarehouseSyncJob.ErpFetchFailed" xml:space="preserve">
     <value>ERP-Lagerdaten konnten nicht abgerufen werden.</value>
   </data>
+  <data name="HangfireController.DailyErpWarehouseIssueJobEnqueued" xml:space="preserve">
+    <value>Der tägliche ERP-Lagerausgangsjob wurde in die Warteschlange gestellt.</value>
+  </data>
 </root>

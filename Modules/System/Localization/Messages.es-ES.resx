@@ -274,4 +274,7 @@
   <data name="WarehouseSyncJob.ErpFetchFailed" xml:space="preserve">
     <value>No se pudieron obtener los datos del almacén de ERP.</value>
   </data>
+  <data name="HangfireController.DailyErpWarehouseIssueJobEnqueued" xml:space="preserve">
+    <value>El trabajo diario de salida de almacén ERP se puso en cola.</value>
+  </data>
 </root>

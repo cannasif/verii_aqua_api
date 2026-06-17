@@ -294,6 +294,178 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             }
         }
 
+        public async Task<ApiResponse<bool>> PostAquaAndQueueErpAsync(long mortalityId, long userId)
+        {
+            try
+            {
+                var mortality = await _mortalityRepository.GetForPost(mortalityId)
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.MortalityNotFound"));
+
+                if (mortality.Status == DocumentStatus.Posted)
+                {
+                    await MarkErpPendingAsync(mortality.Id, userId);
+                    return ApiResponse<bool>.SuccessResult(
+                        true,
+                        _localizationService.GetLocalizedString("MortalityService.OperationSuccessful"));
+                }
+
+                EnsureDraftStatus(mortality.Status, nameof(Mortality));
+
+                var postLines = await BuildMortalityPostLinesAsync(mortality, validateBalance: true);
+
+                await _unitOfWork.BeginTransaction();
+
+                foreach (var postLine in postLines)
+                {
+                    await _balanceLedgerManager.ApplyDelta(
+                        mortality.ProjectId,
+                        postLine.Line.FishBatchId,
+                        postLine.Line.ProjectCageId,
+                        -postLine.Line.DeadCount,
+                        postLine.BiomassDelta,
+                        BatchMovementType.Mortality,
+                        mortality.MortalityDate,
+                        "Mortality",
+                        "RII_Mortality",
+                        mortality.Id,
+                        postLine.Line.ProjectCageId,
+                        null,
+                        null,
+                        null,
+                        postLine.AverageGram,
+                        postLine.AverageGram,
+                        userId);
+                }
+
+                var trackedMortality = await _unitOfWork.Mortalities.GetByIdForUpdateAsync(mortality.Id)
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.MortalityNotFound"));
+
+                trackedMortality.Status = DocumentStatus.Posted;
+                trackedMortality.IsERPIntegrated = false;
+                trackedMortality.ERPReferenceNumber = null;
+                trackedMortality.ERPIntegrationDate = null;
+                trackedMortality.ERPIntegrationStatus = "Pending";
+                trackedMortality.ERPErrorMessage = null;
+                trackedMortality.UpdatedBy = userId;
+                trackedMortality.UpdatedDate = DateTimeProvider.UtcNow;
+
+                await _unitOfWork.SaveChanges();
+                await _unitOfWork.Commit();
+
+                return ApiResponse<bool>.SuccessResult(
+                    true,
+                    _localizationService.GetLocalizedString("MortalityService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                await _unitOfWork.Rollback();
+                return ApiResponse<bool>.ErrorResult(
+                    _localizationService.GetLocalizedString("MortalityService.BusinessRuleError"),
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.Rollback();
+                return ApiResponse<bool>.ErrorResult(
+                    _localizationService.GetLocalizedString("MortalityService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        public async Task<int> ProcessPendingErpIntegrationsAsync(DateTime operationDate, long userId)
+        {
+            var targetDate = operationDate.Date;
+            var mortalityIds = await _unitOfWork.Mortalities
+                .Query()
+                .AsNoTracking()
+                .Where(x =>
+                    !x.IsDeleted &&
+                    x.Status == DocumentStatus.Posted &&
+                    !x.IsERPIntegrated &&
+                    x.MortalityDate.Date <= targetDate &&
+                    (x.ERPIntegrationStatus == null ||
+                     x.ERPIntegrationStatus == "Pending" ||
+                     x.ERPIntegrationStatus == "Failed"))
+                .OrderBy(x => x.Id)
+                .Select(x => x.Id)
+                .ToListAsync();
+
+            var successCount = 0;
+            foreach (var mortalityId in mortalityIds)
+            {
+                var result = await PostPendingErpAsync(mortalityId, userId);
+                if (result.Success)
+                {
+                    successCount++;
+                }
+            }
+
+            return successCount;
+        }
+
+        private async Task<ApiResponse<bool>> PostPendingErpAsync(long mortalityId, long userId)
+        {
+            try
+            {
+                var mortality = await _mortalityRepository.GetForPost(mortalityId)
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.MortalityNotFound"));
+
+                if (mortality.IsERPIntegrated)
+                {
+                    return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("MortalityService.OperationSuccessful"));
+                }
+
+                if (mortality.Status != DocumentStatus.Posted)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", nameof(Mortality)));
+                }
+
+                var postLines = await BuildMortalityPostLinesAsync(mortality, validateBalance: false);
+                var itemSlipRequest = BuildMortalityWarehouseIssueRequest(mortality, postLines);
+                var itemSlipResponse = await _netsisItemSlipService.CreateWarehouseTransferOutAsync(itemSlipRequest);
+                var erpReferenceNumber = ResolveErpReferenceNumber(itemSlipResponse, mortality.MortalityNo ?? $"MORT-{mortality.Id}");
+
+                await _unitOfWork.BeginTransaction();
+
+                var trackedMortality = await _unitOfWork.Mortalities.GetByIdForUpdateAsync(mortality.Id)
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.MortalityNotFound"));
+
+                trackedMortality.IsERPIntegrated = true;
+                trackedMortality.ERPReferenceNumber = erpReferenceNumber;
+                trackedMortality.ERPIntegrationDate = DateTimeProvider.UtcNow;
+                trackedMortality.ERPIntegrationStatus = "Success";
+                trackedMortality.ERPErrorMessage = null;
+                trackedMortality.CountTriedBy = (trackedMortality.CountTriedBy ?? 0) + 1;
+                trackedMortality.UpdatedBy = userId;
+                trackedMortality.UpdatedDate = DateTimeProvider.UtcNow;
+
+                await _unitOfWork.SaveChanges();
+                await _unitOfWork.Commit();
+
+                return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("MortalityService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                await _unitOfWork.Rollback();
+                await MarkErpPostFailedAsync(mortalityId, userId, ex.Message);
+                return ApiResponse<bool>.ErrorResult(
+                    _localizationService.GetLocalizedString("MortalityService.BusinessRuleError"),
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.Rollback();
+                await MarkErpPostFailedAsync(mortalityId, userId, ex.Message);
+                return ApiResponse<bool>.ErrorResult(
+                    _localizationService.GetLocalizedString("MortalityService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
         private NetsisItemSlipCreateDto BuildMortalityWarehouseIssueRequest(Mortality mortality, IReadOnlyCollection<MortalityPostLine> postLines)
         {
             var lines = postLines
@@ -336,6 +508,55 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 },
                 Kalems = lines
             };
+        }
+
+        private async Task<List<MortalityPostLine>> BuildMortalityPostLinesAsync(Mortality mortality, bool validateBalance)
+        {
+            var postLines = new List<MortalityPostLine>();
+            foreach (var line in mortality.Lines.Where(x => !x.IsDeleted))
+            {
+                var balance = await _unitOfWork.Db.BatchCageBalances
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.FishBatchId == line.FishBatchId && x.ProjectCageId == line.ProjectCageId && !x.IsDeleted);
+
+                var averageGram = ResolveAverageGram(balance);
+                if (validateBalance && averageGram <= 0)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.AverageGramMissing"));
+                }
+
+                if (validateBalance && (balance == null || balance.LiveCount < line.DeadCount))
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.InsufficientBalance"));
+                }
+
+                var biomassDelta = validateBalance
+                    ? -Math.Round(averageGram * line.DeadCount, 3, MidpointRounding.AwayFromZero)
+                    : 0m;
+
+                postLines.Add(new MortalityPostLine(line, averageGram, biomassDelta));
+            }
+
+            return postLines;
+        }
+
+        private async Task MarkErpPendingAsync(long mortalityId, long userId)
+        {
+            var mortality = await _unitOfWork.Mortalities.GetByIdForUpdateAsync(mortalityId);
+            if (mortality == null || mortality.Status == DocumentStatus.Cancelled)
+            {
+                return;
+            }
+
+            mortality.IsERPIntegrated = false;
+            mortality.ERPReferenceNumber = null;
+            mortality.ERPIntegrationDate = null;
+            mortality.ERPIntegrationStatus = "Pending";
+            mortality.ERPErrorMessage = null;
+            mortality.UpdatedBy = userId;
+            mortality.UpdatedDate = DateTimeProvider.UtcNow;
+
+            await _unitOfWork.SaveChangesAsync();
         }
 
         private NetsisItemSlipLineDto BuildMortalityWarehouseIssueLine(Mortality mortality, MortalityPostLine postLine)

@@ -150,7 +150,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 if (mortality != null && mortality.Status == DocumentStatus.Draft)
                 {
                     var userId = entity.CreatedBy ?? mortality.CreatedBy ?? 1L;
-                    var postResult = await _mortalityService.Post(mortality.Id, userId);
+                    var postResult = await _mortalityService.PostAquaAndQueueErpAsync(mortality.Id, userId);
                     if (!postResult.Success)
                     {
                         return ApiResponse<MortalityLineDto>.ErrorResult(
@@ -248,7 +248,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 if (mortality.Status == DocumentStatus.Draft)
                 {
                     var userId = entity.CreatedBy ?? mortality.CreatedBy ?? 1L;
-                    var postResult = await _mortalityService.Post(mortality.Id, userId);
+                    var postResult = await _mortalityService.PostAquaAndQueueErpAsync(mortality.Id, userId);
                     if (!postResult.Success)
                     {
                         return ApiResponse<MortalityLineDto>.ErrorResult(

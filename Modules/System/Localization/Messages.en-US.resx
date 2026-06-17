@@ -274,4 +274,7 @@
   <data name="HangfireController.ErpReceiptShipmentMovementSyncJobEnqueued" xml:space="preserve">
     <value>ERP goods receipt and shipment operation synchronization job has been queued.</value>
   </data>
+  <data name="HangfireController.DailyErpWarehouseIssueJobEnqueued" xml:space="preserve">
+    <value>Daily ERP warehouse issue job has been queued.</value>
+  </data>
 </root>

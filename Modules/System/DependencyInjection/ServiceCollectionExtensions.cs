@@ -10,6 +10,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IStockSyncJob, StockSyncJob>();
         services.AddScoped<IWarehouseSyncJob, WarehouseSyncJob>();
         services.AddScoped<IErpReceiptShipmentMovementSyncJob, ErpReceiptShipmentMovementSyncJob>();
+        services.AddScoped<IDailyErpWarehouseIssueJob, DailyErpWarehouseIssueJob>();
         services.AddScoped<IMailJob, MailJob>();
         services.AddScoped<IHangfireDeadLetterJob, HangfireDeadLetterJob>();
 

@@ -35,6 +35,7 @@ public sealed class AquaJwtHttpTestWebApplicationFactory : WebApplicationFactory
             services.RemoveAll(typeof(DbContextOptions<AquaDbContext>));
             services.RemoveAll(typeof(AquaDbContext));
             services.RemoveAll(typeof(IErpService));
+            services.RemoveAll(typeof(INetsisItemSlipService));
 
             services.AddSingleton(_connection);
             services.AddScoped<AquaDbContext>(sp =>
@@ -48,6 +49,7 @@ public sealed class AquaJwtHttpTestWebApplicationFactory : WebApplicationFactory
             });
 
             services.AddScoped<IErpService, FakeErpService>();
+            services.AddScoped<INetsisItemSlipService, FakeNetsisItemSlipService>();
         });
     }
 

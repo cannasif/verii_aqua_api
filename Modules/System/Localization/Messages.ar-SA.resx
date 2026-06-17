@@ -274,4 +274,7 @@
   <data name="HangfireController.ErpReceiptShipmentMovementSyncJobEnqueued" xml:space="preserve">
     <value>تمت إضافة مهمة مزامنة عمليات استلام البضائع والشحن من نظام ERP إلى قائمة الانتظار.</value>
   </data>
+  <data name="HangfireController.DailyErpWarehouseIssueJobEnqueued" xml:space="preserve">
+    <value>تمت إضافة مهمة إخراج المخزون اليومية من ERP إلى قائمة الانتظار.</value>
+  </data>
 </root>

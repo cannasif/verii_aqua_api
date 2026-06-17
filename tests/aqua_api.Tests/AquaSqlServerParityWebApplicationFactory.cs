@@ -41,6 +41,7 @@ public sealed class AquaSqlServerParityWebApplicationFactory : WebApplicationFac
         builder.ConfigureServices(services =>
         {
             services.RemoveAll(typeof(IErpService));
+            services.RemoveAll(typeof(INetsisItemSlipService));
 
             services.AddAuthentication(options =>
             {
@@ -51,6 +52,7 @@ public sealed class AquaSqlServerParityWebApplicationFactory : WebApplicationFac
                 _ => { });
 
             services.AddScoped<IErpService, FakeErpService>();
+            services.AddScoped<INetsisItemSlipService, FakeNetsisItemSlipService>();
         });
     }
 

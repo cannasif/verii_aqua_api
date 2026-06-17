@@ -274,4 +274,7 @@
   <data name="WarehouseSyncJob.ErpFetchFailed" xml:space="preserve">
     <value>Les données de l'entrepôt ERP n'ont pas pu être récupérées.</value>
   </data>
+  <data name="HangfireController.DailyErpWarehouseIssueJobEnqueued" xml:space="preserve">
+    <value>Le job quotidien de sortie d'entrepôt ERP a été mis en file d'attente.</value>
+  </data>
 </root>
