@@ -691,10 +691,48 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 {
                     return mapping.Cage;
                 }
+
+                var cageByWarehouseName = await ResolveCageFromWarehouseNameAsync(warehouse.WarehouseName);
+                if (cageByWarehouseName != null)
+                {
+                    return cageByWarehouseName;
+                }
             }
 
             var code = erpWarehouseCode.Value.ToString(CultureInfo.InvariantCulture);
             return await _db.Cages.IgnoreQueryFilters().FirstOrDefaultAsync(x => !x.IsDeleted && x.CageCode == code);
+        }
+
+        private async Task<Cage?> ResolveCageFromWarehouseNameAsync(string? warehouseName)
+        {
+            var normalizedWarehouseName = Clean(warehouseName);
+            if (string.IsNullOrWhiteSpace(normalizedWarehouseName))
+            {
+                return null;
+            }
+
+            var cages = await _db.Cages
+                .IgnoreQueryFilters()
+                .Where(x => !x.IsDeleted)
+                .ToListAsync();
+
+            return cages
+                .Where(x => !string.IsNullOrWhiteSpace(x.CageCode))
+                .OrderByDescending(x => x.CageCode.Length)
+                .FirstOrDefault(x => WarehouseNameMatchesCageCode(normalizedWarehouseName, Clean(x.CageCode)));
+        }
+
+        private static bool WarehouseNameMatchesCageCode(string warehouseName, string cageCode)
+        {
+            if (string.IsNullOrWhiteSpace(warehouseName) || string.IsNullOrWhiteSpace(cageCode))
+            {
+                return false;
+            }
+
+            return warehouseName.Equals(cageCode, StringComparison.OrdinalIgnoreCase) ||
+                   warehouseName.StartsWith($"{cageCode} ", StringComparison.OrdinalIgnoreCase) ||
+                   warehouseName.StartsWith($"{cageCode}-", StringComparison.OrdinalIgnoreCase) ||
+                   warehouseName.StartsWith($"{cageCode}_", StringComparison.OrdinalIgnoreCase);
         }
 
         private async Task<WarehouseEntity?> ResolveWarehouseAsync(short? erpWarehouseCode)
