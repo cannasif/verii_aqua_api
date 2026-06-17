@@ -925,7 +925,18 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             ProjectCage? projectCage,
             WarehouseEntity? warehouse)
         {
+            var batchCode = Shorten(receipt.ReceiptNo, 50);
             var existingBatch = await _db.FishBatches
+                .IgnoreQueryFilters()
+                .Where(x => !x.IsDeleted && x.ProjectId == project.Id && x.BatchCode == batchCode)
+                .FirstOrDefaultAsync();
+
+            if (existingBatch != null)
+            {
+                return existingBatch;
+            }
+
+            existingBatch = await _db.FishBatches
                 .IgnoreQueryFilters()
                 .Where(x => !x.IsDeleted && x.ProjectId == project.Id && x.FishStockId == stock.Id)
                 .OrderByDescending(x => x.StartDate)
@@ -940,7 +951,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             var batch = new FishBatch
             {
                 ProjectId = project.Id,
-                BatchCode = receipt.ReceiptNo,
+                BatchCode = batchCode,
                 FishStockId = stock.Id,
                 CurrentAverageGram = initialAverageGram,
                 StartDate = movement.Tarih,
@@ -1109,6 +1120,10 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
         private static bool IsFeedReceipt(MalKabulVeSevkiyatDto movement, StockEntity? stock = null)
             => string.Equals(Clean(movement.GrupKodu), "YEM", StringComparison.OrdinalIgnoreCase)
                || string.Equals(Clean(stock?.GrupKodu), "YEM", StringComparison.OrdinalIgnoreCase)
+               || Clean(movement.StokKodu).StartsWith("Y", StringComparison.OrdinalIgnoreCase)
+               || Clean(stock?.ErpStockCode).StartsWith("Y", StringComparison.OrdinalIgnoreCase)
+               || Clean(movement.StokAdi).Contains("Yem", StringComparison.OrdinalIgnoreCase)
+               || Clean(stock?.StockName).Contains("Yem", StringComparison.OrdinalIgnoreCase)
                || Clean(movement.IslemTuru).Contains("Yem", StringComparison.OrdinalIgnoreCase);
 
         private static int ResolveCount(MalKabulVeSevkiyatDto movement)
