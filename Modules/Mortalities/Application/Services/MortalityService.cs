@@ -334,39 +334,34 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                         _localizationService.GetLocalizedString("MortalityService.OperationSuccessful"));
                 }
 
-                if (mortality.Status == DocumentStatus.Posted)
+                if (mortality.Status != DocumentStatus.Draft && mortality.Status != DocumentStatus.Posted)
                 {
-                    await MarkErpPendingAsync(mortality.Id, userId);
-                    return ApiResponse<bool>.SuccessResult(
-                        true,
-                        _localizationService.GetLocalizedString("MortalityService.OperationSuccessful"));
+                    EnsureDraftStatus(mortality.Status, nameof(Mortality));
                 }
 
-                EnsureDraftStatus(mortality.Status, nameof(Mortality));
-
-                var postLines = await BuildMortalityPostLinesAsync(mortality, validateBalance: true);
+                var ledgerDeltas = await BuildMortalityLedgerDeltasAsync(mortality);
 
                 await _unitOfWork.BeginTransaction();
 
-                foreach (var postLine in postLines)
+                foreach (var ledgerDelta in ledgerDeltas)
                 {
                     await _balanceLedgerManager.ApplyDelta(
                         mortality.ProjectId,
-                        postLine.Line.FishBatchId,
-                        postLine.Line.ProjectCageId,
-                        -postLine.Line.DeadCount,
-                        postLine.BiomassDelta,
+                        ledgerDelta.FishBatchId,
+                        ledgerDelta.ProjectCageId,
+                        -ledgerDelta.DeltaDeadCount,
+                        ledgerDelta.BiomassDelta,
                         BatchMovementType.Mortality,
                         mortality.MortalityDate,
                         "Mortality",
                         "RII_Mortality",
                         mortality.Id,
-                        postLine.Line.ProjectCageId,
+                        ledgerDelta.ProjectCageId,
                         null,
                         null,
                         null,
-                        postLine.AverageGram,
-                        postLine.AverageGram,
+                        ledgerDelta.AverageGram,
+                        ledgerDelta.AverageGram,
                         userId);
                 }
 
@@ -573,6 +568,93 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             return postLines;
         }
 
+        private async Task<List<MortalityLedgerDelta>> BuildMortalityLedgerDeltasAsync(Mortality mortality)
+        {
+            var activeLineGroups = mortality.Lines
+                .Where(x => !x.IsDeleted)
+                .GroupBy(x => new { x.FishBatchId, x.ProjectCageId })
+                .ToDictionary(
+                    x => (x.Key.FishBatchId, x.Key.ProjectCageId),
+                    x => x.Sum(line => line.DeadCount));
+
+            var existingMovements = await _unitOfWork.Db.BatchMovements
+                .AsNoTracking()
+                .Where(x =>
+                    !x.IsDeleted &&
+                    x.MovementType == BatchMovementType.Mortality &&
+                    x.ReferenceTable == "RII_Mortality" &&
+                    x.ReferenceId == mortality.Id &&
+                    x.ProjectCageId.HasValue)
+                .ToListAsync();
+
+            var movementGroups = existingMovements
+                .GroupBy(x => new { x.FishBatchId, x.ProjectCageId })
+                .ToDictionary(
+                    x => (x.Key.FishBatchId, x.Key.ProjectCageId!.Value),
+                    x => new
+                    {
+                        PostedDeadCount = -x.Sum(movement => movement.SignedCount),
+                        LastAverageGram = x
+                            .OrderByDescending(movement => movement.Id)
+                            .Select(movement => movement.FromAverageGram ?? movement.ToAverageGram)
+                            .FirstOrDefault(averageGram => averageGram.HasValue)
+                    });
+
+            var keys = activeLineGroups.Keys
+                .Union(movementGroups.Keys)
+                .ToList();
+
+            var deltas = new List<MortalityLedgerDelta>();
+            foreach (var key in keys)
+            {
+                var desiredDeadCount = activeLineGroups.TryGetValue(key, out var activeDeadCount)
+                    ? activeDeadCount
+                    : 0;
+                var postedDeadCount = movementGroups.TryGetValue(key, out var movementGroup)
+                    ? movementGroup.PostedDeadCount
+                    : 0;
+                var deltaDeadCount = desiredDeadCount - postedDeadCount;
+
+                if (deltaDeadCount == 0)
+                {
+                    continue;
+                }
+
+                var balance = await _unitOfWork.Db.BatchCageBalances
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x =>
+                        x.FishBatchId == key.FishBatchId &&
+                        x.ProjectCageId == key.Item2 &&
+                        !x.IsDeleted);
+
+                var averageGram = ResolveAverageGram(balance);
+                if (averageGram <= 0 && movementGroups.TryGetValue(key, out var existingGroup))
+                {
+                    averageGram = existingGroup.LastAverageGram ?? 0m;
+                }
+
+                if (averageGram <= 0)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.AverageGramMissing"));
+                }
+
+                if (deltaDeadCount > 0 && (balance == null || balance.LiveCount < deltaDeadCount))
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.InsufficientBalance"));
+                }
+
+                var biomassDelta = -Math.Round(averageGram * deltaDeadCount, 3, MidpointRounding.AwayFromZero);
+                deltas.Add(new MortalityLedgerDelta(
+                    key.FishBatchId,
+                    key.Item2,
+                    deltaDeadCount,
+                    averageGram,
+                    biomassDelta));
+            }
+
+            return deltas;
+        }
+
         private async Task MarkErpPendingAsync(long mortalityId, long userId)
         {
             var mortality = await _unitOfWork.Mortalities.GetByIdForUpdateAsync(mortalityId);
@@ -675,6 +757,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             => values.FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
 
         private sealed record MortalityPostLine(MortalityLine Line, decimal AverageGram, decimal BiomassDelta);
+        private sealed record MortalityLedgerDelta(long FishBatchId, long ProjectCageId, int DeltaDeadCount, decimal AverageGram, decimal BiomassDelta);
 
         private void EnsureDraftStatus(DocumentStatus status, string documentName)
         {

@@ -274,6 +274,402 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
         Assert.Equal(12_000m, cageScopedDistribution.FeedGram);
     }
 
+    [Fact]
+    public async Task MortalityLineAutoHeader_AllowsSameBatchAcrossDifferentCagesOnSameDate()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        var projectCode = $"PRJ-MORT-{suffix}";
+        var cageCodeA = $"MORT-A-{suffix}";
+        var cageCodeB = $"MORT-B-{suffix}";
+        var batchCode = $"BATCH-MORT-{suffix}";
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(client, "/api/aqua/OpeningImport/preview", new OpeningImportPreviewRequestDto
+        {
+            FileName = "mortality-multi-cage-opening.xlsx",
+            SourceSystem = "mortality-multi-cage-test",
+            Sheets =
+            [
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Projects",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectName", TargetField = "projectName" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "startDate", TargetField = "startDate" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode,
+                            ["projectName"] = "Mortality Multi Cage Project",
+                            ["startDate"] = "2026-04-01",
+                        }
+                    ]
+                },
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Cages",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageCode", TargetField = "cageCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageName", TargetField = "cageName" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode,
+                            ["cageCode"] = cageCodeA,
+                            ["cageName"] = "Mortality Cage A",
+                        },
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode,
+                            ["cageCode"] = cageCodeB,
+                            ["cageName"] = "Mortality Cage B",
+                        }
+                    ]
+                },
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "OpeningStock",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageCode", TargetField = "cageCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "batchCode", TargetField = "batchCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "fishStockCode", TargetField = "fishStockCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "fishCount", TargetField = "fishCount" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "averageGram", TargetField = "averageGram" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "asOfDate", TargetField = "asOfDate" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode,
+                            ["cageCode"] = cageCodeA,
+                            ["batchCode"] = batchCode,
+                            ["fishStockCode"] = "PLAMUT-5G",
+                            ["fishCount"] = "1000",
+                            ["averageGram"] = "5",
+                            ["asOfDate"] = "2026-04-01",
+                        },
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode,
+                            ["cageCode"] = cageCodeB,
+                            ["batchCode"] = batchCode,
+                            ["fishStockCode"] = "PLAMUT-5G",
+                            ["fishCount"] = "2000",
+                            ["averageGram"] = "5",
+                            ["asOfDate"] = "2026-04-01",
+                        }
+                    ]
+                }
+            ]
+        });
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+
+        var commit = await PostAsync<OpeningImportCommitResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data!.JobId}/commit", new { });
+        Assert.True(commit.Success, $"{commit.Message} | {commit.ExceptionMessage}");
+
+        long projectId;
+        long fishBatchId;
+        long projectCageIdA;
+        long projectCageIdB;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            projectId = await db.Projects.Where(x => !x.IsDeleted && x.ProjectCode == projectCode).Select(x => x.Id).SingleAsync();
+            fishBatchId = await db.FishBatches.Where(x => !x.IsDeleted && x.BatchCode == batchCode).Select(x => x.Id).SingleAsync();
+            projectCageIdA = await db.ProjectCages
+                .Where(x => !x.IsDeleted && x.ProjectId == projectId && x.Cage != null && x.Cage.CageCode == cageCodeA)
+                .Select(x => x.Id)
+                .SingleAsync();
+            projectCageIdB = await db.ProjectCages
+                .Where(x => !x.IsDeleted && x.ProjectId == projectId && x.Cage != null && x.Cage.CageCode == cageCodeB)
+                .Select(x => x.Id)
+                .SingleAsync();
+        }
+
+        var mortalityDate = new DateTime(2026, 4, 10);
+        var cageAMortality = await PostAsync<MortalityLineDto>(client, "/api/aqua/MortalityLine/auto-header", new CreateMortalityLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            MortalityDate = mortalityDate,
+            FishBatchId = fishBatchId,
+            ProjectCageId = projectCageIdA,
+            DeadCount = 10,
+        });
+        Assert.True(cageAMortality.Success, $"{cageAMortality.Message} | {cageAMortality.ExceptionMessage}");
+
+        var cageBMortality = await PostAsync<MortalityLineDto>(client, "/api/aqua/MortalityLine/auto-header", new CreateMortalityLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            MortalityDate = mortalityDate,
+            FishBatchId = fishBatchId,
+            ProjectCageId = projectCageIdB,
+            DeadCount = 20,
+        });
+        Assert.True(cageBMortality.Success, $"{cageBMortality.Message} | {cageBMortality.ExceptionMessage}");
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        var mortalityHeader = await verifyDb.Mortalities
+            .SingleAsync(x => !x.IsDeleted && x.ProjectId == projectId && x.MortalityDate.Date == mortalityDate.Date);
+        var mortalityLines = await verifyDb.MortalityLines
+            .Where(x => !x.IsDeleted && x.MortalityId == mortalityHeader.Id)
+            .OrderBy(x => x.ProjectCageId)
+            .ToListAsync();
+        var mortalityMovements = await verifyDb.BatchMovements
+            .Where(x =>
+                !x.IsDeleted &&
+                x.ReferenceTable == "RII_Mortality" &&
+                x.ReferenceId == mortalityHeader.Id &&
+                x.MovementType == BatchMovementType.Mortality)
+            .OrderBy(x => x.ProjectCageId)
+            .ToListAsync();
+        var balances = await verifyDb.BatchCageBalances
+            .Where(x => !x.IsDeleted && x.FishBatchId == fishBatchId && (x.ProjectCageId == projectCageIdA || x.ProjectCageId == projectCageIdB))
+            .ToDictionaryAsync(x => x.ProjectCageId);
+
+        Assert.Equal(DocumentStatus.Posted, mortalityHeader.Status);
+        Assert.False(mortalityHeader.IsERPIntegrated);
+        Assert.Equal("Pending", mortalityHeader.ERPIntegrationStatus);
+        Assert.Equal(2, mortalityLines.Count);
+        Assert.Contains(mortalityLines, x => x.ProjectCageId == projectCageIdA && x.DeadCount == 10);
+        Assert.Contains(mortalityLines, x => x.ProjectCageId == projectCageIdB && x.DeadCount == 20);
+        Assert.Equal(2, mortalityMovements.Count);
+        Assert.Contains(mortalityMovements, x => x.ProjectCageId == projectCageIdA && x.SignedCount == -10);
+        Assert.Contains(mortalityMovements, x => x.ProjectCageId == projectCageIdB && x.SignedCount == -20);
+        Assert.Equal(990, balances[projectCageIdA].LiveCount);
+        Assert.Equal(1980, balances[projectCageIdB].LiveCount);
+    }
+
+    [Fact]
+    public async Task QuickDailyEntry_AllowsThreeDaysOfFeedingAndMortalityForSameBatchAcrossDifferentCages()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        var suffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+        var projectCode = $"20220617OLIVKA-{suffix}";
+        var cageCodeA = $"B3-{suffix}";
+        var cageCodeB = $"B4-{suffix}";
+        var batchCode = $"BATCH-OLIVKA-{suffix}";
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(client, "/api/aqua/OpeningImport/preview", new OpeningImportPreviewRequestDto
+        {
+            FileName = "olivka-same-batch-multi-cage-opening.xlsx",
+            SourceSystem = "olivka-same-batch-multi-cage-test",
+            Sheets =
+            [
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Projects",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectName", TargetField = "projectName" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "startDate", TargetField = "startDate" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode,
+                            ["projectName"] = "12. PROJE",
+                            ["startDate"] = "2026-04-01",
+                        }
+                    ]
+                },
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "Cages",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageCode", TargetField = "cageCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageName", TargetField = "cageName" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode,
+                            ["cageCode"] = cageCodeA,
+                            ["cageName"] = "B3 Kafes",
+                        },
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode,
+                            ["cageCode"] = cageCodeB,
+                            ["cageName"] = "B4 Kafes",
+                        }
+                    ]
+                },
+                new OpeningImportSheetPayloadDto
+                {
+                    SheetName = "OpeningStock",
+                    Mappings =
+                    [
+                        new OpeningImportFieldMappingDto { SourceColumn = "projectCode", TargetField = "projectCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "cageCode", TargetField = "cageCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "batchCode", TargetField = "batchCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "fishStockCode", TargetField = "fishStockCode" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "fishCount", TargetField = "fishCount" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "averageGram", TargetField = "averageGram" },
+                        new OpeningImportFieldMappingDto { SourceColumn = "asOfDate", TargetField = "asOfDate" },
+                    ],
+                    Rows =
+                    [
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode,
+                            ["cageCode"] = cageCodeA,
+                            ["batchCode"] = batchCode,
+                            ["fishStockCode"] = "PLAMUT-5G",
+                            ["fishCount"] = "1000",
+                            ["averageGram"] = "1530",
+                            ["asOfDate"] = "2026-04-01",
+                        },
+                        new Dictionary<string, string?>
+                        {
+                            ["projectCode"] = projectCode,
+                            ["cageCode"] = cageCodeB,
+                            ["batchCode"] = batchCode,
+                            ["fishStockCode"] = "PLAMUT-5G",
+                            ["fishCount"] = "1500",
+                            ["averageGram"] = "1530",
+                            ["asOfDate"] = "2026-04-01",
+                        }
+                    ]
+                }
+            ]
+        });
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+
+        var commit = await PostAsync<OpeningImportCommitResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data!.JobId}/commit", new { });
+        Assert.True(commit.Success, $"{commit.Message} | {commit.ExceptionMessage}");
+
+        long projectId;
+        long fishBatchId;
+        long feedStockId;
+        long projectCageIdA;
+        long projectCageIdB;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            projectId = await db.Projects.Where(x => !x.IsDeleted && x.ProjectCode == projectCode).Select(x => x.Id).SingleAsync();
+            fishBatchId = await db.FishBatches.Where(x => !x.IsDeleted && x.BatchCode == batchCode).Select(x => x.Id).SingleAsync();
+            feedStockId = await db.Stocks.Where(x => !x.IsDeleted && x.ErpStockCode == "YEM-STD").Select(x => x.Id).SingleAsync();
+            projectCageIdA = await db.ProjectCages
+                .Where(x => !x.IsDeleted && x.ProjectId == projectId && x.Cage != null && x.Cage.CageCode == cageCodeA)
+                .Select(x => x.Id)
+                .SingleAsync();
+            projectCageIdB = await db.ProjectCages
+                .Where(x => !x.IsDeleted && x.ProjectId == projectId && x.Cage != null && x.Cage.CageCode == cageCodeB)
+                .Select(x => x.Id)
+                .SingleAsync();
+        }
+
+        var dates = new[]
+        {
+            new DateTime(2026, 4, 10),
+            new DateTime(2026, 4, 11),
+            new DateTime(2026, 4, 12),
+        };
+
+        foreach (var date in dates)
+        {
+            await AssertQuickDailyFeedingAndMortalityAsync(client, projectId, fishBatchId, feedStockId, projectCageIdA, date, feedKg: 2, deadCount: 1);
+        }
+
+        foreach (var date in dates)
+        {
+            await AssertQuickDailyFeedingAndMortalityAsync(client, projectId, fishBatchId, feedStockId, projectCageIdB, date, feedKg: 3, deadCount: 2);
+        }
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        var feedingHeaders = await verifyDb.Feedings
+            .Where(x => !x.IsDeleted && x.ProjectId == projectId && dates.Contains(x.FeedingDate.Date))
+            .ToListAsync();
+        var mortalityHeaders = await verifyDb.Mortalities
+            .Where(x => !x.IsDeleted && x.ProjectId == projectId && dates.Contains(x.MortalityDate.Date))
+            .ToListAsync();
+        var feedingDistributions = await verifyDb.FeedingDistributions
+            .Where(x =>
+                !x.IsDeleted &&
+                x.FishBatchId == fishBatchId &&
+                (x.ProjectCageId == projectCageIdA || x.ProjectCageId == projectCageIdB))
+            .ToListAsync();
+        var mortalityLines = await verifyDb.MortalityLines
+            .Where(x =>
+                !x.IsDeleted &&
+                x.FishBatchId == fishBatchId &&
+                (x.ProjectCageId == projectCageIdA || x.ProjectCageId == projectCageIdB))
+            .ToListAsync();
+        var balances = await verifyDb.BatchCageBalances
+            .Where(x => !x.IsDeleted && x.FishBatchId == fishBatchId && (x.ProjectCageId == projectCageIdA || x.ProjectCageId == projectCageIdB))
+            .ToDictionaryAsync(x => x.ProjectCageId);
+
+        Assert.Equal(3, feedingHeaders.Count);
+        Assert.Equal(3, mortalityHeaders.Count);
+        Assert.Equal(6, feedingDistributions.Count);
+        Assert.Equal(6, mortalityLines.Count);
+        Assert.Equal(997, balances[projectCageIdA].LiveCount);
+        Assert.Equal(1494, balances[projectCageIdB].LiveCount);
+        Assert.All(mortalityHeaders, x =>
+        {
+            Assert.Equal(DocumentStatus.Posted, x.Status);
+            Assert.False(x.IsERPIntegrated);
+            Assert.Equal("Pending", x.ERPIntegrationStatus);
+        });
+    }
+
+    private static async Task AssertQuickDailyFeedingAndMortalityAsync(
+        HttpClient client,
+        long projectId,
+        long fishBatchId,
+        long feedStockId,
+        long projectCageId,
+        DateTime date,
+        decimal feedKg,
+        int deadCount)
+    {
+        var feeding = await PostAsync<FeedingLineDto>(client, "/api/aqua/FeedingLine/auto-header", new CreateFeedingLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            ProjectCageId = projectCageId,
+            FishBatchId = fishBatchId,
+            FeedingDate = date,
+            FeedingSlot = FeedingSlot.Morning,
+            StockId = feedStockId,
+            QtyUnit = feedKg,
+            GramPerUnit = 1000m,
+            TotalGram = feedKg * 1000m,
+        });
+        Assert.True(feeding.Success, $"{feeding.Message} | {feeding.ExceptionMessage}");
+
+        var mortality = await PostAsync<MortalityLineDto>(client, "/api/aqua/MortalityLine/auto-header", new CreateMortalityLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            MortalityDate = date,
+            FishBatchId = fishBatchId,
+            ProjectCageId = projectCageId,
+            DeadCount = deadCount,
+        });
+        Assert.True(mortality.Success, $"{mortality.Message} | {mortality.ExceptionMessage}");
+    }
+
     private static async Task<ApiResponse<T>> PostAsync<T>(HttpClient client, string url, object payload)
     {
         using var response = await client.PostAsJsonAsync(url, payload);

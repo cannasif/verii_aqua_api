@@ -277,7 +277,6 @@ namespace aqua_api.Modules.Feedings.Application.Services
                     entity = new FeedingLine
                     {
                         FeedingId = feeding.Id,
-                        Feeding = feeding,
                         StockId = dto.StockId,
                         QtyUnit = dto.QtyUnit,
                         GramPerUnit = gramPerUnit,

@@ -151,7 +151,9 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 await _unitOfWork.MortalityLines.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
-                if (mortality != null && mortality.Status == DocumentStatus.Draft)
+                if (mortality != null &&
+                    !mortality.IsERPIntegrated &&
+                    (mortality.Status == DocumentStatus.Draft || mortality.Status == DocumentStatus.Posted))
                 {
                     var userId = entity.CreatedBy ?? mortality.CreatedBy ?? 1L;
                     var postResult = await _mortalityService.PostAquaAndQueueErpAsync(mortality.Id, userId);
@@ -187,23 +189,6 @@ namespace aqua_api.Modules.Mortalities.Application.Services
         {
             try
             {
-                var hasErpIntegratedMortality = await _unitOfWork.Mortalities
-                    .Query()
-                    .AsNoTracking()
-                    .AnyAsync(x =>
-                        !x.IsDeleted &&
-                        x.ProjectId == dto.ProjectId &&
-                        x.MortalityDate.Date == dto.MortalityDate.Date &&
-                        x.IsERPIntegrated);
-
-                if (hasErpIntegratedMortality)
-                {
-                    return ApiResponse<MortalityLineDto>.ErrorResult(
-                        _localizationService.GetLocalizedString("MortalityLineService.ErpIntegratedCannotBeChanged"),
-                        _localizationService.GetLocalizedString("MortalityLineService.ErpIntegratedCannotBeChanged"),
-                        StatusCodes.Status400BadRequest);
-                }
-
                 await _unitOfWork.BeginTransactionAsync();
 
                 var mortality = await _unitOfWork.Mortalities
@@ -211,10 +196,19 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     .Where(x =>
                         !x.IsDeleted &&
                         x.ProjectId == dto.ProjectId &&
-                        x.Status == DocumentStatus.Draft &&
+                        x.Status != DocumentStatus.Cancelled &&
                         x.MortalityDate.Date == dto.MortalityDate.Date)
                     .OrderByDescending(x => x.Id)
                     .FirstOrDefaultAsync();
+
+                if (mortality?.IsERPIntegrated == true)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ApiResponse<MortalityLineDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("MortalityLineService.ErpIntegratedCannotBeChanged"),
+                        _localizationService.GetLocalizedString("MortalityLineService.ErpIntegratedCannotBeChanged"),
+                        StatusCodes.Status400BadRequest);
+                }
 
                 if (mortality == null)
                 {
@@ -273,7 +267,8 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync();
 
-                if (mortality.Status == DocumentStatus.Draft)
+                if (!mortality.IsERPIntegrated &&
+                    (mortality.Status == DocumentStatus.Draft || mortality.Status == DocumentStatus.Posted))
                 {
                     var userId = entity.CreatedBy ?? mortality.CreatedBy ?? 1L;
                     var postResult = await _mortalityService.PostAquaAndQueueErpAsync(mortality.Id, userId);
@@ -321,6 +316,21 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 _mapper.Map(dto, entity);
                 await _unitOfWork.MortalityLines.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
+
+                if (entity.Mortality != null &&
+                    !entity.Mortality.IsERPIntegrated &&
+                    (entity.Mortality.Status == DocumentStatus.Draft || entity.Mortality.Status == DocumentStatus.Posted))
+                {
+                    var userId = entity.UpdatedBy ?? entity.CreatedBy ?? entity.Mortality.UpdatedBy ?? entity.Mortality.CreatedBy ?? 1L;
+                    var postResult = await _mortalityService.PostAquaAndQueueErpAsync(entity.Mortality.Id, userId);
+                    if (!postResult.Success)
+                    {
+                        return ApiResponse<MortalityLineDto>.ErrorResult(
+                            postResult.Message,
+                            postResult.ExceptionMessage,
+                            postResult.StatusCode);
+                    }
+                }
 
                 var result = _mapper.Map<MortalityLineDto>(entity);
                 return ApiResponse<MortalityLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("MortalityLineService.OperationSuccessful"));
@@ -372,6 +382,22 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 }
 
                 await _unitOfWork.SaveChangesAsync();
+
+                if (entity.Mortality != null &&
+                    !entity.Mortality.IsERPIntegrated &&
+                    (entity.Mortality.Status == DocumentStatus.Draft || entity.Mortality.Status == DocumentStatus.Posted))
+                {
+                    var userId = entity.UpdatedBy ?? entity.CreatedBy ?? entity.Mortality.UpdatedBy ?? entity.Mortality.CreatedBy ?? 1L;
+                    var postResult = await _mortalityService.PostAquaAndQueueErpAsync(entity.Mortality.Id, userId);
+                    if (!postResult.Success)
+                    {
+                        return ApiResponse<bool>.ErrorResult(
+                            postResult.Message,
+                            postResult.ExceptionMessage,
+                            postResult.StatusCode);
+                    }
+                }
+
                 return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("MortalityLineService.OperationSuccessful"));
             }
             catch (InvalidOperationException ex)
