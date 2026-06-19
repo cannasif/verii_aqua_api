@@ -8,6 +8,12 @@ namespace aqua_api.Modules.Feedings.Application.Dtos
         public long ProjectId { get; set; }
         public string? ProjectCode { get; set; }
         public string? ProjectName { get; set; }
+        public string? CageCode { get; set; }
+        public string? CageName { get; set; }
+        public string? BatchCode { get; set; }
+        public string? StockCode { get; set; }
+        public string? StockName { get; set; }
+        public decimal TotalFeedGram { get; set; }
         public string FeedingNo { get; set; } = string.Empty;
         public DateTime FeedingDate { get; set; }
         public FeedingSlot FeedingSlot { get; set; }

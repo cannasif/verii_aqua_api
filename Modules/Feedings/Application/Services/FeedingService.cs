@@ -36,6 +36,19 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 var entity = await _unitOfWork.Feedings
                     .Query()
                     .Include(x => x.Project)
+                    .Include(x => x.Lines)
+                        .ThenInclude(x => x.Stock)
+                    .Include(x => x.Lines)
+                        .ThenInclude(x => x.Distributions)
+                            .ThenInclude(x => x.FishBatch)
+                    .Include(x => x.Lines)
+                        .ThenInclude(x => x.Distributions)
+                            .ThenInclude(x => x.ProjectCage)
+                                .ThenInclude(x => x!.Project)
+                    .Include(x => x.Lines)
+                        .ThenInclude(x => x.Distributions)
+                            .ThenInclude(x => x.ProjectCage)
+                                .ThenInclude(x => x!.Cage)
                     .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
@@ -46,7 +59,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
-                var dto = _mapper.Map<FeedingDto>(entity);
+                var dto = MapFeeding(entity);
                 return ApiResponse<FeedingDto>.SuccessResult(dto, _localizationService.GetLocalizedString("FeedingService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -78,9 +91,22 @@ namespace aqua_api.Modules.Feedings.Application.Services
 
                 var entities = await query
                     .ApplyPagination(request.PageNumber, request.PageSize)
+                    .Include(x => x.Lines)
+                        .ThenInclude(x => x.Stock)
+                    .Include(x => x.Lines)
+                        .ThenInclude(x => x.Distributions)
+                            .ThenInclude(x => x.FishBatch)
+                    .Include(x => x.Lines)
+                        .ThenInclude(x => x.Distributions)
+                            .ThenInclude(x => x.ProjectCage)
+                                .ThenInclude(x => x!.Project)
+                    .Include(x => x.Lines)
+                        .ThenInclude(x => x.Distributions)
+                            .ThenInclude(x => x.ProjectCage)
+                                .ThenInclude(x => x!.Cage)
                     .ToListAsync();
 
-                var items = entities.Select(x => _mapper.Map<FeedingDto>(x)).ToList();
+                var items = entities.Select(MapFeeding).ToList();
 
                 var pagedResponse = new PagedResponse<FeedingDto>
                 {
@@ -111,7 +137,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 await _unitOfWork.Feedings.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
-                var result = _mapper.Map<FeedingDto>(entity);
+                var result = MapFeeding(entity);
                 return ApiResponse<FeedingDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -150,7 +176,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 await repo.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
-                var result = _mapper.Map<FeedingDto>(entity);
+                var result = MapFeeding(entity);
                 return ApiResponse<FeedingDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingService.OperationSuccessful"));
             }
             catch (Exception ex)
@@ -342,6 +368,38 @@ namespace aqua_api.Modules.Feedings.Application.Services
             }
 
             return successCount;
+        }
+
+        private FeedingDto MapFeeding(Feeding entity)
+        {
+            var dto = _mapper.Map<FeedingDto>(entity);
+            var activeLines = entity.Lines
+                .Where(x => !x.IsDeleted)
+                .ToList();
+            var activeDistributions = activeLines
+                .SelectMany(x => x.Distributions.Where(distribution => !distribution.IsDeleted))
+                .ToList();
+
+            dto.StockCode = JoinDistinct(activeLines.Select(x => x.Stock?.ErpStockCode));
+            dto.StockName = JoinDistinct(activeLines.Select(x => x.Stock?.StockName));
+            dto.BatchCode = JoinDistinct(activeDistributions.Select(x => x.FishBatch?.BatchCode));
+            dto.CageCode = JoinDistinct(activeDistributions.Select(x => x.ProjectCage?.Cage?.CageCode));
+            dto.CageName = JoinDistinct(activeDistributions.Select(x => x.ProjectCage?.Cage?.CageName));
+            dto.TotalFeedGram = Math.Round(activeDistributions.Sum(x => x.FeedGram), 3, MidpointRounding.AwayFromZero);
+
+            return dto;
+        }
+
+        private static string? JoinDistinct(IEnumerable<string?> values)
+        {
+            var items = values
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x!.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x)
+                .ToList();
+
+            return items.Count == 0 ? null : string.Join(", ", items);
         }
 
         private async Task<Feeding?> LoadFeedingForPostingAsync(long feedingId)
