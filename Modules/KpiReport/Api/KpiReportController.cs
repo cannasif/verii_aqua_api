@@ -32,6 +32,13 @@ public class KpiReportController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    [HttpPost("project-feed-fish-summary")]
+    public async Task<ActionResult<ApiResponse<ProjectFeedFishSummaryReportDto>>> GetProjectFeedFishSummary([FromBody] ProjectFeedFishSummaryRequestDto? request)
+    {
+        var result = await _service.GetProjectFeedFishSummaryAsync(request);
+        return StatusCode(result.StatusCode, result);
+    }
+
     [HttpGet("raw-kpi/{projectId:long}")]
     public async Task<ActionResult<ApiResponse<RawKpiReportDto>>> GetRawKpiReport(long projectId)
     {

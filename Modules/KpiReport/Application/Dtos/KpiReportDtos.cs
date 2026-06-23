@@ -8,6 +8,44 @@ public class KpiReportProjectOptionDto
     public DateTime StartDate { get; set; }
 }
 
+public class ProjectFeedFishSummaryRequestDto
+{
+    public List<long> ProjectIds { get; set; } = new();
+}
+
+public class ProjectFeedFishSummaryReportDto
+{
+    public List<ProjectFeedFishSummaryRowDto> Rows { get; set; } = new();
+    public ProjectFeedFishSummaryTotalDto Totals { get; set; } = new();
+}
+
+public class ProjectFeedFishSummaryRowDto
+{
+    public long ProjectId { get; set; }
+    public string ProjectCode { get; set; } = "-";
+    public string ProjectName { get; set; } = "-";
+    public int CageFish { get; set; }
+    public int WarehouseFish { get; set; }
+    public int TotalFish { get; set; }
+    public decimal CageBiomassKg { get; set; }
+    public decimal WarehouseBiomassKg { get; set; }
+    public decimal TotalBiomassKg { get; set; }
+    public decimal TotalFeedKg { get; set; }
+    public int ActiveCageCount { get; set; }
+}
+
+public class ProjectFeedFishSummaryTotalDto
+{
+    public int CageFish { get; set; }
+    public int WarehouseFish { get; set; }
+    public int TotalFish { get; set; }
+    public decimal CageBiomassKg { get; set; }
+    public decimal WarehouseBiomassKg { get; set; }
+    public decimal TotalBiomassKg { get; set; }
+    public decimal TotalFeedKg { get; set; }
+    public int ActiveCageCount { get; set; }
+}
+
 public class RawKpiReportDto
 {
     public long ProjectId { get; set; }

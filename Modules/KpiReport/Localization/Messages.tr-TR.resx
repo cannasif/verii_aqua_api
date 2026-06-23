@@ -28,4 +28,6 @@
   <data name="DevirFcrReportService.InvalidDateRange" xml:space="preserve"><value>Geçersiz tarih aralığı.</value></data>
   <data name="DevirFcrReportService.ToDateGreaterThanOrEqualFromDate" xml:space="preserve"><value>Bitiş tarihi başlangıç tarihinden küçük olamaz.</value></data>
   <data name="DevirFcrReportService.ReportLoadFailed" xml:space="preserve"><value>Devir / FCR raporu yüklenemedi.</value></data>
+  <data name="KpiReportService.ProjectFeedFishSummaryLoaded" xml:space="preserve"><value>Proje yem ve balık özet raporu yüklendi.</value></data>
+  <data name="KpiReportService.ProjectFeedFishSummaryLoadFailed" xml:space="preserve"><value>Proje yem ve balık özet raporu yüklenemedi.</value></data>
 </root>

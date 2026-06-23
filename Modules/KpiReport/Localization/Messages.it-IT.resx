@@ -28,4 +28,6 @@
   <data name="DevirFcrReportService.InvalidDateRange" xml:space="preserve"><value>Intervallo date non valido.</value></data>
   <data name="DevirFcrReportService.ToDateGreaterThanOrEqualFromDate" xml:space="preserve"><value>La data finale deve essere maggiore o uguale alla data iniziale.</value></data>
   <data name="DevirFcrReportService.ReportLoadFailed" xml:space="preserve"><value>Impossibile caricare il report Devir / FCR.</value></data>
+  <data name="KpiReportService.ProjectFeedFishSummaryLoaded" xml:space="preserve"><value>Report riepilogativo mangime e pesci per progetto caricato.</value></data>
+  <data name="KpiReportService.ProjectFeedFishSummaryLoadFailed" xml:space="preserve"><value>Impossibile caricare il report riepilogativo mangime e pesci per progetto.</value></data>
 </root>

@@ -28,4 +28,6 @@
   <data name="DevirFcrReportService.InvalidDateRange" xml:space="preserve"><value>Invalid date range.</value></data>
   <data name="DevirFcrReportService.ToDateGreaterThanOrEqualFromDate" xml:space="preserve"><value>End date must be greater than or equal to start date.</value></data>
   <data name="DevirFcrReportService.ReportLoadFailed" xml:space="preserve"><value>Devir / FCR report could not be loaded.</value></data>
+  <data name="KpiReportService.ProjectFeedFishSummaryLoaded" xml:space="preserve"><value>Project feed and fish summary report loaded.</value></data>
+  <data name="KpiReportService.ProjectFeedFishSummaryLoadFailed" xml:space="preserve"><value>Project feed and fish summary report could not be loaded.</value></data>
 </root>

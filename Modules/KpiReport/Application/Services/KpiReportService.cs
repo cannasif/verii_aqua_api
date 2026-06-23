@@ -56,6 +56,159 @@ public class KpiReportService : IKpiReportService
         }
     }
 
+    public async Task<ApiResponse<ProjectFeedFishSummaryReportDto>> GetProjectFeedFishSummaryAsync(ProjectFeedFishSummaryRequestDto? request)
+    {
+        try
+        {
+            var requestedProjectIds = request?.ProjectIds?
+                .Where(x => x > 0)
+                .Distinct()
+                .ToList() ?? new List<long>();
+
+            var projectQuery = _unitOfWork.Db.Projects
+                .AsNoTracking()
+                .Where(x => !x.IsDeleted);
+
+            if (requestedProjectIds.Count > 0)
+            {
+                projectQuery = projectQuery.Where(x => requestedProjectIds.Contains(x.Id));
+            }
+
+            var projects = await projectQuery
+                .OrderBy(x => x.ProjectCode)
+                .ThenBy(x => x.ProjectName)
+                .ToListAsync();
+
+            if (projects.Count == 0)
+            {
+                return ApiResponse<ProjectFeedFishSummaryReportDto>.SuccessResult(
+                    new ProjectFeedFishSummaryReportDto(),
+                    L("KpiReportService.ProjectFeedFishSummaryLoaded"));
+            }
+
+            var projectIds = projects.Select(x => x.Id).Distinct().ToList();
+            var projectCages = await _unitOfWork.Db.ProjectCages
+                .AsNoTracking()
+                .Where(x => !x.IsDeleted && projectIds.Contains(x.ProjectId))
+                .ToListAsync();
+
+            var projectCageIds = projectCages.Select(x => x.Id).Distinct().ToList();
+            var projectIdByCageId = projectCages.ToDictionary(x => x.Id, x => x.ProjectId);
+            var activeCageCountByProject = projectCages
+                .Where(x => !x.ReleasedDate.HasValue || x.ReleasedDate.Value.Year <= LegacyOpenEndedYearThreshold)
+                .GroupBy(x => x.ProjectId)
+                .ToDictionary(x => x.Key, x => x.Count());
+
+            var cageBalances = projectCageIds.Count == 0
+                ? new List<BatchCageBalance>()
+                : await _unitOfWork.Db.BatchCageBalances
+                    .AsNoTracking()
+                    .Where(x => !x.IsDeleted && projectCageIds.Contains(x.ProjectCageId))
+                    .ToListAsync();
+
+            var cageTotalsByProject = cageBalances
+                .GroupBy(x => new { x.ProjectCageId, x.FishBatchId })
+                .Select(x => x.OrderByDescending(y => y.AsOfDate).ThenByDescending(y => y.Id).First())
+                .Where(x => projectIdByCageId.ContainsKey(x.ProjectCageId))
+                .GroupBy(x => projectIdByCageId[x.ProjectCageId])
+                .ToDictionary(
+                    x => x.Key,
+                    x => new
+                    {
+                        Fish = x.Sum(y => y.LiveCount),
+                        BiomassGram = x.Sum(y => y.BiomassGram)
+                    });
+
+            var warehouseBalances = await _unitOfWork.Db.BatchWarehouseBalances
+                .AsNoTracking()
+                .Where(x => !x.IsDeleted && projectIds.Contains(x.ProjectId))
+                .ToListAsync();
+
+            var warehouseTotalsByProject = warehouseBalances
+                .GroupBy(x => new { x.ProjectId, x.FishBatchId, x.WarehouseId })
+                .Select(x => x.OrderByDescending(y => y.AsOfDate).ThenByDescending(y => y.Id).First())
+                .GroupBy(x => x.ProjectId)
+                .ToDictionary(
+                    x => x.Key,
+                    x => new
+                    {
+                        Fish = x.Sum(y => y.LiveCount),
+                        BiomassGram = x.Sum(y => y.BiomassGram)
+                    });
+
+            var feedGramByProject = await (
+                from distribution in _unitOfWork.Db.FeedingDistributions.AsNoTracking()
+                join line in _unitOfWork.Db.FeedingLines.AsNoTracking()
+                    on distribution.FeedingLineId equals line.Id
+                join feeding in _unitOfWork.Db.Feedings.AsNoTracking()
+                    on line.FeedingId equals feeding.Id
+                where !distribution.IsDeleted
+                    && !line.IsDeleted
+                    && !feeding.IsDeleted
+                    && feeding.Status == DocumentStatus.Posted
+                    && projectIds.Contains(feeding.ProjectId)
+                group distribution by feeding.ProjectId into grouped
+                select new
+                {
+                    ProjectId = grouped.Key,
+                    FeedGram = grouped.Sum(x => x.FeedGram)
+                })
+                .ToDictionaryAsync(x => x.ProjectId, x => x.FeedGram);
+
+            var rows = projects
+                .Select(project =>
+                {
+                    var cageTotals = cageTotalsByProject.GetValueOrDefault(project.Id);
+                    var warehouseTotals = warehouseTotalsByProject.GetValueOrDefault(project.Id);
+                    var cageFish = Math.Max(0, cageTotals?.Fish ?? 0);
+                    var warehouseFish = Math.Max(0, warehouseTotals?.Fish ?? 0);
+                    var cageBiomassKg = Round(Math.Max(0m, cageTotals?.BiomassGram ?? 0m) / 1000m);
+                    var warehouseBiomassKg = Round(Math.Max(0m, warehouseTotals?.BiomassGram ?? 0m) / 1000m);
+
+                    return new ProjectFeedFishSummaryRowDto
+                    {
+                        ProjectId = project.Id,
+                        ProjectCode = string.IsNullOrWhiteSpace(project.ProjectCode) ? "-" : project.ProjectCode,
+                        ProjectName = string.IsNullOrWhiteSpace(project.ProjectName) ? "-" : project.ProjectName,
+                        CageFish = cageFish,
+                        WarehouseFish = warehouseFish,
+                        TotalFish = cageFish + warehouseFish,
+                        CageBiomassKg = cageBiomassKg,
+                        WarehouseBiomassKg = warehouseBiomassKg,
+                        TotalBiomassKg = Round(cageBiomassKg + warehouseBiomassKg),
+                        TotalFeedKg = Round(Math.Max(0m, feedGramByProject.GetValueOrDefault(project.Id)) / 1000m),
+                        ActiveCageCount = activeCageCountByProject.GetValueOrDefault(project.Id)
+                    };
+                })
+                .ToList();
+
+            var report = new ProjectFeedFishSummaryReportDto
+            {
+                Rows = rows,
+                Totals = new ProjectFeedFishSummaryTotalDto
+                {
+                    CageFish = rows.Sum(x => x.CageFish),
+                    WarehouseFish = rows.Sum(x => x.WarehouseFish),
+                    TotalFish = rows.Sum(x => x.TotalFish),
+                    CageBiomassKg = Round(rows.Sum(x => x.CageBiomassKg)),
+                    WarehouseBiomassKg = Round(rows.Sum(x => x.WarehouseBiomassKg)),
+                    TotalBiomassKg = Round(rows.Sum(x => x.TotalBiomassKg)),
+                    TotalFeedKg = Round(rows.Sum(x => x.TotalFeedKg)),
+                    ActiveCageCount = rows.Sum(x => x.ActiveCageCount)
+                }
+            };
+
+            return ApiResponse<ProjectFeedFishSummaryReportDto>.SuccessResult(report, L("KpiReportService.ProjectFeedFishSummaryLoaded"));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse<ProjectFeedFishSummaryReportDto>.ErrorResult(
+                L("KpiReportService.ProjectFeedFishSummaryLoadFailed"),
+                ex.Message,
+                StatusCodes.Status500InternalServerError);
+        }
+    }
+
     public Task<ApiResponse<DevirFcrReportDto>> GetDevirFcrReportAsync(DevirFcrReportRequestDto request)
     {
         return _devirFcrReportService.GetReportAsync(request);

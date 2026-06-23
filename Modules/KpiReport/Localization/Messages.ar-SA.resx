@@ -28,4 +28,6 @@
   <data name="DevirFcrReportService.InvalidDateRange" xml:space="preserve"><value>نطاق تاريخ غير صالح.</value></data>
   <data name="DevirFcrReportService.ToDateGreaterThanOrEqualFromDate" xml:space="preserve"><value>يجب أن يكون تاريخ النهاية أكبر من أو يساوي تاريخ البداية.</value></data>
   <data name="DevirFcrReportService.ReportLoadFailed" xml:space="preserve"><value>تعذر تحميل تقرير Devir / FCR.</value></data>
+  <data name="KpiReportService.ProjectFeedFishSummaryLoaded" xml:space="preserve"><value>تم تحميل تقرير ملخص العلف والأسماك حسب المشروع.</value></data>
+  <data name="KpiReportService.ProjectFeedFishSummaryLoadFailed" xml:space="preserve"><value>تعذر تحميل تقرير ملخص العلف والأسماك حسب المشروع.</value></data>
 </root>
