@@ -209,6 +209,443 @@ public class KpiReportService : IKpiReportService
         }
     }
 
+    public async Task<ApiResponse<DailyFeedingReportDto>> GetDailyFeedingReportAsync(DailyFeedingReportRequestDto? request)
+    {
+        try
+        {
+            var today = DateTime.Today;
+            var fromDate = (request?.FromDate ?? today.AddDays(-30)).Date;
+            var toDate = (request?.ToDate ?? today).Date;
+
+            if (toDate < fromDate)
+            {
+                return ApiResponse<DailyFeedingReportDto>.ErrorResult(
+                    L("KpiReportService.InvalidDateRange"),
+                    L("KpiReportService.ToDateGreaterThanOrEqualFromDate"),
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var projectIds = request?.ProjectIds?
+                .Where(x => x > 0)
+                .Distinct()
+                .ToList() ?? new List<long>();
+            var projectCageIds = request?.ProjectCageIds?
+                .Where(x => x > 0)
+                .Distinct()
+                .ToList() ?? new List<long>();
+
+            var query =
+                from distribution in _unitOfWork.Db.FeedingDistributions.AsNoTracking()
+                join line in _unitOfWork.Db.FeedingLines.AsNoTracking()
+                    on distribution.FeedingLineId equals line.Id
+                join feeding in _unitOfWork.Db.Feedings.AsNoTracking()
+                    on line.FeedingId equals feeding.Id
+                join project in _unitOfWork.Db.Projects.AsNoTracking()
+                    on feeding.ProjectId equals project.Id
+                join projectCage in _unitOfWork.Db.ProjectCages.AsNoTracking()
+                    on distribution.ProjectCageId equals projectCage.Id
+                join cage in _unitOfWork.Db.Cages.AsNoTracking()
+                    on projectCage.CageId equals cage.Id
+                join stock in _unitOfWork.Db.Stocks.AsNoTracking()
+                    on line.StockId equals stock.Id
+                join fishBatch in _unitOfWork.Db.FishBatches.AsNoTracking()
+                    on distribution.FishBatchId equals fishBatch.Id
+                where !distribution.IsDeleted
+                    && !line.IsDeleted
+                    && !feeding.IsDeleted
+                    && !project.IsDeleted
+                    && !projectCage.IsDeleted
+                    && !cage.IsDeleted
+                    && !stock.IsDeleted
+                    && !fishBatch.IsDeleted
+                    && feeding.Status == DocumentStatus.Posted
+                    && feeding.FeedingDate.Date >= fromDate
+                    && feeding.FeedingDate.Date <= toDate
+                select new
+                {
+                    FeedingDate = feeding.FeedingDate.Date,
+                    FeedingId = feeding.Id,
+                    FeedingLineId = line.Id,
+                    FeedingDistributionId = distribution.Id,
+                    feeding.FeedingNo,
+                    feeding.FeedingSlot,
+                    feeding.IsERPIntegrated,
+                    feeding.ERPReferenceNumber,
+                    feeding.ERPIntegrationDate,
+                    ProjectId = project.Id,
+                    project.ProjectCode,
+                    project.ProjectName,
+                    ProjectCageId = projectCage.Id,
+                    cage.CageCode,
+                    cage.CageName,
+                    StockId = stock.Id,
+                    StockCode = stock.ErpStockCode,
+                    stock.StockName,
+                    FishBatchId = fishBatch.Id,
+                    fishBatch.BatchCode,
+                    distribution.FeedGram
+                };
+
+            if (projectIds.Count > 0)
+            {
+                query = query.Where(x => projectIds.Contains(x.ProjectId));
+            }
+
+            if (projectCageIds.Count > 0)
+            {
+                query = query.Where(x => projectCageIds.Contains(x.ProjectCageId));
+            }
+
+            var records = await query
+                .OrderByDescending(x => x.FeedingDate)
+                .ThenBy(x => x.ProjectCode)
+                .ThenBy(x => x.CageCode)
+                .ThenBy(x => x.FeedingSlot)
+                .ThenBy(x => x.StockCode)
+                .ToListAsync();
+
+            var days = records
+                .GroupBy(x => x.FeedingDate)
+                .OrderByDescending(x => x.Key)
+                .Select(dayGroup =>
+                {
+                    var projects = dayGroup
+                        .GroupBy(x => new { x.ProjectId, x.ProjectCode, x.ProjectName })
+                        .OrderBy(x => x.Key.ProjectCode)
+                        .ThenBy(x => x.Key.ProjectName)
+                        .Select(projectGroup =>
+                        {
+                            var cages = projectGroup
+                                .GroupBy(x => new { x.ProjectCageId, x.CageCode, x.CageName })
+                                .OrderBy(x => x.Key.CageCode)
+                                .ThenBy(x => x.Key.CageName)
+                                .Select(cageGroup =>
+                                {
+                                    var lines = cageGroup
+                                        .OrderBy(x => x.FeedingSlot)
+                                        .ThenBy(x => x.StockCode)
+                                        .ThenBy(x => x.BatchCode)
+                                        .Select(x => new DailyFeedingLineDto
+                                        {
+                                            FeedingId = x.FeedingId,
+                                            FeedingLineId = x.FeedingLineId,
+                                            FeedingDistributionId = x.FeedingDistributionId,
+                                            FeedingNo = ValueOrDash(x.FeedingNo),
+                                            FeedingSlot = x.FeedingSlot.ToString(),
+                                            StockId = x.StockId,
+                                            StockCode = ValueOrDash(x.StockCode),
+                                            StockName = ValueOrDash(x.StockName),
+                                            FishBatchId = x.FishBatchId,
+                                            BatchCode = ValueOrDash(x.BatchCode),
+                                            FeedKg = Round(Math.Max(0m, x.FeedGram) / 1000m),
+                                            IsErpIntegrated = x.IsERPIntegrated,
+                                            ErpReferenceNumber = x.ERPReferenceNumber,
+                                            ErpIntegrationDate = x.ERPIntegrationDate
+                                        })
+                                        .ToList();
+
+                                    var cageCode = ValueOrDash(cageGroup.Key.CageCode);
+                                    var cageName = ValueOrDash(cageGroup.Key.CageName);
+
+                                    return new DailyFeedingCageDto
+                                    {
+                                        ProjectCageId = cageGroup.Key.ProjectCageId,
+                                        CageCode = cageCode,
+                                        CageName = cageName,
+                                        CageLabel = cageName == "-" || string.Equals(cageCode, cageName, StringComparison.OrdinalIgnoreCase)
+                                            ? cageCode
+                                            : $"{cageCode} - {cageName}",
+                                        TotalFeedKg = Round(lines.Sum(x => x.FeedKg)),
+                                        LineCount = lines.Count,
+                                        Lines = lines
+                                    };
+                                })
+                                .ToList();
+
+                            return new DailyFeedingProjectDto
+                            {
+                                ProjectId = projectGroup.Key.ProjectId,
+                                ProjectCode = ValueOrDash(projectGroup.Key.ProjectCode),
+                                ProjectName = ValueOrDash(projectGroup.Key.ProjectName),
+                                TotalFeedKg = Round(cages.Sum(x => x.TotalFeedKg)),
+                                LineCount = cages.Sum(x => x.LineCount),
+                                CageCount = cages.Count,
+                                Cages = cages
+                            };
+                        })
+                        .ToList();
+
+                    return new DailyFeedingDayDto
+                    {
+                        FeedingDate = dayGroup.Key,
+                        TotalFeedKg = Round(projects.Sum(x => x.TotalFeedKg)),
+                        LineCount = projects.Sum(x => x.LineCount),
+                        ProjectCount = projects.Count,
+                        CageCount = projects.Sum(x => x.CageCount),
+                        Projects = projects
+                    };
+                })
+                .ToList();
+
+            var report = new DailyFeedingReportDto
+            {
+                FromDate = fromDate,
+                ToDate = toDate,
+                TotalFeedKg = Round(days.Sum(x => x.TotalFeedKg)),
+                TotalLineCount = days.Sum(x => x.LineCount),
+                TotalProjectCount = records.Select(x => x.ProjectId).Distinct().Count(),
+                TotalCageCount = records.Select(x => x.ProjectCageId).Distinct().Count(),
+                Days = days
+            };
+
+            return ApiResponse<DailyFeedingReportDto>.SuccessResult(report, L("KpiReportService.DailyFeedingReportLoaded"));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse<DailyFeedingReportDto>.ErrorResult(
+                L("KpiReportService.DailyFeedingReportLoadFailed"),
+                ex.Message,
+                StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    public async Task<ApiResponse<MonthlyOperationalReportDto>> GetMonthlyFeedingReportAsync(MonthlyOperationalReportRequestDto? request)
+    {
+        try
+        {
+            var (fromDate, toDate) = NormalizeMonthlyReportRange(request);
+            if (toDate < fromDate)
+            {
+                return InvalidMonthlyRange();
+            }
+
+            var projectIds = NormalizeIds(request?.ProjectIds);
+            var projectCageIds = NormalizeIds(request?.ProjectCageIds);
+
+            var query =
+                from distribution in _unitOfWork.Db.FeedingDistributions.AsNoTracking()
+                join line in _unitOfWork.Db.FeedingLines.AsNoTracking()
+                    on distribution.FeedingLineId equals line.Id
+                join feeding in _unitOfWork.Db.Feedings.AsNoTracking()
+                    on line.FeedingId equals feeding.Id
+                join project in _unitOfWork.Db.Projects.AsNoTracking()
+                    on feeding.ProjectId equals project.Id
+                join projectCage in _unitOfWork.Db.ProjectCages.AsNoTracking()
+                    on distribution.ProjectCageId equals projectCage.Id
+                join cage in _unitOfWork.Db.Cages.AsNoTracking()
+                    on projectCage.CageId equals cage.Id
+                join stock in _unitOfWork.Db.Stocks.AsNoTracking()
+                    on line.StockId equals stock.Id
+                join fishBatch in _unitOfWork.Db.FishBatches.AsNoTracking()
+                    on distribution.FishBatchId equals fishBatch.Id
+                where !distribution.IsDeleted
+                    && !line.IsDeleted
+                    && !feeding.IsDeleted
+                    && !project.IsDeleted
+                    && !projectCage.IsDeleted
+                    && !cage.IsDeleted
+                    && !stock.IsDeleted
+                    && !fishBatch.IsDeleted
+                    && feeding.Status == DocumentStatus.Posted
+                    && feeding.FeedingDate.Date >= fromDate
+                    && feeding.FeedingDate.Date <= toDate
+                select new MonthlyOperationalRawRecord
+                {
+                    Date = feeding.FeedingDate.Date,
+                    HeaderId = feeding.Id,
+                    LineId = line.Id,
+                    DocumentNo = feeding.FeedingNo,
+                    Slot = feeding.FeedingSlot.ToString(),
+                    ProjectId = project.Id,
+                    ProjectCode = project.ProjectCode,
+                    ProjectName = project.ProjectName,
+                    ProjectCageId = projectCage.Id,
+                    CageCode = cage.CageCode,
+                    CageName = cage.CageName,
+                    StockId = stock.Id,
+                    StockCode = stock.ErpStockCode,
+                    StockName = stock.StockName,
+                    FishBatchId = fishBatch.Id,
+                    BatchCode = fishBatch.BatchCode,
+                    Kg = distribution.FeedGram / 1000m,
+                    Count = 0,
+                    Amount = 0,
+                    IsErpIntegrated = feeding.IsERPIntegrated,
+                    ErpReferenceNumber = feeding.ERPReferenceNumber,
+                    ErpIntegrationDate = feeding.ERPIntegrationDate
+                };
+
+            if (projectIds.Count > 0) query = query.Where(x => projectIds.Contains(x.ProjectId));
+            if (projectCageIds.Count > 0) query = query.Where(x => projectCageIds.Contains(x.ProjectCageId));
+
+            var records = await query.ToListAsync();
+            var report = BuildMonthlyOperationalReport("feeding", fromDate, toDate, records);
+            return ApiResponse<MonthlyOperationalReportDto>.SuccessResult(report, L("KpiReportService.MonthlyFeedingReportLoaded"));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse<MonthlyOperationalReportDto>.ErrorResult(
+                L("KpiReportService.MonthlyFeedingReportLoadFailed"),
+                ex.Message,
+                StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    public async Task<ApiResponse<MonthlyOperationalReportDto>> GetMonthlyMortalityReportAsync(MonthlyOperationalReportRequestDto? request)
+    {
+        try
+        {
+            var (fromDate, toDate) = NormalizeMonthlyReportRange(request);
+            if (toDate < fromDate)
+            {
+                return InvalidMonthlyRange();
+            }
+
+            var projectIds = NormalizeIds(request?.ProjectIds);
+            var projectCageIds = NormalizeIds(request?.ProjectCageIds);
+
+            var query =
+                from line in _unitOfWork.Db.MortalityLines.AsNoTracking()
+                join mortality in _unitOfWork.Db.Mortalities.AsNoTracking()
+                    on line.MortalityId equals mortality.Id
+                join project in _unitOfWork.Db.Projects.AsNoTracking()
+                    on mortality.ProjectId equals project.Id
+                join projectCage in _unitOfWork.Db.ProjectCages.AsNoTracking()
+                    on line.ProjectCageId equals projectCage.Id
+                join cage in _unitOfWork.Db.Cages.AsNoTracking()
+                    on projectCage.CageId equals cage.Id
+                join fishBatch in _unitOfWork.Db.FishBatches.AsNoTracking()
+                    on line.FishBatchId equals fishBatch.Id
+                where !line.IsDeleted
+                    && !mortality.IsDeleted
+                    && !project.IsDeleted
+                    && !projectCage.IsDeleted
+                    && !cage.IsDeleted
+                    && !fishBatch.IsDeleted
+                    && mortality.Status == DocumentStatus.Posted
+                    && mortality.MortalityDate.Date >= fromDate
+                    && mortality.MortalityDate.Date <= toDate
+                select new MonthlyOperationalRawRecord
+                {
+                    Date = mortality.MortalityDate.Date,
+                    HeaderId = mortality.Id,
+                    LineId = line.Id,
+                    DocumentNo = mortality.MortalityNo,
+                    Slot = "-",
+                    ProjectId = project.Id,
+                    ProjectCode = project.ProjectCode,
+                    ProjectName = project.ProjectName,
+                    ProjectCageId = projectCage.Id,
+                    CageCode = cage.CageCode,
+                    CageName = cage.CageName,
+                    StockId = null,
+                    StockCode = null,
+                    StockName = null,
+                    FishBatchId = fishBatch.Id,
+                    BatchCode = fishBatch.BatchCode,
+                    Kg = line.DeadCount * fishBatch.CurrentAverageGram / 1000m,
+                    Count = line.DeadCount,
+                    Amount = 0,
+                    IsErpIntegrated = mortality.IsERPIntegrated,
+                    ErpReferenceNumber = mortality.ERPReferenceNumber,
+                    ErpIntegrationDate = mortality.ERPIntegrationDate
+                };
+
+            if (projectIds.Count > 0) query = query.Where(x => projectIds.Contains(x.ProjectId));
+            if (projectCageIds.Count > 0) query = query.Where(x => projectCageIds.Contains(x.ProjectCageId));
+
+            var records = await query.ToListAsync();
+            var report = BuildMonthlyOperationalReport("mortality", fromDate, toDate, records);
+            return ApiResponse<MonthlyOperationalReportDto>.SuccessResult(report, L("KpiReportService.MonthlyMortalityReportLoaded"));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse<MonthlyOperationalReportDto>.ErrorResult(
+                L("KpiReportService.MonthlyMortalityReportLoadFailed"),
+                ex.Message,
+                StatusCodes.Status500InternalServerError);
+        }
+    }
+
+    public async Task<ApiResponse<MonthlyOperationalReportDto>> GetMonthlyShipmentReportAsync(MonthlyOperationalReportRequestDto? request)
+    {
+        try
+        {
+            var (fromDate, toDate) = NormalizeMonthlyReportRange(request);
+            if (toDate < fromDate)
+            {
+                return InvalidMonthlyRange();
+            }
+
+            var projectIds = NormalizeIds(request?.ProjectIds);
+            var projectCageIds = NormalizeIds(request?.ProjectCageIds);
+
+            var query =
+                from line in _unitOfWork.Db.ShipmentLines.AsNoTracking()
+                join shipment in _unitOfWork.Db.Shipments.AsNoTracking()
+                    on line.ShipmentId equals shipment.Id
+                join project in _unitOfWork.Db.Projects.AsNoTracking()
+                    on shipment.ProjectId equals project.Id
+                join projectCage in _unitOfWork.Db.ProjectCages.AsNoTracking()
+                    on line.FromProjectCageId equals projectCage.Id
+                join cage in _unitOfWork.Db.Cages.AsNoTracking()
+                    on projectCage.CageId equals cage.Id
+                join fishBatch in _unitOfWork.Db.FishBatches.AsNoTracking()
+                    on line.FishBatchId equals fishBatch.Id
+                join stock in _unitOfWork.Db.Stocks.AsNoTracking()
+                    on fishBatch.FishStockId equals stock.Id
+                where !line.IsDeleted
+                    && !shipment.IsDeleted
+                    && !project.IsDeleted
+                    && !projectCage.IsDeleted
+                    && !cage.IsDeleted
+                    && !fishBatch.IsDeleted
+                    && !stock.IsDeleted
+                    && shipment.Status == DocumentStatus.Posted
+                    && shipment.ShipmentDate.Date >= fromDate
+                    && shipment.ShipmentDate.Date <= toDate
+                select new MonthlyOperationalRawRecord
+                {
+                    Date = shipment.ShipmentDate.Date,
+                    HeaderId = shipment.Id,
+                    LineId = line.Id,
+                    DocumentNo = shipment.ShipmentNo,
+                    Slot = "-",
+                    ProjectId = project.Id,
+                    ProjectCode = project.ProjectCode,
+                    ProjectName = project.ProjectName,
+                    ProjectCageId = projectCage.Id,
+                    CageCode = cage.CageCode,
+                    CageName = cage.CageName,
+                    StockId = stock.Id,
+                    StockCode = stock.ErpStockCode,
+                    StockName = stock.StockName,
+                    FishBatchId = fishBatch.Id,
+                    BatchCode = fishBatch.BatchCode,
+                    Kg = line.BiomassGram / 1000m,
+                    Count = line.FishCount,
+                    Amount = line.LocalLineAmount ?? line.LineAmount ?? 0,
+                    IsErpIntegrated = shipment.IsERPIntegrated,
+                    ErpReferenceNumber = shipment.ERPReferenceNumber,
+                    ErpIntegrationDate = shipment.ERPIntegrationDate
+                };
+
+            if (projectIds.Count > 0) query = query.Where(x => projectIds.Contains(x.ProjectId));
+            if (projectCageIds.Count > 0) query = query.Where(x => projectCageIds.Contains(x.ProjectCageId));
+
+            var records = await query.ToListAsync();
+            var report = BuildMonthlyOperationalReport("shipment", fromDate, toDate, records);
+            return ApiResponse<MonthlyOperationalReportDto>.SuccessResult(report, L("KpiReportService.MonthlyShipmentReportLoaded"));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse<MonthlyOperationalReportDto>.ErrorResult(
+                L("KpiReportService.MonthlyShipmentReportLoadFailed"),
+                ex.Message,
+                StatusCodes.Status500InternalServerError);
+        }
+    }
+
     public Task<ApiResponse<DevirFcrReportDto>> GetDevirFcrReportAsync(DevirFcrReportRequestDto request)
     {
         return _devirFcrReportService.GetReportAsync(request);
@@ -1640,9 +2077,172 @@ public class KpiReportService : IKpiReportService
         return denominator > 0 ? Round(numerator / denominator * 100m) : null;
     }
 
+    private static (DateTime FromDate, DateTime ToDate) NormalizeMonthlyReportRange(MonthlyOperationalReportRequestDto? request)
+    {
+        var today = DateTime.Today;
+        var fromDate = (request?.FromDate ?? new DateTime(today.Year, 1, 1)).Date;
+        var toDate = (request?.ToDate ?? today).Date;
+        return (fromDate, toDate);
+    }
+
+    private static List<long> NormalizeIds(IEnumerable<long>? ids)
+    {
+        return ids?
+            .Where(x => x > 0)
+            .Distinct()
+            .ToList() ?? new List<long>();
+    }
+
+    private ApiResponse<MonthlyOperationalReportDto> InvalidMonthlyRange()
+    {
+        return ApiResponse<MonthlyOperationalReportDto>.ErrorResult(
+            L("KpiReportService.InvalidDateRange"),
+            L("KpiReportService.ToDateGreaterThanOrEqualFromDate"),
+            StatusCodes.Status400BadRequest);
+    }
+
+    private static MonthlyOperationalReportDto BuildMonthlyOperationalReport(
+        string reportType,
+        DateTime fromDate,
+        DateTime toDate,
+        List<MonthlyOperationalRawRecord> records)
+    {
+        var months = records
+            .GroupBy(x => new { x.Date.Year, x.Date.Month })
+            .OrderByDescending(x => x.Key.Year)
+            .ThenByDescending(x => x.Key.Month)
+            .Select(monthGroup =>
+            {
+                var days = monthGroup
+                    .GroupBy(x => x.Date)
+                    .OrderByDescending(x => x.Key)
+                    .Select(dayGroup =>
+                    {
+                        var projects = dayGroup
+                            .GroupBy(x => new { x.ProjectId, x.ProjectCode, x.ProjectName })
+                            .OrderBy(x => x.Key.ProjectCode)
+                            .ThenBy(x => x.Key.ProjectName)
+                            .Select(projectGroup =>
+                            {
+                                var cages = projectGroup
+                                    .GroupBy(x => new { x.ProjectCageId, x.CageCode, x.CageName })
+                                    .OrderBy(x => x.Key.CageCode)
+                                    .ThenBy(x => x.Key.CageName)
+                                    .Select(cageGroup =>
+                                    {
+                                        var lines = cageGroup
+                                            .OrderBy(x => x.Slot)
+                                            .ThenBy(x => x.StockCode)
+                                            .ThenBy(x => x.BatchCode)
+                                            .Select(x => new MonthlyOperationalLineDto
+                                            {
+                                                HeaderId = x.HeaderId,
+                                                LineId = x.LineId,
+                                                DocumentNo = ValueOrDash(x.DocumentNo),
+                                                Slot = ValueOrDash(x.Slot),
+                                                StockId = x.StockId,
+                                                StockCode = ValueOrDash(x.StockCode),
+                                                StockName = ValueOrDash(x.StockName),
+                                                FishBatchId = x.FishBatchId,
+                                                BatchCode = ValueOrDash(x.BatchCode),
+                                                Kg = Round(Math.Max(0m, x.Kg)),
+                                                Count = Math.Max(0, x.Count),
+                                                Amount = Round(Math.Max(0m, x.Amount)),
+                                                IsErpIntegrated = x.IsErpIntegrated,
+                                                ErpReferenceNumber = x.ErpReferenceNumber,
+                                                ErpIntegrationDate = x.ErpIntegrationDate
+                                            })
+                                            .ToList();
+
+                                        var cageCode = ValueOrDash(cageGroup.Key.CageCode);
+                                        var cageName = ValueOrDash(cageGroup.Key.CageName);
+
+                                        return new MonthlyOperationalCageDto
+                                        {
+                                            ProjectCageId = cageGroup.Key.ProjectCageId,
+                                            CageCode = cageCode,
+                                            CageName = cageName,
+                                            CageLabel = cageName == "-" || string.Equals(cageCode, cageName, StringComparison.OrdinalIgnoreCase)
+                                                ? cageCode
+                                                : $"{cageCode} - {cageName}",
+                                            TotalKg = Round(lines.Sum(x => x.Kg)),
+                                            TotalCount = lines.Sum(x => x.Count),
+                                            TotalAmount = Round(lines.Sum(x => x.Amount)),
+                                            LineCount = lines.Count,
+                                            Lines = lines
+                                        };
+                                    })
+                                    .ToList();
+
+                                return new MonthlyOperationalProjectDto
+                                {
+                                    ProjectId = projectGroup.Key.ProjectId,
+                                    ProjectCode = ValueOrDash(projectGroup.Key.ProjectCode),
+                                    ProjectName = ValueOrDash(projectGroup.Key.ProjectName),
+                                    TotalKg = Round(cages.Sum(x => x.TotalKg)),
+                                    TotalCount = cages.Sum(x => x.TotalCount),
+                                    TotalAmount = Round(cages.Sum(x => x.TotalAmount)),
+                                    LineCount = cages.Sum(x => x.LineCount),
+                                    CageCount = cages.Count,
+                                    Cages = cages
+                                };
+                            })
+                            .ToList();
+
+                        return new MonthlyOperationalDayDto
+                        {
+                            Date = dayGroup.Key,
+                            TotalKg = Round(projects.Sum(x => x.TotalKg)),
+                            TotalCount = projects.Sum(x => x.TotalCount),
+                            TotalAmount = Round(projects.Sum(x => x.TotalAmount)),
+                            LineCount = projects.Sum(x => x.LineCount),
+                            ProjectCount = projects.Count,
+                            CageCount = projects.Sum(x => x.CageCount),
+                            Projects = projects
+                        };
+                    })
+                    .ToList();
+
+                return new MonthlyOperationalMonthDto
+                {
+                    Year = monthGroup.Key.Year,
+                    Month = monthGroup.Key.Month,
+                    MonthKey = $"{monthGroup.Key.Year:D4}-{monthGroup.Key.Month:D2}",
+                    TotalKg = Round(days.Sum(x => x.TotalKg)),
+                    TotalCount = days.Sum(x => x.TotalCount),
+                    TotalAmount = Round(days.Sum(x => x.TotalAmount)),
+                    LineCount = days.Sum(x => x.LineCount),
+                    DayCount = days.Count,
+                    ProjectCount = monthGroup.Select(x => x.ProjectId).Distinct().Count(),
+                    CageCount = monthGroup.Select(x => x.ProjectCageId).Distinct().Count(),
+                    Days = days
+                };
+            })
+            .ToList();
+
+        return new MonthlyOperationalReportDto
+        {
+            FromDate = fromDate,
+            ToDate = toDate,
+            ReportType = reportType,
+            TotalKg = Round(months.Sum(x => x.TotalKg)),
+            TotalCount = months.Sum(x => x.TotalCount),
+            TotalAmount = Round(months.Sum(x => x.TotalAmount)),
+            TotalLineCount = months.Sum(x => x.LineCount),
+            TotalProjectCount = records.Select(x => x.ProjectId).Distinct().Count(),
+            TotalCageCount = records.Select(x => x.ProjectCageId).Distinct().Count(),
+            Months = months
+        };
+    }
+
     private static decimal Round(decimal value)
     {
         return decimal.Round(value, 3, MidpointRounding.AwayFromZero);
+    }
+
+    private static string ValueOrDash(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value;
     }
 
     private sealed record FeedCostInput(Dictionary<long, decimal> FeedCostByProjectCage, decimal ProjectAverageFeedCostPerKg);
@@ -1661,5 +2261,31 @@ public class KpiReportService : IKpiReportService
     {
         public HashSet<DateTime> FeedDates { get; } = new();
         public DateTime? LastWeighingDate { get; set; }
+    }
+
+    private sealed class MonthlyOperationalRawRecord
+    {
+        public DateTime Date { get; set; }
+        public long HeaderId { get; set; }
+        public long LineId { get; set; }
+        public string? DocumentNo { get; set; }
+        public string? Slot { get; set; }
+        public long ProjectId { get; set; }
+        public string? ProjectCode { get; set; }
+        public string? ProjectName { get; set; }
+        public long ProjectCageId { get; set; }
+        public string? CageCode { get; set; }
+        public string? CageName { get; set; }
+        public long? StockId { get; set; }
+        public string? StockCode { get; set; }
+        public string? StockName { get; set; }
+        public long FishBatchId { get; set; }
+        public string? BatchCode { get; set; }
+        public decimal Kg { get; set; }
+        public int Count { get; set; }
+        public decimal Amount { get; set; }
+        public bool IsErpIntegrated { get; set; }
+        public string? ErpReferenceNumber { get; set; }
+        public DateTime? ErpIntegrationDate { get; set; }
     }
 }

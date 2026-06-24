@@ -46,6 +46,169 @@ public class ProjectFeedFishSummaryTotalDto
     public int ActiveCageCount { get; set; }
 }
 
+public class DailyFeedingReportRequestDto
+{
+    public DateTime? FromDate { get; set; }
+    public DateTime? ToDate { get; set; }
+    public List<long> ProjectIds { get; set; } = new();
+    public List<long> ProjectCageIds { get; set; } = new();
+}
+
+public class DailyFeedingReportDto
+{
+    public DateTime FromDate { get; set; }
+    public DateTime ToDate { get; set; }
+    public decimal TotalFeedKg { get; set; }
+    public int TotalLineCount { get; set; }
+    public int TotalProjectCount { get; set; }
+    public int TotalCageCount { get; set; }
+    public List<DailyFeedingDayDto> Days { get; set; } = new();
+}
+
+public class DailyFeedingDayDto
+{
+    public DateTime FeedingDate { get; set; }
+    public decimal TotalFeedKg { get; set; }
+    public int LineCount { get; set; }
+    public int ProjectCount { get; set; }
+    public int CageCount { get; set; }
+    public List<DailyFeedingProjectDto> Projects { get; set; } = new();
+}
+
+public class DailyFeedingProjectDto
+{
+    public long ProjectId { get; set; }
+    public string ProjectCode { get; set; } = "-";
+    public string ProjectName { get; set; } = "-";
+    public decimal TotalFeedKg { get; set; }
+    public int LineCount { get; set; }
+    public int CageCount { get; set; }
+    public List<DailyFeedingCageDto> Cages { get; set; } = new();
+}
+
+public class DailyFeedingCageDto
+{
+    public long ProjectCageId { get; set; }
+    public string CageCode { get; set; } = "-";
+    public string CageName { get; set; } = "-";
+    public string CageLabel { get; set; } = "-";
+    public decimal TotalFeedKg { get; set; }
+    public int LineCount { get; set; }
+    public List<DailyFeedingLineDto> Lines { get; set; } = new();
+}
+
+public class DailyFeedingLineDto
+{
+    public long FeedingId { get; set; }
+    public long FeedingLineId { get; set; }
+    public long FeedingDistributionId { get; set; }
+    public string FeedingNo { get; set; } = "-";
+    public string FeedingSlot { get; set; } = "-";
+    public long StockId { get; set; }
+    public string StockCode { get; set; } = "-";
+    public string StockName { get; set; } = "-";
+    public long FishBatchId { get; set; }
+    public string BatchCode { get; set; } = "-";
+    public decimal FeedKg { get; set; }
+    public bool IsErpIntegrated { get; set; }
+    public string? ErpReferenceNumber { get; set; }
+    public DateTime? ErpIntegrationDate { get; set; }
+}
+
+public class MonthlyOperationalReportRequestDto
+{
+    public DateTime? FromDate { get; set; }
+    public DateTime? ToDate { get; set; }
+    public List<long> ProjectIds { get; set; } = new();
+    public List<long> ProjectCageIds { get; set; } = new();
+}
+
+public class MonthlyOperationalReportDto
+{
+    public DateTime FromDate { get; set; }
+    public DateTime ToDate { get; set; }
+    public string ReportType { get; set; } = string.Empty;
+    public decimal TotalKg { get; set; }
+    public int TotalCount { get; set; }
+    public decimal TotalAmount { get; set; }
+    public int TotalLineCount { get; set; }
+    public int TotalProjectCount { get; set; }
+    public int TotalCageCount { get; set; }
+    public List<MonthlyOperationalMonthDto> Months { get; set; } = new();
+}
+
+public class MonthlyOperationalMonthDto
+{
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public string MonthKey { get; set; } = string.Empty;
+    public decimal TotalKg { get; set; }
+    public int TotalCount { get; set; }
+    public decimal TotalAmount { get; set; }
+    public int LineCount { get; set; }
+    public int DayCount { get; set; }
+    public int ProjectCount { get; set; }
+    public int CageCount { get; set; }
+    public List<MonthlyOperationalDayDto> Days { get; set; } = new();
+}
+
+public class MonthlyOperationalDayDto
+{
+    public DateTime Date { get; set; }
+    public decimal TotalKg { get; set; }
+    public int TotalCount { get; set; }
+    public decimal TotalAmount { get; set; }
+    public int LineCount { get; set; }
+    public int ProjectCount { get; set; }
+    public int CageCount { get; set; }
+    public List<MonthlyOperationalProjectDto> Projects { get; set; } = new();
+}
+
+public class MonthlyOperationalProjectDto
+{
+    public long ProjectId { get; set; }
+    public string ProjectCode { get; set; } = "-";
+    public string ProjectName { get; set; } = "-";
+    public decimal TotalKg { get; set; }
+    public int TotalCount { get; set; }
+    public decimal TotalAmount { get; set; }
+    public int LineCount { get; set; }
+    public int CageCount { get; set; }
+    public List<MonthlyOperationalCageDto> Cages { get; set; } = new();
+}
+
+public class MonthlyOperationalCageDto
+{
+    public long ProjectCageId { get; set; }
+    public string CageCode { get; set; } = "-";
+    public string CageName { get; set; } = "-";
+    public string CageLabel { get; set; } = "-";
+    public decimal TotalKg { get; set; }
+    public int TotalCount { get; set; }
+    public decimal TotalAmount { get; set; }
+    public int LineCount { get; set; }
+    public List<MonthlyOperationalLineDto> Lines { get; set; } = new();
+}
+
+public class MonthlyOperationalLineDto
+{
+    public long HeaderId { get; set; }
+    public long LineId { get; set; }
+    public string DocumentNo { get; set; } = "-";
+    public string Slot { get; set; } = "-";
+    public long? StockId { get; set; }
+    public string StockCode { get; set; } = "-";
+    public string StockName { get; set; } = "-";
+    public long FishBatchId { get; set; }
+    public string BatchCode { get; set; } = "-";
+    public decimal Kg { get; set; }
+    public int Count { get; set; }
+    public decimal Amount { get; set; }
+    public bool IsErpIntegrated { get; set; }
+    public string? ErpReferenceNumber { get; set; }
+    public DateTime? ErpIntegrationDate { get; set; }
+}
+
 public class RawKpiReportDto
 {
     public long ProjectId { get; set; }

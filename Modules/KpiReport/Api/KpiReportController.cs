@@ -39,6 +39,34 @@ public class KpiReportController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    [HttpPost("daily-feedings")]
+    public async Task<ActionResult<ApiResponse<DailyFeedingReportDto>>> GetDailyFeedingReport([FromBody] DailyFeedingReportRequestDto? request)
+    {
+        var result = await _service.GetDailyFeedingReportAsync(request);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost("monthly-feedings")]
+    public async Task<ActionResult<ApiResponse<MonthlyOperationalReportDto>>> GetMonthlyFeedingReport([FromBody] MonthlyOperationalReportRequestDto? request)
+    {
+        var result = await _service.GetMonthlyFeedingReportAsync(request);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost("monthly-mortalities")]
+    public async Task<ActionResult<ApiResponse<MonthlyOperationalReportDto>>> GetMonthlyMortalityReport([FromBody] MonthlyOperationalReportRequestDto? request)
+    {
+        var result = await _service.GetMonthlyMortalityReportAsync(request);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost("monthly-shipments")]
+    public async Task<ActionResult<ApiResponse<MonthlyOperationalReportDto>>> GetMonthlyShipmentReport([FromBody] MonthlyOperationalReportRequestDto? request)
+    {
+        var result = await _service.GetMonthlyShipmentReportAsync(request);
+        return StatusCode(result.StatusCode, result);
+    }
+
     [HttpGet("raw-kpi/{projectId:long}")]
     public async Task<ActionResult<ApiResponse<RawKpiReportDto>>> GetRawKpiReport(long projectId)
     {

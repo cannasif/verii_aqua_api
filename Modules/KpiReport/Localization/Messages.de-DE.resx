@@ -30,4 +30,12 @@
   <data name="DevirFcrReportService.ReportLoadFailed" xml:space="preserve"><value>Devir-/FCR-Bericht konnte nicht geladen werden.</value></data>
   <data name="KpiReportService.ProjectFeedFishSummaryLoaded" xml:space="preserve"><value>Projektbericht für Futter- und Fischbestand wurde geladen.</value></data>
   <data name="KpiReportService.ProjectFeedFishSummaryLoadFailed" xml:space="preserve"><value>Projektbericht für Futter- und Fischbestand konnte nicht geladen werden.</value></data>
+  <data name="KpiReportService.DailyFeedingReportLoaded" xml:space="preserve"><value>Täglicher Fütterungsbericht wurde geladen.</value></data>
+  <data name="KpiReportService.DailyFeedingReportLoadFailed" xml:space="preserve"><value>Täglicher Fütterungsbericht konnte nicht geladen werden.</value></data>
+  <data name="KpiReportService.MonthlyFeedingReportLoaded" xml:space="preserve"><value>Monatlicher Fütterungsbericht wurde geladen.</value></data>
+  <data name="KpiReportService.MonthlyFeedingReportLoadFailed" xml:space="preserve"><value>Monatlicher Fütterungsbericht konnte nicht geladen werden.</value></data>
+  <data name="KpiReportService.MonthlyMortalityReportLoaded" xml:space="preserve"><value>Monatlicher Mortalitätsbericht wurde geladen.</value></data>
+  <data name="KpiReportService.MonthlyMortalityReportLoadFailed" xml:space="preserve"><value>Monatlicher Mortalitätsbericht konnte nicht geladen werden.</value></data>
+  <data name="KpiReportService.MonthlyShipmentReportLoaded" xml:space="preserve"><value>Monatlicher Versand-/Verkaufsbericht wurde geladen.</value></data>
+  <data name="KpiReportService.MonthlyShipmentReportLoadFailed" xml:space="preserve"><value>Monatlicher Versand-/Verkaufsbericht konnte nicht geladen werden.</value></data>
 </root>

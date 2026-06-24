@@ -30,4 +30,12 @@
   <data name="DevirFcrReportService.ReportLoadFailed" xml:space="preserve"><value>تعذر تحميل تقرير Devir / FCR.</value></data>
   <data name="KpiReportService.ProjectFeedFishSummaryLoaded" xml:space="preserve"><value>تم تحميل تقرير ملخص العلف والأسماك حسب المشروع.</value></data>
   <data name="KpiReportService.ProjectFeedFishSummaryLoadFailed" xml:space="preserve"><value>تعذر تحميل تقرير ملخص العلف والأسماك حسب المشروع.</value></data>
+  <data name="KpiReportService.DailyFeedingReportLoaded" xml:space="preserve"><value>تم تحميل تقرير التغذية اليومية.</value></data>
+  <data name="KpiReportService.DailyFeedingReportLoadFailed" xml:space="preserve"><value>تعذر تحميل تقرير التغذية اليومية.</value></data>
+  <data name="KpiReportService.MonthlyFeedingReportLoaded" xml:space="preserve"><value>تم تحميل تقرير التغذية الشهري.</value></data>
+  <data name="KpiReportService.MonthlyFeedingReportLoadFailed" xml:space="preserve"><value>تعذر تحميل تقرير التغذية الشهري.</value></data>
+  <data name="KpiReportService.MonthlyMortalityReportLoaded" xml:space="preserve"><value>تم تحميل تقرير النفوق الشهري.</value></data>
+  <data name="KpiReportService.MonthlyMortalityReportLoadFailed" xml:space="preserve"><value>تعذر تحميل تقرير النفوق الشهري.</value></data>
+  <data name="KpiReportService.MonthlyShipmentReportLoaded" xml:space="preserve"><value>تم تحميل تقرير الشحن/المبيعات الشهري.</value></data>
+  <data name="KpiReportService.MonthlyShipmentReportLoadFailed" xml:space="preserve"><value>تعذر تحميل تقرير الشحن/المبيعات الشهري.</value></data>
 </root>

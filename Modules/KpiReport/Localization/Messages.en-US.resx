@@ -30,4 +30,12 @@
   <data name="DevirFcrReportService.ReportLoadFailed" xml:space="preserve"><value>Devir / FCR report could not be loaded.</value></data>
   <data name="KpiReportService.ProjectFeedFishSummaryLoaded" xml:space="preserve"><value>Project feed and fish summary report loaded.</value></data>
   <data name="KpiReportService.ProjectFeedFishSummaryLoadFailed" xml:space="preserve"><value>Project feed and fish summary report could not be loaded.</value></data>
+  <data name="KpiReportService.DailyFeedingReportLoaded" xml:space="preserve"><value>Daily feeding report loaded.</value></data>
+  <data name="KpiReportService.DailyFeedingReportLoadFailed" xml:space="preserve"><value>Daily feeding report could not be loaded.</value></data>
+  <data name="KpiReportService.MonthlyFeedingReportLoaded" xml:space="preserve"><value>Monthly feeding report loaded.</value></data>
+  <data name="KpiReportService.MonthlyFeedingReportLoadFailed" xml:space="preserve"><value>Monthly feeding report could not be loaded.</value></data>
+  <data name="KpiReportService.MonthlyMortalityReportLoaded" xml:space="preserve"><value>Monthly mortality report loaded.</value></data>
+  <data name="KpiReportService.MonthlyMortalityReportLoadFailed" xml:space="preserve"><value>Monthly mortality report could not be loaded.</value></data>
+  <data name="KpiReportService.MonthlyShipmentReportLoaded" xml:space="preserve"><value>Monthly shipment/sales report loaded.</value></data>
+  <data name="KpiReportService.MonthlyShipmentReportLoadFailed" xml:space="preserve"><value>Monthly shipment/sales report could not be loaded.</value></data>
 </root>
