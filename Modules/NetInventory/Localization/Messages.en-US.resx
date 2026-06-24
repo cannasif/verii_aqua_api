@@ -19,6 +19,11 @@
   <data name="NetInventoryMovementService.TargetCageRequired" xml:space="preserve"><value>Target cage is required for cage placement.</value></data>
   <data name="NetInventoryMovementService.SourceCageRequired" xml:space="preserve"><value>Source cage is required for cage removal.</value></data>
   <data name="NetInventoryMovementService.WarehouseTransferWarehousesRequired" xml:space="preserve"><value>Source and target warehouses are required for warehouse transfer.</value></data>
+  <data name="NetInventoryMovementService.StockRequired" xml:space="preserve"><value>Please select a stock for the net inventory movement.</value></data>
+  <data name="NetInventoryMovementService.SourceWarehouseRequired" xml:space="preserve"><value>Please select the source warehouse for this net movement.</value></data>
+  <data name="NetInventoryMovementService.TargetWarehouseRequired" xml:space="preserve"><value>Please select the target warehouse for this net movement.</value></data>
+  <data name="NetInventoryMovementService.InsufficientWarehouseBalance" xml:space="preserve"><value>The selected warehouse does not have enough balance for this net.</value></data>
+  <data name="NetInventoryMovementService.InsufficientCageBalance" xml:space="preserve"><value>The selected cage does not have enough balance for this net.</value></data>
   <data name="NetInventoryMovementService.NoteTooLong" xml:space="preserve"><value>Note can be at most 500 characters.</value></data>
   <data name="NetInventory.NetType.1" xml:space="preserve"><value>Fish Net</value></data>
   <data name="NetInventory.NetType.2" xml:space="preserve"><value>Bird Net</value></data>

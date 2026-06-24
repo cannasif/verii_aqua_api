@@ -57,6 +57,21 @@
   <data name="NetInventoryMovementService.WarehouseTransferWarehousesRequired" xml:space="preserve">
     <value>Depo transferi için kaynak ve hedef depo seçilmelidir.</value>
   </data>
+  <data name="NetInventoryMovementService.StockRequired" xml:space="preserve">
+    <value>Ağ envanteri hareketi için stok seçilmelidir.</value>
+  </data>
+  <data name="NetInventoryMovementService.SourceWarehouseRequired" xml:space="preserve">
+    <value>Bu ağ hareketi için kaynak depo seçilmelidir.</value>
+  </data>
+  <data name="NetInventoryMovementService.TargetWarehouseRequired" xml:space="preserve">
+    <value>Bu ağ hareketi için hedef depo seçilmelidir.</value>
+  </data>
+  <data name="NetInventoryMovementService.InsufficientWarehouseBalance" xml:space="preserve">
+    <value>Seçilen depoda bu ağ için yeterli bakiye yok.</value>
+  </data>
+  <data name="NetInventoryMovementService.InsufficientCageBalance" xml:space="preserve">
+    <value>Seçilen kafeste bu ağ için yeterli bakiye yok.</value>
+  </data>
   <data name="NetInventoryMovementService.NoteTooLong" xml:space="preserve">
     <value>Açıklama en fazla 500 karakter olabilir.</value>
   </data>

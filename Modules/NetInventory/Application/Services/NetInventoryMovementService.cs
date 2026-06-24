@@ -246,6 +246,21 @@ public class NetInventoryMovementService : INetInventoryMovementService
             }
         }
 
+        if (!dto.StockId.HasValue)
+        {
+            return ValidationError("NetInventoryMovementService.StockRequired");
+        }
+
+        if (dto.MovementType == NetInventoryMovementType.WarehouseReceipt && !dto.TargetWarehouseId.HasValue)
+        {
+            return ValidationError("NetInventoryMovementService.TargetWarehouseRequired");
+        }
+
+        if (dto.MovementType == NetInventoryMovementType.CagePlacement && !dto.SourceWarehouseId.HasValue)
+        {
+            return ValidationError("NetInventoryMovementService.SourceWarehouseRequired");
+        }
+
         if (dto.MovementType == NetInventoryMovementType.CagePlacement && !dto.TargetProjectCageId.HasValue)
         {
             return ValidationError("NetInventoryMovementService.TargetCageRequired");
@@ -256,10 +271,42 @@ public class NetInventoryMovementService : INetInventoryMovementService
             return ValidationError("NetInventoryMovementService.SourceCageRequired");
         }
 
+        if (dto.MovementType == NetInventoryMovementType.CageRemoval && !dto.TargetWarehouseId.HasValue)
+        {
+            return ValidationError("NetInventoryMovementService.TargetWarehouseRequired");
+        }
+
         if (dto.MovementType == NetInventoryMovementType.WarehouseTransfer &&
             (!dto.SourceWarehouseId.HasValue || !dto.TargetWarehouseId.HasValue))
         {
             return ValidationError("NetInventoryMovementService.WarehouseTransferWarehousesRequired");
+        }
+
+        if (dto.MovementType == NetInventoryMovementType.CagePlacement && dto.SourceWarehouseId.HasValue)
+        {
+            var warehouseBalance = await GetWarehouseBalanceAsync(dto.NetType, dto.StockId, dto.SourceWarehouseId.Value, currentId);
+            if (warehouseBalance < dto.Quantity)
+            {
+                return ValidationError("NetInventoryMovementService.InsufficientWarehouseBalance");
+            }
+        }
+
+        if (dto.MovementType == NetInventoryMovementType.CageRemoval && dto.SourceProjectCageId.HasValue)
+        {
+            var cageBalance = await GetCageBalanceAsync(dto.NetType, dto.StockId, dto.SourceProjectCageId.Value, currentId);
+            if (cageBalance < dto.Quantity)
+            {
+                return ValidationError("NetInventoryMovementService.InsufficientCageBalance");
+            }
+        }
+
+        if (dto.MovementType == NetInventoryMovementType.WarehouseTransfer && dto.SourceWarehouseId.HasValue)
+        {
+            var warehouseBalance = await GetWarehouseBalanceAsync(dto.NetType, dto.StockId, dto.SourceWarehouseId.Value, currentId);
+            if (warehouseBalance < dto.Quantity)
+            {
+                return ValidationError("NetInventoryMovementService.InsufficientWarehouseBalance");
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(dto.Note) && dto.Note.Trim().Length > 500)
@@ -268,6 +315,53 @@ public class NetInventoryMovementService : INetInventoryMovementService
         }
 
         return ApiResponse<NetInventoryMovementDto>.SuccessResult(new NetInventoryMovementDto(), "Valid");
+    }
+
+    private async Task<int> GetWarehouseBalanceAsync(NetType netType, long? stockId, long warehouseId, long? excludingId = null)
+    {
+        var query = _unitOfWork.Db.NetInventoryMovements
+            .AsNoTracking()
+            .Where(x =>
+                !x.IsDeleted &&
+                x.NetType == netType &&
+                x.StockId == stockId &&
+                (!excludingId.HasValue || x.Id != excludingId.Value));
+
+        var incoming = await query
+            .Where(x =>
+                (x.MovementType == NetInventoryMovementType.WarehouseReceipt && x.TargetWarehouseId == warehouseId) ||
+                (x.MovementType == NetInventoryMovementType.CageRemoval && x.TargetWarehouseId == warehouseId) ||
+                (x.MovementType == NetInventoryMovementType.WarehouseTransfer && x.TargetWarehouseId == warehouseId))
+            .SumAsync(x => (int?)x.Quantity) ?? 0;
+
+        var outgoing = await query
+            .Where(x =>
+                (x.MovementType == NetInventoryMovementType.CagePlacement && x.SourceWarehouseId == warehouseId) ||
+                (x.MovementType == NetInventoryMovementType.WarehouseTransfer && x.SourceWarehouseId == warehouseId))
+            .SumAsync(x => (int?)x.Quantity) ?? 0;
+
+        return incoming - outgoing;
+    }
+
+    private async Task<int> GetCageBalanceAsync(NetType netType, long? stockId, long projectCageId, long? excludingId = null)
+    {
+        var query = _unitOfWork.Db.NetInventoryMovements
+            .AsNoTracking()
+            .Where(x =>
+                !x.IsDeleted &&
+                x.NetType == netType &&
+                x.StockId == stockId &&
+                (!excludingId.HasValue || x.Id != excludingId.Value));
+
+        var incoming = await query
+            .Where(x => x.MovementType == NetInventoryMovementType.CagePlacement && x.TargetProjectCageId == projectCageId)
+            .SumAsync(x => (int?)x.Quantity) ?? 0;
+
+        var outgoing = await query
+            .Where(x => x.MovementType == NetInventoryMovementType.CageRemoval && x.SourceProjectCageId == projectCageId)
+            .SumAsync(x => (int?)x.Quantity) ?? 0;
+
+        return incoming - outgoing;
     }
 
     private async Task<string> BuildMovementNoAsync(DateTime movementDate)
