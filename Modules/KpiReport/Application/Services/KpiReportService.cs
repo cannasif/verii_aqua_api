@@ -555,6 +555,8 @@ public class KpiReportService : IKpiReportService
             if (projectCageIds.Count > 0) query = query.Where(x => projectCageIds.Contains(x.ProjectCageId));
 
             var records = await query.ToListAsync();
+            await ApplyMortalityLedgerBiomassAsync(records);
+
             var report = BuildMonthlyOperationalReport("mortality", fromDate, toDate, records);
             return ApiResponse<MonthlyOperationalReportDto>.SuccessResult(report, L("KpiReportService.MonthlyMortalityReportLoaded"));
         }
@@ -2099,6 +2101,64 @@ public class KpiReportService : IKpiReportService
             L("KpiReportService.InvalidDateRange"),
             L("KpiReportService.ToDateGreaterThanOrEqualFromDate"),
             StatusCodes.Status400BadRequest);
+    }
+
+    private async Task ApplyMortalityLedgerBiomassAsync(List<MonthlyOperationalRawRecord> records)
+    {
+        var mortalityIds = records
+            .Select(x => x.HeaderId)
+            .Distinct()
+            .ToList();
+
+        if (mortalityIds.Count == 0)
+        {
+            return;
+        }
+
+        var ledgerMovements = await _unitOfWork.Db.BatchMovements
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted
+                && x.MovementType == BatchMovementType.Mortality
+                && x.ReferenceTable == "RII_Mortality"
+                && mortalityIds.Contains(x.ReferenceId)
+                && x.ProjectCageId.HasValue)
+            .Select(x => new
+            {
+                x.ReferenceId,
+                x.FishBatchId,
+                ProjectCageId = x.ProjectCageId!.Value,
+                x.SignedBiomassGram
+            })
+            .ToListAsync();
+
+        var ledgerKgByKey = ledgerMovements
+            .GroupBy(x => (x.ReferenceId, x.FishBatchId, x.ProjectCageId))
+            .ToDictionary(
+                x => x.Key,
+                x => x.Sum(y => Math.Abs(y.SignedBiomassGram)) / 1000m);
+
+        if (ledgerKgByKey.Count == 0)
+        {
+            return;
+        }
+
+        var countByKey = records
+            .GroupBy(x => (ReferenceId: x.HeaderId, x.FishBatchId, x.ProjectCageId))
+            .ToDictionary(x => x.Key, x => x.Sum(y => Math.Max(0, y.Count)));
+
+        foreach (var record in records)
+        {
+            var key = (ReferenceId: record.HeaderId, record.FishBatchId, record.ProjectCageId);
+            if (!ledgerKgByKey.TryGetValue(key, out var ledgerKg) || ledgerKg <= 0)
+            {
+                continue;
+            }
+
+            var totalCount = countByKey.GetValueOrDefault(key);
+            record.Kg = totalCount > 0
+                ? ledgerKg * Math.Max(0, record.Count) / totalCount
+                : ledgerKg;
+        }
     }
 
     private static MonthlyOperationalReportDto BuildMonthlyOperationalReport(
