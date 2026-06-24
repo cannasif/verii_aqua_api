@@ -1,0 +1,84 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="NetInventoryMovementService.OperationSuccessful" xml:space="preserve">
+    <value>İşlem başarılı.</value>
+  </data>
+  <data name="NetInventoryMovementService.InternalServerError" xml:space="preserve">
+    <value>Ağ envanteri işlemi sırasında beklenmeyen bir hata oluştu.</value>
+  </data>
+  <data name="NetInventoryMovementService.NotFound" xml:space="preserve">
+    <value>Ağ envanteri hareketi bulunamadı.</value>
+  </data>
+  <data name="NetInventoryMovementService.CreateFailed" xml:space="preserve">
+    <value>Ağ envanteri hareketi kaydedilemedi.</value>
+  </data>
+  <data name="NetInventoryMovementService.UpdateFailed" xml:space="preserve">
+    <value>Ağ envanteri hareketi güncellenemedi.</value>
+  </data>
+  <data name="NetInventoryMovementService.DeleteFailed" xml:space="preserve">
+    <value>Ağ envanteri hareketi silinemedi.</value>
+  </data>
+  <data name="NetInventoryMovementService.InvalidNetType" xml:space="preserve">
+    <value>Geçerli bir ağ tipi seçiniz.</value>
+  </data>
+  <data name="NetInventoryMovementService.InvalidMovementType" xml:space="preserve">
+    <value>Geçerli bir ağ hareket tipi seçiniz.</value>
+  </data>
+  <data name="NetInventoryMovementService.QuantityRequired" xml:space="preserve">
+    <value>Ağ adedi sıfırdan büyük olmalıdır.</value>
+  </data>
+  <data name="NetInventoryMovementService.MovementDateRequired" xml:space="preserve">
+    <value>Geçerli bir hareket tarihi seçiniz.</value>
+  </data>
+  <data name="NetInventoryMovementService.MovementNoTooLong" xml:space="preserve">
+    <value>Hareket numarası en fazla 50 karakter olabilir.</value>
+  </data>
+  <data name="NetInventoryMovementService.MovementNoAlreadyExists" xml:space="preserve">
+    <value>Bu hareket numarası ile aktif bir ağ hareketi zaten var.</value>
+  </data>
+  <data name="NetInventoryMovementService.TargetCageRequired" xml:space="preserve">
+    <value>Kafese atma işlemi için hedef kafes seçilmelidir.</value>
+  </data>
+  <data name="NetInventoryMovementService.SourceCageRequired" xml:space="preserve">
+    <value>Kafesten alma işlemi için kaynak kafes seçilmelidir.</value>
+  </data>
+  <data name="NetInventoryMovementService.WarehouseTransferWarehousesRequired" xml:space="preserve">
+    <value>Depo transferi için kaynak ve hedef depo seçilmelidir.</value>
+  </data>
+  <data name="NetInventoryMovementService.NoteTooLong" xml:space="preserve">
+    <value>Açıklama en fazla 500 karakter olabilir.</value>
+  </data>
+  <data name="NetInventory.NetType.1" xml:space="preserve">
+    <value>Balık Ağı</value>
+  </data>
+  <data name="NetInventory.NetType.2" xml:space="preserve">
+    <value>Kuş Ağı</value>
+  </data>
+  <data name="NetInventory.MovementType.1" xml:space="preserve">
+    <value>Depoya Giriş</value>
+  </data>
+  <data name="NetInventory.MovementType.2" xml:space="preserve">
+    <value>Kafese Atma</value>
+  </data>
+  <data name="NetInventory.MovementType.3" xml:space="preserve">
+    <value>Kafesten Alma</value>
+  </data>
+  <data name="NetInventory.MovementType.4" xml:space="preserve">
+    <value>Depo Transferi</value>
+  </data>
+  <data name="NetInventory.MovementType.5" xml:space="preserve">
+    <value>Sayım Düzeltmesi</value>
+  </data>
+</root>

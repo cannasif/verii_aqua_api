@@ -92,6 +92,7 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<NetOperationType> NetOperationTypes { get; set; }
         public DbSet<NetOperation> NetOperations { get; set; }
         public DbSet<NetOperationLine> NetOperationLines { get; set; }
+        public DbSet<NetInventoryMovement> NetInventoryMovements { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

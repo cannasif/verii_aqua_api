@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="NetInventoryMovementService.OperationSuccessful" xml:space="preserve"><value>Operation completed successfully.</value></data>
+  <data name="NetInventoryMovementService.InternalServerError" xml:space="preserve"><value>An unexpected error occurred while processing the net inventory movement.</value></data>
+  <data name="NetInventoryMovementService.NotFound" xml:space="preserve"><value>Net inventory movement was not found.</value></data>
+  <data name="NetInventoryMovementService.CreateFailed" xml:space="preserve"><value>Net inventory movement could not be saved.</value></data>
+  <data name="NetInventoryMovementService.UpdateFailed" xml:space="preserve"><value>Net inventory movement could not be updated.</value></data>
+  <data name="NetInventoryMovementService.DeleteFailed" xml:space="preserve"><value>Net inventory movement could not be deleted.</value></data>
+  <data name="NetInventoryMovementService.InvalidNetType" xml:space="preserve"><value>Please select a valid net type.</value></data>
+  <data name="NetInventoryMovementService.InvalidMovementType" xml:space="preserve"><value>Please select a valid net movement type.</value></data>
+  <data name="NetInventoryMovementService.QuantityRequired" xml:space="preserve"><value>Net quantity must be greater than zero.</value></data>
+  <data name="NetInventoryMovementService.MovementDateRequired" xml:space="preserve"><value>Please select a valid movement date.</value></data>
+  <data name="NetInventoryMovementService.MovementNoTooLong" xml:space="preserve"><value>Movement number can be at most 50 characters.</value></data>
+  <data name="NetInventoryMovementService.MovementNoAlreadyExists" xml:space="preserve"><value>An active net movement already exists with this movement number.</value></data>
+  <data name="NetInventoryMovementService.TargetCageRequired" xml:space="preserve"><value>Target cage is required for cage placement.</value></data>
+  <data name="NetInventoryMovementService.SourceCageRequired" xml:space="preserve"><value>Source cage is required for cage removal.</value></data>
+  <data name="NetInventoryMovementService.WarehouseTransferWarehousesRequired" xml:space="preserve"><value>Source and target warehouses are required for warehouse transfer.</value></data>
+  <data name="NetInventoryMovementService.NoteTooLong" xml:space="preserve"><value>Note can be at most 500 characters.</value></data>
+  <data name="NetInventory.NetType.1" xml:space="preserve"><value>Fish Net</value></data>
+  <data name="NetInventory.NetType.2" xml:space="preserve"><value>Bird Net</value></data>
+  <data name="NetInventory.MovementType.1" xml:space="preserve"><value>Warehouse Receipt</value></data>
+  <data name="NetInventory.MovementType.2" xml:space="preserve"><value>Cage Placement</value></data>
+  <data name="NetInventory.MovementType.3" xml:space="preserve"><value>Cage Removal</value></data>
+  <data name="NetInventory.MovementType.4" xml:space="preserve"><value>Warehouse Transfer</value></data>
+  <data name="NetInventory.MovementType.5" xml:space="preserve"><value>Inventory Adjustment</value></data>
+</root>

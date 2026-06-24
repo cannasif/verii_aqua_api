@@ -12,6 +12,7 @@ using aqua_api.Modules.Identity.DependencyInjection;
 using aqua_api.Modules.Integrations.DependencyInjection;
 using aqua_api.Modules.KpiReport.DependencyInjection;
 using aqua_api.Modules.Mortalities.DependencyInjection;
+using aqua_api.Modules.NetInventory.DependencyInjection;
 using aqua_api.Modules.NetOperations.DependencyInjection;
 using aqua_api.Modules.OpeningImports.DependencyInjection;
 using aqua_api.Modules.ProjectKpis.DependencyInjection;
@@ -49,6 +50,7 @@ public static class ModuleServiceCollectionExtensions
         services.AddGoodsReceiptsModule();
         services.AddMortalitiesModule();
         services.AddNetOperationsModule();
+        services.AddNetInventoryModule();
         services.AddStockConvertsModule();
         services.AddTransfersModule();
         services.AddShipmentsModule();
