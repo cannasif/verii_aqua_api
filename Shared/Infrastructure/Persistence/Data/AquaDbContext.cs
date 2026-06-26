@@ -93,6 +93,7 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<NetOperation> NetOperations { get; set; }
         public DbSet<NetOperationLine> NetOperationLines { get; set; }
         public DbSet<NetInventoryMovement> NetInventoryMovements { get; set; }
+        public DbSet<BudgetWaterTemperature> BudgetWaterTemperatures { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
