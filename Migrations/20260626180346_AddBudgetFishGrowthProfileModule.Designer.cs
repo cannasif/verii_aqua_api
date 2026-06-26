@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 
@@ -11,9 +12,11 @@ using aqua_api.Shared.Infrastructure.Persistence.Data;
 namespace aqua_api.Migrations
 {
     [DbContext(typeof(AquaDbContext))]
-    partial class AquaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260626180346_AddBudgetFishGrowthProfileModule")]
+    partial class AddBudgetFishGrowthProfileModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -352,67 +355,6 @@ namespace aqua_api.Migrations
                         {
                             t.HasCheckConstraint("CK_RII_BatchWarehouseBalance_NonNegative", "[LiveCount] >= 0 AND [AverageGram] >= 0 AND [BiomassGram] >= 0");
                         });
-                });
-
-            modelBuilder.Entity("aqua_api.Modules.Budget.Domain.Entities.BudgetCalibrationDefinition", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("CalibrationCode")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("CalibrationInfo")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
-
-                    b.Property<long?>("CreatedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<long?>("DeletedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("DeletedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<long?>("UpdatedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("UpdatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CalibrationCode")
-                        .IsUnique()
-                        .HasDatabaseName("UX_RII_BUDGET_CALIBRATION_DEFINITION_Code_Active")
-                        .HasFilter("[IsDeleted] = 0");
-
-                    b.HasIndex("CreatedBy");
-
-                    b.HasIndex("DeletedBy");
-
-                    b.HasIndex("UpdatedBy");
-
-                    b.ToTable("RII_BUDGET_CALIBRATION_DEFINITION", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Budget.Domain.Entities.BudgetFishGrowthProfile", b =>
@@ -7457,30 +7399,6 @@ namespace aqua_api.Migrations
                     b.Navigation("UpdatedByUser");
 
                     b.Navigation("Warehouse");
-                });
-
-            modelBuilder.Entity("aqua_api.Modules.Budget.Domain.Entities.BudgetCalibrationDefinition", b =>
-                {
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "DeletedByUser")
-                        .WithMany()
-                        .HasForeignKey("DeletedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("DeletedByUser");
-
-                    b.Navigation("UpdatedByUser");
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Budget.Domain.Entities.BudgetFishGrowthProfile", b =>

@@ -5,6 +5,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddBudgetModule(this IServiceCollection services)
     {
         services.AddScoped<IBudgetWaterTemperatureService, BudgetWaterTemperatureService>();
+        services.AddScoped<IBudgetFishGrowthProfileService, BudgetFishGrowthProfileService>();
+        services.AddScoped<IBudgetCalibrationDefinitionService, BudgetCalibrationDefinitionService>();
         return services;
     }
 }
