@@ -7,6 +7,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IBudgetWaterTemperatureService, BudgetWaterTemperatureService>();
         services.AddScoped<IBudgetFishGrowthProfileService, BudgetFishGrowthProfileService>();
         services.AddScoped<IBudgetCalibrationDefinitionService, BudgetCalibrationDefinitionService>();
+        services.AddScoped<IBudgetFeedConsumptionRateService, BudgetFeedConsumptionRateService>();
         return services;
     }
 }
