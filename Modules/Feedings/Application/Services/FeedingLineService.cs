@@ -288,16 +288,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 }
                 else
                 {
-                    if (dto.ProjectCageId.HasValue && dto.ProjectCageId.Value > 0)
-                    {
-                        ApplyFeedingLineReplacement(entity, dto.StockId, dto.QtyUnit, gramPerUnit, totalGram);
-                    }
-                    else
-                    {
-                        ApplyFeedingLineDelta(entity, dto.QtyUnit, totalGram);
-                    }
-
-                    await _unitOfWork.SaveChangesAsync();
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingLineService.QuickEntryExistingSlotCannotBeChanged"));
                 }
 
                 if (dto.ProjectCageId.HasValue && dto.ProjectCageId.Value > 0)

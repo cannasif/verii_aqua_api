@@ -60,6 +60,9 @@
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
     <value>Fehler beim Speichern der Fütterungszeile aufgetreten.</value>
   </data>
+  <data name="FeedingLineService.QuickEntryExistingSlotCannotBeChanged" xml:space="preserve">
+    <value>Für das ausgewählte Projekt, den Käfig, das Datum und die Runde existiert bereits eine Fütterung. Bestehende Einträge können nicht über den Schnelleinstieg geändert werden; verwenden Sie dafür die Fütterungsmaske.</value>
+  </data>
   <data name="FeedingService.ErpIntegratedCannotBeChanged" xml:space="preserve">
     <value>Ein bereits an Netsis übertragener Fütterungsdatensatz kann nicht geändert oder gelöscht werden.</value>
   </data>

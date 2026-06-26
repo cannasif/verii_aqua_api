@@ -24,7 +24,7 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
     }
 
     [Fact]
-    public async Task FeedingLineAutoHeader_MergesSameStockWithinSlotAndKeepsDifferentSlotsSeparate()
+    public async Task FeedingLineAutoHeader_BlocksExistingQuickEntrySlotAndKeepsManualUpdateFlow()
     {
         var clientA = _factory.CreateClient();
         var clientB = _factory.CreateClient();
@@ -165,7 +165,10 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
         });
 
         var results = await Task.WhenAll(taskA, taskB);
-        Assert.All(results, result => Assert.True(result.Success, $"{result.Message} | {result.ExceptionMessage}"));
+        Assert.Single(results, result => result.Success);
+        var rejectedMorning = Assert.Single(results, result => !result.Success);
+        Assert.Equal(400, rejectedMorning.StatusCode);
+        Assert.Contains("Hızlı giriş", rejectedMorning.Message);
 
         using var verifyScope = _factory.Services.CreateScope();
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
@@ -179,8 +182,9 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
         Assert.Single(headers);
         var line = Assert.Single(lines);
         Assert.Equal(feedStockId, line.StockId);
-        Assert.Equal(22m, line.QtyUnit);
-        Assert.Equal(22_000m, line.TotalGram);
+        Assert.Contains(line.QtyUnit, new[] { 10m, 12m });
+        Assert.Equal(line.QtyUnit * 1000m, line.TotalGram);
+        var morningQty = line.QtyUnit;
 
         var evening = await PostAsync<FeedingLineDto>(clientA, "/api/aqua/FeedingLine/auto-header", new CreateFeedingLineWithAutoHeaderDto
         {
@@ -204,7 +208,7 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
 
         Assert.Equal(2, allHeaders.Count);
         Assert.Equal(2, allLines.Count);
-        Assert.Equal(22_000m, allLines.Single(x => x.FeedingId == headers.Single().Id).TotalGram);
+        Assert.Equal(morningQty * 1000m, allLines.Single(x => x.FeedingId == headers.Single().Id).TotalGram);
         Assert.Equal(5_000m, allLines.Single(x => x.FeedingId != headers.Single().Id).TotalGram);
 
         var manualLine = await PostAsync<FeedingLineDto>(clientA, "/api/aqua/FeedingLine", new CreateFeedingLineDto
@@ -225,8 +229,8 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
 
         var mergedManualLine = Assert.Single(manualLines);
         Assert.Equal(feedStockId, mergedManualLine.StockId);
-        Assert.Equal(25m, mergedManualLine.QtyUnit);
-        Assert.Equal(25_000m, mergedManualLine.TotalGram);
+        Assert.Equal(morningQty + 3m, mergedManualLine.QtyUnit);
+        Assert.Equal((morningQty + 3m) * 1000m, mergedManualLine.TotalGram);
 
         var cageScopedDate = new DateTime(2026, 4, 7);
         var cageScopedFirst = await PostAsync<FeedingLineDto>(clientA, "/api/aqua/FeedingLine/auto-header", new CreateFeedingLineWithAutoHeaderDto
@@ -253,7 +257,9 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
             GramPerUnit = 1000m,
             TotalGram = 12_000m,
         });
-        Assert.True(cageScopedSecond.Success, $"{cageScopedSecond.Message} | {cageScopedSecond.ExceptionMessage}");
+        Assert.False(cageScopedSecond.Success);
+        Assert.Equal(400, cageScopedSecond.StatusCode);
+        Assert.Contains("Hızlı giriş", cageScopedSecond.Message);
 
         using var cageScopedVerifyScope = _factory.Services.CreateScope();
         var cageScopedVerifyDb = cageScopedVerifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
@@ -267,11 +273,11 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
             .ToListAsync();
 
         var cageScopedLine = Assert.Single(cageScopedLines);
-        Assert.Equal(alternateFeedStockId, cageScopedLine.StockId);
-        Assert.Equal(12m, cageScopedLine.QtyUnit);
-        Assert.Equal(12_000m, cageScopedLine.TotalGram);
+        Assert.Equal(feedStockId, cageScopedLine.StockId);
+        Assert.Equal(10m, cageScopedLine.QtyUnit);
+        Assert.Equal(10_000m, cageScopedLine.TotalGram);
         var cageScopedDistribution = Assert.Single(cageScopedDistributions);
-        Assert.Equal(12_000m, cageScopedDistribution.FeedGram);
+        Assert.Equal(10_000m, cageScopedDistribution.FeedGram);
     }
 
     [Fact]

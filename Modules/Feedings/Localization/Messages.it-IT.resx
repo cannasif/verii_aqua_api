@@ -60,6 +60,9 @@
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
     <value>Si è verificato un errore durante il salvataggio della riga di alimentazione.</value>
   </data>
+  <data name="FeedingLineService.QuickEntryExistingSlotCannotBeChanged" xml:space="preserve">
+    <value>Esiste già una registrazione di alimentazione per il progetto, la gabbia, la data e il turno selezionati. Le registrazioni esistenti non possono essere aggiornate dall'inserimento giornaliero rapido; usare la schermata Alimentazione.</value>
+  </data>
   <data name="FeedingService.ErpIntegratedCannotBeChanged" xml:space="preserve">
     <value>Un record di alimentazione già trasferito a Netsis non può essere modificato o eliminato.</value>
   </data>

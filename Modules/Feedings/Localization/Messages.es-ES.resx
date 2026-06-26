@@ -60,6 +60,9 @@
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
     <value>Se produjo un error al guardar la línea de alimentación.</value>
   </data>
+  <data name="FeedingLineService.QuickEntryExistingSlotCannotBeChanged" xml:space="preserve">
+    <value>Ya existe un registro de alimentación para el proyecto, jaula, fecha y ronda seleccionados. Los registros existentes no se pueden actualizar desde Entrada diaria rápida; use la pantalla de Alimentación para editarlo.</value>
+  </data>
   <data name="FeedingService.ErpIntegratedCannotBeChanged" xml:space="preserve">
     <value>Un registro de alimentación ya transferido a Netsis no se puede modificar ni eliminar.</value>
   </data>

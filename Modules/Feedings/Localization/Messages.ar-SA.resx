@@ -60,6 +60,9 @@
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
     <value>حدث خطأ أثناء حفظ سطر التغذية.</value>
   </data>
+  <data name="FeedingLineService.QuickEntryExistingSlotCannotBeChanged" xml:space="preserve">
+    <value>يوجد سجل تغذية بالفعل للمشروع والقفص والتاريخ والجولة المحددة. لا يمكن تحديث السجلات الحالية من شاشة الإدخال اليومي السريع؛ استخدم شاشة التغذية للتعديل.</value>
+  </data>
   <data name="FeedingService.ErpIntegratedCannotBeChanged" xml:space="preserve">
     <value>لا يمكن تعديل أو حذف سجل تغذية تم ترحيله إلى Netsis.</value>
   </data>

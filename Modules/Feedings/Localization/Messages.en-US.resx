@@ -81,6 +81,9 @@
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
     <value>An error occurred while saving the feeding line.</value>
   </data>
+  <data name="FeedingLineService.QuickEntryExistingSlotCannotBeChanged" xml:space="preserve">
+    <value>A feeding record already exists for the selected project, cage, date, and round. Existing records cannot be updated from Quick Daily Entry; use the Feeding screen to edit it.</value>
+  </data>
   <data name="FeedingService.ErpIntegratedCannotBeChanged" xml:space="preserve">
     <value>A feeding record already transferred to Netsis cannot be changed or deleted.</value>
   </data>

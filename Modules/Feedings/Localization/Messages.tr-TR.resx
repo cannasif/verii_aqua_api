@@ -81,6 +81,9 @@
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
     <value>Yemleme satırı kaydedilirken hata oluştu.</value>
   </data>
+  <data name="FeedingLineService.QuickEntryExistingSlotCannotBeChanged" xml:space="preserve">
+    <value>Seçili proje, kafes, tarih ve tur için yemleme kaydı zaten var. Hızlı giriş ekranından mevcut kayıt güncellenemez; düzenleme için Yemleme ekranını kullanın.</value>
+  </data>
   <data name="FeedingService.ErpIntegratedCannotBeChanged" xml:space="preserve">
     <value>Netsis'e aktarılmış yemleme kaydı değiştirilemez veya silinemez.</value>
   </data>

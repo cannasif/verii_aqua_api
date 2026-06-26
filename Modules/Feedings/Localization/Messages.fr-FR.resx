@@ -60,6 +60,9 @@
   <data name="FeedingLineService.SaveFailed" xml:space="preserve">
     <value>Une erreur s'est produite lors de l'enregistrement de la ligne d'alimentation.</value>
   </data>
+  <data name="FeedingLineService.QuickEntryExistingSlotCannotBeChanged" xml:space="preserve">
+    <value>Un enregistrement d'alimentation existe déjà pour le projet, la cage, la date et le tour sélectionnés. Les enregistrements existants ne peuvent pas être modifiés depuis la saisie quotidienne rapide ; utilisez l'écran Alimentation.</value>
+  </data>
   <data name="FeedingService.ErpIntegratedCannotBeChanged" xml:space="preserve">
     <value>Un enregistrement d'alimentation déjà transféré vers Netsis ne peut pas être modifié ni supprimé.</value>
   </data>
