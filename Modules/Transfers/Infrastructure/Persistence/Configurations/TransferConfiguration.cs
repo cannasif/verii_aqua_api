@@ -7,9 +7,9 @@ namespace aqua_api.Modules.Transfers.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<Transfer> builder)
         {
-            builder.ToTable("RII_Transfer", table =>
+            builder.ToTable("RII_TRANSFER", table =>
             {
-                table.HasCheckConstraint("CK_RII_Transfer_Status", "[Status] IN (0,1,2)");
+                table.HasCheckConstraint("CK_RII_TRANSFER_STATUS", "[Status] IN (0,1,2)");
             });
             builder.Property(x => x.TransferNo).HasMaxLength(50).IsRequired();
             builder.Property(x => x.TransferDate).HasPrecision(3).IsRequired();
@@ -24,7 +24,7 @@ namespace aqua_api.Modules.Transfers.Infrastructure.Persistence.Configurations
             builder.HasIndex(x => x.TransferNo)
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_Transfer_TransferNo_Active");
+                .HasDatabaseName("UX_RII_TRANSFER_TRANSFER_NO_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

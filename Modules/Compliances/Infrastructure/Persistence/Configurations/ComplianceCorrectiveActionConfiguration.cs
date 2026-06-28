@@ -7,7 +7,7 @@ namespace aqua_api.Modules.Compliances.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<ComplianceCorrectiveAction> builder)
         {
-            builder.ToTable("RII_ComplianceCorrectiveAction");
+            builder.ToTable("RII_COMPLIANCE_CORRECTIVE_ACTION");
             builder.Property(x => x.ActionCode).HasMaxLength(50).IsRequired();
             builder.Property(x => x.Description).HasMaxLength(1000).IsRequired();
             builder.Property(x => x.Status).HasMaxLength(40).IsRequired();

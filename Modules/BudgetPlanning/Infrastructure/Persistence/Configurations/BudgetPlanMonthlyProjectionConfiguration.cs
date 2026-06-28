@@ -8,10 +8,10 @@ public class BudgetPlanMonthlyProjectionConfiguration : BaseEntityConfiguration<
 {
     protected override void ConfigureEntity(EntityTypeBuilder<BudgetPlanMonthlyProjection> builder)
     {
-        builder.ToTable("RII_BUDGET_PlanMonthlyProjection", table =>
+        builder.ToTable("RII_BUDGET_PLAN_MONTHLY_PROJECTION", table =>
         {
-            table.HasCheckConstraint("CK_RII_BUDGET_PlanMonthlyProjection_Month", "[Month] BETWEEN 1 AND 12");
-            table.HasCheckConstraint("CK_RII_BUDGET_PlanMonthlyProjection_NonNegative", "[OpeningLiveCount] >= 0 AND [ClosingLiveCount] >= 0 AND [OpeningBiomassKg] >= 0 AND [ClosingBiomassKg] >= 0");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_MONTHLY_PROJECTION_MONTH", "[Month] BETWEEN 1 AND 12");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_MONTHLY_PROJECTION_NON_NEGATIVE", "[OpeningLiveCount] >= 0 AND [ClosingLiveCount] >= 0 AND [OpeningBiomassKg] >= 0 AND [ClosingBiomassKg] >= 0");
         });
 
         builder.HasOne(x => x.BudgetPlan)
@@ -37,7 +37,7 @@ public class BudgetPlanMonthlyProjectionConfiguration : BaseEntityConfiguration<
         builder.HasIndex(x => new { x.BudgetPlanId, x.BudgetPlanFishBatchId, x.Year, x.Month })
             .IsUnique()
             .HasFilter("[IsDeleted] = 0")
-            .HasDatabaseName("UX_RII_BUDGET_PlanMonthlyProjection_Period_Active");
+            .HasDatabaseName("UX_RII_BUDGET_PLAN_MONTHLY_PROJECTION_PERIOD_ACTIVE");
 
         builder.HasQueryFilter(x => !x.IsDeleted);
     }

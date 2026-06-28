@@ -19,7 +19,7 @@ namespace aqua_api.Modules.Budget.Infrastructure.Persistence.Configurations
             builder.HasIndex(x => new { x.BudgetFishGrowthProfileId, x.GrowthMonthNo })
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_BUDGET_FISH_GROWTH_PROFILE_LINE_Profile_Month_Active");
+                .HasDatabaseName("UX_RII_BUDGET_FISH_GROWTH_PROFILE_LINE_PROFILE_MONTH_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

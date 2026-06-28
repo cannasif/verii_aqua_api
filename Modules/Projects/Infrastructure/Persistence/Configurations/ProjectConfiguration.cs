@@ -8,9 +8,9 @@ namespace aqua_api.Modules.Projects.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<Project> builder)
         {
-            builder.ToTable("RII_Project", table =>
+            builder.ToTable("RII_PROJECT", table =>
             {
-                table.HasCheckConstraint("CK_RII_Project_Status", "[Status] IN (0,1,2)");
+                table.HasCheckConstraint("CK_RII_PROJECT_STATUS", "[Status] IN (0,1,2)");
             });
             builder.Property(x => x.ProjectCode).HasMaxLength(50).IsRequired();
             builder.Property(x => x.ProjectName).HasMaxLength(200).IsRequired();
@@ -22,7 +22,7 @@ namespace aqua_api.Modules.Projects.Infrastructure.Persistence.Configurations
             builder.HasIndex(x => x.ProjectCode)
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_Project_ProjectCode_Active");
+                .HasDatabaseName("UX_RII_PROJECT_PROJECT_CODE_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

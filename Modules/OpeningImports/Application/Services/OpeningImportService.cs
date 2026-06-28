@@ -1268,7 +1268,7 @@ public class OpeningImportService : IOpeningImportService
                 var ledgerExists = await _unitOfWork.Db.BatchMovements.AnyAsync(x =>
                     !x.IsDeleted &&
                     x.MovementType == BatchMovementType.Mortality &&
-                    x.ReferenceTable == "RII_Mortality" &&
+                    x.ReferenceTable == "RII_MORTALITY" &&
                     x.ReferenceId == mortality.Id &&
                     x.FishBatchId == batch.Id &&
                     x.ProjectCageId == projectCage.Id);
@@ -1310,7 +1310,7 @@ public class OpeningImportService : IOpeningImportService
                     BatchMovementType.Mortality,
                     mortalityDate,
                     "Opening import mortality",
-                    "RII_Mortality",
+                    "RII_MORTALITY",
                     mortality.Id,
                     projectCage.Id,
                     null,

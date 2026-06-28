@@ -18,7 +18,7 @@ namespace aqua_api.Modules.Budget.Infrastructure.Persistence.Configurations
             builder.HasIndex(x => new { x.Year, x.Month })
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_BUDGET_WATER_TEMPERATURE_YearMonth_Active");
+                .HasDatabaseName("UX_RII_BUDGET_WATER_TEMPERATURE_YEAR_MONTH_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

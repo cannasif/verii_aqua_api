@@ -277,7 +277,7 @@ namespace aqua_api.Modules.DailyWeathers.Application.Services
                         SignedBiomassGram = 0,
                         FeedGram = null,
                         ActorUserId = userId,
-                        ReferenceTable = "RII_DailyWeather",
+                        ReferenceTable = "RII_DAILY_WEATHER",
                         ReferenceId = entity.Id,
                         Note = $"DailyWeather | typeId={request.TypeId} | severityId={request.SeverityId}",
                         CreatedBy = userId,
@@ -313,22 +313,22 @@ namespace aqua_api.Modules.DailyWeathers.Application.Services
         private string MapDbError(DbUpdateException ex)
         {
             var message = ex.InnerException?.Message ?? ex.Message;
-            if (message.Contains("UX_RII_DailyWeather_ProjectDate_Active", StringComparison.OrdinalIgnoreCase))
+            if (message.Contains("UX_RII_DAILY_WEATHER_PROJECT_DATE_ACTIVE", StringComparison.OrdinalIgnoreCase))
             {
                 return _localizationService.GetLocalizedString("DailyWeatherService.ProjectDateAlreadyExists");
             }
 
-            if (message.Contains("FK_RII_DailyWeather_Project", StringComparison.OrdinalIgnoreCase))
+            if (message.Contains("FK_RII_DAILY_WEATHER_PROJECT", StringComparison.OrdinalIgnoreCase))
             {
                 return _localizationService.GetLocalizedString("DailyWeatherService.InvalidProjectSelection");
             }
 
-            if (message.Contains("FK_RII_DailyWeather_WeatherType", StringComparison.OrdinalIgnoreCase))
+            if (message.Contains("FK_RII_DAILY_WEATHER_WEATHER_TYPE", StringComparison.OrdinalIgnoreCase))
             {
                 return _localizationService.GetLocalizedString("DailyWeatherService.InvalidWeatherTypeSelection");
             }
 
-            if (message.Contains("FK_RII_DailyWeather_WeatherSeverity", StringComparison.OrdinalIgnoreCase))
+            if (message.Contains("FK_RII_DAILY_WEATHER_WEATHER_SEVERITY", StringComparison.OrdinalIgnoreCase))
             {
                 return _localizationService.GetLocalizedString("DailyWeatherService.InvalidWeatherSeveritySelection");
             }

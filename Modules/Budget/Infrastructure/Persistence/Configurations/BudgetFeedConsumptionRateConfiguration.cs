@@ -34,7 +34,7 @@ namespace aqua_api.Modules.Budget.Infrastructure.Persistence.Configurations
             builder.HasIndex(x => new { x.WaterTemperatureId, x.CalibrationDefinitionId, x.FeedStockId })
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_BUDGET_FEED_CONSUMPTION_RATE_Combination_Active");
+                .HasDatabaseName("UX_RII_BUDGET_FEED_CONSUMPTION_RATE_COMBINATION_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

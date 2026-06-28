@@ -505,6 +505,158 @@ public class BudgetPlanningService : IBudgetPlanningService
         }).ToList(), "Islem basarili.");
     }
 
+    public async Task<ApiResponse<List<BudgetPlanExchangeRateDto>>> GetExchangeRatesAsync(long budgetPlanId)
+    {
+        var planExists = await _unitOfWork.Db.BudgetPlans
+            .AsNoTracking()
+            .AnyAsync(x => x.Id == budgetPlanId && !x.IsDeleted);
+        if (!planExists)
+        {
+            return ApiResponse<List<BudgetPlanExchangeRateDto>>.ErrorResult("Butce plani bulunamadi.", "Butce plani bulunamadi.", StatusCodes.Status404NotFound);
+        }
+
+        var rows = await _unitOfWork.Db.BudgetPlanExchangeRates
+            .AsNoTracking()
+            .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
+            .OrderBy(x => x.Year)
+            .ThenBy(x => x.Month)
+            .ThenBy(x => x.CurrencyCode)
+            .ThenBy(x => x.RateType)
+            .ToListAsync();
+
+        return ApiResponse<List<BudgetPlanExchangeRateDto>>.SuccessResult(rows.Select(MapExchangeRate).ToList(), "Islem basarili.");
+    }
+
+    public async Task<ApiResponse<List<BudgetPlanExchangeRateDto>>> GenerateExchangeRatesAsync(long budgetPlanId, GenerateBudgetPlanExchangeRatesDto dto)
+    {
+        var plan = await _unitOfWork.Db.BudgetPlans
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == budgetPlanId && !x.IsDeleted);
+        if (plan == null)
+        {
+            return ApiResponse<List<BudgetPlanExchangeRateDto>>.ErrorResult("Butce plani bulunamadi.", "Butce plani bulunamadi.", StatusCodes.Status404NotFound);
+        }
+
+        var currencyCodes = dto.CurrencyCodes
+            .Select(NormalizeCurrencyCode)
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (currencyCodes.Count == 0)
+        {
+            return ApiResponse<List<BudgetPlanExchangeRateDto>>.ErrorResult("En az bir para birimi secilmelidir.", "En az bir para birimi secilmelidir.", StatusCodes.Status400BadRequest);
+        }
+
+        if (dto.DefaultExchangeRate < 0)
+        {
+            return ApiResponse<List<BudgetPlanExchangeRateDto>>.ErrorResult("Kur negatif olamaz.", "Kur negatif olamaz.", StatusCodes.Status400BadRequest);
+        }
+
+        var rateType = NormalizeRequired(dto.RateType, "Budget");
+        var sourceType = NormalizeRequired(dto.SourceType, "Manual");
+        var periods = BuildPeriods(plan.StartYear, plan.StartMonth, plan.EndYear, plan.EndMonth);
+        var existingRows = await _unitOfWork.Db.BudgetPlanExchangeRates
+            .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
+            .ToListAsync();
+
+        foreach (var period in periods)
+        {
+            foreach (var currencyCode in currencyCodes)
+            {
+                var entity = existingRows.FirstOrDefault(x =>
+                    x.Year == period.Year &&
+                    x.Month == period.Month &&
+                    x.CurrencyCode == currencyCode &&
+                    x.RateType == rateType);
+
+                if (entity == null)
+                {
+                    entity = new BudgetPlanExchangeRate
+                    {
+                        BudgetPlanId = budgetPlanId,
+                        Year = period.Year,
+                        Month = period.Month,
+                        CurrencyCode = currencyCode,
+                        RateType = rateType
+                    };
+                    existingRows.Add(entity);
+                    await _unitOfWork.Repository<BudgetPlanExchangeRate>().AddAsync(entity);
+                }
+
+                if (!entity.IsManualOverride)
+                {
+                    entity.ExchangeRate = dto.DefaultExchangeRate;
+                    entity.SourceType = sourceType;
+                    entity.SourceReference = NormalizeOptional(dto.SourceReference);
+                }
+            }
+        }
+
+        await _unitOfWork.SaveChangesAsync();
+        return await GetExchangeRatesAsync(budgetPlanId);
+    }
+
+    public async Task<ApiResponse<BudgetPlanExchangeRateDto>> UpsertExchangeRateAsync(long budgetPlanId, UpsertBudgetPlanExchangeRateDto dto)
+    {
+        if (!IsValidMonth(dto.Month) || dto.Year < 2000 || dto.Year > 2100)
+        {
+            return ApiResponse<BudgetPlanExchangeRateDto>.ErrorResult("Kur donemi hatali.", "Kur donemi hatali.", StatusCodes.Status400BadRequest);
+        }
+
+        if (dto.ExchangeRate < 0)
+        {
+            return ApiResponse<BudgetPlanExchangeRateDto>.ErrorResult("Kur negatif olamaz.", "Kur negatif olamaz.", StatusCodes.Status400BadRequest);
+        }
+
+        var plan = await _unitOfWork.Db.BudgetPlans
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == budgetPlanId && !x.IsDeleted);
+        if (plan == null)
+        {
+            return ApiResponse<BudgetPlanExchangeRateDto>.ErrorResult("Butce plani bulunamadi.", "Butce plani bulunamadi.", StatusCodes.Status404NotFound);
+        }
+
+        var periodKey = dto.Year * 12 + dto.Month;
+        if (periodKey < plan.StartYear * 12 + plan.StartMonth || periodKey > plan.EndYear * 12 + plan.EndMonth)
+        {
+            return ApiResponse<BudgetPlanExchangeRateDto>.ErrorResult("Kur donemi butce tarih araligi disinda olamaz.", "Kur donemi butce tarih araligi disinda olamaz.", StatusCodes.Status400BadRequest);
+        }
+
+        var currencyCode = NormalizeCurrencyCode(dto.CurrencyCode);
+        if (string.IsNullOrWhiteSpace(currencyCode))
+        {
+            return ApiResponse<BudgetPlanExchangeRateDto>.ErrorResult("Para birimi zorunludur.", "Para birimi zorunludur.", StatusCodes.Status400BadRequest);
+        }
+
+        var rateType = NormalizeRequired(dto.RateType, "Budget");
+        var entity = await _unitOfWork.Db.BudgetPlanExchangeRates.FirstOrDefaultAsync(x =>
+            x.BudgetPlanId == budgetPlanId &&
+            x.Year == dto.Year &&
+            x.Month == dto.Month &&
+            x.CurrencyCode == currencyCode &&
+            x.RateType == rateType &&
+            !x.IsDeleted);
+
+        if (entity == null)
+        {
+            entity = new BudgetPlanExchangeRate { BudgetPlanId = budgetPlanId };
+            await _unitOfWork.Repository<BudgetPlanExchangeRate>().AddAsync(entity);
+        }
+
+        entity.Year = dto.Year;
+        entity.Month = dto.Month;
+        entity.CurrencyCode = currencyCode;
+        entity.RateType = rateType;
+        entity.ExchangeRate = dto.ExchangeRate;
+        entity.SourceType = NormalizeRequired(dto.SourceType, "Manual");
+        entity.SourceReference = NormalizeOptional(dto.SourceReference);
+        entity.IsManualOverride = dto.IsManualOverride;
+        entity.Description = NormalizeOptional(dto.Description);
+
+        await _unitOfWork.SaveChangesAsync();
+        return ApiResponse<BudgetPlanExchangeRateDto>.SuccessResult(MapExchangeRate(entity), "Kur kaydedildi.");
+    }
+
     public Task<ApiResponse<List<BudgetPlanMonthlyProjectionDto>>> CalculateGrowthAsync(long budgetPlanId)
     {
         return CalculateProjectionAsync(budgetPlanId, includeSalesAndOperations: false);
@@ -1170,6 +1322,24 @@ public class BudgetPlanningService : IBudgetPlanningService
         };
     }
 
+    private static BudgetPlanExchangeRateDto MapExchangeRate(BudgetPlanExchangeRate entity)
+    {
+        return new BudgetPlanExchangeRateDto
+        {
+            Id = entity.Id,
+            BudgetPlanId = entity.BudgetPlanId,
+            Year = entity.Year,
+            Month = entity.Month,
+            CurrencyCode = entity.CurrencyCode,
+            RateType = entity.RateType,
+            ExchangeRate = entity.ExchangeRate,
+            SourceType = entity.SourceType,
+            SourceReference = entity.SourceReference,
+            IsManualOverride = entity.IsManualOverride,
+            Description = entity.Description
+        };
+    }
+
     private static BudgetPlanFishBatchAdjustmentDto MapFishBatchAdjustment(BudgetPlanFishBatchAdjustment entity)
     {
         return new BudgetPlanFishBatchAdjustmentDto
@@ -1305,6 +1475,16 @@ public class BudgetPlanningService : IBudgetPlanningService
     private static string? NormalizeOptional(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string NormalizeRequired(string? value, string fallback)
+    {
+        return string.IsNullOrWhiteSpace(value) ? fallback : value.Trim();
+    }
+
+    private static string NormalizeCurrencyCode(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToUpperInvariant();
     }
 
     private sealed record BalanceSeed(FishBatch FishBatch, int LiveCount, decimal BiomassGram, DateTime AsOfDate);

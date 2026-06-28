@@ -7,7 +7,7 @@ namespace aqua_api.Modules.Compliances.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<ComplianceAudit> builder)
         {
-            builder.ToTable("RII_ComplianceAudit");
+            builder.ToTable("RII_COMPLIANCE_AUDIT");
             builder.Property(x => x.AuditDate).HasPrecision(3).IsRequired();
             builder.Property(x => x.StandardCode).HasMaxLength(50).IsRequired();
             builder.Property(x => x.ChecklistCode).HasMaxLength(50);

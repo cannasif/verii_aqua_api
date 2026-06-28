@@ -7,7 +7,7 @@ namespace aqua_api.Modules.Cages.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<Cage> builder)
         {
-            builder.ToTable("RII_Cage");
+            builder.ToTable("RII_CAGE");
             builder.Property(x => x.CageCode).HasMaxLength(50).IsRequired();
             builder.Property(x => x.CageName).HasMaxLength(200).IsRequired();
             builder.Property(x => x.CapacityGram).HasPrecision(18, 3);
@@ -15,7 +15,7 @@ namespace aqua_api.Modules.Cages.Infrastructure.Persistence.Configurations
             builder.HasIndex(x => x.CageCode)
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_Cage_CageCode_Active");
+                .HasDatabaseName("UX_RII_CAGE_CAGE_CODE_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

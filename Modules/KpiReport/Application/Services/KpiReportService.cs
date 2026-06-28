@@ -2119,7 +2119,7 @@ public class KpiReportService : IKpiReportService
             .AsNoTracking()
             .Where(x => !x.IsDeleted
                 && x.MovementType == BatchMovementType.Mortality
-                && x.ReferenceTable == "RII_Mortality"
+                && x.ReferenceTable == "RII_MORTALITY"
                 && mortalityIds.Contains(x.ReferenceId)
                 && x.ProjectCageId.HasValue)
             .Select(x => new

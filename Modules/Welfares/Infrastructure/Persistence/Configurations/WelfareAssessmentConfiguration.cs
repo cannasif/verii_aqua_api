@@ -7,7 +7,7 @@ namespace aqua_api.Modules.Welfares.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<WelfareAssessment> builder)
         {
-            builder.ToTable("RII_WelfareAssessment");
+            builder.ToTable("RII_WELFARE_ASSESSMENT");
             builder.Property(x => x.AssessmentDate).HasPrecision(3).IsRequired();
             builder.Property(x => x.WelfareScore).HasPrecision(18, 3).IsRequired();
             builder.Property(x => x.StockingDensityKgM3).HasPrecision(18, 3);

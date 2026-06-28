@@ -7,7 +7,7 @@ namespace aqua_api.Modules.FishHealth.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<FishLabSample> builder)
         {
-            builder.ToTable("RII_FishLabSample");
+            builder.ToTable("RII_FISH_LAB_SAMPLE");
             builder.Property(x => x.SampleDate).HasPrecision(3).IsRequired();
             builder.Property(x => x.SampleCode).HasMaxLength(80).IsRequired();
             builder.Property(x => x.SampleType).HasMaxLength(80).IsRequired();

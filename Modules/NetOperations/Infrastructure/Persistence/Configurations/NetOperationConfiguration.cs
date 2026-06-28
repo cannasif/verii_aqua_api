@@ -7,9 +7,9 @@ namespace aqua_api.Modules.NetOperations.Infrastructure.Persistence.Configuratio
     {
         protected override void ConfigureEntity(EntityTypeBuilder<NetOperation> builder)
         {
-            builder.ToTable("RII_NetOperation", table =>
+            builder.ToTable("RII_NET_OPERATION", table =>
             {
-                table.HasCheckConstraint("CK_RII_NetOperation_Status", "[Status] IN (0,1,2)");
+                table.HasCheckConstraint("CK_RII_NET_OPERATION_STATUS", "[Status] IN (0,1,2)");
             });
             builder.Property(x => x.OperationNo).HasMaxLength(50).IsRequired();
             builder.Property(x => x.OperationDate).HasPrecision(3).IsRequired();
@@ -29,7 +29,7 @@ namespace aqua_api.Modules.NetOperations.Infrastructure.Persistence.Configuratio
             builder.HasIndex(x => x.OperationNo)
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_NetOperation_OperationNo_Active");
+                .HasDatabaseName("UX_RII_NET_OPERATION_OPERATION_NO_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

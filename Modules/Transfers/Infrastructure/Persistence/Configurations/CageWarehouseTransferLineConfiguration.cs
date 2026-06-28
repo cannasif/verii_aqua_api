@@ -7,9 +7,9 @@ namespace aqua_api.Modules.Transfers.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<CageWarehouseTransferLine> builder)
         {
-            builder.ToTable("RII_CageWarehouseTransferLine", table =>
+            builder.ToTable("RII_CAGE_WAREHOUSE_TRANSFER_LINE", table =>
             {
-                table.HasCheckConstraint("CK_RII_CageWarehouseTransferLine_Positive", "[FishCount] > 0 AND [AverageGram] > 0 AND [BiomassGram] > 0");
+                table.HasCheckConstraint("CK_RII_CAGE_WAREHOUSE_TRANSFER_LINE_POSITIVE", "[FishCount] > 0 AND [AverageGram] > 0 AND [BiomassGram] > 0");
             });
 
             builder.Property(x => x.AverageGram).HasPrecision(18, 3);

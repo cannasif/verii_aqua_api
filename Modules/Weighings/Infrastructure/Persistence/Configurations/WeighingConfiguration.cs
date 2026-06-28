@@ -7,9 +7,9 @@ namespace aqua_api.Modules.Weighings.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<Weighing> builder)
         {
-            builder.ToTable("RII_Weighing", table =>
+            builder.ToTable("RII_WEIGHING", table =>
             {
-                table.HasCheckConstraint("CK_RII_Weighing_Status", "[Status] IN (0,1,2)");
+                table.HasCheckConstraint("CK_RII_WEIGHING_STATUS", "[Status] IN (0,1,2)");
             });
             builder.Property(x => x.WeighingNo).HasMaxLength(50).IsRequired();
             builder.Property(x => x.WeighingDate).HasPrecision(3).IsRequired();
@@ -24,7 +24,7 @@ namespace aqua_api.Modules.Weighings.Infrastructure.Persistence.Configurations
             builder.HasIndex(x => x.WeighingNo)
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_Weighing_WeighingNo_Active");
+                .HasDatabaseName("UX_RII_WEIGHING_WEIGHING_NO_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

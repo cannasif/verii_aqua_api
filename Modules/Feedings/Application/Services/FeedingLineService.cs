@@ -552,17 +552,17 @@ namespace aqua_api.Modules.Feedings.Application.Services
         private string MapDbError(DbUpdateException ex)
         {
             var message = ex.InnerException?.Message ?? ex.Message;
-            if (message.Contains("CK_RII_FeedingLine_Positive", StringComparison.OrdinalIgnoreCase))
+            if (message.Contains("CK_RII_FEEDING_LINE_POSITIVE", StringComparison.OrdinalIgnoreCase))
             {
                 return _localizationService.GetLocalizedString("FeedingLineService.PositiveValuesRequired");
             }
 
-            if (message.Contains("FK_RII_FeedingLine_Feeding", StringComparison.OrdinalIgnoreCase))
+            if (message.Contains("FK_RII_FEEDING_LINE_FEEDING", StringComparison.OrdinalIgnoreCase))
             {
                 return _localizationService.GetLocalizedString("FeedingLineService.HeaderCreateRetryForToday");
             }
 
-            if (message.Contains("FK_RII_FeedingLine_Stock", StringComparison.OrdinalIgnoreCase))
+            if (message.Contains("FK_RII_FEEDING_LINE_STOCK", StringComparison.OrdinalIgnoreCase))
             {
                 return _localizationService.GetLocalizedString("FeedingLineService.InvalidStockSelection");
             }
@@ -676,7 +676,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
             var movement = await _unitOfWork.Db.BatchMovements
                 .FirstOrDefaultAsync(x =>
                     !x.IsDeleted &&
-                    x.ReferenceTable == "RII_FeedingDistribution" &&
+                    x.ReferenceTable == "RII_FEEDING_DISTRIBUTION" &&
                     x.ReferenceId == distribution.Id &&
                     x.MovementType == BatchMovementType.Feeding);
 
@@ -711,7 +711,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 SignedBiomassGram = 0,
                 FeedGram = distribution.FeedGram,
                 ActorUserId = actorUserId,
-                ReferenceTable = "RII_FeedingDistribution",
+                ReferenceTable = "RII_FEEDING_DISTRIBUTION",
                 ReferenceId = distribution.Id,
                 Note = $"FeedingDistribution | feedGram={distribution.FeedGram}",
                 CreatedBy = actorUserId,

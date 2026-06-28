@@ -7,7 +7,7 @@ namespace aqua_api.Modules.ProjectMerges.Infrastructure.Persistence.Configuratio
     {
         protected override void ConfigureEntity(EntityTypeBuilder<ProjectMergeCage> builder)
         {
-            builder.ToTable("RII_ProjectMergeCage");
+            builder.ToTable("RII_PROJECT_MERGE_CAGE");
             builder.Property(x => x.CageCode).HasMaxLength(50).IsRequired();
             builder.Property(x => x.CageName).HasMaxLength(200).IsRequired();
 

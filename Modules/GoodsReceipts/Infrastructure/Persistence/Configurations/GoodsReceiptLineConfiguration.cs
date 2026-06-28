@@ -7,9 +7,9 @@ namespace aqua_api.Modules.GoodsReceipts.Infrastructure.Persistence.Configuratio
     {
         protected override void ConfigureEntity(EntityTypeBuilder<GoodsReceiptLine> builder)
         {
-            builder.ToTable("RII_GoodsReceiptLine", table =>
+            builder.ToTable("RII_GOODS_RECEIPT_LINE", table =>
             {
-                table.HasCheckConstraint("CK_RII_GoodsReceiptLine_ItemType", "[ItemType] IN (0,1)");
+                table.HasCheckConstraint("CK_RII_GOODS_RECEIPT_LINE_ITEM_TYPE", "[ItemType] IN (0,1)");
             });
             builder.Property(x => x.ItemType).HasConversion<byte>().IsRequired();
             builder.Property(x => x.QtyUnit).HasPrecision(18, 3);
@@ -43,7 +43,7 @@ namespace aqua_api.Modules.GoodsReceipts.Infrastructure.Persistence.Configuratio
             builder.HasIndex(x => x.ErpSourceMovementKey)
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0 AND [ErpSourceMovementKey] IS NOT NULL")
-                .HasDatabaseName("UX_RII_GoodsReceiptLine_ErpSourceMovementKey_Active");
+                .HasDatabaseName("UX_RII_GOODS_RECEIPT_LINE_ERP_SOURCE_MOVEMENT_KEY_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

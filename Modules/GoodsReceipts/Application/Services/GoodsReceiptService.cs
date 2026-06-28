@@ -400,19 +400,19 @@ namespace aqua_api.Modules.GoodsReceipts.Application.Services
         {
             var allMessages = ex.ToString();
 
-            if (allMessages.Contains("UX_RII_GoodsReceipt_ReceiptNo_Active", StringComparison.OrdinalIgnoreCase))
+            if (allMessages.Contains("UX_RII_GOODS_RECEIPT_RECEIPT_NO_ACTIVE", StringComparison.OrdinalIgnoreCase))
             {
                 message = _localizationService.GetLocalizedString("GoodsReceiptService.DuplicateReceiptNumber");
                 return true;
             }
 
-            if (allMessages.Contains("UX_RII_GoodsReceipt_Project_Active", StringComparison.OrdinalIgnoreCase))
+            if (allMessages.Contains("UX_RII_GOODS_RECEIPT_PROJECT_ACTIVE", StringComparison.OrdinalIgnoreCase))
             {
                 message = _localizationService.GetLocalizedString("GoodsReceiptService.ProjectGoodsReceiptAlreadyExists");
                 return true;
             }
 
-            if (allMessages.Contains("FK_RII_GoodsReceipt_RII_Project_ProjectId", StringComparison.OrdinalIgnoreCase))
+            if (allMessages.Contains("FK_RII_GOODS_RECEIPT_RII_PROJECT_PROJECT_ID", StringComparison.OrdinalIgnoreCase))
             {
                 message = _localizationService.GetLocalizedString("GoodsReceiptService.ProjectNotFound");
                 return true;

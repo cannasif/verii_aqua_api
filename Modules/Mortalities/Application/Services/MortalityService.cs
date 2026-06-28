@@ -269,7 +269,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                         BatchMovementType.Mortality,
                         mortality.MortalityDate,
                         "Mortality",
-                        "RII_Mortality",
+                        "RII_MORTALITY",
                         mortality.Id,
                         postLine.Line.ProjectCageId,
                         null,
@@ -354,7 +354,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                         BatchMovementType.Mortality,
                         mortality.MortalityDate,
                         "Mortality",
-                        "RII_Mortality",
+                        "RII_MORTALITY",
                         mortality.Id,
                         ledgerDelta.ProjectCageId,
                         null,
@@ -582,7 +582,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 .Where(x =>
                     !x.IsDeleted &&
                     x.MovementType == BatchMovementType.Mortality &&
-                    x.ReferenceTable == "RII_Mortality" &&
+                    x.ReferenceTable == "RII_MORTALITY" &&
                     x.ReferenceId == mortality.Id &&
                     x.ProjectCageId.HasValue)
                 .ToListAsync();

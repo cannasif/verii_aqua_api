@@ -8,11 +8,11 @@ public class BudgetPlanFishBatchConfiguration : BaseEntityConfiguration<BudgetPl
 {
     protected override void ConfigureEntity(EntityTypeBuilder<BudgetPlanFishBatch> builder)
     {
-        builder.ToTable("RII_BUDGET_PlanFishBatch", table =>
+        builder.ToTable("RII_BUDGET_PLAN_FISH_BATCH", table =>
         {
-            table.HasCheckConstraint("CK_RII_BUDGET_PlanFishBatch_SourceType", "[SourceType] IN (0,1)");
-            table.HasCheckConstraint("CK_RII_BUDGET_PlanFishBatch_NonNegative", "[InitialLiveCount] >= 0 AND [InitialAverageGram] >= 0 AND [InitialBiomassKg] >= 0");
-            table.HasCheckConstraint("CK_RII_BUDGET_PlanFishBatch_GrowthStartMonth", "[GrowthStartMonth] BETWEEN 1 AND 12");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_FISH_BATCH_SOURCE_TYPE", "[SourceType] IN (0,1)");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_FISH_BATCH_NON_NEGATIVE", "[InitialLiveCount] >= 0 AND [InitialAverageGram] >= 0 AND [InitialBiomassKg] >= 0");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_FISH_BATCH_GROWTH_START_MONTH", "[GrowthStartMonth] BETWEEN 1 AND 12");
         });
 
         builder.Property(x => x.SourceType).HasConversion<byte>().IsRequired();
@@ -41,7 +41,7 @@ public class BudgetPlanFishBatchConfiguration : BaseEntityConfiguration<BudgetPl
 
         builder.HasIndex(x => new { x.BudgetPlanId, x.BatchCode })
             .HasFilter("[IsDeleted] = 0")
-            .HasDatabaseName("IX_RII_BUDGET_PlanFishBatch_BatchCode_Active");
+            .HasDatabaseName("IX_RII_BUDGET_PLAN_FISH_BATCH_BATCH_CODE_ACTIVE");
 
         builder.HasQueryFilter(x => !x.IsDeleted);
     }

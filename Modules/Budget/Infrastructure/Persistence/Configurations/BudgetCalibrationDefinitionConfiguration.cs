@@ -17,7 +17,7 @@ namespace aqua_api.Modules.Budget.Infrastructure.Persistence.Configurations
             builder.HasIndex(x => x.CalibrationCode)
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_BUDGET_CALIBRATION_DEFINITION_Code_Active");
+                .HasDatabaseName("UX_RII_BUDGET_CALIBRATION_DEFINITION_CODE_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

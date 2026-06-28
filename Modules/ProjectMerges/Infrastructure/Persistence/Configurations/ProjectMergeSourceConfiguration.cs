@@ -7,7 +7,7 @@ namespace aqua_api.Modules.ProjectMerges.Infrastructure.Persistence.Configuratio
     {
         protected override void ConfigureEntity(EntityTypeBuilder<ProjectMergeSource> builder)
         {
-            builder.ToTable("RII_ProjectMergeSource");
+            builder.ToTable("RII_PROJECT_MERGE_SOURCE");
             builder.Property(x => x.SourceProjectCode).HasMaxLength(50).IsRequired();
             builder.Property(x => x.SourceProjectName).HasMaxLength(200).IsRequired();
 

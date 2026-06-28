@@ -7,9 +7,9 @@ namespace aqua_api.Modules.BatchBalances.Infrastructure.Persistence.Configuratio
     {
         protected override void ConfigureEntity(EntityTypeBuilder<BatchWarehouseBalance> builder)
         {
-            builder.ToTable("RII_BatchWarehouseBalance", table =>
+            builder.ToTable("RII_BATCH_WAREHOUSE_BALANCE", table =>
             {
-                table.HasCheckConstraint("CK_RII_BatchWarehouseBalance_NonNegative", "[LiveCount] >= 0 AND [AverageGram] >= 0 AND [BiomassGram] >= 0");
+                table.HasCheckConstraint("CK_RII_BATCH_WAREHOUSE_BALANCE_NON_NEGATIVE", "[LiveCount] >= 0 AND [AverageGram] >= 0 AND [BiomassGram] >= 0");
             });
 
             builder.Property(x => x.AverageGram).HasPrecision(18, 3);
@@ -34,7 +34,7 @@ namespace aqua_api.Modules.BatchBalances.Infrastructure.Persistence.Configuratio
             builder.HasIndex(x => new { x.ProjectId, x.FishBatchId, x.WarehouseId })
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_BatchWarehouseBalance_ProjectBatchWarehouse_Active");
+                .HasDatabaseName("UX_RII_BATCH_WAREHOUSE_BALANCE_PROJECT_BATCH_WAREHOUSE_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

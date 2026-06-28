@@ -7,9 +7,9 @@ namespace aqua_api.Modules.Weighings.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<WeighingLine> builder)
         {
-            builder.ToTable("RII_WeighingLine", table =>
+            builder.ToTable("RII_WEIGHING_LINE", table =>
             {
-                table.HasCheckConstraint("CK_RII_WeighingLine_Positive", "[MeasuredCount] > 0 AND [MeasuredAverageGram] > 0 AND [MeasuredBiomassGram] > 0");
+                table.HasCheckConstraint("CK_RII_WEIGHING_LINE_POSITIVE", "[MeasuredCount] > 0 AND [MeasuredAverageGram] > 0 AND [MeasuredBiomassGram] > 0");
             });
             builder.Property(x => x.MeasuredAverageGram).HasPrecision(18, 3);
             builder.Property(x => x.MeasuredBiomassGram).HasPrecision(18, 3);

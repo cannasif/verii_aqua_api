@@ -15,7 +15,7 @@ namespace aqua_api.Modules.WindDirection.Infrastructure.Persistence.Configuratio
             builder.HasIndex(x => x.Name)
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_WIND_DIRECTION_Name_Active");
+                .HasDatabaseName("UX_RII_WIND_DIRECTION_NAME_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

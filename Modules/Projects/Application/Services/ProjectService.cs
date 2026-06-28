@@ -261,7 +261,7 @@ namespace aqua_api.Modules.Projects.Application.Services
         {
             var allMessages = ex.ToString();
 
-            if (allMessages.Contains("UX_RII_Project_ProjectCode_Active", StringComparison.OrdinalIgnoreCase))
+            if (allMessages.Contains("UX_RII_PROJECT_PROJECT_CODE_ACTIVE", StringComparison.OrdinalIgnoreCase))
             {
                 message = _localizationService.GetLocalizedString("ProjectService.ProjectCodeAlreadyExists");
                 return true;

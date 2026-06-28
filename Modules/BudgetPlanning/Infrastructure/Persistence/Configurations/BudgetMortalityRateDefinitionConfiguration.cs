@@ -8,9 +8,9 @@ public class BudgetMortalityRateDefinitionConfiguration : BaseEntityConfiguratio
 {
     protected override void ConfigureEntity(EntityTypeBuilder<BudgetMortalityRateDefinition> builder)
     {
-        builder.ToTable("RII_BUDGET_MortalityRateDefinition", table =>
+        builder.ToTable("RII_BUDGET_MORTALITY_RATE_DEFINITION", table =>
         {
-            table.HasCheckConstraint("CK_RII_BUDGET_MortalityRateDefinition_Rate", "[MortalityRatePercent] >= 0 AND [MortalityRatePercent] <= 100");
+            table.HasCheckConstraint("CK_RII_BUDGET_MORTALITY_RATE_DEFINITION_RATE", "[MortalityRatePercent] >= 0 AND [MortalityRatePercent] <= 100");
         });
 
         builder.Property(x => x.Description).HasMaxLength(500);
@@ -27,7 +27,7 @@ public class BudgetMortalityRateDefinitionConfiguration : BaseEntityConfiguratio
 
         builder.HasIndex(x => new { x.FishStockId, x.CalibrationDefinitionId, x.GrowthMonthNo })
             .HasFilter("[IsDeleted] = 0")
-            .HasDatabaseName("IX_RII_BUDGET_MortalityRateDefinition_Key_Active");
+            .HasDatabaseName("IX_RII_BUDGET_MORTALITY_RATE_DEFINITION_KEY_ACTIVE");
 
         builder.HasQueryFilter(x => !x.IsDeleted);
     }

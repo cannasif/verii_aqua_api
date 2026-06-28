@@ -8,10 +8,10 @@ public class BudgetPlanFishBatchAdjustmentConfiguration : BaseEntityConfiguratio
 {
     protected override void ConfigureEntity(EntityTypeBuilder<BudgetPlanFishBatchAdjustment> builder)
     {
-        builder.ToTable("RII_BUDGET_PlanFishBatchAdjustment", table =>
+        builder.ToTable("RII_BUDGET_PLAN_FISH_BATCH_ADJUSTMENT", table =>
         {
-            table.HasCheckConstraint("CK_RII_BUDGET_PlanFishBatchAdjustment_Type", "[AdjustmentType] IN (0,1,2,3)");
-            table.HasCheckConstraint("CK_RII_BUDGET_PlanFishBatchAdjustment_Positive", "[LiveCount] > 0 AND [AverageGram] >= 0 AND [BiomassKg] >= 0");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_FISH_BATCH_ADJUSTMENT_TYPE", "[AdjustmentType] IN (0,1,2,3)");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_FISH_BATCH_ADJUSTMENT_POSITIVE", "[LiveCount] > 0 AND [AverageGram] >= 0 AND [BiomassKg] >= 0");
         });
 
         builder.Property(x => x.AdjustmentType).HasConversion<byte>().IsRequired();
@@ -28,7 +28,7 @@ public class BudgetPlanFishBatchAdjustmentConfiguration : BaseEntityConfiguratio
             .OnDelete(DeleteBehavior.NoAction);
 
         builder.HasIndex(x => new { x.BudgetPlanId, x.BudgetPlanFishBatchId, x.Id })
-            .HasDatabaseName("IX_RII_BUDGET_PlanFishBatchAdjustment_Batch");
+            .HasDatabaseName("IX_RII_BUDGET_PLAN_FISH_BATCH_ADJUSTMENT_BATCH");
 
         builder.HasQueryFilter(x => !x.IsDeleted);
     }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 
@@ -11,9 +12,11 @@ using aqua_api.Shared.Infrastructure.Persistence.Data;
 namespace aqua_api.Migrations
 {
     [DbContext(typeof(AquaDbContext))]
-    partial class AquaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260628133952_AddBudgetPlanExchangeRates")]
+    partial class AddBudgetPlanExchangeRates
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -79,9 +82,9 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_AQUA_SETTING", null, t =>
+                    b.ToTable("RII_AquaSetting", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_AQUA_SETTING_PARTIAL_TRANSFER_OCCUPIED_CAGE_MODE", "[PartialTransferOccupiedCageMode] IN (0,1,2)");
+                            t.HasCheckConstraint("CK_RII_AquaSetting_PartialTransferOccupiedCageMode", "[PartialTransferOccupiedCageMode] IN (0,1,2)");
                         });
                 });
 
@@ -149,12 +152,12 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("FishBatchId", "ProjectCageId")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_BATCH_CAGE_BALANCE_BATCH_CAGE_ACTIVE")
+                        .HasDatabaseName("UX_RII_BatchCageBalance_BatchCage_Active")
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("RII_BATCH_CAGE_BALANCE", null, t =>
+                    b.ToTable("RII_BatchCageBalance", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_BATCH_CAGE_BALANCE_NON_NEGATIVE", "[LiveCount] >= 0 AND [AverageGram] >= 0 AND [BiomassGram] >= 0");
+                            t.HasCheckConstraint("CK_RII_BatchCageBalance_NonNegative", "[LiveCount] >= 0 AND [AverageGram] >= 0 AND [BiomassGram] >= 0");
                         });
                 });
 
@@ -268,11 +271,11 @@ namespace aqua_api.Migrations
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("FishBatchId", "MovementDate")
-                        .HasDatabaseName("IX_RII_BATCH_MOVEMENT_BATCH_DATE");
+                        .HasDatabaseName("IX_RII_BatchMovement_BatchDate");
 
-                    b.ToTable("RII_BATCH_MOVEMENT", null, t =>
+                    b.ToTable("RII_BatchMovement", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_BATCH_MOVEMENT_MOVEMENT_TYPE", "[MovementType] IN (0,1,2,3,4,5,6,7,8,9)");
+                            t.HasCheckConstraint("CK_RII_BatchMovement_MovementType", "[MovementType] IN (0,1,2,3,4,5,6,7,8,9)");
                         });
                 });
 
@@ -345,12 +348,12 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("ProjectId", "FishBatchId", "WarehouseId")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_BATCH_WAREHOUSE_BALANCE_PROJECT_BATCH_WAREHOUSE_ACTIVE")
+                        .HasDatabaseName("UX_RII_BatchWarehouseBalance_ProjectBatchWarehouse_Active")
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("RII_BATCH_WAREHOUSE_BALANCE", null, t =>
+                    b.ToTable("RII_BatchWarehouseBalance", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_BATCH_WAREHOUSE_BALANCE_NON_NEGATIVE", "[LiveCount] >= 0 AND [AverageGram] >= 0 AND [BiomassGram] >= 0");
+                            t.HasCheckConstraint("CK_RII_BatchWarehouseBalance_NonNegative", "[LiveCount] >= 0 AND [AverageGram] >= 0 AND [BiomassGram] >= 0");
                         });
                 });
 
@@ -403,7 +406,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("CalibrationCode")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_BUDGET_CALIBRATION_DEFINITION_CODE_ACTIVE")
+                        .HasDatabaseName("UX_RII_BUDGET_CALIBRATION_DEFINITION_Code_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("CreatedBy");
@@ -476,7 +479,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("WaterTemperatureId", "CalibrationDefinitionId", "FeedStockId")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_BUDGET_FEED_CONSUMPTION_RATE_COMBINATION_ACTIVE")
+                        .HasDatabaseName("UX_RII_BUDGET_FEED_CONSUMPTION_RATE_Combination_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("RII_BUDGET_FEED_CONSUMPTION_RATE", (string)null);
@@ -538,7 +541,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("StockId", "StartMonth")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_BUDGET_FISH_GROWTH_PROFILE_STOCK_START_MONTH_ACTIVE")
+                        .HasDatabaseName("UX_RII_BUDGET_FISH_GROWTH_PROFILE_Stock_StartMonth_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("RII_BUDGET_FISH_GROWTH_PROFILE", (string)null);
@@ -600,7 +603,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("BudgetFishGrowthProfileId", "GrowthMonthNo")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_BUDGET_FISH_GROWTH_PROFILE_LINE_PROFILE_MONTH_ACTIVE")
+                        .HasDatabaseName("UX_RII_BUDGET_FISH_GROWTH_PROFILE_LINE_Profile_Month_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("RII_BUDGET_FISH_GROWTH_PROFILE_LINE", (string)null);
@@ -660,7 +663,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("Year", "Month")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_BUDGET_WATER_TEMPERATURE_YEAR_MONTH_ACTIVE")
+                        .HasDatabaseName("UX_RII_BUDGET_WATER_TEMPERATURE_YearMonth_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("RII_BUDGET_WATER_TEMPERATURE", (string)null);
@@ -724,12 +727,12 @@ namespace aqua_api.Migrations
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("FishStockId", "CalibrationDefinitionId", "GrowthMonthNo")
-                        .HasDatabaseName("IX_RII_BUDGET_MORTALITY_RATE_DEFINITION_KEY_ACTIVE")
+                        .HasDatabaseName("IX_RII_BUDGET_MortalityRateDefinition_Key_Active")
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("RII_BUDGET_MORTALITY_RATE_DEFINITION", null, t =>
+                    b.ToTable("RII_BUDGET_MortalityRateDefinition", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_BUDGET_MORTALITY_RATE_DEFINITION_RATE", "[MortalityRatePercent] >= 0 AND [MortalityRatePercent] <= 100");
+                            t.HasCheckConstraint("CK_RII_BUDGET_MortalityRateDefinition_Rate", "[MortalityRatePercent] >= 0 AND [MortalityRatePercent] <= 100");
                         });
                 });
 
@@ -805,12 +808,12 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("BudgetCode")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_BUDGET_PLAN_BUDGET_CODE_ACTIVE")
+                        .HasDatabaseName("UX_RII_BUDGET_Plan_BudgetCode_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("BudgetNo")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_BUDGET_PLAN_BUDGET_NO_ACTIVE")
+                        .HasDatabaseName("UX_RII_BUDGET_Plan_BudgetNo_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("CreatedBy");
@@ -819,13 +822,13 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_BUDGET_PLAN", null, t =>
+                    b.ToTable("RII_BUDGET_Plan", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_END_MONTH", "[EndMonth] BETWEEN 1 AND 12");
+                            t.HasCheckConstraint("CK_RII_BUDGET_Plan_EndMonth", "[EndMonth] BETWEEN 1 AND 12");
 
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_START_MONTH", "[StartMonth] BETWEEN 1 AND 12");
+                            t.HasCheckConstraint("CK_RII_BUDGET_Plan_StartMonth", "[StartMonth] BETWEEN 1 AND 12");
 
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_STATUS", "[Status] IN (0,1,2,3,4,5,6,7)");
+                            t.HasCheckConstraint("CK_RII_BUDGET_Plan_Status", "[Status] IN (0,1,2,3,4,5,6,7)");
                         });
                 });
 
@@ -909,14 +912,14 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("BudgetPlanId", "Year", "Month", "CurrencyCode", "RateType")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_BUDGET_PLAN_EXCHANGE_RATE_PERIOD_CURRENCY")
+                        .HasDatabaseName("UX_RII_BUDGET_PlanExchangeRate_PeriodCurrency")
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("RII_BUDGET_PLAN_EXCHANGE_RATE", null, t =>
+                    b.ToTable("RII_BUDGET_PlanExchangeRate", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_EXCHANGE_RATE_MONTH", "[Month] BETWEEN 1 AND 12");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanExchangeRate_Month", "[Month] BETWEEN 1 AND 12");
 
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_EXCHANGE_RATE_RATE", "[ExchangeRate] >= 0");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanExchangeRate_Rate", "[ExchangeRate] >= 0");
                         });
                 });
 
@@ -991,11 +994,11 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_BUDGET_PLAN_FEEDING_LINE", null, t =>
+                    b.ToTable("RII_BUDGET_PlanFeedingLine", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_FEEDING_LINE_MONTH", "[Month] BETWEEN 1 AND 12");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanFeedingLine_Month", "[Month] BETWEEN 1 AND 12");
 
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_FEEDING_LINE_NON_NEGATIVE", "[FeedAmountRate] >= 0 AND [FeedKg] >= 0");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanFeedingLine_NonNegative", "[FeedAmountRate] >= 0 AND [FeedKg] >= 0");
                         });
                 });
 
@@ -1084,16 +1087,16 @@ namespace aqua_api.Migrations
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("BudgetPlanId", "BatchCode")
-                        .HasDatabaseName("IX_RII_BUDGET_PLAN_FISH_BATCH_BATCH_CODE_ACTIVE")
+                        .HasDatabaseName("IX_RII_BUDGET_PlanFishBatch_BatchCode_Active")
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("RII_BUDGET_PLAN_FISH_BATCH", null, t =>
+                    b.ToTable("RII_BUDGET_PlanFishBatch", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_FISH_BATCH_GROWTH_START_MONTH", "[GrowthStartMonth] BETWEEN 1 AND 12");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanFishBatch_GrowthStartMonth", "[GrowthStartMonth] BETWEEN 1 AND 12");
 
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_FISH_BATCH_NON_NEGATIVE", "[InitialLiveCount] >= 0 AND [InitialAverageGram] >= 0 AND [InitialBiomassKg] >= 0");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanFishBatch_NonNegative", "[InitialLiveCount] >= 0 AND [InitialAverageGram] >= 0 AND [InitialBiomassKg] >= 0");
 
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_FISH_BATCH_SOURCE_TYPE", "[SourceType] IN (0,1)");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanFishBatch_SourceType", "[SourceType] IN (0,1)");
                         });
                 });
 
@@ -1161,13 +1164,13 @@ namespace aqua_api.Migrations
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("BudgetPlanId", "BudgetPlanFishBatchId", "Id")
-                        .HasDatabaseName("IX_RII_BUDGET_PLAN_FISH_BATCH_ADJUSTMENT_BATCH");
+                        .HasDatabaseName("IX_RII_BUDGET_PlanFishBatchAdjustment_Batch");
 
-                    b.ToTable("RII_BUDGET_PLAN_FISH_BATCH_ADJUSTMENT", null, t =>
+                    b.ToTable("RII_BUDGET_PlanFishBatchAdjustment", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_FISH_BATCH_ADJUSTMENT_POSITIVE", "[LiveCount] > 0 AND [AverageGram] >= 0 AND [BiomassKg] >= 0");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanFishBatchAdjustment_Positive", "[LiveCount] > 0 AND [AverageGram] >= 0 AND [BiomassKg] >= 0");
 
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_FISH_BATCH_ADJUSTMENT_TYPE", "[AdjustmentType] IN (0,1,2,3)");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanFishBatchAdjustment_Type", "[AdjustmentType] IN (0,1,2,3)");
                         });
                 });
 
@@ -1275,14 +1278,14 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("BudgetPlanId", "BudgetPlanFishBatchId", "Year", "Month")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_BUDGET_PLAN_MONTHLY_PROJECTION_PERIOD_ACTIVE")
+                        .HasDatabaseName("UX_RII_BUDGET_PlanMonthlyProjection_Period_Active")
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("RII_BUDGET_PLAN_MONTHLY_PROJECTION", null, t =>
+                    b.ToTable("RII_BUDGET_PlanMonthlyProjection", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_MONTHLY_PROJECTION_MONTH", "[Month] BETWEEN 1 AND 12");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanMonthlyProjection_Month", "[Month] BETWEEN 1 AND 12");
 
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_MONTHLY_PROJECTION_NON_NEGATIVE", "[OpeningLiveCount] >= 0 AND [ClosingLiveCount] >= 0 AND [OpeningBiomassKg] >= 0 AND [ClosingBiomassKg] >= 0");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanMonthlyProjection_NonNegative", "[OpeningLiveCount] >= 0 AND [ClosingLiveCount] >= 0 AND [OpeningBiomassKg] >= 0 AND [ClosingBiomassKg] >= 0");
                         });
                 });
 
@@ -1355,11 +1358,11 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_BUDGET_PLAN_MORTALITY_LINE", null, t =>
+                    b.ToTable("RII_BUDGET_PlanMortalityLine", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_MORTALITY_LINE_MONTH", "[Month] BETWEEN 1 AND 12");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanMortalityLine_Month", "[Month] BETWEEN 1 AND 12");
 
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_MORTALITY_LINE_NON_NEGATIVE", "[MortalityRatePercent] >= 0 AND [MortalityCount] >= 0 AND [MortalityKg] >= 0");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanMortalityLine_NonNegative", "[MortalityRatePercent] >= 0 AND [MortalityCount] >= 0 AND [MortalityKg] >= 0");
                         });
                 });
 
@@ -1430,12 +1433,12 @@ namespace aqua_api.Migrations
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("BudgetPlanId", "ProjectCode")
-                        .HasDatabaseName("IX_RII_BUDGET_PLAN_PROJECT_PROJECT_CODE_ACTIVE")
+                        .HasDatabaseName("IX_RII_BUDGET_PlanProject_ProjectCode_Active")
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("RII_BUDGET_PLAN_PROJECT", null, t =>
+                    b.ToTable("RII_BUDGET_PlanProject", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_PROJECT_SOURCE_TYPE", "[SourceType] IN (0,1)");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanProject_SourceType", "[SourceType] IN (0,1)");
                         });
                 });
 
@@ -1506,14 +1509,14 @@ namespace aqua_api.Migrations
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("BudgetPlanId", "BudgetPlanFishBatchId", "Year", "Month")
-                        .HasDatabaseName("IX_RII_BUDGET_PLAN_SALES_LINE_PERIOD_ACTIVE")
+                        .HasDatabaseName("IX_RII_BUDGET_PlanSalesLine_Period_Active")
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("RII_BUDGET_PLAN_SALES_LINE", null, t =>
+                    b.ToTable("RII_BUDGET_PlanSalesLine", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_SALES_LINE_MONTH", "[Month] BETWEEN 1 AND 12");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanSalesLine_Month", "[Month] BETWEEN 1 AND 12");
 
-                            t.HasCheckConstraint("CK_RII_BUDGET_PLAN_SALES_LINE_NON_NEGATIVE", "[SalesKg] >= 0");
+                            t.HasCheckConstraint("CK_RII_BUDGET_PlanSalesLine_NonNegative", "[SalesKg] >= 0");
                         });
                 });
 
@@ -1569,7 +1572,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("CageCode")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_CAGE_CAGE_CODE_ACTIVE")
+                        .HasDatabaseName("UX_RII_Cage_CageCode_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("CreatedBy");
@@ -1578,7 +1581,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_CAGE", (string)null);
+                    b.ToTable("RII_Cage", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Cages.Domain.Entities.CageWarehouseMapping", b =>
@@ -1631,7 +1634,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("CageId")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_CAGE_WAREHOUSE_MAPPING_CAGE_ACTIVE")
+                        .HasDatabaseName("UX_RII_CageWarehouseMapping_Cage_Active")
                         .HasFilter("[IsDeleted] = 0 AND [IsActive] = 1");
 
                     b.HasIndex("CreatedBy");
@@ -1641,9 +1644,9 @@ namespace aqua_api.Migrations
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("WarehouseId")
-                        .HasDatabaseName("IX_RII_CAGE_WAREHOUSE_MAPPING_WAREHOUSE_ID");
+                        .HasDatabaseName("IX_RII_CageWarehouseMapping_WarehouseId");
 
-                    b.ToTable("RII_CAGE_WAREHOUSE_MAPPING", (string)null);
+                    b.ToTable("RII_CageWarehouseMapping", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Compliances.Domain.Entities.ComplianceAudit", b =>
@@ -1733,7 +1736,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_COMPLIANCE_AUDIT", (string)null);
+                    b.ToTable("RII_ComplianceAudit", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Compliances.Domain.Entities.ComplianceCorrectiveAction", b =>
@@ -1811,7 +1814,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_COMPLIANCE_CORRECTIVE_ACTION", (string)null);
+                    b.ToTable("RII_ComplianceCorrectiveAction", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.CurrentDirection.Domain.Entities.CurrentDirection", b =>
@@ -1858,7 +1861,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("Name")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_CURRENT_DIRECTION_NAME_ACTIVE")
+                        .HasDatabaseName("UX_RII_CURRENT_DIRECTION_Name_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("UpdatedBy");
@@ -1924,13 +1927,13 @@ namespace aqua_api.Migrations
                     b.HasIndex("ProjectCageId");
 
                     b.HasIndex("RecordDate")
-                        .HasDatabaseName("IX_RRII_CURRENT_DIRECTION_MATCHES_RECORD_DATE");
+                        .HasDatabaseName("IX_RRII_CURRENT_DIRECTION_MATCHES_RecordDate");
 
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("ProjectId", "ProjectCageId", "RecordDate")
                         .IsUnique()
-                        .HasDatabaseName("UX_RRII_CURRENT_DIRECTION_MATCHES_PROJECT_CAGE_DATE_ACTIVE")
+                        .HasDatabaseName("UX_RRII_CURRENT_DIRECTION_MATCHES_ProjectCageDate_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("RRII_CURRENT_DIRECTION_MATCHES", (string)null);
@@ -2061,10 +2064,10 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("ProjectId", "WeatherDate")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_DAILY_WEATHER_PROJECT_DATE_ACTIVE")
+                        .HasDatabaseName("UX_RII_DailyWeather_ProjectDate_Active")
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("RII_DAILY_WEATHER", (string)null);
+                    b.ToTable("RII_DailyWeather", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Feedings.Domain.Entities.Feeding", b =>
@@ -2164,7 +2167,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("FeedingNo")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_FEEDING_FEEDING_NO_ACTIVE")
+                        .HasDatabaseName("UX_RII_Feeding_FeedingNo_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("IsERPIntegrated")
@@ -2174,14 +2177,14 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("ProjectId", "FeedingDateOnly", "FeedingSlot")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_FEEDING_PROJECT_DATE_SLOT_ACTIVE")
+                        .HasDatabaseName("UX_RII_Feeding_Project_Date_Slot_Active")
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("RII_FEEDING", null, t =>
+                    b.ToTable("RII_Feeding", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_FEEDING_SLOT", "[FeedingSlot] IN (0,1)");
+                            t.HasCheckConstraint("CK_RII_Feeding_Slot", "[FeedingSlot] IN (0,1)");
 
-                            t.HasCheckConstraint("CK_RII_FEEDING_STATUS", "[Status] IN (0,1,2)");
+                            t.HasCheckConstraint("CK_RII_Feeding_Status", "[Status] IN (0,1,2)");
                         });
                 });
 
@@ -2243,9 +2246,9 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_FEEDING_DISTRIBUTION", null, t =>
+                    b.ToTable("RII_FeedingDistribution", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_FEEDING_DISTRIBUTION_FEED_GRAM", "[FeedGram] > 0");
+                            t.HasCheckConstraint("CK_RII_FeedingDistribution_FeedGram", "[FeedGram] > 0");
                         });
                 });
 
@@ -2310,9 +2313,9 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_FEEDING_LINE", null, t =>
+                    b.ToTable("RII_FeedingLine", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_FEEDING_LINE_POSITIVE", "[QtyUnit] > 0 AND [GramPerUnit] > 0 AND [TotalGram] > 0");
+                            t.HasCheckConstraint("CK_RII_FeedingLine_Positive", "[QtyUnit] > 0 AND [GramPerUnit] > 0 AND [TotalGram] > 0");
                         });
                 });
 
@@ -2441,12 +2444,12 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("ProjectId", "BatchCode")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_FISH_BATCH_PROJECT_BATCH_CODE_ACTIVE")
+                        .HasDatabaseName("UX_RII_FishBatch_Project_BatchCode_Active")
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("RII_FISH_BATCH", null, t =>
+                    b.ToTable("RII_FishBatch", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_FISH_BATCH_CURRENT_AVERAGE_GRAM", "[CurrentAverageGram] > 0");
+                            t.HasCheckConstraint("CK_RII_FishBatch_CurrentAverageGram", "[CurrentAverageGram] > 0");
                         });
                 });
 
@@ -2551,7 +2554,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_FISH_HEALTH_EVENT", (string)null);
+                    b.ToTable("RII_FishHealthEvent", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.FishHealth.Domain.Entities.FishLabResult", b =>
@@ -2630,7 +2633,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_FISH_LAB_RESULT", (string)null);
+                    b.ToTable("RII_FishLabResult", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.FishHealth.Domain.Entities.FishLabSample", b =>
@@ -2718,7 +2721,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_FISH_LAB_SAMPLE", (string)null);
+                    b.ToTable("RII_FishLabSample", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.FishHealth.Domain.Entities.FishTreatment", b =>
@@ -2830,7 +2833,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_FISH_TREATMENT", (string)null);
+                    b.ToTable("RII_FishTreatment", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.GoodsReceipts.Domain.Entities.GoodsReceipt", b =>
@@ -2896,21 +2899,21 @@ namespace aqua_api.Migrations
                     b.HasIndex("DeletedBy");
 
                     b.HasIndex("ProjectId")
-                        .HasDatabaseName("UX_RII_GOODS_RECEIPT_PROJECT_ACTIVE");
+                        .HasDatabaseName("UX_RII_GoodsReceipt_Project_Active");
 
                     b.HasIndex("ReceiptNo")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_GOODS_RECEIPT_RECEIPT_NO_ACTIVE")
+                        .HasDatabaseName("UX_RII_GoodsReceipt_ReceiptNo_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("WarehouseId")
-                        .HasDatabaseName("IX_RII_GOODS_RECEIPT_WAREHOUSE_ID");
+                        .HasDatabaseName("IX_RII_GoodsReceipt_WarehouseId");
 
-                    b.ToTable("RII_GOODS_RECEIPT", null, t =>
+                    b.ToTable("RII_GoodsReceipt", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_GOODS_RECEIPT_STATUS", "[Status] IN (0,1,2)");
+                            t.HasCheckConstraint("CK_RII_GoodsReceipt_Status", "[Status] IN (0,1,2)");
                         });
                 });
 
@@ -2971,12 +2974,12 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("GoodsReceiptLineId", "ProjectCageId")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_GOODS_RECEIPT_FISH_DISTRIBUTION_LINE_CAGE_ACTIVE")
+                        .HasDatabaseName("UX_RII_GoodsReceiptFishDistribution_LineCage_Active")
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("RII_GOODS_RECEIPT_FISH_DISTRIBUTION", null, t =>
+                    b.ToTable("RII_GoodsReceiptFishDistribution", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_GOODS_RECEIPT_FISH_DISTRIBUTION_COUNT", "[FishCount] > 0");
+                            t.HasCheckConstraint("CK_RII_GoodsReceiptFishDistribution_Count", "[FishCount] > 0");
                         });
                 });
 
@@ -3083,7 +3086,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("ErpSourceMovementKey")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_GOODS_RECEIPT_LINE_ERP_SOURCE_MOVEMENT_KEY_ACTIVE")
+                        .HasDatabaseName("UX_RII_GoodsReceiptLine_ErpSourceMovementKey_Active")
                         .HasFilter("[IsDeleted] = 0 AND [ErpSourceMovementKey] IS NOT NULL");
 
                     b.HasIndex("FishBatchId");
@@ -3094,9 +3097,9 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_GOODS_RECEIPT_LINE", null, t =>
+                    b.ToTable("RII_GoodsReceiptLine", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_GOODS_RECEIPT_LINE_ITEM_TYPE", "[ItemType] IN (0,1)");
+                            t.HasCheckConstraint("CK_RII_GoodsReceiptLine_ItemType", "[ItemType] IN (0,1)");
                         });
                 });
 
@@ -3981,23 +3984,23 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("SourceMovementKey")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_SOURCE_MOVEMENT_KEY");
+                        .HasDatabaseName("UX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_SourceMovementKey");
 
                     b.HasIndex("StockId");
 
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("GoodsReceiptId", "GoodsReceiptLineId")
-                        .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_GOODS_RECEIPT");
+                        .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_GoodsReceipt");
 
                     b.HasIndex("IsMatched", "IsProcessed")
-                        .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_PROCESS_STATE");
+                        .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_ProcessState");
 
                     b.HasIndex("ShipmentId", "ShipmentLineId")
-                        .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_SHIPMENT");
+                        .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_Shipment");
 
                     b.HasIndex("ErpProjectCode", "ErpWarehouseCode", "MovementDate")
-                        .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_PROJECT_WAREHOUSE_DATE");
+                        .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_ProjectWarehouseDate");
 
                     b.ToTable("RII_ERP_RECEIPT_SHIPMENT_MOVEMENT", (string)null);
                 });
@@ -5146,19 +5149,19 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("MortalityNo")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_MORTALITY_MORTALITY_NO_ACTIVE")
+                        .HasDatabaseName("UX_RII_Mortality_MortalityNo_Active")
                         .HasFilter("[IsDeleted] = 0 AND [MortalityNo] IS NOT NULL");
 
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("ProjectId", "MortalityDate")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_MORTALITY_PROJECT_DATE_ACTIVE")
+                        .HasDatabaseName("UX_RII_Mortality_ProjectDate_Active")
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("RII_MORTALITY", null, t =>
+                    b.ToTable("RII_Mortality", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_MORTALITY_STATUS", "[Status] IN (0,1,2)");
+                            t.HasCheckConstraint("CK_RII_Mortality_Status", "[Status] IN (0,1,2)");
                         });
                 });
 
@@ -5219,9 +5222,9 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_MORTALITY_LINE", null, t =>
+                    b.ToTable("RII_MortalityLine", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_MORTALITY_LINE_DEAD_COUNT", "[DeadCount] > 0");
+                            t.HasCheckConstraint("CK_RII_MortalityLine_DeadCount", "[DeadCount] > 0");
                         });
                 });
 
@@ -5303,7 +5306,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("MovementNo")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_NET_INVENTORY_MOVEMENT_MOVEMENT_NO_ACTIVE")
+                        .HasDatabaseName("UX_RII_NetInventoryMovement_MovementNo_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("SourceProjectCageId");
@@ -5317,18 +5320,18 @@ namespace aqua_api.Migrations
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("ProjectId", "MovementDate")
-                        .HasDatabaseName("IX_RII_NET_INVENTORY_MOVEMENT_PROJECT_DATE");
+                        .HasDatabaseName("IX_RII_NetInventoryMovement_Project_Date");
 
                     b.HasIndex("TargetProjectCageId", "MovementDate")
-                        .HasDatabaseName("IX_RII_NET_INVENTORY_MOVEMENT_TARGET_CAGE_DATE");
+                        .HasDatabaseName("IX_RII_NetInventoryMovement_TargetCage_Date");
 
-                    b.ToTable("RII_NET_INVENTORY_MOVEMENT", null, t =>
+                    b.ToTable("RII_NetInventoryMovement", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_NET_INVENTORY_MOVEMENT_MOVEMENT_TYPE", "[MovementType] IN (1,2,3,4,5)");
+                            t.HasCheckConstraint("CK_RII_NetInventoryMovement_MovementType", "[MovementType] IN (1,2,3,4,5)");
 
-                            t.HasCheckConstraint("CK_RII_NET_INVENTORY_MOVEMENT_NET_TYPE", "[NetType] IN (1,2)");
+                            t.HasCheckConstraint("CK_RII_NetInventoryMovement_NetType", "[NetType] IN (1,2)");
 
-                            t.HasCheckConstraint("CK_RII_NET_INVENTORY_MOVEMENT_QUANTITY", "[Quantity] > 0");
+                            t.HasCheckConstraint("CK_RII_NetInventoryMovement_Quantity", "[Quantity] > 0");
                         });
                 });
 
@@ -5393,7 +5396,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("OperationNo")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_NET_OPERATION_OPERATION_NO_ACTIVE")
+                        .HasDatabaseName("UX_RII_NetOperation_OperationNo_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("OperationTypeId");
@@ -5402,9 +5405,9 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_NET_OPERATION", null, t =>
+                    b.ToTable("RII_NetOperation", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_NET_OPERATION_STATUS", "[Status] IN (0,1,2)");
+                            t.HasCheckConstraint("CK_RII_NetOperation_Status", "[Status] IN (0,1,2)");
                         });
                 });
 
@@ -5466,7 +5469,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_NET_OPERATION_LINE", (string)null);
+                    b.ToTable("RII_NetOperationLine", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.NetOperations.Domain.Entities.NetOperationType", b =>
@@ -5514,7 +5517,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("Code")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_NET_OPERATION_TYPE_CODE_ACTIVE")
+                        .HasDatabaseName("UX_RII_NetOperationType_Code_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("CreatedBy");
@@ -5523,7 +5526,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_NET_OPERATION_TYPE", (string)null);
+                    b.ToTable("RII_NetOperationType", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.OpeningImports.Domain.Entities.OpeningImportJob", b =>
@@ -5591,7 +5594,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_OPENING_IMPORT_JOB", (string)null);
+                    b.ToTable("RII_OpeningImportJob", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.OpeningImports.Domain.Entities.OpeningImportRow", b =>
@@ -5658,9 +5661,9 @@ namespace aqua_api.Migrations
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("OpeningImportJobId", "SheetName", "RowNumber")
-                        .HasDatabaseName("IX_RII_OPENING_IMPORT_ROW_JOB_SHEET_ROW");
+                        .HasDatabaseName("IX_RII_OpeningImportRow_JobSheetRow");
 
-                    b.ToTable("RII_OPENING_IMPORT_ROW", (string)null);
+                    b.ToTable("RII_OpeningImportRow", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.ProjectKpis.Domain.Entities.ProjectCageDailyKpiSnapshot", b =>
@@ -5785,7 +5788,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_PROJECT_CAGE_DAILY_KPI_SNAPSHOT", (string)null);
+                    b.ToTable("RII_ProjectCageDailyKpiSnapshot", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.ProjectMerges.Domain.Entities.ProjectMerge", b =>
@@ -5852,7 +5855,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_PROJECT_MERGE", (string)null);
+                    b.ToTable("RII_ProjectMerge", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.ProjectMerges.Domain.Entities.ProjectMergeCage", b =>
@@ -5924,7 +5927,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_PROJECT_MERGE_CAGE", (string)null);
+                    b.ToTable("RII_ProjectMergeCage", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.ProjectMerges.Domain.Entities.ProjectMergeSource", b =>
@@ -5986,7 +5989,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_PROJECT_MERGE_SOURCE", (string)null);
+                    b.ToTable("RII_ProjectMergeSource", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Projects.Domain.Entities.Project", b =>
@@ -6051,14 +6054,14 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("ProjectCode")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_PROJECT_PROJECT_CODE_ACTIVE")
+                        .HasDatabaseName("UX_RII_Project_ProjectCode_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_PROJECT", null, t =>
+                    b.ToTable("RII_Project", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_PROJECT_STATUS", "[Status] IN (0,1,2)");
+                            t.HasCheckConstraint("CK_RII_Project_Status", "[Status] IN (0,1,2)");
                         });
                 });
 
@@ -6111,7 +6114,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("CageId")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_PROJECT_CAGE_CAGE_ID_ACTIVE_ASSIGNMENT")
+                        .HasDatabaseName("UX_RII_ProjectCage_CageId_ActiveAssignment")
                         .HasFilter("[ReleasedDate] IS NULL AND [IsDeleted] = 0");
 
                     b.HasIndex("CreatedBy");
@@ -6122,9 +6125,9 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_PROJECT_CAGE", null, t =>
+                    b.ToTable("RII_ProjectCage", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_PROJECT_CAGE_ASSIGN_RELEASE", "[ReleasedDate] IS NULL OR [ReleasedDate] >= [AssignedDate]");
+                            t.HasCheckConstraint("CK_RII_ProjectCage_AssignRelease", "[ReleasedDate] IS NULL OR [ReleasedDate] >= [AssignedDate]");
                         });
                 });
 
@@ -6189,13 +6192,13 @@ namespace aqua_api.Migrations
                     b.HasIndex("ProjectCageId");
 
                     b.HasIndex("RecordDate")
-                        .HasDatabaseName("IX_RII_SEA_WATER_TEMPERATURE_RECORD_DATE");
+                        .HasDatabaseName("IX_RII_SEA_WATER_TEMPERATURE_RecordDate");
 
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("ProjectId", "ProjectCageId", "RecordDate")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_SEA_WATER_TEMPERATURE_PROJECT_CAGE_DATE_ACTIVE")
+                        .HasDatabaseName("UX_RII_SEA_WATER_TEMPERATURE_ProjectCageDate_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("RII_SEA_WATER_TEMPERATURE", (string)null);
@@ -6295,17 +6298,17 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("ShipmentNo")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_SHIPMENT_SHIPMENT_NO_ACTIVE")
+                        .HasDatabaseName("UX_RII_Shipment_ShipmentNo_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("TargetWarehouseId")
-                        .HasDatabaseName("IX_RII_SHIPMENT_TARGET_WAREHOUSE_ID");
+                        .HasDatabaseName("IX_RII_Shipment_TargetWarehouseId");
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_SHIPMENT", null, t =>
+                    b.ToTable("RII_Shipment", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_SHIPMENT_STATUS", "[Status] IN (0,1,2)");
+                            t.HasCheckConstraint("CK_RII_Shipment_Status", "[Status] IN (0,1,2)");
                         });
                 });
 
@@ -6397,7 +6400,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("ErpSourceMovementKey")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_SHIPMENT_LINE_ERP_SOURCE_MOVEMENT_KEY_ACTIVE")
+                        .HasDatabaseName("UX_RII_ShipmentLine_ErpSourceMovementKey_Active")
                         .HasFilter("[IsDeleted] = 0 AND [ErpSourceMovementKey] IS NOT NULL");
 
                     b.HasIndex("FishBatchId");
@@ -6408,9 +6411,9 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_SHIPMENT_LINE", null, t =>
+                    b.ToTable("RII_ShipmentLine", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_SHIPMENT_LINE_POSITIVE", "[FishCount] > 0 AND [AverageGram] >= 0 AND [BiomassGram] >= 0");
+                            t.HasCheckConstraint("CK_RII_ShipmentLine_Positive", "[FishCount] > 0 AND [AverageGram] >= 0 AND [BiomassGram] >= 0");
                         });
                 });
 
@@ -6811,7 +6814,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("ConvertNo")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_STOCK_CONVERT_CONVERT_NO_ACTIVE")
+                        .HasDatabaseName("UX_RII_StockConvert_ConvertNo_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("CreatedBy");
@@ -6822,9 +6825,9 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_STOCK_CONVERT", null, t =>
+                    b.ToTable("RII_StockConvert", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_STOCK_CONVERT_STATUS", "[Status] IN (0,1,2)");
+                            t.HasCheckConstraint("CK_RII_StockConvert_Status", "[Status] IN (0,1,2)");
                         });
                 });
 
@@ -6907,9 +6910,9 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_STOCK_CONVERT_LINE", null, t =>
+                    b.ToTable("RII_StockConvertLine", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_STOCK_CONVERT_LINE_POSITIVE", "[FishCount] > 0 AND [AverageGram] > 0 AND [NewAverageGram] >= 0 AND [BiomassGram] > 0");
+                            t.HasCheckConstraint("CK_RII_StockConvertLine_Positive", "[FishCount] > 0 AND [AverageGram] > 0 AND [NewAverageGram] >= 0 AND [BiomassGram] > 0");
                         });
                 });
 
@@ -7163,11 +7166,11 @@ namespace aqua_api.Migrations
                     b.HasIndex("ProjectId");
 
                     b.HasIndex("TransferNo")
-                        .HasDatabaseName("IX_RII_CAGE_WAREHOUSE_TRANSFER_TRANSFER_NO");
+                        .HasDatabaseName("IX_RII_CageWarehouseTransfer_TransferNo");
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_CAGE_WAREHOUSE_TRANSFER", (string)null);
+                    b.ToTable("RII_CageWarehouseTransfer", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Transfers.Domain.Entities.CageWarehouseTransferLine", b =>
@@ -7240,9 +7243,9 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_CAGE_WAREHOUSE_TRANSFER_LINE", null, t =>
+                    b.ToTable("RII_CageWarehouseTransferLine", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_CAGE_WAREHOUSE_TRANSFER_LINE_POSITIVE", "[FishCount] > 0 AND [AverageGram] > 0 AND [BiomassGram] > 0");
+                            t.HasCheckConstraint("CK_RII_CageWarehouseTransferLine_Positive", "[FishCount] > 0 AND [AverageGram] > 0 AND [BiomassGram] > 0");
                         });
                 });
 
@@ -7306,14 +7309,14 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("TransferNo")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_TRANSFER_TRANSFER_NO_ACTIVE")
+                        .HasDatabaseName("UX_RII_Transfer_TransferNo_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_TRANSFER", null, t =>
+                    b.ToTable("RII_Transfer", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_TRANSFER_STATUS", "[Status] IN (0,1,2)");
+                            t.HasCheckConstraint("CK_RII_Transfer_Status", "[Status] IN (0,1,2)");
                         });
                 });
 
@@ -7387,11 +7390,11 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_TRANSFER_LINE", null, t =>
+                    b.ToTable("RII_TransferLine", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_TRANSFER_LINE_FROM_TO_DIFF", "[FromProjectCageId] <> [ToProjectCageId]");
+                            t.HasCheckConstraint("CK_RII_TransferLine_FromToDiff", "[FromProjectCageId] <> [ToProjectCageId]");
 
-                            t.HasCheckConstraint("CK_RII_TRANSFER_LINE_POSITIVE", "[FishCount] > 0 AND [AverageGram] > 0 AND [BiomassGram] > 0");
+                            t.HasCheckConstraint("CK_RII_TransferLine_Positive", "[FishCount] > 0 AND [AverageGram] > 0 AND [BiomassGram] > 0");
                         });
                 });
 
@@ -7454,11 +7457,11 @@ namespace aqua_api.Migrations
                     b.HasIndex("ProjectId");
 
                     b.HasIndex("TransferNo")
-                        .HasDatabaseName("IX_RII_WAREHOUSE_CAGE_TRANSFER_TRANSFER_NO");
+                        .HasDatabaseName("IX_RII_WarehouseCageTransfer_TransferNo");
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_WAREHOUSE_CAGE_TRANSFER", (string)null);
+                    b.ToTable("RII_WarehouseCageTransfer", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Transfers.Domain.Entities.WarehouseCageTransferLine", b =>
@@ -7531,9 +7534,9 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("WarehouseCageTransferId");
 
-                    b.ToTable("RII_WAREHOUSE_CAGE_TRANSFER_LINE", null, t =>
+                    b.ToTable("RII_WarehouseCageTransferLine", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_WAREHOUSE_CAGE_TRANSFER_LINE_POSITIVE", "[FishCount] > 0 AND [AverageGram] > 0 AND [BiomassGram] > 0");
+                            t.HasCheckConstraint("CK_RII_WarehouseCageTransferLine_Positive", "[FishCount] > 0 AND [AverageGram] > 0 AND [BiomassGram] > 0");
                         });
                 });
 
@@ -7596,7 +7599,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_WAREHOUSE_TRANSFER", (string)null);
+                    b.ToTable("RII_WarehouseTransfer", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Transfers.Domain.Entities.WarehouseTransferLine", b =>
@@ -7665,11 +7668,11 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("WarehouseTransferId");
 
-                    b.ToTable("RII_WAREHOUSE_TRANSFER_LINE", null, t =>
+                    b.ToTable("RII_WarehouseTransferLine", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_WAREHOUSE_TRANSFER_LINE_FROM_TO_DIFF", "[FromWarehouseId] <> [ToWarehouseId]");
+                            t.HasCheckConstraint("CK_RII_WarehouseTransferLine_FromToDiff", "[FromWarehouseId] <> [ToWarehouseId]");
 
-                            t.HasCheckConstraint("CK_RII_WAREHOUSE_TRANSFER_LINE_POSITIVE", "[FishCount] > 0 AND [AverageGram] > 0 AND [BiomassGram] > 0");
+                            t.HasCheckConstraint("CK_RII_WarehouseTransferLine_Positive", "[FishCount] > 0 AND [AverageGram] > 0 AND [BiomassGram] > 0");
                         });
                 });
 
@@ -7737,13 +7740,13 @@ namespace aqua_api.Migrations
                     b.HasIndex("UpdatedBy");
 
                     b.HasIndex("WarehouseName")
-                        .HasDatabaseName("IX_RII_WAREHOUSE_WAREHOUSE_NAME");
+                        .HasDatabaseName("IX_RII_Warehouse_WarehouseName");
 
                     b.HasIndex("ErpWarehouseCode", "BranchCode")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_WAREHOUSE_ERP_WAREHOUSE_CODE_BRANCH_CODE");
+                        .HasDatabaseName("UX_RII_Warehouse_ErpWarehouseCode_BranchCode");
 
-                    b.ToTable("RII_WAREHOUSE", (string)null);
+                    b.ToTable("RII_Warehouse", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Weather.Domain.Entities.WeatherSeverity", b =>
@@ -7793,7 +7796,7 @@ namespace aqua_api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Code")
-                        .HasDatabaseName("IX_RII_WEATHER_SEVERITY_CODE_ACTIVE")
+                        .HasDatabaseName("IX_RII_WeatherSeverity_Code_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("CreatedBy");
@@ -7802,9 +7805,9 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_WEATHER_SEVERITY", null, t =>
+                    b.ToTable("RII_WeatherSeverity", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_WEATHER_SEVERITY_SCORE", "[Score] >= 0");
+                            t.HasCheckConstraint("CK_RII_WeatherSeverity_Score", "[Score] >= 0");
                         });
                 });
 
@@ -7853,7 +7856,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("Code")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_WEATHER_TYPE_CODE_ACTIVE")
+                        .HasDatabaseName("UX_RII_WeatherType_Code_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("CreatedBy");
@@ -7862,7 +7865,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_WEATHER_TYPE", (string)null);
+                    b.ToTable("RII_WeatherType", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.Weighings.Domain.Entities.Weighing", b =>
@@ -7927,12 +7930,12 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("WeighingNo")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_WEIGHING_WEIGHING_NO_ACTIVE")
+                        .HasDatabaseName("UX_RII_Weighing_WeighingNo_Active")
                         .HasFilter("[IsDeleted] = 0");
 
-                    b.ToTable("RII_WEIGHING", null, t =>
+                    b.ToTable("RII_Weighing", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_WEIGHING_STATUS", "[Status] IN (0,1,2)");
+                            t.HasCheckConstraint("CK_RII_Weighing_Status", "[Status] IN (0,1,2)");
                         });
                 });
 
@@ -8001,9 +8004,9 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("WeighingId");
 
-                    b.ToTable("RII_WEIGHING_LINE", null, t =>
+                    b.ToTable("RII_WeighingLine", null, t =>
                         {
-                            t.HasCheckConstraint("CK_RII_WEIGHING_LINE_POSITIVE", "[MeasuredCount] > 0 AND [MeasuredAverageGram] > 0 AND [MeasuredBiomassGram] > 0");
+                            t.HasCheckConstraint("CK_RII_WeighingLine_Positive", "[MeasuredCount] > 0 AND [MeasuredAverageGram] > 0 AND [MeasuredBiomassGram] > 0");
                         });
                 });
 
@@ -8101,7 +8104,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("RII_WELFARE_ASSESSMENT", (string)null);
+                    b.ToTable("RII_WelfareAssessment", (string)null);
                 });
 
             modelBuilder.Entity("aqua_api.Modules.WindDirection.Domain.Entities.WindDirection", b =>
@@ -8148,7 +8151,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("Name")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_WIND_DIRECTION_NAME_ACTIVE")
+                        .HasDatabaseName("UX_RII_WIND_DIRECTION_Name_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.HasIndex("UpdatedBy");
@@ -8212,7 +8215,7 @@ namespace aqua_api.Migrations
                     b.HasIndex("ProjectCageId");
 
                     b.HasIndex("RecordDate")
-                        .HasDatabaseName("IX_RII_WIND_DIRECTION_MATCHES_RECORD_DATE");
+                        .HasDatabaseName("IX_RII_WIND_DIRECTION_MATCHES_RecordDate");
 
                     b.HasIndex("UpdatedBy");
 
@@ -8220,7 +8223,7 @@ namespace aqua_api.Migrations
 
                     b.HasIndex("ProjectId", "ProjectCageId", "RecordDate")
                         .IsUnique()
-                        .HasDatabaseName("UX_RII_WIND_DIRECTION_MATCHES_PROJECT_CAGE_DATE_ACTIVE")
+                        .HasDatabaseName("UX_RII_WIND_DIRECTION_MATCHES_ProjectCageDate_Active")
                         .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("RII_WIND_DIRECTION_MATCHES", (string)null);

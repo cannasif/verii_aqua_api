@@ -7,7 +7,7 @@ namespace aqua_api.Modules.DailyWeathers.Infrastructure.Persistence.Configuratio
     {
         protected override void ConfigureEntity(EntityTypeBuilder<DailyWeather> builder)
         {
-            builder.ToTable("RII_DailyWeather");
+            builder.ToTable("RII_DAILY_WEATHER");
             builder.Property(x => x.WeatherDate).HasColumnType("date").IsRequired();
             builder.Property(x => x.TemperatureC).HasPrecision(18, 3);
             builder.Property(x => x.WindKnot).HasPrecision(18, 3);
@@ -45,7 +45,7 @@ namespace aqua_api.Modules.DailyWeathers.Infrastructure.Persistence.Configuratio
             builder.HasIndex(x => new { x.ProjectId, x.WeatherDate })
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_DailyWeather_ProjectDate_Active");
+                .HasDatabaseName("UX_RII_DAILY_WEATHER_PROJECT_DATE_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

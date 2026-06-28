@@ -224,7 +224,7 @@ namespace aqua_api.Modules.DailyWeathers.Application.Services
                     SignedBiomassGram = 0,
                     FeedGram = null,
                     ActorUserId = userId,
-                    ReferenceTable = "RII_DailyWeather",
+                    ReferenceTable = "RII_DAILY_WEATHER",
                     ReferenceId = dailyWeather.Id,
                     Note = $"DailyWeather | typeId={request.TypeId} | severityId={request.SeverityId}",
                     CreatedBy = userId,
@@ -366,22 +366,22 @@ namespace aqua_api.Modules.DailyWeathers.Application.Services
         {
             var message = ex.InnerException?.Message ?? ex.Message;
 
-            if (message.Contains("UX_RII_DailyWeather_ProjectDate_Active", StringComparison.OrdinalIgnoreCase))
+            if (message.Contains("UX_RII_DAILY_WEATHER_PROJECT_DATE_ACTIVE", StringComparison.OrdinalIgnoreCase))
             {
                 return _localizationService.GetLocalizedString("DailyWeatherService.ProjectDateAlreadyExists");
             }
 
-            if (message.Contains("UX_RII_SEA_WATER_TEMPERATURE_ProjectCageDate_Active", StringComparison.OrdinalIgnoreCase))
+            if (message.Contains("UX_RII_SEA_WATER_TEMPERATURE_PROJECT_CAGE_DATE_ACTIVE", StringComparison.OrdinalIgnoreCase))
             {
                 return "Bu proje, kafes ve tarih için deniz suyu sıcaklık kaydı zaten var.";
             }
 
-            if (message.Contains("UX_RII_WIND_DIRECTION_MATCHES_ProjectCageDate_Active", StringComparison.OrdinalIgnoreCase))
+            if (message.Contains("UX_RII_WIND_DIRECTION_MATCHES_PROJECT_CAGE_DATE_ACTIVE", StringComparison.OrdinalIgnoreCase))
             {
                 return "Bu proje, kafes ve tarih için rüzgar yönü kaydı zaten var.";
             }
 
-            if (message.Contains("UX_RRII_CURRENT_DIRECTION_MATCHES_ProjectCageDate_Active", StringComparison.OrdinalIgnoreCase))
+            if (message.Contains("UX_RRII_CURRENT_DIRECTION_MATCHES_PROJECT_CAGE_DATE_ACTIVE", StringComparison.OrdinalIgnoreCase))
             {
                 return "Bu proje, kafes ve tarih için akıntı yönü kaydı zaten var.";
             }

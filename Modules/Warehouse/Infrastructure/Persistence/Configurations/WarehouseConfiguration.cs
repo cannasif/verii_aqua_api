@@ -8,7 +8,7 @@ namespace aqua_api.Modules.Warehouse.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<WarehouseEntity> builder)
         {
-            builder.ToTable("RII_Warehouse");
+            builder.ToTable("RII_WAREHOUSE");
 
             builder.Property(x => x.ErpWarehouseCode)
                 .IsRequired();
@@ -34,10 +34,10 @@ namespace aqua_api.Modules.Warehouse.Infrastructure.Persistence.Configurations
 
             builder.HasIndex(x => new { x.ErpWarehouseCode, x.BranchCode })
                 .IsUnique()
-                .HasDatabaseName("UX_RII_Warehouse_ErpWarehouseCode_BranchCode");
+                .HasDatabaseName("UX_RII_WAREHOUSE_ERP_WAREHOUSE_CODE_BRANCH_CODE");
 
             builder.HasIndex(x => x.WarehouseName)
-                .HasDatabaseName("IX_RII_Warehouse_WarehouseName");
+                .HasDatabaseName("IX_RII_WAREHOUSE_WAREHOUSE_NAME");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

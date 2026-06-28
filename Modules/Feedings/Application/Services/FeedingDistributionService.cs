@@ -308,7 +308,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
             var movement = await _unitOfWork.Db.BatchMovements
                 .FirstOrDefaultAsync(x =>
                     !x.IsDeleted &&
-                    x.ReferenceTable == "RII_FeedingDistribution" &&
+                    x.ReferenceTable == "RII_FEEDING_DISTRIBUTION" &&
                     x.ReferenceId == entity.Id &&
                     x.MovementType == BatchMovementType.Feeding);
 
@@ -335,7 +335,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 SignedBiomassGram = 0,
                 FeedGram = entity.FeedGram,
                 ActorUserId = actorUserId,
-                ReferenceTable = "RII_FeedingDistribution",
+                ReferenceTable = "RII_FEEDING_DISTRIBUTION",
                 ReferenceId = entity.Id,
                 Note = $"FeedingDistribution | feedGram={entity.FeedGram}",
                 CreatedBy = actorUserId,

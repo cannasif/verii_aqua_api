@@ -141,19 +141,19 @@ namespace aqua_api.Modules.Integrations.Infrastructure.Persistence.Configuration
 
             builder.HasIndex(x => x.SourceMovementKey)
                 .IsUnique()
-                .HasDatabaseName("UX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_SourceMovementKey");
+                .HasDatabaseName("UX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_SOURCE_MOVEMENT_KEY");
 
             builder.HasIndex(x => new { x.ErpProjectCode, x.ErpWarehouseCode, x.MovementDate })
-                .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_ProjectWarehouseDate");
+                .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_PROJECT_WAREHOUSE_DATE");
 
             builder.HasIndex(x => new { x.IsMatched, x.IsProcessed })
-                .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_ProcessState");
+                .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_PROCESS_STATE");
 
             builder.HasIndex(x => new { x.GoodsReceiptId, x.GoodsReceiptLineId })
-                .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_GoodsReceipt");
+                .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_GOODS_RECEIPT");
 
             builder.HasIndex(x => new { x.ShipmentId, x.ShipmentLineId })
-                .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_Shipment");
+                .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_SHIPMENT");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

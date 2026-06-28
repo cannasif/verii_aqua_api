@@ -7,9 +7,9 @@ namespace aqua_api.Modules.StockConverts.Infrastructure.Persistence.Configuratio
     {
         protected override void ConfigureEntity(EntityTypeBuilder<StockConvert> builder)
         {
-            builder.ToTable("RII_StockConvert", table =>
+            builder.ToTable("RII_STOCK_CONVERT", table =>
             {
-                table.HasCheckConstraint("CK_RII_StockConvert_Status", "[Status] IN (0,1,2)");
+                table.HasCheckConstraint("CK_RII_STOCK_CONVERT_STATUS", "[Status] IN (0,1,2)");
             });
             builder.Property(x => x.ConvertNo).HasMaxLength(50).IsRequired();
             builder.Property(x => x.ConvertDate).HasPrecision(3).IsRequired();
@@ -24,7 +24,7 @@ namespace aqua_api.Modules.StockConverts.Infrastructure.Persistence.Configuratio
             builder.HasIndex(x => x.ConvertNo)
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_StockConvert_ConvertNo_Active");
+                .HasDatabaseName("UX_RII_STOCK_CONVERT_CONVERT_NO_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

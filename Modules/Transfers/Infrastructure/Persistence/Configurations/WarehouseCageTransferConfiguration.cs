@@ -7,7 +7,7 @@ namespace aqua_api.Modules.Transfers.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<WarehouseCageTransfer> builder)
         {
-            builder.ToTable("RII_WarehouseCageTransfer");
+            builder.ToTable("RII_WAREHOUSE_CAGE_TRANSFER");
             builder.Property(x => x.TransferNo).HasMaxLength(40).IsRequired();
             builder.Property(x => x.TransferDate).HasPrecision(3);
             builder.Property(x => x.Status).HasConversion<byte>();
@@ -24,7 +24,7 @@ namespace aqua_api.Modules.Transfers.Infrastructure.Persistence.Configurations
                 .OnDelete(DeleteBehavior.NoAction);
 
             builder.HasIndex(x => x.TransferNo)
-                .HasDatabaseName("IX_RII_WarehouseCageTransfer_TransferNo");
+                .HasDatabaseName("IX_RII_WAREHOUSE_CAGE_TRANSFER_TRANSFER_NO");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

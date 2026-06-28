@@ -7,7 +7,7 @@ namespace aqua_api.Modules.ProjectMerges.Infrastructure.Persistence.Configuratio
     {
         protected override void ConfigureEntity(EntityTypeBuilder<ProjectMerge> builder)
         {
-            builder.ToTable("RII_ProjectMerge");
+            builder.ToTable("RII_PROJECT_MERGE");
             builder.Property(x => x.TargetProjectCode).HasMaxLength(50).IsRequired();
             builder.Property(x => x.TargetProjectName).HasMaxLength(200).IsRequired();
             builder.Property(x => x.MergeDate).HasColumnType("date").IsRequired();

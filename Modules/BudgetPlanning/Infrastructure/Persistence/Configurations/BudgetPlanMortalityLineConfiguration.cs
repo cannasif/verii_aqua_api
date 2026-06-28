@@ -8,10 +8,10 @@ public class BudgetPlanMortalityLineConfiguration : BaseEntityConfiguration<Budg
 {
     protected override void ConfigureEntity(EntityTypeBuilder<BudgetPlanMortalityLine> builder)
     {
-        builder.ToTable("RII_BUDGET_PlanMortalityLine", table =>
+        builder.ToTable("RII_BUDGET_PLAN_MORTALITY_LINE", table =>
         {
-            table.HasCheckConstraint("CK_RII_BUDGET_PlanMortalityLine_Month", "[Month] BETWEEN 1 AND 12");
-            table.HasCheckConstraint("CK_RII_BUDGET_PlanMortalityLine_NonNegative", "[MortalityRatePercent] >= 0 AND [MortalityCount] >= 0 AND [MortalityKg] >= 0");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_MORTALITY_LINE_MONTH", "[Month] BETWEEN 1 AND 12");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_MORTALITY_LINE_NON_NEGATIVE", "[MortalityRatePercent] >= 0 AND [MortalityCount] >= 0 AND [MortalityKg] >= 0");
         });
 
         builder.HasOne(x => x.BudgetPlan)

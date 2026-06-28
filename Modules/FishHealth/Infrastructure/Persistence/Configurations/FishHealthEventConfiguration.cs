@@ -7,7 +7,7 @@ namespace aqua_api.Modules.FishHealth.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<FishHealthEvent> builder)
         {
-            builder.ToTable("RII_FishHealthEvent");
+            builder.ToTable("RII_FISH_HEALTH_EVENT");
             builder.Property(x => x.EventDate).HasPrecision(3).IsRequired();
             builder.Property(x => x.EventType).HasMaxLength(80).IsRequired();
             builder.Property(x => x.Severity).HasMaxLength(40).IsRequired();

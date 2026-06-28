@@ -437,7 +437,7 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
         var mortalityMovements = await verifyDb.BatchMovements
             .Where(x =>
                 !x.IsDeleted &&
-                x.ReferenceTable == "RII_Mortality" &&
+                x.ReferenceTable == "RII_MORTALITY" &&
                 x.ReferenceId == mortalityHeader.Id &&
                 x.MovementType == BatchMovementType.Mortality)
             .OrderBy(x => x.ProjectCageId)

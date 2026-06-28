@@ -9,11 +9,11 @@ public class BudgetPlanConfiguration : BaseEntityConfiguration<BudgetPlan>
 {
     protected override void ConfigureEntity(EntityTypeBuilder<BudgetPlan> builder)
     {
-        builder.ToTable("RII_BUDGET_Plan", table =>
+        builder.ToTable("RII_BUDGET_PLAN", table =>
         {
-            table.HasCheckConstraint("CK_RII_BUDGET_Plan_Status", "[Status] IN (0,1,2,3,4,5,6,7)");
-            table.HasCheckConstraint("CK_RII_BUDGET_Plan_StartMonth", "[StartMonth] BETWEEN 1 AND 12");
-            table.HasCheckConstraint("CK_RII_BUDGET_Plan_EndMonth", "[EndMonth] BETWEEN 1 AND 12");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_STATUS", "[Status] IN (0,1,2,3,4,5,6,7)");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_START_MONTH", "[StartMonth] BETWEEN 1 AND 12");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_END_MONTH", "[EndMonth] BETWEEN 1 AND 12");
         });
 
         builder.Property(x => x.BudgetNo).HasMaxLength(50).IsRequired();
@@ -25,12 +25,12 @@ public class BudgetPlanConfiguration : BaseEntityConfiguration<BudgetPlan>
         builder.HasIndex(x => x.BudgetNo)
             .IsUnique()
             .HasFilter("[IsDeleted] = 0")
-            .HasDatabaseName("UX_RII_BUDGET_Plan_BudgetNo_Active");
+            .HasDatabaseName("UX_RII_BUDGET_PLAN_BUDGET_NO_ACTIVE");
 
         builder.HasIndex(x => x.BudgetCode)
             .IsUnique()
             .HasFilter("[IsDeleted] = 0")
-            .HasDatabaseName("UX_RII_BUDGET_Plan_BudgetCode_Active");
+            .HasDatabaseName("UX_RII_BUDGET_PLAN_BUDGET_CODE_ACTIVE");
 
         builder.HasQueryFilter(x => !x.IsDeleted);
     }

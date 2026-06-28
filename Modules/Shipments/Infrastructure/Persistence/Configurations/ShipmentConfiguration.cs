@@ -7,9 +7,9 @@ namespace aqua_api.Modules.Shipments.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<Shipment> builder)
         {
-            builder.ToTable("RII_Shipment", table =>
+            builder.ToTable("RII_SHIPMENT", table =>
             {
-                table.HasCheckConstraint("CK_RII_Shipment_Status", "[Status] IN (0,1,2)");
+                table.HasCheckConstraint("CK_RII_SHIPMENT_STATUS", "[Status] IN (0,1,2)");
             });
             builder.Property(x => x.ShipmentNo).HasMaxLength(50).IsRequired();
             builder.Property(x => x.ShipmentDate).HasPrecision(3).IsRequired();
@@ -26,10 +26,10 @@ namespace aqua_api.Modules.Shipments.Infrastructure.Persistence.Configurations
             builder.HasIndex(x => x.ShipmentNo)
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_Shipment_ShipmentNo_Active");
+                .HasDatabaseName("UX_RII_SHIPMENT_SHIPMENT_NO_ACTIVE");
 
             builder.HasIndex(x => x.TargetWarehouseId)
-                .HasDatabaseName("IX_RII_Shipment_TargetWarehouseId");
+                .HasDatabaseName("IX_RII_SHIPMENT_TARGET_WAREHOUSE_ID");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

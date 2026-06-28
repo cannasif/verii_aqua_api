@@ -7,7 +7,7 @@ namespace aqua_api.Modules.FishHealth.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<FishLabResult> builder)
         {
-            builder.ToTable("RII_FishLabResult");
+            builder.ToTable("RII_FISH_LAB_RESULT");
             builder.Property(x => x.ResultDate).HasPrecision(3).IsRequired();
             builder.Property(x => x.ResultType).HasMaxLength(80).IsRequired();
             builder.Property(x => x.PathogenName).HasMaxLength(120);

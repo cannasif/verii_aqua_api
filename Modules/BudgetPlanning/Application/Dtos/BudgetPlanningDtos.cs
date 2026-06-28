@@ -175,6 +175,34 @@ public class UpsertBudgetPlanSalesTonDto
     public string? Description { get; set; }
 }
 
+public class GenerateBudgetPlanExchangeRatesDto
+{
+    public List<string> CurrencyCodes { get; set; } = new();
+    public string RateType { get; set; } = "Budget";
+    public decimal DefaultExchangeRate { get; set; }
+    public string SourceType { get; set; } = "Manual";
+    public string? SourceReference { get; set; }
+}
+
+public class UpsertBudgetPlanExchangeRateDto
+{
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public string CurrencyCode { get; set; } = string.Empty;
+    public string RateType { get; set; } = "Budget";
+    public decimal ExchangeRate { get; set; }
+    public string SourceType { get; set; } = "Manual";
+    public string? SourceReference { get; set; }
+    public bool IsManualOverride { get; set; } = true;
+    public string? Description { get; set; }
+}
+
+public class BudgetPlanExchangeRateDto : UpsertBudgetPlanExchangeRateDto
+{
+    public long Id { get; set; }
+    public long BudgetPlanId { get; set; }
+}
+
 public class BudgetPlanFeedingLineDto
 {
     public long Id { get; set; }

@@ -8,10 +8,10 @@ public class BudgetPlanSalesLineConfiguration : BaseEntityConfiguration<BudgetPl
 {
     protected override void ConfigureEntity(EntityTypeBuilder<BudgetPlanSalesLine> builder)
     {
-        builder.ToTable("RII_BUDGET_PlanSalesLine", table =>
+        builder.ToTable("RII_BUDGET_PLAN_SALES_LINE", table =>
         {
-            table.HasCheckConstraint("CK_RII_BUDGET_PlanSalesLine_Month", "[Month] BETWEEN 1 AND 12");
-            table.HasCheckConstraint("CK_RII_BUDGET_PlanSalesLine_NonNegative", "[SalesKg] >= 0");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_SALES_LINE_MONTH", "[Month] BETWEEN 1 AND 12");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_SALES_LINE_NON_NEGATIVE", "[SalesKg] >= 0");
         });
 
         builder.Property(x => x.Description).HasMaxLength(500);
@@ -28,7 +28,7 @@ public class BudgetPlanSalesLineConfiguration : BaseEntityConfiguration<BudgetPl
 
         builder.HasIndex(x => new { x.BudgetPlanId, x.BudgetPlanFishBatchId, x.Year, x.Month })
             .HasFilter("[IsDeleted] = 0")
-            .HasDatabaseName("IX_RII_BUDGET_PlanSalesLine_Period_Active");
+            .HasDatabaseName("IX_RII_BUDGET_PLAN_SALES_LINE_PERIOD_ACTIVE");
 
         builder.HasQueryFilter(x => !x.IsDeleted);
     }

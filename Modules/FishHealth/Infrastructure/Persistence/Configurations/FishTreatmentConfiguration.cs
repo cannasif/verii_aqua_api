@@ -7,7 +7,7 @@ namespace aqua_api.Modules.FishHealth.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<FishTreatment> builder)
         {
-            builder.ToTable("RII_FishTreatment");
+            builder.ToTable("RII_FISH_TREATMENT");
             builder.Property(x => x.TreatmentDate).HasPrecision(3).IsRequired();
             builder.Property(x => x.TreatmentType).HasMaxLength(80).IsRequired();
             builder.Property(x => x.MedicationName).HasMaxLength(120).IsRequired();

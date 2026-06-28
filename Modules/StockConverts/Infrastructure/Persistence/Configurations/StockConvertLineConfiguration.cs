@@ -7,9 +7,9 @@ namespace aqua_api.Modules.StockConverts.Infrastructure.Persistence.Configuratio
     {
         protected override void ConfigureEntity(EntityTypeBuilder<StockConvertLine> builder)
         {
-            builder.ToTable("RII_StockConvertLine", table =>
+            builder.ToTable("RII_STOCK_CONVERT_LINE", table =>
             {
-                table.HasCheckConstraint("CK_RII_StockConvertLine_Positive", "[FishCount] > 0 AND [AverageGram] > 0 AND [NewAverageGram] >= 0 AND [BiomassGram] > 0");
+                table.HasCheckConstraint("CK_RII_STOCK_CONVERT_LINE_POSITIVE", "[FishCount] > 0 AND [AverageGram] > 0 AND [NewAverageGram] >= 0 AND [BiomassGram] > 0");
             });
             builder.Property(x => x.AverageGram).HasPrecision(18, 3);
             builder.Property(x => x.NewAverageGram).HasPrecision(18, 3);

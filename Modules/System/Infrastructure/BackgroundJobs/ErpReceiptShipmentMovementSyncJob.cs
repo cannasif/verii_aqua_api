@@ -18,8 +18,8 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
     public class ErpReceiptShipmentMovementSyncJob : IErpReceiptShipmentMovementSyncJob
     {
         private const string RecurringJobId = "erp-receipt-shipment-movement-sync-job";
-        private const string GoodsReceiptRefTable = "RII_GoodsReceiptLine";
-        private const string ShipmentRefTable = "RII_ShipmentLine";
+        private const string GoodsReceiptRefTable = "RII_GOODS_RECEIPT_LINE";
+        private const string ShipmentRefTable = "RII_SHIPMENT_LINE";
 
         private readonly INetsisReadService _netsisReadService;
         private readonly AquaDbContext _db;

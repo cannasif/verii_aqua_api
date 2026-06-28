@@ -7,11 +7,11 @@ public class NetInventoryMovementConfiguration : BaseEntityConfiguration<NetInve
 {
     protected override void ConfigureEntity(EntityTypeBuilder<NetInventoryMovement> builder)
     {
-        builder.ToTable("RII_NetInventoryMovement", table =>
+        builder.ToTable("RII_NET_INVENTORY_MOVEMENT", table =>
         {
-            table.HasCheckConstraint("CK_RII_NetInventoryMovement_NetType", "[NetType] IN (1,2)");
-            table.HasCheckConstraint("CK_RII_NetInventoryMovement_MovementType", "[MovementType] IN (1,2,3,4,5)");
-            table.HasCheckConstraint("CK_RII_NetInventoryMovement_Quantity", "[Quantity] > 0");
+            table.HasCheckConstraint("CK_RII_NET_INVENTORY_MOVEMENT_NET_TYPE", "[NetType] IN (1,2)");
+            table.HasCheckConstraint("CK_RII_NET_INVENTORY_MOVEMENT_MOVEMENT_TYPE", "[MovementType] IN (1,2,3,4,5)");
+            table.HasCheckConstraint("CK_RII_NET_INVENTORY_MOVEMENT_QUANTITY", "[Quantity] > 0");
         });
 
         builder.Property(x => x.MovementNo).IsRequired().HasMaxLength(50);
@@ -23,13 +23,13 @@ public class NetInventoryMovementConfiguration : BaseEntityConfiguration<NetInve
         builder.HasIndex(x => x.MovementNo)
             .IsUnique()
             .HasFilter("[IsDeleted] = 0")
-            .HasDatabaseName("UX_RII_NetInventoryMovement_MovementNo_Active");
+            .HasDatabaseName("UX_RII_NET_INVENTORY_MOVEMENT_MOVEMENT_NO_ACTIVE");
 
         builder.HasIndex(x => new { x.ProjectId, x.MovementDate })
-            .HasDatabaseName("IX_RII_NetInventoryMovement_Project_Date");
+            .HasDatabaseName("IX_RII_NET_INVENTORY_MOVEMENT_PROJECT_DATE");
 
         builder.HasIndex(x => new { x.TargetProjectCageId, x.MovementDate })
-            .HasDatabaseName("IX_RII_NetInventoryMovement_TargetCage_Date");
+            .HasDatabaseName("IX_RII_NET_INVENTORY_MOVEMENT_TARGET_CAGE_DATE");
 
         builder.HasOne(x => x.Stock)
             .WithMany()

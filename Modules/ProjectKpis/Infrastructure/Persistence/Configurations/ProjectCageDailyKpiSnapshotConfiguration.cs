@@ -7,7 +7,7 @@ namespace aqua_api.Modules.ProjectKpis.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<ProjectCageDailyKpiSnapshot> builder)
         {
-            builder.ToTable("RII_ProjectCageDailyKpiSnapshot");
+            builder.ToTable("RII_PROJECT_CAGE_DAILY_KPI_SNAPSHOT");
             builder.HasQueryFilter(x => !x.IsDeleted);
 
             builder.Property(x => x.SnapshotDate).IsRequired();

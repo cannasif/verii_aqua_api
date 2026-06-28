@@ -7,9 +7,9 @@ namespace aqua_api.Modules.Mortalities.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<MortalityLine> builder)
         {
-            builder.ToTable("RII_MortalityLine", table =>
+            builder.ToTable("RII_MORTALITY_LINE", table =>
             {
-                table.HasCheckConstraint("CK_RII_MortalityLine_DeadCount", "[DeadCount] > 0");
+                table.HasCheckConstraint("CK_RII_MORTALITY_LINE_DEAD_COUNT", "[DeadCount] > 0");
             });
 
             builder.HasOne(x => x.Mortality)

@@ -7,9 +7,9 @@ namespace aqua_api.Modules.Feedings.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<FeedingDistribution> builder)
         {
-            builder.ToTable("RII_FeedingDistribution", table =>
+            builder.ToTable("RII_FEEDING_DISTRIBUTION", table =>
             {
-                table.HasCheckConstraint("CK_RII_FeedingDistribution_FeedGram", "[FeedGram] > 0");
+                table.HasCheckConstraint("CK_RII_FEEDING_DISTRIBUTION_FEED_GRAM", "[FeedGram] > 0");
             });
             builder.Property(x => x.FeedGram).HasPrecision(18, 3);
 

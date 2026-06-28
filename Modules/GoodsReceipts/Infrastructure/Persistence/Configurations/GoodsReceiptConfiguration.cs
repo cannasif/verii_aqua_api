@@ -7,9 +7,9 @@ namespace aqua_api.Modules.GoodsReceipts.Infrastructure.Persistence.Configuratio
     {
         protected override void ConfigureEntity(EntityTypeBuilder<GoodsReceipt> builder)
         {
-            builder.ToTable("RII_GoodsReceipt", table =>
+            builder.ToTable("RII_GOODS_RECEIPT", table =>
             {
-                table.HasCheckConstraint("CK_RII_GoodsReceipt_Status", "[Status] IN (0,1,2)");
+                table.HasCheckConstraint("CK_RII_GOODS_RECEIPT_STATUS", "[Status] IN (0,1,2)");
             });
             builder.Property(x => x.ReceiptNo).HasMaxLength(50).IsRequired();
             builder.Property(x => x.ReceiptDate).HasPrecision(3).IsRequired();
@@ -25,13 +25,13 @@ namespace aqua_api.Modules.GoodsReceipts.Infrastructure.Persistence.Configuratio
             builder.HasIndex(x => x.ReceiptNo)
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_GoodsReceipt_ReceiptNo_Active");
+                .HasDatabaseName("UX_RII_GOODS_RECEIPT_RECEIPT_NO_ACTIVE");
 
             builder.HasIndex(x => x.ProjectId)
-                .HasDatabaseName("UX_RII_GoodsReceipt_Project_Active");
+                .HasDatabaseName("UX_RII_GOODS_RECEIPT_PROJECT_ACTIVE");
 
             builder.HasIndex(x => x.WarehouseId)
-                .HasDatabaseName("IX_RII_GoodsReceipt_WarehouseId");
+                .HasDatabaseName("IX_RII_GOODS_RECEIPT_WAREHOUSE_ID");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

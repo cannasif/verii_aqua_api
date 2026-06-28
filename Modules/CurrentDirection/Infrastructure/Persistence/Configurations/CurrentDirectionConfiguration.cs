@@ -17,7 +17,7 @@ namespace aqua_api.Modules.CurrentDirection.Infrastructure.Persistence.Configura
             builder.HasIndex(x => x.Name)
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_CURRENT_DIRECTION_Name_Active");
+                .HasDatabaseName("UX_RII_CURRENT_DIRECTION_NAME_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

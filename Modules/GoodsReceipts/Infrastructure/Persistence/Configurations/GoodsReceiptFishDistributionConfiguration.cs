@@ -7,9 +7,9 @@ namespace aqua_api.Modules.GoodsReceipts.Infrastructure.Persistence.Configuratio
     {
         protected override void ConfigureEntity(EntityTypeBuilder<GoodsReceiptFishDistribution> builder)
         {
-            builder.ToTable("RII_GoodsReceiptFishDistribution", table =>
+            builder.ToTable("RII_GOODS_RECEIPT_FISH_DISTRIBUTION", table =>
             {
-                table.HasCheckConstraint("CK_RII_GoodsReceiptFishDistribution_Count", "[FishCount] > 0");
+                table.HasCheckConstraint("CK_RII_GOODS_RECEIPT_FISH_DISTRIBUTION_COUNT", "[FishCount] > 0");
             });
 
             builder.HasOne(x => x.GoodsReceiptLine)
@@ -30,7 +30,7 @@ namespace aqua_api.Modules.GoodsReceipts.Infrastructure.Persistence.Configuratio
             builder.HasIndex(x => new { x.GoodsReceiptLineId, x.ProjectCageId })
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_GoodsReceiptFishDistribution_LineCage_Active");
+                .HasDatabaseName("UX_RII_GOODS_RECEIPT_FISH_DISTRIBUTION_LINE_CAGE_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

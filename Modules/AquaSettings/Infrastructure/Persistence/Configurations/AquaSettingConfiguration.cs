@@ -7,10 +7,10 @@ namespace aqua_api.Modules.AquaSettings.Infrastructure.Persistence.Configuration
     {
         protected override void ConfigureEntity(EntityTypeBuilder<AquaSetting> builder)
         {
-            builder.ToTable("RII_AquaSetting", table =>
+            builder.ToTable("RII_AQUA_SETTING", table =>
             {
                 table.HasCheckConstraint(
-                    "CK_RII_AquaSetting_PartialTransferOccupiedCageMode",
+                    "CK_RII_AQUA_SETTING_PARTIAL_TRANSFER_OCCUPIED_CAGE_MODE",
                     "[PartialTransferOccupiedCageMode] IN (0,1,2)");
             });
 

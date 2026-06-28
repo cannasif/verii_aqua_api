@@ -7,9 +7,9 @@ namespace aqua_api.Modules.Feedings.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<FeedingLine> builder)
         {
-            builder.ToTable("RII_FeedingLine", table =>
+            builder.ToTable("RII_FEEDING_LINE", table =>
             {
-                table.HasCheckConstraint("CK_RII_FeedingLine_Positive", "[QtyUnit] > 0 AND [GramPerUnit] > 0 AND [TotalGram] > 0");
+                table.HasCheckConstraint("CK_RII_FEEDING_LINE_POSITIVE", "[QtyUnit] > 0 AND [GramPerUnit] > 0 AND [TotalGram] > 0");
             });
             builder.Property(x => x.QtyUnit).HasPrecision(18, 3);
             builder.Property(x => x.GramPerUnit).HasPrecision(18, 3);

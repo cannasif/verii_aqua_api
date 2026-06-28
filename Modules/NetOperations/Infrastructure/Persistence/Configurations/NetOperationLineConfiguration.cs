@@ -7,7 +7,7 @@ namespace aqua_api.Modules.NetOperations.Infrastructure.Persistence.Configuratio
     {
         protected override void ConfigureEntity(EntityTypeBuilder<NetOperationLine> builder)
         {
-            builder.ToTable("RII_NetOperationLine");
+            builder.ToTable("RII_NET_OPERATION_LINE");
             builder.Property(x => x.Note).HasMaxLength(500);
 
             builder.HasOne(x => x.NetOperation)

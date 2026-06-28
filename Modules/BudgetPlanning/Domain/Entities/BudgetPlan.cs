@@ -22,4 +22,5 @@ public class BudgetPlan : BaseEntity
     public ICollection<BudgetPlanSalesLine> SalesLines { get; set; } = new List<BudgetPlanSalesLine>();
     public ICollection<BudgetPlanFeedingLine> FeedingLines { get; set; } = new List<BudgetPlanFeedingLine>();
     public ICollection<BudgetPlanMortalityLine> MortalityLines { get; set; } = new List<BudgetPlanMortalityLine>();
+    public ICollection<BudgetPlanExchangeRate> ExchangeRates { get; set; } = new List<BudgetPlanExchangeRate>();
 }

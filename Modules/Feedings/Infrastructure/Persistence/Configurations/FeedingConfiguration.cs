@@ -7,10 +7,10 @@ namespace aqua_api.Modules.Feedings.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<Feeding> builder)
         {
-            builder.ToTable("RII_Feeding", table =>
+            builder.ToTable("RII_FEEDING", table =>
             {
-                table.HasCheckConstraint("CK_RII_Feeding_Slot", "[FeedingSlot] IN (0,1)");
-                table.HasCheckConstraint("CK_RII_Feeding_Status", "[Status] IN (0,1,2)");
+                table.HasCheckConstraint("CK_RII_FEEDING_SLOT", "[FeedingSlot] IN (0,1)");
+                table.HasCheckConstraint("CK_RII_FEEDING_STATUS", "[Status] IN (0,1,2)");
             });
             builder.Property(x => x.FeedingNo).HasMaxLength(50).IsRequired();
             builder.Property(x => x.FeedingDate).HasPrecision(3).IsRequired();
@@ -32,12 +32,12 @@ namespace aqua_api.Modules.Feedings.Infrastructure.Persistence.Configurations
             builder.HasIndex(x => x.FeedingNo)
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_Feeding_FeedingNo_Active");
+                .HasDatabaseName("UX_RII_FEEDING_FEEDING_NO_ACTIVE");
 
             builder.HasIndex("ProjectId", "FeedingDateOnly", "FeedingSlot")
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_Feeding_Project_Date_Slot_Active");
+                .HasDatabaseName("UX_RII_FEEDING_PROJECT_DATE_SLOT_ACTIVE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

@@ -8,9 +8,9 @@ public class BudgetPlanProjectConfiguration : BaseEntityConfiguration<BudgetPlan
 {
     protected override void ConfigureEntity(EntityTypeBuilder<BudgetPlanProject> builder)
     {
-        builder.ToTable("RII_BUDGET_PlanProject", table =>
+        builder.ToTable("RII_BUDGET_PLAN_PROJECT", table =>
         {
-            table.HasCheckConstraint("CK_RII_BUDGET_PlanProject_SourceType", "[SourceType] IN (0,1)");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_PROJECT_SOURCE_TYPE", "[SourceType] IN (0,1)");
         });
 
         builder.Property(x => x.SourceType).HasConversion<byte>().IsRequired();
@@ -31,7 +31,7 @@ public class BudgetPlanProjectConfiguration : BaseEntityConfiguration<BudgetPlan
 
         builder.HasIndex(x => new { x.BudgetPlanId, x.ProjectCode })
             .HasFilter("[IsDeleted] = 0")
-            .HasDatabaseName("IX_RII_BUDGET_PlanProject_ProjectCode_Active");
+            .HasDatabaseName("IX_RII_BUDGET_PLAN_PROJECT_PROJECT_CODE_ACTIVE");
 
         builder.HasQueryFilter(x => !x.IsDeleted);
     }

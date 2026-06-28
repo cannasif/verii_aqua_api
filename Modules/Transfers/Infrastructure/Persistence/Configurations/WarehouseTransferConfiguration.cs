@@ -7,7 +7,7 @@ namespace aqua_api.Modules.Transfers.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<WarehouseTransfer> builder)
         {
-            builder.ToTable("RII_WarehouseTransfer");
+            builder.ToTable("RII_WAREHOUSE_TRANSFER");
 
             builder.Property(x => x.TransferNo).IsRequired().HasMaxLength(50);
             builder.Property(x => x.Note).HasMaxLength(500);

@@ -220,7 +220,7 @@ namespace aqua_api.Modules.NetOperations.Application.Services
                         SignedBiomassGram = 0,
                         FeedGram = null,
                         ActorUserId = userId,
-                        ReferenceTable = "RII_NetOperationLine",
+                        ReferenceTable = "RII_NET_OPERATION_LINE",
                         ReferenceId = line.Id,
                         Note = $"NetOperation | netOperationId={operation.Id} | type={operation.OperationTypeId}",
                         CreatedBy = userId,

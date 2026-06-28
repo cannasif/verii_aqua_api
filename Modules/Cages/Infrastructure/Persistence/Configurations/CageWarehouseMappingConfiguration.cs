@@ -7,7 +7,7 @@ namespace aqua_api.Modules.Cages.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<CageWarehouseMapping> builder)
         {
-            builder.ToTable("RII_CageWarehouseMapping");
+            builder.ToTable("RII_CAGE_WAREHOUSE_MAPPING");
 
             builder.Property(x => x.IsActive)
                 .IsRequired()
@@ -29,10 +29,10 @@ namespace aqua_api.Modules.Cages.Infrastructure.Persistence.Configurations
             builder.HasIndex(x => x.CageId)
                 .HasFilter("[IsDeleted] = 0 AND [IsActive] = 1")
                 .IsUnique()
-                .HasDatabaseName("UX_RII_CageWarehouseMapping_Cage_Active");
+                .HasDatabaseName("UX_RII_CAGE_WAREHOUSE_MAPPING_CAGE_ACTIVE");
 
             builder.HasIndex(x => x.WarehouseId)
-                .HasDatabaseName("IX_RII_CageWarehouseMapping_WarehouseId");
+                .HasDatabaseName("IX_RII_CAGE_WAREHOUSE_MAPPING_WAREHOUSE_ID");
         }
     }
 }

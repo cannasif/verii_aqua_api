@@ -28,10 +28,10 @@ namespace aqua_api.Modules.SeaWaterTemperature.Infrastructure.Persistence.Config
             builder.HasIndex(x => new { x.ProjectId, x.ProjectCageId, x.RecordDate })
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_SEA_WATER_TEMPERATURE_ProjectCageDate_Active");
+                .HasDatabaseName("UX_RII_SEA_WATER_TEMPERATURE_PROJECT_CAGE_DATE_ACTIVE");
 
             builder.HasIndex(x => x.RecordDate)
-                .HasDatabaseName("IX_RII_SEA_WATER_TEMPERATURE_RecordDate");
+                .HasDatabaseName("IX_RII_SEA_WATER_TEMPERATURE_RECORD_DATE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

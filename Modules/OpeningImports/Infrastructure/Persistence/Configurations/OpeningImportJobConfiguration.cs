@@ -7,7 +7,7 @@ namespace aqua_api.Modules.OpeningImports.Infrastructure.Persistence.Configurati
     {
         protected override void ConfigureEntity(EntityTypeBuilder<OpeningImportJob> builder)
         {
-            builder.ToTable("RII_OpeningImportJob");
+            builder.ToTable("RII_OPENING_IMPORT_JOB");
 
             builder.Property(x => x.FileName).HasMaxLength(260).IsRequired();
             builder.Property(x => x.SourceSystem).HasMaxLength(100);

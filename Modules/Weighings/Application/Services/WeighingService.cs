@@ -207,7 +207,7 @@ namespace aqua_api.Modules.Weighings.Application.Services
                         BatchMovementType.Weighing,
                         weighing.WeighingDate,
                         "Weighing average update",
-                        "RII_Weighing",
+                        "RII_WEIGHING",
                         weighing.Id,
                         line.ProjectCageId,
                         line.ProjectCageId,

@@ -31,10 +31,10 @@ namespace aqua_api.Modules.WindDirection.Infrastructure.Persistence.Configuratio
             builder.HasIndex(x => new { x.ProjectId, x.ProjectCageId, x.RecordDate })
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_WIND_DIRECTION_MATCHES_ProjectCageDate_Active");
+                .HasDatabaseName("UX_RII_WIND_DIRECTION_MATCHES_PROJECT_CAGE_DATE_ACTIVE");
 
             builder.HasIndex(x => x.RecordDate)
-                .HasDatabaseName("IX_RII_WIND_DIRECTION_MATCHES_RecordDate");
+                .HasDatabaseName("IX_RII_WIND_DIRECTION_MATCHES_RECORD_DATE");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

@@ -106,6 +106,27 @@ public class BudgetPlanningController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    [HttpGet("{budgetPlanId:long}/exchange-rates")]
+    public async Task<ActionResult<ApiResponse<List<BudgetPlanExchangeRateDto>>>> GetExchangeRates(long budgetPlanId)
+    {
+        var result = await _service.GetExchangeRatesAsync(budgetPlanId);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost("{budgetPlanId:long}/exchange-rates/generate")]
+    public async Task<ActionResult<ApiResponse<List<BudgetPlanExchangeRateDto>>>> GenerateExchangeRates(long budgetPlanId, [FromBody] GenerateBudgetPlanExchangeRatesDto dto)
+    {
+        var result = await _service.GenerateExchangeRatesAsync(budgetPlanId, dto);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost("{budgetPlanId:long}/exchange-rates")]
+    public async Task<ActionResult<ApiResponse<BudgetPlanExchangeRateDto>>> UpsertExchangeRate(long budgetPlanId, [FromBody] UpsertBudgetPlanExchangeRateDto dto)
+    {
+        var result = await _service.UpsertExchangeRateAsync(budgetPlanId, dto);
+        return StatusCode(result.StatusCode, result);
+    }
+
     [HttpPost("{budgetPlanId:long}/calculate")]
     public async Task<ActionResult<ApiResponse<List<BudgetPlanMonthlyProjectionDto>>>> Calculate(long budgetPlanId)
     {
