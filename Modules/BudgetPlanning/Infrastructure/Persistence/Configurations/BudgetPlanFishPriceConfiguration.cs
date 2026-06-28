@@ -22,12 +22,17 @@ public class BudgetPlanFishPriceConfiguration : BaseEntityConfiguration<BudgetPl
             .HasForeignKey(x => x.BudgetPlanId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasOne(x => x.FishStock)
+            .WithMany()
+            .HasForeignKey(x => x.FishStockId)
+            .OnDelete(DeleteBehavior.NoAction);
+
         builder.HasOne(x => x.CalibrationDefinition)
             .WithMany()
             .HasForeignKey(x => x.CalibrationDefinitionId)
             .OnDelete(DeleteBehavior.NoAction);
 
-        builder.HasIndex(x => new { x.BudgetPlanId, x.CalibrationDefinitionId, x.Year, x.Month })
+        builder.HasIndex(x => new { x.BudgetPlanId, x.FishStockId, x.CalibrationDefinitionId, x.Year, x.Month })
             .IsUnique()
             .HasFilter("[IsDeleted] = 0")
             .HasDatabaseName("UX_RII_BUDGET_PLAN_FISH_PRICE_PERIOD_ACTIVE");

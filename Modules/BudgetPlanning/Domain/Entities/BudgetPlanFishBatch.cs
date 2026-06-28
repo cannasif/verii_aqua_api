@@ -14,6 +14,8 @@ public class BudgetPlanFishBatch : BaseEntity
     public int InitialLiveCount { get; set; }
     public decimal InitialAverageGram { get; set; }
     public decimal InitialBiomassKg { get; set; }
+    public decimal? InitialUnitCost { get; set; }
+    public decimal? InitialSmmAmount { get; set; }
     public int GrowthStartYear { get; set; }
     public int GrowthStartMonth { get; set; }
     public string? Note { get; set; }

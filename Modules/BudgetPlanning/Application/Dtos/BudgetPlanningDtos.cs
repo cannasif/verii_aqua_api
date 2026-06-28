@@ -72,6 +72,8 @@ public class BudgetPlanFishBatchDto
     public int InitialLiveCount { get; set; }
     public decimal InitialAverageGram { get; set; }
     public decimal InitialBiomassKg { get; set; }
+    public decimal? InitialUnitCost { get; set; }
+    public decimal? InitialSmmAmount { get; set; }
     public int GrowthStartYear { get; set; }
     public int GrowthStartMonth { get; set; }
     public string? Note { get; set; }
@@ -112,6 +114,8 @@ public class AddVirtualFishBatchDto
     public string BatchCode { get; set; } = string.Empty;
     public int InitialLiveCount { get; set; }
     public decimal InitialAverageGram { get; set; }
+    public decimal? InitialUnitCost { get; set; }
+    public decimal? InitialSmmAmount { get; set; }
     public int GrowthStartYear { get; set; }
     public int GrowthStartMonth { get; set; }
     public string? Note { get; set; }
@@ -222,6 +226,7 @@ public class BudgetPlanExchangeRateDto : UpsertBudgetPlanExchangeRateDto
 
 public class UpsertBudgetPlanFishPriceDto
 {
+    public long? FishStockId { get; set; }
     public long CalibrationDefinitionId { get; set; }
     public int Year { get; set; }
     public int Month { get; set; }
@@ -232,6 +237,7 @@ public class UpsertBudgetPlanFishPriceDto
 public class GenerateBudgetPlanFishPricesDto
 {
     public decimal DefaultUnitPriceEuro { get; set; }
+    public List<long> FishStockIds { get; set; } = new();
     public List<long> CalibrationDefinitionIds { get; set; } = new();
 }
 
@@ -239,6 +245,8 @@ public class BudgetPlanFishPriceDto : UpsertBudgetPlanFishPriceDto
 {
     public long Id { get; set; }
     public long BudgetPlanId { get; set; }
+    public string? FishStockCode { get; set; }
+    public string? FishStockName { get; set; }
     public string CalibrationCode { get; set; } = string.Empty;
     public string CalibrationInfo { get; set; } = string.Empty;
 }

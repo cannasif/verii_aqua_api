@@ -175,6 +175,8 @@ public class BudgetPlanningService : IBudgetPlanningService
                     InitialLiveCount = batch.InitialLiveCount,
                     InitialAverageGram = batch.InitialAverageGram,
                     InitialBiomassKg = batch.InitialBiomassKg,
+                    InitialUnitCost = batch.InitialUnitCost,
+                    InitialSmmAmount = batch.InitialSmmAmount,
                     GrowthStartYear = batch.GrowthStartYear,
                     GrowthStartMonth = batch.GrowthStartMonth,
                     Note = batch.Note
@@ -220,6 +222,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                 await _unitOfWork.Repository<BudgetPlanFishPrice>().AddAsync(new BudgetPlanFishPrice
                 {
                     BudgetPlanId = target.Id,
+                    FishStockId = price.FishStockId,
                     CalibrationDefinitionId = price.CalibrationDefinitionId,
                     Year = price.Year,
                     Month = price.Month,
@@ -477,6 +480,8 @@ public class BudgetPlanningService : IBudgetPlanningService
             InitialLiveCount = dto.InitialLiveCount,
             InitialAverageGram = dto.InitialAverageGram,
             InitialBiomassKg = Round(dto.InitialLiveCount * dto.InitialAverageGram / 1000m),
+            InitialUnitCost = dto.InitialUnitCost,
+            InitialSmmAmount = dto.InitialSmmAmount,
             GrowthStartYear = dto.GrowthStartYear,
             GrowthStartMonth = dto.GrowthStartMonth,
             Note = NormalizeOptional(dto.Note)
@@ -617,7 +622,8 @@ public class BudgetPlanningService : IBudgetPlanningService
         await _unitOfWork.SaveChangesAsync();
         var saved = await SalesLineQuery()
             .FirstAsync(x => x.Id == entity.Id);
-        return ApiResponse<BudgetPlanSalesLineDto>.SuccessResult(MapSalesLine(saved), "Satis plani kaydedildi.");
+        var exchangeRate = await FindExchangeRateAsync(budgetPlanId, dto.Year, dto.Month, "EUR");
+        return ApiResponse<BudgetPlanSalesLineDto>.SuccessResult(MapSalesLine(saved, exchangeRate), "Satis plani kaydedildi.");
     }
 
     public async Task<ApiResponse<BudgetPlanSalesLineDto>> UpsertSalesTonAsync(long budgetPlanId, UpsertBudgetPlanSalesTonDto dto)
@@ -665,7 +671,9 @@ public class BudgetPlanningService : IBudgetPlanningService
             .ThenBy(x => x.BudgetPlanFishBatch.BatchCode)
             .ToListAsync();
 
-        return ApiResponse<List<BudgetPlanSalesLineDto>>.SuccessResult(rows.Select(MapSalesLine).ToList(), "Islem basarili.");
+        var exchangeRates = await LoadExchangeRateLookupAsync(budgetPlanId, "EUR");
+        return ApiResponse<List<BudgetPlanSalesLineDto>>.SuccessResult(rows.Select(row =>
+            MapSalesLine(row, exchangeRates.GetValueOrDefault(new BudgetPeriod(row.Year, row.Month)))).ToList(), "Islem basarili.");
     }
 
     public async Task<ApiResponse<List<BudgetSalesPlanningRowDto>>> GetSalesPlanningRowsAsync(long budgetPlanId)
@@ -926,31 +934,41 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<List<BudgetPlanFishPriceDto>>.ErrorResult("Kalibre tanimi bulunamadi.", "Kalibre tanimi bulunamadi.", StatusCodes.Status400BadRequest);
         }
 
+        var fishStockIds = dto.FishStockIds.Where(x => x > 0).Distinct().ToList();
+        var fishStockKeys = fishStockIds.Count == 0 ? new List<long?> { null } : fishStockIds.Select(x => (long?)x).ToList();
         var periods = BuildPeriods(plan.StartYear, plan.StartMonth, plan.EndYear, plan.EndMonth);
         var existingRows = await _unitOfWork.Db.BudgetPlanFishPrices
             .Where(x => x.BudgetPlanId == budgetPlanId && calibrationIds.Contains(x.CalibrationDefinitionId) && !x.IsDeleted)
             .ToListAsync();
 
-        foreach (var calibrationId in calibrationIds)
+        foreach (var fishStockId in fishStockKeys)
         {
-            foreach (var period in periods)
+            foreach (var calibrationId in calibrationIds)
             {
-                var entity = existingRows.FirstOrDefault(x => x.CalibrationDefinitionId == calibrationId && x.Year == period.Year && x.Month == period.Month);
-                if (entity == null)
+                foreach (var period in periods)
                 {
-                    entity = new BudgetPlanFishPrice
+                    var entity = existingRows.FirstOrDefault(x =>
+                        x.FishStockId == fishStockId &&
+                        x.CalibrationDefinitionId == calibrationId &&
+                        x.Year == period.Year &&
+                        x.Month == period.Month);
+                    if (entity == null)
                     {
-                        BudgetPlanId = budgetPlanId,
-                        CalibrationDefinitionId = calibrationId,
-                        Year = period.Year,
-                        Month = period.Month,
-                        UnitPriceEuro = dto.DefaultUnitPriceEuro
-                    };
-                    await _unitOfWork.Repository<BudgetPlanFishPrice>().AddAsync(entity);
-                }
-                else
-                {
-                    entity.UnitPriceEuro = dto.DefaultUnitPriceEuro;
+                        entity = new BudgetPlanFishPrice
+                        {
+                            BudgetPlanId = budgetPlanId,
+                            FishStockId = fishStockId,
+                            CalibrationDefinitionId = calibrationId,
+                            Year = period.Year,
+                            Month = period.Month,
+                            UnitPriceEuro = dto.DefaultUnitPriceEuro
+                        };
+                        await _unitOfWork.Repository<BudgetPlanFishPrice>().AddAsync(entity);
+                    }
+                    else
+                    {
+                        entity.UnitPriceEuro = dto.DefaultUnitPriceEuro;
+                    }
                 }
             }
         }
@@ -983,8 +1001,18 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<BudgetPlanFishPriceDto>.ErrorResult("Kalibre tanimi bulunamadi.", "Kalibre tanimi bulunamadi.", StatusCodes.Status404NotFound);
         }
 
+        if (dto.FishStockId.HasValue)
+        {
+            var fishStockExists = await _unitOfWork.Db.Stocks.AnyAsync(x => x.Id == dto.FishStockId.Value && !x.IsDeleted);
+            if (!fishStockExists)
+            {
+                return ApiResponse<BudgetPlanFishPriceDto>.ErrorResult("Balik stogu bulunamadi.", "Balik stogu bulunamadi.", StatusCodes.Status404NotFound);
+            }
+        }
+
         var entity = await _unitOfWork.Db.BudgetPlanFishPrices.FirstOrDefaultAsync(x =>
             x.BudgetPlanId == budgetPlanId &&
+            x.FishStockId == dto.FishStockId &&
             x.CalibrationDefinitionId == dto.CalibrationDefinitionId &&
             x.Year == dto.Year &&
             x.Month == dto.Month &&
@@ -996,6 +1024,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             await _unitOfWork.Repository<BudgetPlanFishPrice>().AddAsync(entity);
         }
 
+        entity.FishStockId = dto.FishStockId;
         entity.CalibrationDefinitionId = dto.CalibrationDefinitionId;
         entity.Year = dto.Year;
         entity.Month = dto.Month;
@@ -1481,6 +1510,7 @@ public class BudgetPlanningService : IBudgetPlanningService
     {
         return _unitOfWork.Db.BudgetPlanFishPrices
             .AsNoTracking()
+            .Include(x => x.FishStock)
             .Include(x => x.CalibrationDefinition)
             .Where(x => !x.IsDeleted);
     }
@@ -1661,14 +1691,17 @@ public class BudgetPlanningService : IBudgetPlanningService
             InitialLiveCount = entity.InitialLiveCount,
             InitialAverageGram = entity.InitialAverageGram,
             InitialBiomassKg = entity.InitialBiomassKg,
+            InitialUnitCost = entity.InitialUnitCost,
+            InitialSmmAmount = entity.InitialSmmAmount,
             GrowthStartYear = entity.GrowthStartYear,
             GrowthStartMonth = entity.GrowthStartMonth,
             Note = entity.Note
         };
     }
 
-    private static BudgetPlanSalesLineDto MapSalesLine(BudgetPlanSalesLine entity)
+    private static BudgetPlanSalesLineDto MapSalesLine(BudgetPlanSalesLine entity, decimal? exchangeRate = null)
     {
+        var salesAmountEuro = Round(entity.SalesKg * (entity.UnitPrice ?? 0m));
         return new BudgetPlanSalesLineDto
         {
             Id = entity.Id,
@@ -1683,9 +1716,11 @@ public class BudgetPlanningService : IBudgetPlanningService
             SalesKg = entity.SalesKg,
             SalesCount = entity.SalesCount,
             UnitPrice = entity.UnitPrice,
-            SalesAmount = Round(entity.SalesKg * (entity.UnitPrice ?? 0m)),
+            SalesAmount = salesAmountEuro,
             UnitPriceEuro = entity.UnitPrice,
-            SalesAmountEuro = Round(entity.SalesKg * (entity.UnitPrice ?? 0m)),
+            SalesAmountEuro = salesAmountEuro,
+            ExchangeRate = exchangeRate,
+            SalesAmountTry = exchangeRate.HasValue ? Round(salesAmountEuro * exchangeRate.Value) : null,
             Description = entity.Description
         };
     }
@@ -1714,6 +1749,9 @@ public class BudgetPlanningService : IBudgetPlanningService
         {
             Id = entity.Id,
             BudgetPlanId = entity.BudgetPlanId,
+            FishStockId = entity.FishStockId,
+            FishStockCode = entity.FishStock?.ErpStockCode,
+            FishStockName = entity.FishStock?.StockName,
             CalibrationDefinitionId = entity.CalibrationDefinitionId,
             CalibrationCode = entity.CalibrationDefinition.CalibrationCode,
             CalibrationInfo = entity.CalibrationDefinition.CalibrationInfo,
@@ -1845,6 +1883,7 @@ public class BudgetPlanningService : IBudgetPlanningService
     {
         var projection = await _unitOfWork.Db.BudgetPlanMonthlyProjections
             .AsNoTracking()
+            .Include(x => x.BudgetPlanFishBatch)
             .FirstOrDefaultAsync(x =>
                 x.BudgetPlanId == budgetPlanId &&
                 x.BudgetPlanFishBatchId == budgetPlanFishBatchId &&
@@ -1864,8 +1903,46 @@ public class BudgetPlanningService : IBudgetPlanningService
                 x.CalibrationDefinitionId == projection.CalibrationDefinitionId.Value &&
                 x.Year == year &&
                 x.Month == month &&
+                (!x.FishStockId.HasValue || x.FishStockId == projection.BudgetPlanFishBatch.FishStockId) &&
                 !x.IsDeleted)
+            .OrderByDescending(x => x.FishStockId.HasValue)
             .Select(x => (decimal?)x.UnitPriceEuro)
+            .FirstOrDefaultAsync();
+    }
+
+    private async Task<Dictionary<BudgetPeriod, decimal>> LoadExchangeRateLookupAsync(long budgetPlanId, string currencyCode)
+    {
+        var normalizedCurrency = NormalizeCurrencyCode(currencyCode);
+        return await _unitOfWork.Db.BudgetPlanExchangeRates
+            .AsNoTracking()
+            .Where(x =>
+                x.BudgetPlanId == budgetPlanId &&
+                x.CurrencyCode == normalizedCurrency &&
+                !x.IsDeleted)
+            .GroupBy(x => new { x.Year, x.Month })
+            .Select(x => new
+            {
+                x.Key.Year,
+                x.Key.Month,
+                ExchangeRate = x.OrderByDescending(row => row.IsManualOverride).ThenByDescending(row => row.Id).Select(row => row.ExchangeRate).FirstOrDefault()
+            })
+            .ToDictionaryAsync(x => new BudgetPeriod(x.Year, x.Month), x => x.ExchangeRate);
+    }
+
+    private async Task<decimal?> FindExchangeRateAsync(long budgetPlanId, int year, int month, string currencyCode)
+    {
+        var normalizedCurrency = NormalizeCurrencyCode(currencyCode);
+        return await _unitOfWork.Db.BudgetPlanExchangeRates
+            .AsNoTracking()
+            .Where(x =>
+                x.BudgetPlanId == budgetPlanId &&
+                x.Year == year &&
+                x.Month == month &&
+                x.CurrencyCode == normalizedCurrency &&
+                !x.IsDeleted)
+            .OrderByDescending(x => x.IsManualOverride)
+            .ThenByDescending(x => x.Id)
+            .Select(x => (decimal?)x.ExchangeRate)
             .FirstOrDefaultAsync();
     }
 

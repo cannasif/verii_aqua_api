@@ -17,6 +17,8 @@ public class BudgetPlanFishBatchConfiguration : BaseEntityConfiguration<BudgetPl
 
         builder.Property(x => x.SourceType).HasConversion<byte>().IsRequired();
         builder.Property(x => x.BatchCode).HasMaxLength(80).IsRequired();
+        builder.Property(x => x.InitialUnitCost).HasPrecision(18, 6);
+        builder.Property(x => x.InitialSmmAmount).HasPrecision(18, 6);
         builder.Property(x => x.Note).HasMaxLength(500);
 
         builder.HasOne(x => x.BudgetPlan)
