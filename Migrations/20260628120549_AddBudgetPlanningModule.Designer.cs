@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 
@@ -11,9 +12,11 @@ using aqua_api.Shared.Infrastructure.Persistence.Data;
 namespace aqua_api.Migrations
 {
     [DbContext(typeof(AquaDbContext))]
-    partial class AquaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260628120549_AddBudgetPlanningModule")]
+    partial class AddBudgetPlanningModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -825,7 +828,7 @@ namespace aqua_api.Migrations
 
                             t.HasCheckConstraint("CK_RII_BUDGET_Plan_StartMonth", "[StartMonth] BETWEEN 1 AND 12");
 
-                            t.HasCheckConstraint("CK_RII_BUDGET_Plan_Status", "[Status] IN (0,1,2,3,4,5,6,7)");
+                            t.HasCheckConstraint("CK_RII_BUDGET_Plan_Status", "[Status] IN (0,1,2,3)");
                         });
                 });
 
@@ -1003,80 +1006,6 @@ namespace aqua_api.Migrations
                             t.HasCheckConstraint("CK_RII_BUDGET_PlanFishBatch_NonNegative", "[InitialLiveCount] >= 0 AND [InitialAverageGram] >= 0 AND [InitialBiomassKg] >= 0");
 
                             t.HasCheckConstraint("CK_RII_BUDGET_PlanFishBatch_SourceType", "[SourceType] IN (0,1)");
-                        });
-                });
-
-            modelBuilder.Entity("aqua_api.Modules.BudgetPlanning.Domain.Entities.BudgetPlanFishBatchAdjustment", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<byte>("AdjustmentType")
-                        .HasColumnType("tinyint");
-
-                    b.Property<decimal>("AverageGram")
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<decimal>("BiomassKg")
-                        .HasColumnType("decimal(18,6)");
-
-                    b.Property<long>("BudgetPlanFishBatchId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long>("BudgetPlanId")
-                        .HasColumnType("bigint");
-
-                    b.Property<long?>("CreatedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("CreatedDate")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2")
-                        .HasDefaultValueSql("GETDATE()");
-
-                    b.Property<long?>("DeletedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("DeletedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("LiveCount")
-                        .HasColumnType("int");
-
-                    b.Property<long?>("UpdatedBy")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime?>("UpdatedDate")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BudgetPlanFishBatchId");
-
-                    b.HasIndex("CreatedBy");
-
-                    b.HasIndex("DeletedBy");
-
-                    b.HasIndex("UpdatedBy");
-
-                    b.HasIndex("BudgetPlanId", "BudgetPlanFishBatchId", "Id")
-                        .HasDatabaseName("IX_RII_BUDGET_PlanFishBatchAdjustment_Batch");
-
-                    b.ToTable("RII_BUDGET_PlanFishBatchAdjustment", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_RII_BUDGET_PlanFishBatchAdjustment_Positive", "[LiveCount] > 0 AND [AverageGram] >= 0 AND [BiomassKg] >= 0");
-
-                            t.HasCheckConstraint("CK_RII_BUDGET_PlanFishBatchAdjustment_Type", "[AdjustmentType] IN (0,1,2,3)");
                         });
                 });
 
@@ -8618,46 +8547,6 @@ namespace aqua_api.Migrations
                     b.Navigation("UpdatedByUser");
                 });
 
-            modelBuilder.Entity("aqua_api.Modules.BudgetPlanning.Domain.Entities.BudgetPlanFishBatchAdjustment", b =>
-                {
-                    b.HasOne("aqua_api.Modules.BudgetPlanning.Domain.Entities.BudgetPlanFishBatch", "BudgetPlanFishBatch")
-                        .WithMany("Adjustments")
-                        .HasForeignKey("BudgetPlanFishBatchId")
-                        .OnDelete(DeleteBehavior.NoAction)
-                        .IsRequired();
-
-                    b.HasOne("aqua_api.Modules.BudgetPlanning.Domain.Entities.BudgetPlan", "BudgetPlan")
-                        .WithMany("FishBatchAdjustments")
-                        .HasForeignKey("BudgetPlanId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "CreatedByUser")
-                        .WithMany()
-                        .HasForeignKey("CreatedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "DeletedByUser")
-                        .WithMany()
-                        .HasForeignKey("DeletedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.HasOne("aqua_api.Modules.Identity.Domain.Entities.User", "UpdatedByUser")
-                        .WithMany()
-                        .HasForeignKey("UpdatedBy")
-                        .OnDelete(DeleteBehavior.NoAction);
-
-                    b.Navigation("BudgetPlan");
-
-                    b.Navigation("BudgetPlanFishBatch");
-
-                    b.Navigation("CreatedByUser");
-
-                    b.Navigation("DeletedByUser");
-
-                    b.Navigation("UpdatedByUser");
-                });
-
             modelBuilder.Entity("aqua_api.Modules.BudgetPlanning.Domain.Entities.BudgetPlanMonthlyProjection", b =>
                 {
                     b.HasOne("aqua_api.Modules.BudgetPlanning.Domain.Entities.BudgetPlanFishBatch", "BudgetPlanFishBatch")
@@ -11540,8 +11429,6 @@ namespace aqua_api.Migrations
                 {
                     b.Navigation("FeedingLines");
 
-                    b.Navigation("FishBatchAdjustments");
-
                     b.Navigation("FishBatches");
 
                     b.Navigation("MonthlyProjections");
@@ -11551,11 +11438,6 @@ namespace aqua_api.Migrations
                     b.Navigation("Projects");
 
                     b.Navigation("SalesLines");
-                });
-
-            modelBuilder.Entity("aqua_api.Modules.BudgetPlanning.Domain.Entities.BudgetPlanFishBatch", b =>
-                {
-                    b.Navigation("Adjustments");
                 });
 
             modelBuilder.Entity("aqua_api.Modules.BudgetPlanning.Domain.Entities.BudgetPlanProject", b =>

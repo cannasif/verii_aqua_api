@@ -3,6 +3,8 @@ using aqua_api.Modules.AquaReports.DependencyInjection;
 using aqua_api.Modules.AquaSettings.DependencyInjection;
 using aqua_api.Modules.BatchBalances.DependencyInjection;
 using aqua_api.Modules.Budget.DependencyInjection;
+using aqua_api.Modules.BudgetKpi.DependencyInjection;
+using aqua_api.Modules.BudgetPlanning.DependencyInjection;
 using aqua_api.Modules.Cages.DependencyInjection;
 using aqua_api.Modules.CurrentDirection.DependencyInjection;
 using aqua_api.Modules.DailyWeathers.DependencyInjection;
@@ -58,6 +60,8 @@ public static class ModuleServiceCollectionExtensions
         services.AddWeighingsModule();
         services.AddBatchBalancesModule();
         services.AddBudgetModule();
+        services.AddBudgetPlanningModule();
+        services.AddBudgetKpiModule();
         services.AddOpeningImportsModule();
         services.AddProjectMergesModule();
         services.AddProjectKpisModule();

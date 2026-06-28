@@ -98,6 +98,15 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<BudgetFishGrowthProfileLine> BudgetFishGrowthProfileLines { get; set; }
         public DbSet<BudgetCalibrationDefinition> BudgetCalibrationDefinitions { get; set; }
         public DbSet<BudgetFeedConsumptionRate> BudgetFeedConsumptionRates { get; set; }
+        public DbSet<BudgetPlan> BudgetPlans { get; set; }
+        public DbSet<BudgetPlanProject> BudgetPlanProjects { get; set; }
+        public DbSet<BudgetPlanFishBatch> BudgetPlanFishBatches { get; set; }
+        public DbSet<BudgetPlanFishBatchAdjustment> BudgetPlanFishBatchAdjustments { get; set; }
+        public DbSet<BudgetPlanMonthlyProjection> BudgetPlanMonthlyProjections { get; set; }
+        public DbSet<BudgetPlanSalesLine> BudgetPlanSalesLines { get; set; }
+        public DbSet<BudgetPlanFeedingLine> BudgetPlanFeedingLines { get; set; }
+        public DbSet<BudgetPlanMortalityLine> BudgetPlanMortalityLines { get; set; }
+        public DbSet<BudgetMortalityRateDefinition> BudgetMortalityRateDefinitions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

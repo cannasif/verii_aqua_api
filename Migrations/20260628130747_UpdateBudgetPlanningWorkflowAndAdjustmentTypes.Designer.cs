@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 
@@ -11,9 +12,11 @@ using aqua_api.Shared.Infrastructure.Persistence.Data;
 namespace aqua_api.Migrations
 {
     [DbContext(typeof(AquaDbContext))]
-    partial class AquaDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260628130747_UpdateBudgetPlanningWorkflowAndAdjustmentTypes")]
+    partial class UpdateBudgetPlanningWorkflowAndAdjustmentTypes
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -825,7 +828,7 @@ namespace aqua_api.Migrations
 
                             t.HasCheckConstraint("CK_RII_BUDGET_Plan_StartMonth", "[StartMonth] BETWEEN 1 AND 12");
 
-                            t.HasCheckConstraint("CK_RII_BUDGET_Plan_Status", "[Status] IN (0,1,2,3,4,5,6,7)");
+                            t.HasCheckConstraint("CK_RII_BUDGET_Plan_Status", "[Status] IN (0,1,2,3)");
                         });
                 });
 
