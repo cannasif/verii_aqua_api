@@ -5,6 +5,7 @@ public interface IBudgetPlanningService
     Task<ApiResponse<PagedResponse<BudgetPlanDto>>> GetPlansAsync(PagedRequest request);
     Task<ApiResponse<BudgetPlanDto>> GetPlanAsync(long id);
     Task<ApiResponse<BudgetPlanDto>> CreatePlanAsync(CreateBudgetPlanDto dto);
+    Task<ApiResponse<BudgetPlanDto>> CopyPlanAsync(long sourceBudgetPlanId, CopyBudgetPlanDto dto);
     Task<ApiResponse<List<BudgetPlanFishBatchDto>>> GetPlanFishBatchesAsync(long budgetPlanId);
     Task<ApiResponse<List<BudgetPlanFishBatchAdjustmentDto>>> GetFishBatchAdjustmentsAsync(long budgetPlanId);
     Task<ApiResponse<List<BudgetAvailableFishBatchDto>>> GetAvailableFishBatchesAsync();
@@ -18,6 +19,9 @@ public interface IBudgetPlanningService
     Task<ApiResponse<List<BudgetPlanExchangeRateDto>>> GetExchangeRatesAsync(long budgetPlanId);
     Task<ApiResponse<List<BudgetPlanExchangeRateDto>>> GenerateExchangeRatesAsync(long budgetPlanId, GenerateBudgetPlanExchangeRatesDto dto);
     Task<ApiResponse<BudgetPlanExchangeRateDto>> UpsertExchangeRateAsync(long budgetPlanId, UpsertBudgetPlanExchangeRateDto dto);
+    Task<ApiResponse<List<BudgetPlanFishPriceDto>>> GetFishPricesAsync(long budgetPlanId);
+    Task<ApiResponse<List<BudgetPlanFishPriceDto>>> GenerateFishPricesAsync(long budgetPlanId, GenerateBudgetPlanFishPricesDto dto);
+    Task<ApiResponse<BudgetPlanFishPriceDto>> UpsertFishPriceAsync(long budgetPlanId, UpsertBudgetPlanFishPriceDto dto);
     Task<ApiResponse<List<BudgetPlanMonthlyProjectionDto>>> CalculateGrowthAsync(long budgetPlanId);
     Task<ApiResponse<List<BudgetPlanMonthlyProjectionDto>>> CalculateAsync(long budgetPlanId);
     Task<ApiResponse<List<BudgetPlanMonthlyProjectionDto>>> GetProjectionsAsync(long budgetPlanId);

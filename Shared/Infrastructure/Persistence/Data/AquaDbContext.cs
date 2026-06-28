@@ -107,6 +107,7 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<BudgetPlanFeedingLine> BudgetPlanFeedingLines { get; set; }
         public DbSet<BudgetPlanMortalityLine> BudgetPlanMortalityLines { get; set; }
         public DbSet<BudgetPlanExchangeRate> BudgetPlanExchangeRates { get; set; }
+        public DbSet<BudgetPlanFishPrice> BudgetPlanFishPrices { get; set; }
         public DbSet<BudgetMortalityRateDefinition> BudgetMortalityRateDefinitions { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

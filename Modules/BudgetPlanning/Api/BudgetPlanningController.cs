@@ -36,6 +36,13 @@ public class BudgetPlanningController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    [HttpPost("{sourceBudgetPlanId:long}/copy")]
+    public async Task<ActionResult<ApiResponse<BudgetPlanDto>>> CopyPlan(long sourceBudgetPlanId, [FromBody] CopyBudgetPlanDto dto)
+    {
+        var result = await _service.CopyPlanAsync(sourceBudgetPlanId, dto);
+        return StatusCode(result.StatusCode, result);
+    }
+
     [HttpGet("available-fish-batches")]
     public async Task<ActionResult<ApiResponse<List<BudgetAvailableFishBatchDto>>>> GetAvailableFishBatches()
     {
@@ -124,6 +131,27 @@ public class BudgetPlanningController : ControllerBase
     public async Task<ActionResult<ApiResponse<BudgetPlanExchangeRateDto>>> UpsertExchangeRate(long budgetPlanId, [FromBody] UpsertBudgetPlanExchangeRateDto dto)
     {
         var result = await _service.UpsertExchangeRateAsync(budgetPlanId, dto);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpGet("{budgetPlanId:long}/fish-prices")]
+    public async Task<ActionResult<ApiResponse<List<BudgetPlanFishPriceDto>>>> GetFishPrices(long budgetPlanId)
+    {
+        var result = await _service.GetFishPricesAsync(budgetPlanId);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost("{budgetPlanId:long}/fish-prices/generate")]
+    public async Task<ActionResult<ApiResponse<List<BudgetPlanFishPriceDto>>>> GenerateFishPrices(long budgetPlanId, [FromBody] GenerateBudgetPlanFishPricesDto dto)
+    {
+        var result = await _service.GenerateFishPricesAsync(budgetPlanId, dto);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost("{budgetPlanId:long}/fish-prices")]
+    public async Task<ActionResult<ApiResponse<BudgetPlanFishPriceDto>>> UpsertFishPrice(long budgetPlanId, [FromBody] UpsertBudgetPlanFishPriceDto dto)
+    {
+        var result = await _service.UpsertFishPriceAsync(budgetPlanId, dto);
         return StatusCode(result.StatusCode, result);
     }
 

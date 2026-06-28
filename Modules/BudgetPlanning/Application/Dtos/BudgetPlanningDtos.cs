@@ -33,6 +33,19 @@ public class CreateBudgetPlanDto
     public string? Description { get; set; }
 }
 
+public class CopyBudgetPlanDto
+{
+    public string? BudgetCode { get; set; }
+    public string? BudgetName { get; set; }
+    public int? StartYear { get; set; }
+    public int? StartMonth { get; set; }
+    public int? EndYear { get; set; }
+    public int? EndMonth { get; set; }
+    public bool IncludeCalculatedResults { get; set; } = true;
+    public bool ResetToDraft { get; set; }
+    public string? Description { get; set; }
+}
+
 public class BudgetPlanProjectDto
 {
     public long Id { get; set; }
@@ -140,6 +153,10 @@ public class BudgetPlanSalesLineDto : UpsertBudgetPlanSalesLineDto
     public string? FishStockCode { get; set; }
     public string? FishStockName { get; set; }
     public decimal SalesAmount { get; set; }
+    public decimal? UnitPriceEuro { get; set; }
+    public decimal SalesAmountEuro { get; set; }
+    public decimal? ExchangeRate { get; set; }
+    public decimal? SalesAmountTry { get; set; }
 }
 
 public class BudgetSalesPlanningRowDto
@@ -201,6 +218,29 @@ public class BudgetPlanExchangeRateDto : UpsertBudgetPlanExchangeRateDto
 {
     public long Id { get; set; }
     public long BudgetPlanId { get; set; }
+}
+
+public class UpsertBudgetPlanFishPriceDto
+{
+    public long CalibrationDefinitionId { get; set; }
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public decimal UnitPriceEuro { get; set; }
+    public string? Description { get; set; }
+}
+
+public class GenerateBudgetPlanFishPricesDto
+{
+    public decimal DefaultUnitPriceEuro { get; set; }
+    public List<long> CalibrationDefinitionIds { get; set; } = new();
+}
+
+public class BudgetPlanFishPriceDto : UpsertBudgetPlanFishPriceDto
+{
+    public long Id { get; set; }
+    public long BudgetPlanId { get; set; }
+    public string CalibrationCode { get; set; } = string.Empty;
+    public string CalibrationInfo { get; set; } = string.Empty;
 }
 
 public class BudgetPlanFeedingLineDto
