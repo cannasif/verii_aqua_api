@@ -331,7 +331,7 @@ public class KpiReportService : IKpiReportService
                                             FeedingLineId = x.FeedingLineId,
                                             FeedingDistributionId = x.FeedingDistributionId,
                                             FeedingNo = ValueOrDash(x.FeedingNo),
-                                            FeedingSlot = x.FeedingSlot.ToString(),
+                                            FeedingSlot = FormatFeedingSlot(x.FeedingSlot),
                                             StockId = x.StockId,
                                             StockCode = ValueOrDash(x.StockCode),
                                             StockName = ValueOrDash(x.StockName),
@@ -455,7 +455,7 @@ public class KpiReportService : IKpiReportService
                     HeaderId = feeding.Id,
                     LineId = line.Id,
                     DocumentNo = feeding.FeedingNo,
-                    Slot = feeding.FeedingSlot.ToString(),
+                    Slot = FormatFeedingSlot(feeding.FeedingSlot),
                     ProjectId = project.Id,
                     ProjectCode = project.ProjectCode,
                     ProjectName = project.ProjectName,
@@ -1484,7 +1484,7 @@ public class KpiReportService : IKpiReportService
                 date,
                 JoinDetail(
                     feeding.FeedingNo,
-                    Detail("Slot", feeding.FeedingSlot),
+                    Detail("Slot", FormatFeedingSlot(feeding.FeedingSlot)),
                     Detail("Stock", stockText),
                     Detail("Feed", $"{Round(distribution.FeedGram)}g"),
                     feeding.Note));
@@ -2303,6 +2303,16 @@ public class KpiReportService : IKpiReportService
     private static string ValueOrDash(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? "-" : value;
+    }
+
+    private static string FormatFeedingSlot(FeedingSlot slot)
+    {
+        return slot switch
+        {
+            FeedingSlot.Morning => "1. Tur",
+            FeedingSlot.Evening => "2. Tur",
+            _ => slot.ToString()
+        };
     }
 
     private sealed record FeedCostInput(Dictionary<long, decimal> FeedCostByProjectCage, decimal ProjectAverageFeedCostPerKg);

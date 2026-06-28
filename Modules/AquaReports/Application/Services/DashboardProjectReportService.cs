@@ -486,7 +486,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 var detailParts = new List<string?>
                 {
                     feedingHeader?.FeedingNo ?? $"#{feedingId}",
-                    feedingHeader != null ? $"slot:{feedingHeader.FeedingSlot}" : null,
+                    feedingHeader != null ? $"slot:{FormatFeedingSlot(feedingHeader.FeedingSlot)}" : null,
                     $"stock:{stockText}",
                     $"feed:{row.FeedGram}g",
                     feedingHeader?.Note
@@ -1005,6 +1005,16 @@ namespace aqua_api.Modules.AquaReports.Application.Services
         }
 
         private static decimal RoundGram(decimal value) => decimal.Round(value, 3, MidpointRounding.AwayFromZero);
+
+        private static string FormatFeedingSlot(FeedingSlot slot)
+        {
+            return slot switch
+            {
+                FeedingSlot.Morning => "1. Tur",
+                FeedingSlot.Evening => "2. Tur",
+                _ => slot.ToString()
+            };
+        }
 
         private static string? FormatStockTransition(long? fromStockId, long? toStockId, Dictionary<long, string> stockLabelById)
         {
