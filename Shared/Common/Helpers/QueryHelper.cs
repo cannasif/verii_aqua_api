@@ -1,22 +1,112 @@
 using System;
-using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 namespace aqua_api.Shared.Common.Helpers
 {
     public static class QueryHelper
     {
-        public const string GlobalSearchFilterColumn = "__search";
         private static readonly char[] SearchSeparators = [' ', '\t', '\r', '\n'];
         private static readonly char[] SearchTermTokenSeparators =
         [
             ' ', '\t', '\r', '\n', '.', ',', '-', '_', '/', '\\', '\'', '"', '’', '`',
             '(', ')', '[', ']', '{', '}', '&', '+', ':', ';', '!', '?', '|'
         ];
+
+        public static readonly string[] CommonSearchableColumns =
+        {
+            "Name",
+            "Title",
+            "TitleName",
+            "Description",
+            "Code",
+            "ERPCode",
+            "ErpCode",
+            "Value",
+            "Type",
+            "Status",
+            "Reason",
+            "Comment",
+            "Comments",
+            "Notes",
+            "Text",
+            "Content",
+            "Message",
+            "Subject",
+            "Username",
+            "Email",
+            "FirstName",
+            "LastName",
+            "FullName",
+            "Phone",
+            "Phone1",
+            "Phone2",
+            "Address",
+            "Website",
+            "Url",
+            "Path",
+            "ProjectCode",
+            "ProjectName",
+            "CageCode",
+            "CageName",
+            "WarehouseCode",
+            "WarehouseName",
+            "BatchCode",
+            "StockCode",
+            "StockName",
+            "ErpStockCode",
+            "StokCode",
+            "Barcode",
+            "CurrencyCode",
+            "CurrencyName",
+            "Currency",
+            "GrupKodu",
+            "GrupAdi",
+            "Kod1",
+            "Kod1Adi",
+            "Kod2",
+            "Kod2Adi",
+            "Kod3",
+            "Kod3Adi",
+            "Kod4",
+            "Kod4Adi",
+            "Kod5",
+            "Kod5Adi",
+            "SerialPrefix",
+            "PermissionKey",
+            "DisplayName",
+            "SessionId",
+            "IpAddress",
+            "Browser",
+            "Platform",
+            "DeviceName",
+            "RoleNavigation.Title",
+            "PermissionDefinition.Name",
+            "PermissionDefinition.Code",
+            "Group.Name",
+            "User.Username",
+            "User.Email",
+            "User.FirstName",
+            "User.LastName",
+            "Stock.StockCode",
+            "Stock.StockName",
+            "Stock.ErpStockCode",
+            "Project.ProjectCode",
+            "Project.ProjectName",
+            "FishBatch.BatchCode",
+            "FishBatch.Project.ProjectCode",
+            "FishBatch.Project.ProjectName",
+            "FishBatch.FishStock.ErpStockCode",
+            "FishBatch.FishStock.StockName",
+            "ProjectCage.Cage.CageCode",
+            "ProjectCage.Cage.CageName",
+            "Warehouse.WarehouseCode",
+            "Warehouse.WarehouseName"
+        };
 
         public sealed record SearchTerm(string Raw, string Normalized);
 
@@ -63,6 +153,67 @@ namespace aqua_api.Shared.Common.Helpers
                 .Where(term => !string.IsNullOrWhiteSpace(term))
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
+        }
+
+        public static IQueryable<T> ApplySearch<T>(this IQueryable<T> query, string? search, params string[] searchableColumns)
+        {
+            if (string.IsNullOrWhiteSpace(search) || searchableColumns.Length == 0)
+            {
+                return query;
+            }
+
+            var useEfSearch = IsEntityFrameworkQuery(query);
+            var terms = BuildSearchTerms(search, includeCompoundTerm: !useEfSearch);
+
+            if (terms.Count == 0)
+            {
+                return query;
+            }
+
+            var parameter = Expression.Parameter(typeof(T), "x");
+            Expression? searchPredicate = null;
+
+            foreach (var term in terms)
+            {
+                Expression? termPredicate = null;
+
+                foreach (var column in searchableColumns)
+                {
+                    var resolved = ResolvePropertyPath(parameter, typeof(T), column);
+                    if (resolved == null || resolved.Value.property.PropertyType != typeof(string))
+                    {
+                        continue;
+                    }
+
+                    var member = resolved.Value.expression;
+                    var notNull = Expression.NotEqual(member, Expression.Constant(null, typeof(string)));
+                    var columnPredicate = useEfSearch
+                        ? BuildSqlServerSearchPredicate(member, term.Raw, term.Normalized)
+                        : BuildInMemorySearchPredicate(member, term.Normalized);
+                    var currentPredicate = Expression.AndAlso(notNull, columnPredicate);
+
+                    termPredicate = termPredicate == null
+                        ? currentPredicate
+                        : Expression.OrElse(termPredicate, currentPredicate);
+                }
+
+                if (termPredicate == null)
+                {
+                    continue;
+                }
+
+                searchPredicate = searchPredicate == null
+                    ? termPredicate
+                    : Expression.AndAlso(searchPredicate, termPredicate);
+            }
+
+            if (searchPredicate == null)
+            {
+                return query;
+            }
+
+            var lambda = Expression.Lambda<Func<T, bool>>(searchPredicate, parameter);
+            return query.Where(lambda);
         }
 
         public static string NormalizeSearchText(string? value)
@@ -151,7 +302,7 @@ namespace aqua_api.Shared.Common.Helpers
                 predicate = Expression.Call(member, containsMethod, Expression.Constant(rawTerm.Trim()));
             }
 
-            return predicate ?? Expression.Constant(!string.IsNullOrWhiteSpace(normalizedTerm));
+            return predicate ?? Expression.Constant(true);
         }
 
         private static Expression BuildStringFilterPredicate(Expression member, string rawValue, string normalizedValue, string operatorLower, bool useEfSearch)
@@ -209,11 +360,6 @@ namespace aqua_api.Shared.Common.Helpers
             return predicate ?? Expression.Constant(true);
         }
 
-        /// <summary>
-        /// Resolves a property path (possibly dot-notation like "Country.Name")
-        /// to a chain of Expression.Property calls.
-        /// Returns null if any part of the path does not exist.
-        /// </summary>
         private static (Expression expression, PropertyInfo property)? ResolvePropertyPath(Expression param, Type rootType, string path)
         {
             var parts = path.Split('.');
@@ -232,9 +378,6 @@ namespace aqua_api.Shared.Common.Helpers
             return prop == null ? null : (current, prop);
         }
 
-        /// <summary>
-        /// Resolves the actual entity column name from DTO/frontend column name using the columnMapping dictionary.
-        /// </summary>
         private static string ResolveColumnName(string column, IReadOnlyDictionary<string, string>? columnMapping)
         {
             if (columnMapping == null) return column;
@@ -242,42 +385,12 @@ namespace aqua_api.Shared.Common.Helpers
             return mappingKey != null ? columnMapping[mappingKey] : column;
         }
 
-        private static Type GetNonNullableType(Type type)
-        {
-            return Nullable.GetUnderlyingType(type) ?? type;
-        }
-
-        private static Expression CreateTypedConstant(Type propertyType, object value)
-        {
-            var targetType = GetNonNullableType(propertyType);
-            var constant = Expression.Constant(value, targetType);
-            return targetType == propertyType ? constant : Expression.Convert(constant, propertyType);
-        }
-
-        private static bool TryParseDecimal(string value, out decimal result)
-        {
-            return decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out result)
-                   || decimal.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out result);
-        }
-
-        private static bool TryParseDateTime(string value, out DateTime result)
-        {
-            return DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out result)
-                   || DateTime.TryParse(value, CultureInfo.CurrentCulture, DateTimeStyles.None, out result);
-        }
-
-        /// <summary>
-        /// Applies filters to the query based on Filter list.
-        /// columnMapping: DTO/frontend column names to entity property names (e.g. "name" -> "CustomerName", "countryName" -> "Country.Name").
-        /// Supports dot-notation for navigation properties (left join / Include).
-        /// </summary>
         public static IQueryable<T> ApplyFilters<T>(this IQueryable<T> query, List<Filter>? filters, string filterLogic = "and", IReadOnlyDictionary<string, string>? columnMapping = null)
         {
             ParameterExpression param = Expression.Parameter(typeof(T), "x");
             Expression? basePredicate = null;
             var useEfSearch = IsEntityFrameworkQuery(query);
 
-            // Default filter: IsDeleted = false (if IsDeleted property exists)
             var isDeletedProperty = typeof(T).GetProperty("IsDeleted");
             if (isDeletedProperty != null && (isDeletedProperty.PropertyType == typeof(bool) || isDeletedProperty.PropertyType == typeof(bool?)))
             {
@@ -286,17 +399,7 @@ namespace aqua_api.Shared.Common.Helpers
                 basePredicate = isDeletedExp;
             }
 
-            var globalSearchValues = filters?
-                .Where(filter => string.Equals(filter.Column, GlobalSearchFilterColumn, StringComparison.OrdinalIgnoreCase) &&
-                                 !string.IsNullOrWhiteSpace(filter.Value))
-                .Select(filter => filter.Value)
-                .ToList() ?? new List<string>();
-
-            var regularFilters = filters?
-                .Where(filter => !string.Equals(filter.Column, GlobalSearchFilterColumn, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            if ((regularFilters == null || regularFilters.Count == 0) && globalSearchValues.Count == 0)
+            if (filters == null || filters.Count == 0)
             {
                 if (basePredicate == null) return query;
                 var defaultLambda = Expression.Lambda<Func<T, bool>>(basePredicate, param);
@@ -306,7 +409,7 @@ namespace aqua_api.Shared.Common.Helpers
             bool useOr = string.Equals(filterLogic, "or", StringComparison.OrdinalIgnoreCase);
             Expression? filterPredicate = null;
 
-            foreach (var filter in regularFilters ?? new List<Filter>())
+            foreach (var filter in filters)
             {
                 if (string.IsNullOrEmpty(filter.Value)) continue;
 
@@ -320,9 +423,7 @@ namespace aqua_api.Shared.Common.Helpers
 
                 var operatorLower = filter.Operator.ToLowerInvariant();
 
-                var propertyType = GetNonNullableType(property.PropertyType);
-
-                if (propertyType == typeof(string))
+                if (property.PropertyType == typeof(string))
                 {
                     exp = BuildStringFilterPredicate(
                         left,
@@ -334,78 +435,74 @@ namespace aqua_api.Shared.Common.Helpers
                         Expression.NotEqual(left, Expression.Constant(null, typeof(string))),
                         exp);
                 }
-                else if (propertyType == typeof(int))
+                else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(int?))
                 {
                     if (int.TryParse(filter.Value, out int val))
                     {
-                        var typedValue = CreateTypedConstant(property.PropertyType, val);
                         exp = operatorLower switch
                         {
-                            ">" or "gt" => Expression.GreaterThan(left, typedValue),
-                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, typedValue),
-                            "<" or "lt" => Expression.LessThan(left, typedValue),
-                            "<=" or "lte" => Expression.LessThanOrEqual(left, typedValue),
-                            _ => Expression.Equal(left, typedValue)
+                            ">" or "gt" => Expression.GreaterThan(left, Expression.Constant(val)),
+                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, Expression.Constant(val)),
+                            "<" or "lt" => Expression.LessThan(left, Expression.Constant(val)),
+                            "<=" or "lte" => Expression.LessThanOrEqual(left, Expression.Constant(val)),
+                            _ => Expression.Equal(left, Expression.Constant(val))
                         };
                     }
                 }
-                else if (propertyType == typeof(long))
+                else if (property.PropertyType == typeof(long) || property.PropertyType == typeof(long?))
                 {
                     if (long.TryParse(filter.Value, out long val))
                     {
-                        var typedValue = CreateTypedConstant(property.PropertyType, val);
                         exp = operatorLower switch
                         {
-                            ">" or "gt" => Expression.GreaterThan(left, typedValue),
-                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, typedValue),
-                            "<" or "lt" => Expression.LessThan(left, typedValue),
-                            "<=" or "lte" => Expression.LessThanOrEqual(left, typedValue),
-                            _ => Expression.Equal(left, typedValue)
+                            ">" or "gt" => Expression.GreaterThan(left, Expression.Constant(val)),
+                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, Expression.Constant(val)),
+                            "<" or "lt" => Expression.LessThan(left, Expression.Constant(val)),
+                            "<=" or "lte" => Expression.LessThanOrEqual(left, Expression.Constant(val)),
+                            _ => Expression.Equal(left, Expression.Constant(val))
                         };
                     }
                 }
-                else if (propertyType == typeof(decimal))
+                else if (property.PropertyType == typeof(decimal) || property.PropertyType == typeof(decimal?))
                 {
-                    if (TryParseDecimal(filter.Value, out decimal val))
+                    if (decimal.TryParse(filter.Value, out decimal val))
                     {
-                        var typedValue = CreateTypedConstant(property.PropertyType, val);
                         exp = operatorLower switch
                         {
-                            ">" or "gt" => Expression.GreaterThan(left, typedValue),
-                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, typedValue),
-                            "<" or "lt" => Expression.LessThan(left, typedValue),
-                            "<=" or "lte" => Expression.LessThanOrEqual(left, typedValue),
-                            _ => Expression.Equal(left, typedValue)
+                            ">" or "gt" => Expression.GreaterThan(left, Expression.Constant(val)),
+                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, Expression.Constant(val)),
+                            "<" or "lt" => Expression.LessThan(left, Expression.Constant(val)),
+                            "<=" or "lte" => Expression.LessThanOrEqual(left, Expression.Constant(val)),
+                            _ => Expression.Equal(left, Expression.Constant(val))
                         };
                     }
                 }
-                else if (propertyType == typeof(DateTime))
+                else if (property.PropertyType == typeof(DateTime) || property.PropertyType == typeof(DateTime?))
                 {
-                    if (TryParseDateTime(filter.Value, out DateTime val))
+                    if (DateTime.TryParse(filter.Value, out DateTime val))
                     {
-                        var typedValue = CreateTypedConstant(property.PropertyType, val);
                         exp = operatorLower switch
                         {
-                            ">" or "gt" => Expression.GreaterThan(left, typedValue),
-                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, typedValue),
-                            "<" or "lt" => Expression.LessThan(left, typedValue),
-                            "<=" or "lte" => Expression.LessThanOrEqual(left, typedValue),
-                            _ => Expression.Equal(left, typedValue)
+                            ">" or "gt" => Expression.GreaterThan(left, Expression.Constant(val)),
+                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, Expression.Constant(val)),
+                            "<" or "lt" => Expression.LessThan(left, Expression.Constant(val)),
+                            "<=" or "lte" => Expression.LessThanOrEqual(left, Expression.Constant(val)),
+                            _ => Expression.Equal(left, Expression.Constant(val))
                         };
                     }
                 }
-                else if (propertyType == typeof(bool))
+                else if (property.PropertyType == typeof(bool) || property.PropertyType == typeof(bool?))
                 {
                     if (bool.TryParse(filter.Value, out bool val))
                     {
-                        exp = Expression.Equal(left, CreateTypedConstant(property.PropertyType, val));
+                        exp = Expression.Equal(left, Expression.Constant(val));
                     }
                 }
-                else if (propertyType.IsEnum)
+                else if (property.PropertyType.IsEnum)
                 {
-                    if (Enum.TryParse(propertyType, filter.Value, true, out var enumVal) && enumVal != null)
+                    if (Enum.TryParse(property.PropertyType, filter.Value, true, out var enumVal))
                     {
-                        exp = Expression.Equal(left, CreateTypedConstant(property.PropertyType, enumVal));
+                        exp = Expression.Equal(left, Expression.Constant(enumVal));
                     }
                 }
 
@@ -419,111 +516,18 @@ namespace aqua_api.Shared.Common.Helpers
                 }
             }
 
-            Expression? searchPredicate = null;
-            foreach (var searchValue in globalSearchValues)
-            {
-                searchPredicate = CombinePredicates(
-                    searchPredicate,
-                    BuildSearchPredicate(param, typeof(T), searchValue, useEfSearch),
-                    useOr: false);
-            }
-
-            // Combine: basePredicate (IsDeleted) is always AND, filterPredicate is AND/OR based on filterLogic
             Expression? finalPredicate;
-            finalPredicate = CombinePredicates(basePredicate, filterPredicate, useOr: false);
-            finalPredicate = CombinePredicates(finalPredicate, searchPredicate, useOr: false);
+            if (basePredicate != null && filterPredicate != null)
+                finalPredicate = Expression.AndAlso(basePredicate, filterPredicate);
+            else
+                finalPredicate = basePredicate ?? filterPredicate;
 
             if (finalPredicate == null) return query;
-            
+
             var lambda = Expression.Lambda<Func<T, bool>>(finalPredicate, param);
             return query.Where(lambda);
         }
 
-        public static IQueryable<T> ApplySearch<T>(this IQueryable<T> query, string? search, params string[] searchableColumns)
-        {
-            if (string.IsNullOrWhiteSpace(search))
-            {
-                return query;
-            }
-
-            var parameter = Expression.Parameter(typeof(T), "x");
-            var predicate = BuildSearchPredicate(parameter, typeof(T), search, IsEntityFrameworkQuery(query), searchableColumns);
-            if (predicate == null)
-            {
-                return query;
-            }
-
-            return query.Where(Expression.Lambda<Func<T, bool>>(predicate, parameter));
-        }
-
-        public static List<Filter> WithoutGlobalSearchFilter(IEnumerable<Filter>? filters)
-        {
-            return filters?
-                .Where(filter => !string.Equals(filter.Column, GlobalSearchFilterColumn, StringComparison.OrdinalIgnoreCase))
-                .ToList() ?? new List<Filter>();
-        }
-
-        private static Expression? BuildSearchPredicate(Expression parameter, Type rootType, string search, bool useEfSearch, params string[] searchableColumns)
-        {
-            var terms = BuildSearchTerms(search, includeCompoundTerm: false);
-
-            if (terms.Count == 0)
-            {
-                return null;
-            }
-
-            var columns = searchableColumns.Length > 0
-                ? searchableColumns
-                : rootType
-                    .GetProperties(BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance)
-                    .Where(property => property.PropertyType == typeof(string))
-                    .Select(property => property.Name)
-                    .ToArray();
-
-            if (columns.Length == 0)
-            {
-                return null;
-            }
-
-            Expression? combinedTerms = null;
-            foreach (var term in terms)
-            {
-                Expression? combinedColumns = null;
-                foreach (var column in columns)
-                {
-                    var resolved = ResolvePropertyPath(parameter, rootType, column);
-                    if (resolved == null || resolved.Value.property.PropertyType != typeof(string))
-                    {
-                        continue;
-                    }
-
-                    var member = resolved.Value.expression;
-                    var notNull = Expression.NotEqual(member, Expression.Constant(null, typeof(string)));
-                    var contains = useEfSearch
-                        ? BuildSqlServerSearchPredicate(member, term.Raw, term.Normalized)
-                        : BuildInMemorySearchPredicate(member, term.Normalized);
-                    var columnPredicate = Expression.AndAlso(notNull, contains);
-
-                    combinedColumns = CombinePredicates(combinedColumns, columnPredicate, useOr: true);
-                }
-
-                combinedTerms = CombinePredicates(combinedTerms, combinedColumns, useOr: false);
-            }
-
-            return combinedTerms;
-        }
-
-        private static Expression? CombinePredicates(Expression? left, Expression? right, bool useOr)
-        {
-            if (left == null) return right;
-            if (right == null) return left;
-            return useOr ? Expression.OrElse(left, right) : Expression.AndAlso(left, right);
-        }
-
-        /// <summary>
-        /// Applies sorting to the query.
-        /// Supports columnMapping and dot-notation for navigation properties (e.g. "countryName" -> "Country.Name").
-        /// </summary>
         public static IQueryable<T> ApplySorting<T>(this IQueryable<T> query, string? sortBy, string? sortDirection, IReadOnlyDictionary<string, string>? columnMapping = null)
         {
             if (string.IsNullOrWhiteSpace(sortBy))
@@ -537,7 +541,6 @@ namespace aqua_api.Shared.Common.Helpers
             var resolved = ResolvePropertyPath(parameter, typeof(T), resolvedSortBy);
             if (resolved == null)
             {
-                // Fallback to Id if resolved property doesn't exist
                 resolved = ResolvePropertyPath(parameter, typeof(T), "Id");
                 if (resolved == null) return query;
             }
@@ -549,9 +552,9 @@ namespace aqua_api.Shared.Common.Helpers
                 parameter
             );
 
-            bool isDescending = string.IsNullOrWhiteSpace(sortDirection) 
-                ? false 
-                : sortDirection.Equals("desc", StringComparison.OrdinalIgnoreCase) 
+            bool isDescending = string.IsNullOrWhiteSpace(sortDirection)
+                ? false
+                : sortDirection.Equals("desc", StringComparison.OrdinalIgnoreCase)
                    || sortDirection.Equals("descending", StringComparison.OrdinalIgnoreCase);
 
             var methodName = isDescending ? "OrderByDescending" : "OrderBy";
@@ -562,35 +565,24 @@ namespace aqua_api.Shared.Common.Helpers
                 query.Expression,
                 keySelector
             );
-            
+
             return query.Provider.CreateQuery<T>(call);
         }
 
-        /// <summary>
-        /// Applies pagination to the query (1-based page number)
-        /// </summary>
         public static IQueryable<T> ApplyPagination<T>(this IQueryable<T> query, int pageNumber, int pageSize)
         {
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize < 1) pageSize = 20;
-            
+
             int skip = (pageNumber - 1) * pageSize;
             return query.Skip(skip).Take(pageSize);
         }
 
-        /// <summary>
-        /// Applies all PagedRequest operations (filters, sorting, pagination) to the query.
-        /// Supports columnMapping for DTO-to-entity property name resolution.
-        /// </summary>
         public static IQueryable<T> ApplyPagedRequest<T>(this IQueryable<T> query, PagedRequest request, IReadOnlyDictionary<string, string>? columnMapping = null)
         {
             if (request == null) return query;
 
-            if (!string.IsNullOrWhiteSpace(request.Search) &&
-                (request.Filters == null || !request.Filters.Any(filter => string.Equals(filter.Column, GlobalSearchFilterColumn, StringComparison.OrdinalIgnoreCase))))
-            {
-                query = query.ApplySearch(request.Search);
-            }
+            query = query.ApplySearch(request.Search);
             query = query.ApplyFilters(request.Filters, request.FilterLogic, columnMapping);
             query = query.ApplySorting(request.SortBy, request.SortDirection, columnMapping);
             query = query.ApplyPagination(request.PageNumber, request.PageSize);

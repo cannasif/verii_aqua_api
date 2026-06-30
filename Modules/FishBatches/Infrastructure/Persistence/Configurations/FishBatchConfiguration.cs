@@ -7,9 +7,9 @@ namespace aqua_api.Modules.FishBatches.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<FishBatch> builder)
         {
-            builder.ToTable("RII_FISH_BATCH", table =>
+            builder.ToTable("RII_FishBatch", table =>
             {
-                table.HasCheckConstraint("CK_RII_FISH_BATCH_CURRENT_AVERAGE_GRAM", "[CurrentAverageGram] > 0");
+                table.HasCheckConstraint("CK_RII_FishBatch_CurrentAverageGram", "[CurrentAverageGram] > 0");
             });
             builder.Property(x => x.BatchCode).HasMaxLength(50).IsRequired();
             builder.Property(x => x.CurrentAverageGram).HasPrecision(18, 3).IsRequired();
@@ -46,7 +46,7 @@ namespace aqua_api.Modules.FishBatches.Infrastructure.Persistence.Configurations
             builder.HasIndex(x => new { x.ProjectId, x.BatchCode })
                 .IsUnique()
                 .HasFilter("[IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_FISH_BATCH_PROJECT_BATCH_CODE_ACTIVE");
+                .HasDatabaseName("UX_RII_FishBatch_Project_BatchCode_Active");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

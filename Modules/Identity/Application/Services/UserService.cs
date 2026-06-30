@@ -118,8 +118,7 @@ namespace aqua_api.Modules.Identity.Application.Services
                 }
 
                 var remainingFilters = request.Filters
-                    .Where(f => !string.Equals(f.Column, "fullName", StringComparison.OrdinalIgnoreCase)
-                        && !string.Equals(f.Column, QueryHelper.GlobalSearchFilterColumn, StringComparison.OrdinalIgnoreCase))
+                    .Where(f => !string.Equals(f.Column, "fullName", StringComparison.OrdinalIgnoreCase))
                     .ToList();
 
                 query = query.ApplyFilters(remainingFilters, request.FilterLogic, columnMapping);
