@@ -40,8 +40,9 @@ public class PagedRequestModelBinderTests
         Assert.Equal("asc", request.SortDirection);
         Assert.Equal("or", request.FilterLogic);
         Assert.NotNull(request.Filters);
-        Assert.Contains(request.Filters, filter => filter.Column == "ProjectCode" && filter.Value == "OLIVKA");
-        Assert.Contains(request.Filters, filter => filter.Column == QueryHelper.GlobalSearchFilterColumn && filter.Value == "BATCH-001");
+        var filter = Assert.Single(request.Filters);
+        Assert.Equal("ProjectCode", filter.Column);
+        Assert.Equal("OLIVKA", filter.Value);
     }
 
     [Fact]
@@ -62,8 +63,9 @@ public class PagedRequestModelBinderTests
         Assert.Equal("YEM", request.Search);
         Assert.Equal("or", request.FilterLogic);
         Assert.NotNull(request.Filters);
-        Assert.Contains(request.Filters, filter => filter.Column == "GrupKodu" && filter.Value == "YEM");
-        Assert.Contains(request.Filters, filter => filter.Column == QueryHelper.GlobalSearchFilterColumn && filter.Value == "YEM");
+        var filter = Assert.Single(request.Filters);
+        Assert.Equal("GrupKodu", filter.Column);
+        Assert.Equal("YEM", filter.Value);
     }
 
     [Fact]
@@ -92,7 +94,7 @@ public class PagedRequestModelBinderTests
         Assert.Equal(20, request.PageSize);
         Assert.Equal("Korçay", request.Search);
         Assert.NotNull(request.Filters);
-        Assert.Contains(request.Filters, filter => filter.Column == QueryHelper.GlobalSearchFilterColumn && filter.Value == "Korçay");
+        Assert.Empty(request.Filters);
     }
 
     private static async Task<PagedRequest> BindAsync(string method, string? json = null)

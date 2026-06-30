@@ -127,17 +127,6 @@ namespace aqua_api.Shared.Host.WebApi.ModelBinding
                     Value = filter.Value?.Trim() ?? string.Empty
                 })
                 .ToList() ?? new List<Filter>();
-
-            if (!string.IsNullOrWhiteSpace(request.Search) &&
-                !request.Filters.Any(filter => string.Equals(filter.Column, QueryHelper.GlobalSearchFilterColumn, StringComparison.OrdinalIgnoreCase)))
-            {
-                request.Filters.Add(new Filter
-                {
-                    Column = QueryHelper.GlobalSearchFilterColumn,
-                    Operator = "contains",
-                    Value = request.Search
-                });
-            }
         }
 
         private static void BindDerivedBooleanProperties(PagedRequest request, Microsoft.AspNetCore.Http.IQueryCollection query)
