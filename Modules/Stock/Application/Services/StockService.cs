@@ -8,6 +8,25 @@ namespace aqua_api.Modules.Stock.Application.Services
 {
     public class StockService : IStockService
     {
+        private static readonly string[] SearchableColumns =
+        [
+            nameof(StockEntity.StockName),
+            nameof(StockEntity.ErpStockCode),
+            nameof(StockEntity.GrupKodu),
+            nameof(StockEntity.GrupAdi),
+            nameof(StockEntity.UreticiKodu),
+            nameof(StockEntity.Kod1),
+            nameof(StockEntity.Kod1Adi),
+            nameof(StockEntity.Kod2),
+            nameof(StockEntity.Kod2Adi),
+            nameof(StockEntity.Kod3),
+            nameof(StockEntity.Kod3Adi),
+            nameof(StockEntity.Kod4),
+            nameof(StockEntity.Kod4Adi),
+            nameof(StockEntity.Kod5),
+            nameof(StockEntity.Kod5Adi)
+        ];
+
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
@@ -45,27 +64,18 @@ namespace aqua_api.Modules.Stock.Application.Services
                     .Include(s => s.CreatedByUser)
                     .Include(s => s.UpdatedByUser)
                     .Include(s => s.DeletedByUser)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request.Search, SearchableColumns)
+                    .ApplyFilters(QueryHelper.WithoutGlobalSearchFilter(request.Filters), request.FilterLogic);
 
                 var sortBy = request.SortBy ?? nameof(StockEntity.Id);
                 query = query.ApplySorting(sortBy, request.SortDirection);
 
-                var totalCount = await query.CountAsync();
-
-                var items = await query
-                    .ApplyPagination(request.PageNumber, request.PageSize)
+                var page = await query
                     .AsNoTracking()
-                    .ToListAsync();
+                    .ToPagedItemsAsync(request)
+                    .ConfigureAwait(false);
 
-                var dtos = items.Select(x => _mapper.Map<StockGetDto>(x)).ToList();
-
-                var pagedResponse = new PagedResponse<StockGetDto>
-                {
-                    Items = dtos,
-                    TotalCount = totalCount,
-                    PageNumber = request.PageNumber,
-                    PageSize = request.PageSize
-                };
+                var pagedResponse = page.ToPagedResponse(x => _mapper.Map<StockGetDto>(x));
 
                 return ApiResponse<PagedResponse<StockGetDto>>.SuccessResult(
                     pagedResponse, 
@@ -104,19 +114,18 @@ namespace aqua_api.Modules.Stock.Application.Services
                     .Include(s => s.CreatedByUser)
                     .Include(s => s.UpdatedByUser)
                     .Include(s => s.DeletedByUser)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request.Search, SearchableColumns)
+                    .ApplyFilters(QueryHelper.WithoutGlobalSearchFilter(request.Filters), request.FilterLogic);
 
                 var sortBy = request.SortBy ?? nameof(StockEntity.Id);
                 query = query.ApplySorting(sortBy, request.SortDirection);
 
-                var totalCount = await query.CountAsync();
-
-                var items = await query
-                    .ApplyPagination(request.PageNumber, request.PageSize)
+                var page = await query
                     .AsNoTracking()
-                    .ToListAsync();
+                    .ToPagedItemsAsync(request)
+                    .ConfigureAwait(false);
 
-                var baseDtos = items.Select(x => _mapper.Map<StockGetDto>(x)).ToList();
+                var baseDtos = page.Items.Select(x => _mapper.Map<StockGetDto>(x)).ToList();
                 
                 var dtos = baseDtos.Select(stockDto =>
                 {
@@ -127,13 +136,7 @@ namespace aqua_api.Modules.Stock.Application.Services
                     return stockWithMainImage;
                 }).ToList();
 
-                var pagedResponse = new PagedResponse<StockGetWithMainImageDto>
-                {
-                    Items = dtos,
-                    TotalCount = totalCount,
-                    PageNumber = request.PageNumber,
-                    PageSize = request.PageSize
-                };
+                var pagedResponse = page.ToResponse(dtos);
 
                 return ApiResponse<PagedResponse<StockGetWithMainImageDto>>.SuccessResult(
                     pagedResponse, 

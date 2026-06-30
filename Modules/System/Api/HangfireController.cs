@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
+using aqua_api.Modules.System.Domain.Entities;
 using aqua_api.Modules.System.Infrastructure.BackgroundJobs;
 using aqua_api.Modules.System.Infrastructure.BackgroundJobs.Interfaces;
 using aqua_api.Modules.System.Infrastructure.Monitoring;
@@ -150,24 +151,31 @@ namespace aqua_api.Modules.System.Api
         public Task<IActionResult> GetFailed(
             [FromQuery] int? pageNumber = null,
             [FromQuery] int? pageSize = null,
+            [FromQuery] string? search = null,
             [FromQuery] int from = 0,
             [FromQuery] int count = 20)
         {
             var (resolvedFrom, resolvedCount) = ResolvePaging(pageNumber, pageSize, from, count, 20);
-            return GetFailuresFromDb(resolvedFrom, resolvedCount);
+            return GetFailuresFromDb(null, null, search, resolvedFrom, resolvedCount);
         }
 
         [HttpGet("failures-from-db")]
         public async Task<IActionResult> GetFailuresFromDb(
             [FromQuery] int? pageNumber = null,
             [FromQuery] int? pageSize = null,
+            [FromQuery] string? search = null,
             [FromQuery] int from = 0,
             [FromQuery] int count = 50)
         {
             var (resolvedFrom, resolvedCount) = ResolvePaging(pageNumber, pageSize, from, count, 50);
 
-            var rawItems = await _db.JobFailureLogs
+            var query = _db.JobFailureLogs
                 .AsNoTracking()
+                .Where(x => !x.IsDeleted);
+
+            query = ApplyFailureSearch(query, search);
+
+            var rawItems = await query
                 .OrderByDescending(x => x.FailedAt)
                 .Skip(resolvedFrom)
                 .Take(resolvedCount)
@@ -197,7 +205,7 @@ namespace aqua_api.Modules.System.Api
                 })
                 .ToList();
 
-            var total = await _db.JobFailureLogs.CountAsync();
+            var total = await query.CountAsync();
 
             return Ok(new
             {
@@ -211,6 +219,7 @@ namespace aqua_api.Modules.System.Api
         public async Task<IActionResult> GetSuccessesFromDb(
             [FromQuery] int? pageNumber = null,
             [FromQuery] int? pageSize = null,
+            [FromQuery] string? search = null,
             [FromQuery] int from = 0,
             [FromQuery] int count = 50)
         {
@@ -219,6 +228,8 @@ namespace aqua_api.Modules.System.Api
             var successQuery = _db.JobExecutionLogs
                 .AsNoTracking()
                 .Where(x => !x.IsDeleted && x.Status == "Succeeded");
+
+            successQuery = ApplySuccessSearch(successQuery, search);
 
             var rawItems = await successQuery
                 .OrderByDescending(x => x.FinishedAt)
@@ -262,6 +273,7 @@ namespace aqua_api.Modules.System.Api
         public async Task<IActionResult> GetDeadLetter(
             [FromQuery] int? pageNumber = null,
             [FromQuery] int? pageSize = null,
+            [FromQuery] string? search = null,
             [FromQuery] int from = 0,
             [FromQuery] int count = 20)
         {
@@ -269,7 +281,9 @@ namespace aqua_api.Modules.System.Api
 
             var deadLetterQuery = _db.JobFailureLogs
                 .AsNoTracking()
-                .Where(x => x.Queue == "dead-letter");
+                .Where(x => !x.IsDeleted && x.Queue == "dead-letter");
+
+            deadLetterQuery = ApplyFailureSearch(deadLetterQuery, search);
 
             var rawItems = await deadLetterQuery
                 .OrderByDescending(x => x.FailedAt)
@@ -383,6 +397,38 @@ namespace aqua_api.Modules.System.Api
         {
             var parsed = requestedSize <= 0 ? fallbackSize : requestedSize;
             return Math.Min(200, Math.Max(1, parsed));
+        }
+
+        private static IQueryable<JobFailureLog> ApplyFailureSearch(IQueryable<JobFailureLog> query, string? search)
+        {
+            var term = search?.Trim();
+            if (string.IsNullOrWhiteSpace(term))
+            {
+                return query;
+            }
+
+            return query.Where(x =>
+                (x.JobId != null && x.JobId.Contains(term)) ||
+                (x.JobName != null && x.JobName.Contains(term)) ||
+                (x.ExceptionMessage != null && x.ExceptionMessage.Contains(term)) ||
+                (x.Reason != null && x.Reason.Contains(term)) ||
+                (x.ExceptionType != null && x.ExceptionType.Contains(term)) ||
+                (x.Queue != null && x.Queue.Contains(term)));
+        }
+
+        private static IQueryable<JobExecutionLog> ApplySuccessSearch(IQueryable<JobExecutionLog> query, string? search)
+        {
+            var term = search?.Trim();
+            if (string.IsNullOrWhiteSpace(term))
+            {
+                return query;
+            }
+
+            return query.Where(x =>
+                (x.JobId != null && x.JobId.Contains(term)) ||
+                (x.RecurringJobId != null && x.RecurringJobId.Contains(term)) ||
+                (x.JobName != null && x.JobName.Contains(term)) ||
+                (x.Queue != null && x.Queue.Contains(term)));
         }
 
         private static void EnsureManualSyncJobs(List<RecurringJobListItem> jobs)

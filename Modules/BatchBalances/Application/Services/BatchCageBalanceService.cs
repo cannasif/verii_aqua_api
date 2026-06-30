@@ -7,6 +7,17 @@ namespace aqua_api.Modules.BatchBalances.Application.Services
 {
     public class BatchCageBalanceService : IBatchCageBalanceService
     {
+        private static readonly string[] SearchableColumns =
+        [
+            "FishBatch.BatchCode",
+            "FishBatch.Project.ProjectCode",
+            "FishBatch.Project.ProjectName",
+            "FishBatch.FishStock.ErpStockCode",
+            "FishBatch.FishStock.StockName",
+            "ProjectCage.Cage.CageCode",
+            "ProjectCage.Cage.CageName"
+        ];
+
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
@@ -62,32 +73,23 @@ namespace aqua_api.Modules.BatchBalances.Application.Services
                 var query = _unitOfWork.BatchCageBalances
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request.Search, SearchableColumns)
+                    .ApplyFilters(QueryHelper.WithoutGlobalSearchFilter(request.Filters), request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(BatchCageBalance.Id) : request.SortBy;
                 query = query.ApplySorting(sortBy, request.SortDirection);
 
-                var totalCount = await query.CountAsync();
-
-                var entities = await query
-                    .ApplyPagination(request.PageNumber, request.PageSize)
+                var page = await query
                     .Include(x => x.FishBatch)
                         .ThenInclude(x => x!.Project)
                     .Include(x => x.FishBatch)
                         .ThenInclude(x => x!.FishStock)
                     .Include(x => x.ProjectCage)
                         .ThenInclude(x => x!.Cage)
-                    .ToListAsync();
+                    .ToPagedItemsAsync(request)
+                    .ConfigureAwait(false);
 
-                var items = entities.Select(MapBalance).ToList();
-
-                var pagedResponse = new PagedResponse<BatchCageBalanceDto>
-                {
-                    Items = items,
-                    TotalCount = totalCount,
-                    PageNumber = request.PageNumber,
-                    PageSize = request.PageSize
-                };
+                var pagedResponse = page.ToPagedResponse(MapBalance);
 
                 return ApiResponse<PagedResponse<BatchCageBalanceDto>>.SuccessResult(
                     pagedResponse,

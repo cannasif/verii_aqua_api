@@ -7,6 +7,17 @@ namespace aqua_api.Modules.BatchBalances.Application.Services
 {
     public class BatchWarehouseBalanceService : IBatchWarehouseBalanceService
     {
+        private static readonly string[] SearchableColumns =
+        [
+            "Project.ProjectCode",
+            "Project.ProjectName",
+            "FishBatch.BatchCode",
+            "FishBatch.FishStock.ErpStockCode",
+            "FishBatch.FishStock.StockName",
+            "Warehouse.WarehouseCode",
+            "Warehouse.WarehouseName"
+        ];
+
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
@@ -62,30 +73,21 @@ namespace aqua_api.Modules.BatchBalances.Application.Services
                 var query = _unitOfWork.BatchWarehouseBalances
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request.Search, SearchableColumns)
+                    .ApplyFilters(QueryHelper.WithoutGlobalSearchFilter(request.Filters), request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(BatchWarehouseBalance.Id) : request.SortBy;
                 query = query.ApplySorting(sortBy, request.SortDirection);
 
-                var totalCount = await query.CountAsync();
-
-                var entities = await query
-                    .ApplyPagination(request.PageNumber, request.PageSize)
+                var page = await query
                     .Include(x => x.Project)
                     .Include(x => x.FishBatch)
                         .ThenInclude(x => x!.FishStock)
                     .Include(x => x.Warehouse)
-                    .ToListAsync();
+                    .ToPagedItemsAsync(request)
+                    .ConfigureAwait(false);
 
-                var items = entities.Select(MapBalance).ToList();
-
-                var pagedResponse = new PagedResponse<BatchWarehouseBalanceDto>
-                {
-                    Items = items,
-                    TotalCount = totalCount,
-                    PageNumber = request.PageNumber,
-                    PageSize = request.PageSize
-                };
+                var pagedResponse = page.ToPagedResponse(MapBalance);
 
                 return ApiResponse<PagedResponse<BatchWarehouseBalanceDto>>.SuccessResult(
                     pagedResponse,

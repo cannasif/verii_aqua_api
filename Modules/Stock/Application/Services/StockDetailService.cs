@@ -6,6 +6,14 @@ namespace aqua_api.Modules.Stock.Application.Services
 {
     public class StockDetailService : IStockDetailService
     {
+        private static readonly string[] SearchableColumns =
+        [
+            "Stock.StockName",
+            "Stock.ErpStockCode",
+            "Stock.GrupKodu",
+            "Stock.GrupAdi"
+        ];
+
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
@@ -43,27 +51,18 @@ namespace aqua_api.Modules.Stock.Application.Services
                     .Include(sd => sd.CreatedByUser)
                     .Include(sd => sd.UpdatedByUser)
                     .Include(sd => sd.DeletedByUser)
-                    .ApplyFilters(request.Filters, request.FilterLogic, columnMapping);
+                    .ApplySearch(request.Search, SearchableColumns)
+                    .ApplyFilters(QueryHelper.WithoutGlobalSearchFilter(request.Filters), request.FilterLogic, columnMapping);
 
                 var sortBy = request.SortBy ?? nameof(StockDetail.Id);
                 query = query.ApplySorting(sortBy, request.SortDirection, columnMapping);
 
-                var totalCount = await query.CountAsync();
-
-                var items = await query
-                    .ApplyPagination(request.PageNumber, request.PageSize)
+                var page = await query
                     .AsNoTracking()
-                    .ToListAsync();
+                    .ToPagedItemsAsync(request)
+                    .ConfigureAwait(false);
 
-                var dtos = items.Select(x => _mapper.Map<StockDetailGetDto>(x)).ToList();
-
-                var pagedResponse = new PagedResponse<StockDetailGetDto>
-                {
-                    Items = dtos,
-                    TotalCount = totalCount,
-                    PageNumber = request.PageNumber,
-                    PageSize = request.PageSize
-                };
+                var pagedResponse = page.ToPagedResponse(x => _mapper.Map<StockDetailGetDto>(x));
 
                 return ApiResponse<PagedResponse<StockDetailGetDto>>.SuccessResult(
                     pagedResponse, 

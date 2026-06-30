@@ -13,6 +13,15 @@ namespace aqua_api.Modules.Identity.Application.Services
 {
     public class UserService : IUserService
     {
+        private static readonly string[] UserSearchableColumns =
+        {
+            nameof(User.Username),
+            nameof(User.Email),
+            nameof(User.FirstName),
+            nameof(User.LastName),
+            "RoleNavigation.Title"
+        };
+
         private const long UserRoleId = 1;
         private const long AdminRoleId = 3;
         private readonly IUnitOfWork _uow;
@@ -82,26 +91,70 @@ namespace aqua_api.Modules.Identity.Application.Services
                     .Include(u => u.CreatedByUser)
                     .Include(u => u.UpdatedByUser)
                     .Include(u => u.DeletedByUser)
-                    .ApplyFilters(request.Filters, request.FilterLogic, columnMapping);
+                    .ApplySearch(request.Search, UserSearchableColumns);
+
+                var fullNameFilters = request.Filters
+                    .Where(f => string.Equals(f.Column, "fullName", StringComparison.OrdinalIgnoreCase)
+                        && string.Equals(f.Operator, "contains", StringComparison.OrdinalIgnoreCase)
+                        && !string.IsNullOrWhiteSpace(f.Value))
+                    .ToList();
+
+                foreach (var filter in fullNameFilters)
+                {
+                    var terms = filter.Value
+                        .Trim()
+                        .ToLowerInvariant()
+                        .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+                    foreach (var term in terms)
+                    {
+                        var searchTerm = term;
+                        query = query.Where(u =>
+                            ((u.FirstName ?? string.Empty).ToLower().Contains(searchTerm)) ||
+                            ((u.LastName ?? string.Empty).ToLower().Contains(searchTerm)) ||
+                            ((u.Username ?? string.Empty).ToLower().Contains(searchTerm)) ||
+                            ((u.Email ?? string.Empty).ToLower().Contains(searchTerm)));
+                    }
+                }
+
+                var remainingFilters = request.Filters
+                    .Where(f => !string.Equals(f.Column, "fullName", StringComparison.OrdinalIgnoreCase)
+                        && !string.Equals(f.Column, QueryHelper.GlobalSearchFilterColumn, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                query = query.ApplyFilters(remainingFilters, request.FilterLogic, columnMapping);
 
                 var sortBy = request.SortBy ?? nameof(User.Id);
 
-                query = query.ApplySorting(sortBy, request.SortDirection, columnMapping);
+                var isDescending = !string.IsNullOrWhiteSpace(request.SortDirection)
+                    && (request.SortDirection.Equals("desc", StringComparison.OrdinalIgnoreCase)
+                        || request.SortDirection.Equals("descending", StringComparison.OrdinalIgnoreCase));
 
-                var totalCount = await query.CountAsync();
+                if (string.Equals(sortBy, "fullName", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = isDescending
+                        ? query
+                            .OrderByDescending(u => (u.FirstName ?? string.Empty) + " " + (u.LastName ?? string.Empty))
+                            .ThenByDescending(u => u.Username)
+                        : query
+                            .OrderBy(u => (u.FirstName ?? string.Empty) + " " + (u.LastName ?? string.Empty))
+                            .ThenBy(u => u.Username);
+                }
+                else
+                {
+                    query = query.ApplySorting(sortBy, request.SortDirection, columnMapping);
+                }
 
-                var items = await query
-                    .ApplyPagination(request.PageNumber, request.PageSize)
-                    .ToListAsync();
+                var page = await query.ToPagedItemsAsync(request).ConfigureAwait(false);
 
-                var dtos = items.Select(x => _mapper.Map<UserDto>(x)).ToList();
+                var dtos = page.Items.Select(x => _mapper.Map<UserDto>(x)).ToList();
 
                 var pagedResponse = new PagedResponse<UserDto>
                 {
                     Items = dtos,
-                    TotalCount = totalCount,
-                    PageNumber = request.PageNumber,
-                    PageSize = request.PageSize
+                    TotalCount = page.TotalCount,
+                    PageNumber = page.PageNumber,
+                    PageSize = page.PageSize
                 };
 
                 return ApiResponse<PagedResponse<UserDto>>.SuccessResult(pagedResponse, _loc.GetLocalizedString("UserService.UsersRetrieved"));
