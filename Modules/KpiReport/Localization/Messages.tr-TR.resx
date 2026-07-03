@@ -38,4 +38,6 @@
   <data name="KpiReportService.MonthlyMortalityReportLoadFailed" xml:space="preserve"><value>Aylık fire raporu yüklenemedi.</value></data>
   <data name="KpiReportService.MonthlyShipmentReportLoaded" xml:space="preserve"><value>Aylık sevkiyat/satış raporu yüklendi.</value></data>
   <data name="KpiReportService.MonthlyShipmentReportLoadFailed" xml:space="preserve"><value>Aylık sevkiyat/satış raporu yüklenemedi.</value></data>
+  <data name="KpiReportService.MortalityTrackingReportLoaded" xml:space="preserve"><value>Ölü balık takip raporu yüklendi.</value></data>
+  <data name="KpiReportService.MortalityTrackingReportLoadFailed" xml:space="preserve"><value>Ölü balık takip raporu yüklenemedi.</value></data>
 </root>

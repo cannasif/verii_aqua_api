@@ -11,6 +11,7 @@ public interface IKpiReportService
     Task<ApiResponse<MonthlyOperationalReportDto>> GetMonthlyFeedingReportAsync(MonthlyOperationalReportRequestDto? request);
     Task<ApiResponse<MonthlyOperationalReportDto>> GetMonthlyMortalityReportAsync(MonthlyOperationalReportRequestDto? request);
     Task<ApiResponse<MonthlyOperationalReportDto>> GetMonthlyShipmentReportAsync(MonthlyOperationalReportRequestDto? request);
+    Task<ApiResponse<MortalityTrackingReportDto>> GetMortalityTrackingReportAsync(MonthlyOperationalReportRequestDto? request);
     Task<ApiResponse<DevirFcrReportDto>> GetDevirFcrReportAsync(DevirFcrReportRequestDto request);
     Task<ApiResponse<RawKpiReportDto>> GetRawKpiReportAsync(long projectId);
     Task<ApiResponse<ProjectDetailReportDto>> GetProjectDetailReportAsync(long projectId);

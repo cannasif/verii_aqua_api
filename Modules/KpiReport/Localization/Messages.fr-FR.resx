@@ -38,4 +38,6 @@
   <data name="KpiReportService.MonthlyMortalityReportLoadFailed" xml:space="preserve"><value>Impossible de charger le rapport mensuel de mortalité.</value></data>
   <data name="KpiReportService.MonthlyShipmentReportLoaded" xml:space="preserve"><value>Rapport mensuel d'expédition/vente chargé.</value></data>
   <data name="KpiReportService.MonthlyShipmentReportLoadFailed" xml:space="preserve"><value>Impossible de charger le rapport mensuel d'expédition/vente.</value></data>
+  <data name="KpiReportService.MortalityTrackingReportLoaded" xml:space="preserve"><value>Rapport de suivi des poissons morts chargé.</value></data>
+  <data name="KpiReportService.MortalityTrackingReportLoadFailed" xml:space="preserve"><value>Impossible de charger le rapport de suivi des poissons morts.</value></data>
 </root>

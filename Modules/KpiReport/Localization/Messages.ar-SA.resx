@@ -38,4 +38,6 @@
   <data name="KpiReportService.MonthlyMortalityReportLoadFailed" xml:space="preserve"><value>تعذر تحميل تقرير النفوق الشهري.</value></data>
   <data name="KpiReportService.MonthlyShipmentReportLoaded" xml:space="preserve"><value>تم تحميل تقرير الشحن/المبيعات الشهري.</value></data>
   <data name="KpiReportService.MonthlyShipmentReportLoadFailed" xml:space="preserve"><value>تعذر تحميل تقرير الشحن/المبيعات الشهري.</value></data>
+  <data name="KpiReportService.MortalityTrackingReportLoaded" xml:space="preserve"><value>تم تحميل تقرير متابعة الأسماك النافقة.</value></data>
+  <data name="KpiReportService.MortalityTrackingReportLoadFailed" xml:space="preserve"><value>تعذر تحميل تقرير متابعة الأسماك النافقة.</value></data>
 </root>

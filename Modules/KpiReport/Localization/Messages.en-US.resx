@@ -38,4 +38,6 @@
   <data name="KpiReportService.MonthlyMortalityReportLoadFailed" xml:space="preserve"><value>Monthly mortality report could not be loaded.</value></data>
   <data name="KpiReportService.MonthlyShipmentReportLoaded" xml:space="preserve"><value>Monthly shipment/sales report loaded.</value></data>
   <data name="KpiReportService.MonthlyShipmentReportLoadFailed" xml:space="preserve"><value>Monthly shipment/sales report could not be loaded.</value></data>
+  <data name="KpiReportService.MortalityTrackingReportLoaded" xml:space="preserve"><value>Dead fish tracking report loaded.</value></data>
+  <data name="KpiReportService.MortalityTrackingReportLoadFailed" xml:space="preserve"><value>Dead fish tracking report could not be loaded.</value></data>
 </root>

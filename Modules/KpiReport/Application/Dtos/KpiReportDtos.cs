@@ -137,6 +137,54 @@ public class MonthlyOperationalReportDto
     public List<MonthlyOperationalMonthDto> Months { get; set; } = new();
 }
 
+public class MortalityTrackingReportDto
+{
+    public DateTime FromDate { get; set; }
+    public DateTime ToDate { get; set; }
+    public int TotalCount { get; set; }
+    public decimal TotalKg { get; set; }
+    public int TotalProjectCount { get; set; }
+    public int TotalCageCount { get; set; }
+    public List<MortalityTrackingProjectSummaryDto> Projects { get; set; } = new();
+    public List<MortalityTrackingMonthDto> Months { get; set; } = new();
+}
+
+public class MortalityTrackingProjectSummaryDto
+{
+    public long ProjectId { get; set; }
+    public string ProjectCode { get; set; } = "-";
+    public string ProjectName { get; set; } = "-";
+    public int TotalCount { get; set; }
+    public decimal TotalKg { get; set; }
+    public int CageCount { get; set; }
+}
+
+public class MortalityTrackingMonthDto
+{
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public string MonthKey { get; set; } = string.Empty;
+    public int TotalCount { get; set; }
+    public decimal TotalKg { get; set; }
+    public List<string> Days { get; set; } = new();
+    public List<MortalityTrackingCageRowDto> Rows { get; set; } = new();
+}
+
+public class MortalityTrackingCageRowDto
+{
+    public long ProjectId { get; set; }
+    public string ProjectCode { get; set; } = "-";
+    public string ProjectName { get; set; } = "-";
+    public long ProjectCageId { get; set; }
+    public string CageCode { get; set; } = "-";
+    public string CageName { get; set; } = "-";
+    public string CageLabel { get; set; } = "-";
+    public int TotalCount { get; set; }
+    public decimal TotalKg { get; set; }
+    public Dictionary<string, int> DailyCounts { get; set; } = new();
+    public Dictionary<string, decimal> DailyKg { get; set; } = new();
+}
+
 public class MonthlyOperationalMonthDto
 {
     public int Year { get; set; }

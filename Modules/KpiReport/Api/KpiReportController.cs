@@ -67,6 +67,13 @@ public class KpiReportController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    [HttpPost("mortality-tracking")]
+    public async Task<ActionResult<ApiResponse<MortalityTrackingReportDto>>> GetMortalityTrackingReport([FromBody] MonthlyOperationalReportRequestDto? request)
+    {
+        var result = await _service.GetMortalityTrackingReportAsync(request);
+        return StatusCode(result.StatusCode, result);
+    }
+
     [HttpGet("raw-kpi/{projectId:long}")]
     public async Task<ActionResult<ApiResponse<RawKpiReportDto>>> GetRawKpiReport(long projectId)
     {

@@ -648,6 +648,32 @@ public class KpiReportService : IKpiReportService
         }
     }
 
+    public async Task<ApiResponse<MortalityTrackingReportDto>> GetMortalityTrackingReportAsync(MonthlyOperationalReportRequestDto? request)
+    {
+        try
+        {
+            var monthlyResult = await GetMonthlyMortalityReportAsync(request);
+            if (!monthlyResult.Success || monthlyResult.Data == null)
+            {
+                return ApiResponse<MortalityTrackingReportDto>.ErrorResult(
+                    monthlyResult.Message,
+                    monthlyResult.ExceptionMessage,
+                    monthlyResult.StatusCode);
+            }
+
+            var source = monthlyResult.Data;
+            var report = BuildMortalityTrackingReport(source);
+            return ApiResponse<MortalityTrackingReportDto>.SuccessResult(report, L("KpiReportService.MortalityTrackingReportLoaded"));
+        }
+        catch (Exception ex)
+        {
+            return ApiResponse<MortalityTrackingReportDto>.ErrorResult(
+                L("KpiReportService.MortalityTrackingReportLoadFailed"),
+                ex.Message,
+                StatusCodes.Status500InternalServerError);
+        }
+    }
+
     public Task<ApiResponse<DevirFcrReportDto>> GetDevirFcrReportAsync(DevirFcrReportRequestDto request)
     {
         return _devirFcrReportService.GetReportAsync(request);
@@ -2293,6 +2319,124 @@ public class KpiReportService : IKpiReportService
             TotalCageCount = records.Select(x => x.ProjectCageId).Distinct().Count(),
             Months = months
         };
+    }
+
+    private static MortalityTrackingReportDto BuildMortalityTrackingReport(MonthlyOperationalReportDto source)
+    {
+        var months = source.Months
+            .Select(month =>
+            {
+                var days = month.Days
+                    .Select(x => x.Date.Date)
+                    .Distinct()
+                    .OrderBy(x => x)
+                    .ToList();
+
+                var rows = month.Days
+                    .SelectMany(day => day.Projects.SelectMany(project =>
+                        project.Cages.Select(cage => new
+                        {
+                            Day = day.Date.Date,
+                            project.ProjectId,
+                            project.ProjectCode,
+                            project.ProjectName,
+                            cage.ProjectCageId,
+                            cage.CageCode,
+                            cage.CageName,
+                            cage.CageLabel,
+                            cage.TotalCount,
+                            cage.TotalKg
+                        })))
+                    .GroupBy(x => new
+                    {
+                        x.ProjectId,
+                        x.ProjectCode,
+                        x.ProjectName,
+                        x.ProjectCageId,
+                        x.CageCode,
+                        x.CageName,
+                        x.CageLabel
+                    })
+                    .OrderBy(x => x.Key.ProjectCode)
+                    .ThenBy(x => x.Key.ProjectName)
+                    .ThenBy(x => x.Key.CageCode)
+                    .ThenBy(x => x.Key.CageName)
+                    .Select(group =>
+                    {
+                        var dailyCounts = group
+                            .GroupBy(x => x.Day)
+                            .ToDictionary(
+                                x => ToDateKey(x.Key),
+                                x => x.Sum(y => y.TotalCount));
+
+                        var dailyKg = group
+                            .GroupBy(x => x.Day)
+                            .ToDictionary(
+                                x => ToDateKey(x.Key),
+                                x => Round(x.Sum(y => y.TotalKg)));
+
+                        return new MortalityTrackingCageRowDto
+                        {
+                            ProjectId = group.Key.ProjectId,
+                            ProjectCode = ValueOrDash(group.Key.ProjectCode),
+                            ProjectName = ValueOrDash(group.Key.ProjectName),
+                            ProjectCageId = group.Key.ProjectCageId,
+                            CageCode = ValueOrDash(group.Key.CageCode),
+                            CageName = ValueOrDash(group.Key.CageName),
+                            CageLabel = ValueOrDash(group.Key.CageLabel),
+                            TotalCount = group.Sum(x => x.TotalCount),
+                            TotalKg = Round(group.Sum(x => x.TotalKg)),
+                            DailyCounts = dailyCounts,
+                            DailyKg = dailyKg
+                        };
+                    })
+                    .ToList();
+
+                return new MortalityTrackingMonthDto
+                {
+                    Year = month.Year,
+                    Month = month.Month,
+                    MonthKey = month.MonthKey,
+                    TotalCount = rows.Sum(x => x.TotalCount),
+                    TotalKg = Round(rows.Sum(x => x.TotalKg)),
+                    Days = days.Select(ToDateKey).ToList(),
+                    Rows = rows
+                };
+            })
+            .ToList();
+
+        var projects = months
+            .SelectMany(x => x.Rows)
+            .GroupBy(x => new { x.ProjectId, x.ProjectCode, x.ProjectName })
+            .OrderBy(x => x.Key.ProjectCode)
+            .ThenBy(x => x.Key.ProjectName)
+            .Select(group => new MortalityTrackingProjectSummaryDto
+            {
+                ProjectId = group.Key.ProjectId,
+                ProjectCode = group.Key.ProjectCode,
+                ProjectName = group.Key.ProjectName,
+                TotalCount = group.Sum(x => x.TotalCount),
+                TotalKg = Round(group.Sum(x => x.TotalKg)),
+                CageCount = group.Select(x => x.ProjectCageId).Distinct().Count()
+            })
+            .ToList();
+
+        return new MortalityTrackingReportDto
+        {
+            FromDate = source.FromDate,
+            ToDate = source.ToDate,
+            TotalCount = projects.Sum(x => x.TotalCount),
+            TotalKg = Round(projects.Sum(x => x.TotalKg)),
+            TotalProjectCount = projects.Count,
+            TotalCageCount = months.SelectMany(x => x.Rows).Select(x => x.ProjectCageId).Distinct().Count(),
+            Projects = projects,
+            Months = months
+        };
+    }
+
+    private static string ToDateKey(DateTime date)
+    {
+        return date.ToString("yyyy-MM-dd");
     }
 
     private static decimal Round(decimal value)
