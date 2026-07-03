@@ -7,9 +7,9 @@ namespace aqua_api.Modules.Projects.Infrastructure.Persistence.Configurations
     {
         protected override void ConfigureEntity(EntityTypeBuilder<ProjectCage> builder)
         {
-            builder.ToTable("RII_ProjectCage", table =>
+            builder.ToTable("RII_PROJECT_CAGE", table =>
             {
-                table.HasCheckConstraint("CK_RII_ProjectCage_AssignRelease", "[ReleasedDate] IS NULL OR [ReleasedDate] >= [AssignedDate]");
+                table.HasCheckConstraint("CK_RII_PROJECT_CAGE_ASSIGN_RELEASE", "[ReleasedDate] IS NULL OR [ReleasedDate] >= [AssignedDate]");
             });
             builder.Property(x => x.AssignedDate).HasPrecision(3).IsRequired();
             builder.Property(x => x.ReleasedDate).HasPrecision(3);
@@ -27,7 +27,7 @@ namespace aqua_api.Modules.Projects.Infrastructure.Persistence.Configurations
             builder.HasIndex(x => x.CageId)
                 .IsUnique()
                 .HasFilter("[ReleasedDate] IS NULL AND [IsDeleted] = 0")
-                .HasDatabaseName("UX_RII_ProjectCage_CageId_ActiveAssignment");
+                .HasDatabaseName("UX_RII_PROJECT_CAGE_CAGE_ID_ACTIVE_ASSIGNMENT");
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }
