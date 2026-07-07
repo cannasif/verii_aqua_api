@@ -39,6 +39,39 @@
   <data name="GoodsReceiptFishDistributionService.InternalServerError" xml:space="preserve">
     <value>An internal server error occurred.</value>
   </data>
+  <data name="GoodsReceiptFishDistributionService.GoodsReceiptLineRequired" xml:space="preserve">
+    <value>Goods receipt line selection is required.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.ProjectCageRequired" xml:space="preserve">
+    <value>A cage must be selected for distribution.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishBatchRequired" xml:space="preserve">
+    <value>Fish batch selection is required.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishCountMustBePositive" xml:space="preserve">
+    <value>Distribution count must be greater than zero.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.GoodsReceiptLineNotFound" xml:space="preserve">
+    <value>The goods receipt line to distribute could not be found.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.GoodsReceiptMustBeDraft" xml:space="preserve">
+    <value>Distribution cannot be changed for a posted goods receipt line.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.ProjectCageNotFound" xml:space="preserve">
+    <value>The selected project cage could not be found.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishBatchNotFound" xml:space="preserve">
+    <value>The selected fish batch could not be found.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.ProjectCageMustBelongToReceiptProject" xml:space="preserve">
+    <value>The selected cage must belong to the goods receipt project.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishBatchMustBelongToReceiptProject" xml:space="preserve">
+    <value>The selected fish batch must belong to the goods receipt project.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.DistributionAlreadyExists" xml:space="preserve">
+    <value>A distribution record already exists for the selected cage on this goods receipt line.</value>
+  </data>
   <data name="GoodsReceiptService.ReceiptNumberRequired" xml:space="preserve">
     <value>Receipt number is required.</value>
   </data>

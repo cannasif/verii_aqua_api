@@ -39,6 +39,39 @@
   <data name="GoodsReceiptFishDistributionService.InternalServerError" xml:space="preserve">
     <value>Ocurrió un error interno del server.</value>
   </data>
+  <data name="GoodsReceiptFishDistributionService.GoodsReceiptLineRequired" xml:space="preserve">
+    <value>La selección de la línea de recepción es obligatoria.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.ProjectCageRequired" xml:space="preserve">
+    <value>Debe seleccionar una jaula para la distribución.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishBatchRequired" xml:space="preserve">
+    <value>La selección del lote de peces es obligatoria.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishCountMustBePositive" xml:space="preserve">
+    <value>La cantidad distribuida debe ser mayor que cero.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.GoodsReceiptLineNotFound" xml:space="preserve">
+    <value>No se encontró la línea de recepción que se va a distribuir.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.GoodsReceiptMustBeDraft" xml:space="preserve">
+    <value>No se puede cambiar la distribución de una línea de recepción contabilizada.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.ProjectCageNotFound" xml:space="preserve">
+    <value>No se encontró la jaula de proyecto seleccionada.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishBatchNotFound" xml:space="preserve">
+    <value>No se encontró el lote de peces seleccionado.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.ProjectCageMustBelongToReceiptProject" xml:space="preserve">
+    <value>La jaula seleccionada debe pertenecer al proyecto de la recepción.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishBatchMustBelongToReceiptProject" xml:space="preserve">
+    <value>El lote de peces seleccionado debe pertenecer al proyecto de la recepción.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.DistributionAlreadyExists" xml:space="preserve">
+    <value>Ya existe una distribución para la jaula seleccionada en esta línea de recepción.</value>
+  </data>
   <data name="GoodsReceiptService.ReceiptNumberRequired" xml:space="preserve">
     <value>El número de recibo es obligatorio.</value>
   </data>

@@ -39,6 +39,39 @@
   <data name="GoodsReceiptFishDistributionService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
   </data>
+  <data name="GoodsReceiptFishDistributionService.GoodsReceiptLineRequired" xml:space="preserve">
+    <value>اختيار سطر الاستلام مطلوب.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.ProjectCageRequired" xml:space="preserve">
+    <value>يجب اختيار قفص للتوزيع.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishBatchRequired" xml:space="preserve">
+    <value>اختيار دفعة السمك مطلوب.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishCountMustBePositive" xml:space="preserve">
+    <value>يجب أن يكون عدد التوزيع أكبر من صفر.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.GoodsReceiptLineNotFound" xml:space="preserve">
+    <value>تعذر العثور على سطر الاستلام المطلوب توزيعه.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.GoodsReceiptMustBeDraft" xml:space="preserve">
+    <value>لا يمكن تعديل توزيع سطر استلام تم ترحيله.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.ProjectCageNotFound" xml:space="preserve">
+    <value>تعذر العثور على قفص المشروع المحدد.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishBatchNotFound" xml:space="preserve">
+    <value>تعذر العثور على دفعة السمك المحددة.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.ProjectCageMustBelongToReceiptProject" xml:space="preserve">
+    <value>يجب أن يتبع القفص المحدد مشروع الاستلام.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishBatchMustBelongToReceiptProject" xml:space="preserve">
+    <value>يجب أن تتبع دفعة السمك المحددة مشروع الاستلام.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.DistributionAlreadyExists" xml:space="preserve">
+    <value>يوجد بالفعل سجل توزيع للقفص المحدد في سطر الاستلام هذا.</value>
+  </data>
   <data name="GoodsReceiptService.ReceiptNumberRequired" xml:space="preserve">
     <value>رقم الإيصال مطلوب.</value>
   </data>

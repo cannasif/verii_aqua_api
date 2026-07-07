@@ -1,4 +1,5 @@
 using AutoMapper;
+using aqua_api.Shared.Common.Helpers;
 using aqua_api.Shared.Infrastructure.Persistence.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 
@@ -120,12 +121,22 @@ namespace aqua_api.Modules.GoodsReceipts.Application.Services
         {
             try
             {
+                var validation = await ValidateAsync(dto);
+                if (!validation.Success)
+                {
+                    return validation;
+                }
+
                 var entity = _mapper.Map<GoodsReceiptFishDistribution>(dto);
                 await _unitOfWork.GoodsReceiptFishDistributions.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
                 var result = _mapper.Map<GoodsReceiptFishDistributionDto>(entity);
                 return ApiResponse<GoodsReceiptFishDistributionDto>.SuccessResult(result, _localizationService.GetLocalizedString("GoodsReceiptFishDistributionService.OperationSuccessful"));
+            }
+            catch (DbUpdateException ex) when (DbUpdateExceptionHelper.TryGetUniqueViolation(ex, out _))
+            {
+                return DistributionAlreadyExists();
             }
             catch (Exception ex)
             {
@@ -151,12 +162,22 @@ namespace aqua_api.Modules.GoodsReceipts.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                var validation = await ValidateAsync(dto, id);
+                if (!validation.Success)
+                {
+                    return validation;
+                }
+
                 _mapper.Map(dto, entity);
                 await repo.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
                 var result = _mapper.Map<GoodsReceiptFishDistributionDto>(entity);
                 return ApiResponse<GoodsReceiptFishDistributionDto>.SuccessResult(result, _localizationService.GetLocalizedString("GoodsReceiptFishDistributionService.OperationSuccessful"));
+            }
+            catch (DbUpdateException ex) when (DbUpdateExceptionHelper.TryGetUniqueViolation(ex, out _))
+            {
+                return DistributionAlreadyExists();
             }
             catch (Exception ex)
             {
@@ -192,6 +213,91 @@ namespace aqua_api.Modules.GoodsReceipts.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private async Task<ApiResponse<GoodsReceiptFishDistributionDto>> ValidateAsync(CreateGoodsReceiptFishDistributionDto dto, long? currentId = null)
+        {
+            if (dto.GoodsReceiptLineId <= 0)
+            {
+                return BadRequest("GoodsReceiptFishDistributionService.GoodsReceiptLineRequired");
+            }
+
+            if (dto.ProjectCageId <= 0)
+            {
+                return BadRequest("GoodsReceiptFishDistributionService.ProjectCageRequired");
+            }
+
+            if (dto.FishBatchId <= 0)
+            {
+                return BadRequest("GoodsReceiptFishDistributionService.FishBatchRequired");
+            }
+
+            if (dto.FishCount <= 0)
+            {
+                return BadRequest("GoodsReceiptFishDistributionService.FishCountMustBePositive");
+            }
+
+            var line = await _unitOfWork.Db.GoodsReceiptLines
+                .Include(x => x.GoodsReceipt)
+                .FirstOrDefaultAsync(x => x.Id == dto.GoodsReceiptLineId && !x.IsDeleted);
+            if (line == null)
+            {
+                return BadRequest("GoodsReceiptFishDistributionService.GoodsReceiptLineNotFound");
+            }
+
+            if (line.GoodsReceipt?.Status != DocumentStatus.Draft)
+            {
+                return BadRequest("GoodsReceiptFishDistributionService.GoodsReceiptMustBeDraft");
+            }
+
+            var projectCage = await _unitOfWork.Db.ProjectCages
+                .FirstOrDefaultAsync(x => x.Id == dto.ProjectCageId && !x.IsDeleted);
+            if (projectCage == null)
+            {
+                return BadRequest("GoodsReceiptFishDistributionService.ProjectCageNotFound");
+            }
+
+            var fishBatch = await _unitOfWork.Db.FishBatches
+                .FirstOrDefaultAsync(x => x.Id == dto.FishBatchId && !x.IsDeleted);
+            if (fishBatch == null)
+            {
+                return BadRequest("GoodsReceiptFishDistributionService.FishBatchNotFound");
+            }
+
+            var receiptProjectId = line.GoodsReceipt?.ProjectId;
+            if (receiptProjectId.HasValue && projectCage.ProjectId != receiptProjectId.Value)
+            {
+                return BadRequest("GoodsReceiptFishDistributionService.ProjectCageMustBelongToReceiptProject");
+            }
+
+            if (receiptProjectId.HasValue && fishBatch.ProjectId != receiptProjectId.Value)
+            {
+                return BadRequest("GoodsReceiptFishDistributionService.FishBatchMustBelongToReceiptProject");
+            }
+
+            var duplicateExists = await _unitOfWork.Db.GoodsReceiptFishDistributions.AnyAsync(x =>
+                !x.IsDeleted &&
+                x.GoodsReceiptLineId == dto.GoodsReceiptLineId &&
+                x.ProjectCageId == dto.ProjectCageId &&
+                (!currentId.HasValue || x.Id != currentId.Value));
+            if (duplicateExists)
+            {
+                return DistributionAlreadyExists();
+            }
+
+            return ApiResponse<GoodsReceiptFishDistributionDto>.SuccessResult(new GoodsReceiptFishDistributionDto(), string.Empty);
+        }
+
+        private ApiResponse<GoodsReceiptFishDistributionDto> BadRequest(string key)
+        {
+            var message = _localizationService.GetLocalizedString(key);
+            return ApiResponse<GoodsReceiptFishDistributionDto>.ErrorResult(message, message, StatusCodes.Status400BadRequest);
+        }
+
+        private ApiResponse<GoodsReceiptFishDistributionDto> DistributionAlreadyExists()
+        {
+            var message = _localizationService.GetLocalizedString("GoodsReceiptFishDistributionService.DistributionAlreadyExists");
+            return ApiResponse<GoodsReceiptFishDistributionDto>.ErrorResult(message, message, StatusCodes.Status409Conflict);
         }
     }
 }

@@ -39,6 +39,39 @@
   <data name="GoodsReceiptFishDistributionService.InternalServerError" xml:space="preserve">
     <value>Dahili sunucu hatası oluştu.</value>
   </data>
+  <data name="GoodsReceiptFishDistributionService.GoodsReceiptLineRequired" xml:space="preserve">
+    <value>Mal kabul satırı seçimi zorunludur.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.ProjectCageRequired" xml:space="preserve">
+    <value>Dağıtım yapılacak kafes seçimi zorunludur.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishBatchRequired" xml:space="preserve">
+    <value>Balık partisi seçimi zorunludur.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishCountMustBePositive" xml:space="preserve">
+    <value>Dağıtım adedi sıfırdan büyük olmalıdır.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.GoodsReceiptLineNotFound" xml:space="preserve">
+    <value>Dağıtılacak mal kabul satırı bulunamadı.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.GoodsReceiptMustBeDraft" xml:space="preserve">
+    <value>Post edilmiş mal kabul satırında dağıtım değiştirilemez.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.ProjectCageNotFound" xml:space="preserve">
+    <value>Seçilen proje kafesi bulunamadı.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishBatchNotFound" xml:space="preserve">
+    <value>Seçilen balık partisi bulunamadı.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.ProjectCageMustBelongToReceiptProject" xml:space="preserve">
+    <value>Seçilen kafes bu mal kabulün projesine bağlı olmalıdır.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.FishBatchMustBelongToReceiptProject" xml:space="preserve">
+    <value>Seçilen balık partisi bu mal kabulün projesine bağlı olmalıdır.</value>
+  </data>
+  <data name="GoodsReceiptFishDistributionService.DistributionAlreadyExists" xml:space="preserve">
+    <value>Bu mal kabul satırı için seçilen kafeste zaten dağıtım kaydı var.</value>
+  </data>
   <data name="GoodsReceiptService.ReceiptNumberRequired" xml:space="preserve">
     <value>Fiş numarası zorunludur.</value>
   </data>

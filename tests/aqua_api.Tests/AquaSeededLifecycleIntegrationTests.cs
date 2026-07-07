@@ -77,6 +77,7 @@ public class AquaSeededLifecycleIntegrationTests
 
         var cageService = scope.ServiceProvider.GetRequiredService<ICageService>();
         var openingImportService = scope.ServiceProvider.GetRequiredService<IOpeningImportService>();
+        var goodsReceiptFishDistributionService = scope.ServiceProvider.GetRequiredService<IGoodsReceiptFishDistributionService>();
         var fishBatchService = scope.ServiceProvider.GetRequiredService<IFishBatchService>();
         var feedingLineService = scope.ServiceProvider.GetRequiredService<IFeedingLineService>();
         var feedingDistributionService = scope.ServiceProvider.GetRequiredService<IFeedingDistributionService>();
@@ -116,6 +117,11 @@ public class AquaSeededLifecycleIntegrationTests
         Assert.False(duplicateCage.Success);
         Assert.Equal(409, duplicateCage.StatusCode);
         Assert.False(string.IsNullOrWhiteSpace(duplicateCage.Message));
+
+        var invalidFishDistribution = await goodsReceiptFishDistributionService.CreateAsync(new CreateGoodsReceiptFishDistributionDto());
+        Assert.False(invalidFishDistribution.Success);
+        Assert.Equal(400, invalidFishDistribution.StatusCode);
+        Assert.False(string.IsNullOrWhiteSpace(invalidFishDistribution.Message));
 
         var preview = await openingImportService.PreviewAsync(new OpeningImportPreviewRequestDto
         {
