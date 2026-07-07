@@ -152,26 +152,123 @@ namespace aqua_api.Modules.Transfers.Application.Services
             }
         }
 
-        public async Task<ApiResponse<bool>> SoftDeleteAsync(long id)
+        public async Task<ApiResponse<bool>> SoftDeleteAsync(long id, long? userId = null)
         {
             try
             {
-                var repo = _unitOfWork.Transfers;
-                var isDeleted = await repo.SoftDeleteAsync(id);
+                await _unitOfWork.BeginTransaction();
 
-                if (!isDeleted)
+                var transfer = await _unitOfWork.Transfers
+                    .Query(tracking: true)
+                    .Include(x => x.Lines)
+                    .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+                if (transfer == null)
                 {
+                    await _unitOfWork.Rollback();
                     return ApiResponse<bool>.ErrorResult(
                         _localizationService.GetLocalizedString("TransferService.NotFound"),
                         _localizationService.GetLocalizedString("TransferService.NotFound"),
                         StatusCodes.Status404NotFound);
                 }
 
-                await _unitOfWork.SaveChangesAsync();
+                var hasPostedLedger = await _unitOfWork.Db.BatchMovements.AnyAsync(x =>
+                    !x.IsDeleted &&
+                    x.ReferenceTable == "RII_TRANSFER" &&
+                    x.ReferenceId == transfer.Id);
+
+                if (transfer.Status == DocumentStatus.Posted || hasPostedLedger)
+                {
+                    var sourceProjectCageIds = new HashSet<long>();
+                    foreach (var line in transfer.Lines.Where(x => !x.IsDeleted))
+                    {
+                        sourceProjectCageIds.Add(line.FromProjectCageId);
+
+                        await _balanceLedgerManager.ApplyDelta(
+                            transfer.ProjectId,
+                            line.FishBatchId,
+                            line.ToProjectCageId,
+                            -line.FishCount,
+                            -line.BiomassGram,
+                            BatchMovementType.Transfer,
+                            transfer.TransferDate,
+                            "Transfer cancellation out",
+                            "RII_TRANSFER",
+                            transfer.Id,
+                            line.ToProjectCageId,
+                            line.FromProjectCageId,
+                            null,
+                            null,
+                            line.AverageGram,
+                            line.AverageGram,
+                            userId);
+
+                        await _balanceLedgerManager.ApplyDelta(
+                            transfer.ProjectId,
+                            line.FishBatchId,
+                            line.FromProjectCageId,
+                            line.FishCount,
+                            line.BiomassGram,
+                            BatchMovementType.Transfer,
+                            transfer.TransferDate,
+                            "Transfer cancellation in",
+                            "RII_TRANSFER",
+                            transfer.Id,
+                            line.ToProjectCageId,
+                            line.FromProjectCageId,
+                            null,
+                            null,
+                            line.AverageGram,
+                            line.AverageGram,
+                            userId);
+                    }
+
+                    if (sourceProjectCageIds.Count > 0)
+                    {
+                        var restoredSourceCages = await _unitOfWork.Db.ProjectCages
+                            .Where(x => sourceProjectCageIds.Contains(x.Id) && !x.IsDeleted && x.ReleasedDate != null)
+                            .ToListAsync();
+
+                        foreach (var sourceCage in restoredSourceCages)
+                        {
+                            var hasLiveBalance = await _unitOfWork.Db.BatchCageBalances
+                                .AnyAsync(x => x.ProjectCageId == sourceCage.Id && !x.IsDeleted && x.LiveCount > 0);
+                            if (!hasLiveBalance)
+                            {
+                                continue;
+                            }
+
+                            sourceCage.ReleasedDate = null;
+                            sourceCage.UpdatedBy = userId;
+                            sourceCage.UpdatedDate = DateTimeProvider.UtcNow;
+                        }
+                    }
+
+                    transfer.Status = DocumentStatus.Cancelled;
+                    transfer.UpdatedBy = userId;
+                    transfer.UpdatedDate = DateTimeProvider.UtcNow;
+                }
+
+                transfer.IsDeleted = true;
+                transfer.DeletedDate = DateTimeProvider.UtcNow;
+                transfer.DeletedBy = userId;
+
+                await _unitOfWork.SaveChanges();
+                await _unitOfWork.Commit();
+
                 return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("TransferService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                await _unitOfWork.Rollback();
+                return ApiResponse<bool>.ErrorResult(
+                    _localizationService.GetLocalizedString("TransferService.BusinessRuleError"),
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {
+                await _unitOfWork.Rollback();
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("TransferService.InternalServerError"),
                     ex.Message,
