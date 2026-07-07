@@ -8,6 +8,9 @@ using aqua_api.Modules.Aqua.Application.Services;
 using aqua_api.Modules.Aqua.DependencyInjection;
 using aqua_api.Modules.Aqua.Domain.Enums;
 using aqua_api.Modules.AquaSettings.Domain.Entities;
+using aqua_api.Modules.Cages.Application.Dtos;
+using aqua_api.Modules.Cages.Application.Services;
+using aqua_api.Modules.Cages.DependencyInjection;
 using aqua_api.Modules.Identity.Domain.Entities;
 using aqua_api.Modules.Integrations.Application.Dtos;
 using aqua_api.Modules.Integrations.Application.Services;
@@ -42,6 +45,7 @@ public class AquaSeededLifecycleIntegrationTests
         services.AddScoped<AquaDbContext>(sp => sp.GetRequiredService<SqliteTestAquaDbContext>());
         services.AddAutoMapper(typeof(MappingProfile).Assembly);
         services.AddAquaSharedInfrastructure();
+        services.AddCageModule();
         services.AddStockModule();
         services.AddWarehouseModule();
         services.AddFishBatchModule();
@@ -71,6 +75,7 @@ public class AquaSeededLifecycleIntegrationTests
 
         await SeedMasterDataAsync(db);
 
+        var cageService = scope.ServiceProvider.GetRequiredService<ICageService>();
         var openingImportService = scope.ServiceProvider.GetRequiredService<IOpeningImportService>();
         var fishBatchService = scope.ServiceProvider.GetRequiredService<IFishBatchService>();
         var feedingLineService = scope.ServiceProvider.GetRequiredService<IFeedingLineService>();
@@ -86,6 +91,31 @@ public class AquaSeededLifecycleIntegrationTests
         var shipmentLineService = scope.ServiceProvider.GetRequiredService<IShipmentLineService>();
         var shipmentService = scope.ServiceProvider.GetRequiredService<IShipmentService>();
         var kpiService = scope.ServiceProvider.GetRequiredService<IProjectCageDailyKpiService>();
+
+        var missingCageName = await cageService.CreateAsync(new CreateCageDto
+        {
+            CageCode = "CAGE-VALIDATION",
+            CageName = string.Empty,
+        });
+        Assert.False(missingCageName.Success);
+        Assert.Equal(400, missingCageName.StatusCode);
+        Assert.False(string.IsNullOrWhiteSpace(missingCageName.Message));
+
+        var firstCage = await cageService.CreateAsync(new CreateCageDto
+        {
+            CageCode = "CAGE-DUPLICATE",
+            CageName = "Duplicate Guard Cage",
+        });
+        Assert.True(firstCage.Success, firstCage.Message);
+
+        var duplicateCage = await cageService.CreateAsync(new CreateCageDto
+        {
+            CageCode = "CAGE-DUPLICATE",
+            CageName = "Duplicate Guard Cage Again",
+        });
+        Assert.False(duplicateCage.Success);
+        Assert.Equal(409, duplicateCage.StatusCode);
+        Assert.False(string.IsNullOrWhiteSpace(duplicateCage.Message));
 
         var preview = await openingImportService.PreviewAsync(new OpeningImportPreviewRequestDto
         {

@@ -30,6 +30,15 @@
   <data name="CageService.InternalServerError" xml:space="preserve">
     <value>Si è verificato un errore interno del server.</value>
   </data>
+  <data name="CageService.CageCodeRequired" xml:space="preserve">
+    <value>Il codice gabbia è obbligatorio.</value>
+  </data>
+  <data name="CageService.CageNameRequired" xml:space="preserve">
+    <value>Il nome della gabbia è obbligatorio.</value>
+  </data>
+  <data name="CageService.CageCodeAlreadyExists" xml:space="preserve">
+    <value>Questo codice gabbia è già registrato. Inserire un codice gabbia diverso.</value>
+  </data>
   <data name="CageWarehouseMappingService.OperationSuccessful" xml:space="preserve">
     <value>Operazione riuscita.</value>
   </data>

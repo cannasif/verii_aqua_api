@@ -30,6 +30,15 @@
   <data name="CageService.InternalServerError" xml:space="preserve">
     <value>Dahili sunucu hatası oluştu.</value>
   </data>
+  <data name="CageService.CageCodeRequired" xml:space="preserve">
+    <value>Kafes kodu zorunludur.</value>
+  </data>
+  <data name="CageService.CageNameRequired" xml:space="preserve">
+    <value>Kafes adı zorunludur.</value>
+  </data>
+  <data name="CageService.CageCodeAlreadyExists" xml:space="preserve">
+    <value>Bu kafes kodu zaten kayıtlı. Lütfen farklı bir kafes kodu girin.</value>
+  </data>
   <data name="CageWarehouseMappingService.OperationSuccessful" xml:space="preserve">
     <value>İşlem başarılı.</value>
   </data>

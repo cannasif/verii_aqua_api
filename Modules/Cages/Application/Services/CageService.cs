@@ -93,12 +93,25 @@ namespace aqua_api.Modules.Cages.Application.Services
         {
             try
             {
+                var validation = await ValidateAsync(dto.CageCode, dto.CageName, null);
+                if (!validation.Success)
+                {
+                    return validation;
+                }
+
+                dto.CageCode = dto.CageCode.Trim();
+                dto.CageName = dto.CageName.Trim();
+
                 var entity = _mapper.Map<Cage>(dto);
                 await _unitOfWork.Cages.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
                 var result = _mapper.Map<CageDto>(entity);
                 return ApiResponse<CageDto>.SuccessResult(result, _localizationService.GetLocalizedString("CageService.OperationSuccessful"));
+            }
+            catch (DbUpdateException ex) when (DbUpdateExceptionHelper.TryGetUniqueViolation(ex, out _))
+            {
+                return DuplicateCageCode();
             }
             catch (Exception ex)
             {
@@ -124,12 +137,25 @@ namespace aqua_api.Modules.Cages.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                var validation = await ValidateAsync(dto.CageCode, dto.CageName, id);
+                if (!validation.Success)
+                {
+                    return validation;
+                }
+
+                dto.CageCode = dto.CageCode.Trim();
+                dto.CageName = dto.CageName.Trim();
+
                 _mapper.Map(dto, entity);
                 await repo.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
                 var result = _mapper.Map<CageDto>(entity);
                 return ApiResponse<CageDto>.SuccessResult(result, _localizationService.GetLocalizedString("CageService.OperationSuccessful"));
+            }
+            catch (DbUpdateException ex) when (DbUpdateExceptionHelper.TryGetUniqueViolation(ex, out _))
+            {
+                return DuplicateCageCode();
             }
             catch (Exception ex)
             {
@@ -165,6 +191,41 @@ namespace aqua_api.Modules.Cages.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private async Task<ApiResponse<CageDto>> ValidateAsync(string cageCode, string cageName, long? currentId)
+        {
+            var normalizedCode = cageCode?.Trim();
+            if (string.IsNullOrWhiteSpace(normalizedCode))
+            {
+                return ApiResponse<CageDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("CageService.CageCodeRequired"),
+                    _localizationService.GetLocalizedString("CageService.CageCodeRequired"),
+                    StatusCodes.Status400BadRequest);
+            }
+
+            if (string.IsNullOrWhiteSpace(cageName))
+            {
+                var message = _localizationService.GetLocalizedString("CageService.CageNameRequired");
+                return ApiResponse<CageDto>.ErrorResult(message, message, StatusCodes.Status400BadRequest);
+            }
+
+            var duplicateExists = await _unitOfWork.Cages
+                .Query()
+                .AnyAsync(x =>
+                    !x.IsDeleted &&
+                    x.CageCode == normalizedCode &&
+                    (!currentId.HasValue || x.Id != currentId.Value));
+
+            return duplicateExists
+                ? DuplicateCageCode()
+                : ApiResponse<CageDto>.SuccessResult(new CageDto(), string.Empty);
+        }
+
+        private ApiResponse<CageDto> DuplicateCageCode()
+        {
+            var message = _localizationService.GetLocalizedString("CageService.CageCodeAlreadyExists");
+            return ApiResponse<CageDto>.ErrorResult(message, message, StatusCodes.Status409Conflict);
         }
     }
 }

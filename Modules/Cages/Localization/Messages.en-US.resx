@@ -30,6 +30,15 @@
   <data name="CageService.InternalServerError" xml:space="preserve">
     <value>An internal server error occurred.</value>
   </data>
+  <data name="CageService.CageCodeRequired" xml:space="preserve">
+    <value>Cage code is required.</value>
+  </data>
+  <data name="CageService.CageNameRequired" xml:space="preserve">
+    <value>Cage name is required.</value>
+  </data>
+  <data name="CageService.CageCodeAlreadyExists" xml:space="preserve">
+    <value>This cage code is already registered. Please enter a different cage code.</value>
+  </data>
   <data name="CageWarehouseMappingService.OperationSuccessful" xml:space="preserve">
     <value>Operation successful.</value>
   </data>

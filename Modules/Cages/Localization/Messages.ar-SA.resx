@@ -30,6 +30,15 @@
   <data name="CageService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
   </data>
+  <data name="CageService.CageCodeRequired" xml:space="preserve">
+    <value>رمز القفص مطلوب.</value>
+  </data>
+  <data name="CageService.CageNameRequired" xml:space="preserve">
+    <value>اسم القفص مطلوب.</value>
+  </data>
+  <data name="CageService.CageCodeAlreadyExists" xml:space="preserve">
+    <value>رمز القفص هذا مسجل بالفعل. يرجى إدخال رمز قفص مختلف.</value>
+  </data>
   <data name="CageWarehouseMappingService.OperationSuccessful" xml:space="preserve">
     <value>العملية ناجحة.</value>
   </data>

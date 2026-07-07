@@ -206,10 +206,7 @@ namespace aqua_api.Modules.Cages.Application.Services
 
             if (duplicateActiveCage)
             {
-                return ApiResponse<CageWarehouseMappingDto>.ErrorResult(
-                    _localizationService.GetLocalizedString("CageWarehouseMappingService.ActiveMappingAlreadyExists"),
-                    _localizationService.GetLocalizedString("CageWarehouseMappingService.ActiveMappingAlreadyExists"),
-                    StatusCodes.Status409Conflict);
+                return ActiveMappingAlreadyExists();
             }
 
             return ApiResponse<CageWarehouseMappingDto>.SuccessResult(new CageWarehouseMappingDto(), string.Empty);
@@ -225,10 +222,23 @@ namespace aqua_api.Modules.Cages.Application.Services
 
         private ApiResponse<T> ServerError<T>(Exception ex)
         {
+            if (ex is DbUpdateException dbUpdateException &&
+                DbUpdateExceptionHelper.TryGetUniqueViolation(dbUpdateException, out _))
+            {
+                var message = _localizationService.GetLocalizedString("CageWarehouseMappingService.ActiveMappingAlreadyExists");
+                return ApiResponse<T>.ErrorResult(message, message, StatusCodes.Status409Conflict);
+            }
+
             return ApiResponse<T>.ErrorResult(
                 _localizationService.GetLocalizedString("CageWarehouseMappingService.InternalServerError"),
                 ex.Message,
                 StatusCodes.Status500InternalServerError);
+        }
+
+        private ApiResponse<CageWarehouseMappingDto> ActiveMappingAlreadyExists()
+        {
+            var message = _localizationService.GetLocalizedString("CageWarehouseMappingService.ActiveMappingAlreadyExists");
+            return ApiResponse<CageWarehouseMappingDto>.ErrorResult(message, message, StatusCodes.Status409Conflict);
         }
     }
 }
