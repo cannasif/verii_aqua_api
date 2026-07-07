@@ -26,6 +26,7 @@ namespace aqua_api.Modules.AquaSettings.Api
         }
 
         [HttpPut]
+        [HttpPost("update")]
         public async Task<ActionResult<ApiResponse<AquaSettingsDto>>> Update([FromBody] UpdateAquaSettingsDto dto)
         {
             var currentUserResponse = await _userService.GetCurrentUserIdAsync();
