@@ -8,17 +8,20 @@ namespace aqua_api.Modules.Transfers.Application.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITransferService _transferService;
+        private readonly IBalanceLedgerManager _balanceLedgerManager;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
 
         public TransferLineService(
             IUnitOfWork unitOfWork,
             ITransferService transferService,
+            IBalanceLedgerManager balanceLedgerManager,
             IMapper mapper,
             ILocalizationService localizationService)
         {
             _unitOfWork = unitOfWork;
             _transferService = transferService;
+            _balanceLedgerManager = balanceLedgerManager;
             _mapper = mapper;
             _localizationService = localizationService;
         }
@@ -280,26 +283,104 @@ namespace aqua_api.Modules.Transfers.Application.Services
             }
         }
 
-        public async Task<ApiResponse<bool>> SoftDeleteAsync(long id)
+        public async Task<ApiResponse<bool>> SoftDeleteAsync(long id, long? userId = null)
         {
             try
             {
-                var repo = _unitOfWork.TransferLines;
-                var isDeleted = await repo.SoftDeleteAsync(id);
+                await _unitOfWork.BeginTransaction();
 
-                if (!isDeleted)
+                var line = await _unitOfWork.TransferLines
+                    .Query(tracking: true)
+                    .Include(x => x.Transfer)
+                    .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+                if (line == null || line.Transfer == null || line.Transfer.IsDeleted)
                 {
+                    await _unitOfWork.Rollback();
                     return ApiResponse<bool>.ErrorResult(
                         _localizationService.GetLocalizedString("TransferLineService.NotFound"),
                         _localizationService.GetLocalizedString("TransferLineService.NotFound"),
                         StatusCodes.Status404NotFound);
                 }
 
-                await _unitOfWork.SaveChangesAsync();
+                var transfer = line.Transfer;
+                var hasPostedLedger = await _unitOfWork.Db.BatchMovements.AnyAsync(x =>
+                    !x.IsDeleted &&
+                    x.ReferenceTable == "RII_TRANSFER" &&
+                    x.ReferenceId == transfer.Id);
+
+                if (transfer.Status == DocumentStatus.Posted || hasPostedLedger)
+                {
+                    await _balanceLedgerManager.ApplyDelta(
+                        transfer.ProjectId,
+                        line.FishBatchId,
+                        line.ToProjectCageId,
+                        -line.FishCount,
+                        -line.BiomassGram,
+                        BatchMovementType.Transfer,
+                        transfer.TransferDate,
+                        "Transfer line cancellation out",
+                        "RII_TRANSFER",
+                        transfer.Id,
+                        line.ToProjectCageId,
+                        line.FromProjectCageId,
+                        null,
+                        null,
+                        line.AverageGram,
+                        line.AverageGram,
+                        userId);
+
+                    await _balanceLedgerManager.ApplyDelta(
+                        transfer.ProjectId,
+                        line.FishBatchId,
+                        line.FromProjectCageId,
+                        line.FishCount,
+                        line.BiomassGram,
+                        BatchMovementType.Transfer,
+                        transfer.TransferDate,
+                        "Transfer line cancellation in",
+                        "RII_TRANSFER",
+                        transfer.Id,
+                        line.ToProjectCageId,
+                        line.FromProjectCageId,
+                        null,
+                        null,
+                        line.AverageGram,
+                        line.AverageGram,
+                        userId);
+                }
+
+                line.IsDeleted = true;
+                line.DeletedBy = userId;
+                line.DeletedDate = DateTimeProvider.UtcNow;
+
+                var hasRemainingLines = await _unitOfWork.Db.TransferLines.AnyAsync(x =>
+                    x.TransferId == transfer.Id && x.Id != line.Id && !x.IsDeleted);
+                if (!hasRemainingLines)
+                {
+                    transfer.Status = DocumentStatus.Cancelled;
+                    transfer.IsDeleted = true;
+                    transfer.DeletedBy = userId;
+                    transfer.DeletedDate = DateTimeProvider.UtcNow;
+                    transfer.UpdatedBy = userId;
+                    transfer.UpdatedDate = DateTimeProvider.UtcNow;
+                }
+
+                await _unitOfWork.SaveChanges();
+                await _unitOfWork.Commit();
                 return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("TransferLineService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                await _unitOfWork.Rollback();
+                return ApiResponse<bool>.ErrorResult(
+                    _localizationService.GetLocalizedString("TransferLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {
+                await _unitOfWork.Rollback();
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("TransferLineService.InternalServerError"),
                     ex.Message,

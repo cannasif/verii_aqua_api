@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace aqua_api.Modules.Transfers.Api
 {
@@ -53,8 +54,14 @@ namespace aqua_api.Modules.Transfers.Api
         [HttpDelete("{id:long}")]
         public async Task<ActionResult<ApiResponse<bool>>> Delete(long id)
         {
-            var result = await _service.SoftDeleteAsync(id);
+            var result = await _service.SoftDeleteAsync(id, GetUserId());
             return StatusCode(result.StatusCode, result);
+        }
+
+        private long? GetUserId()
+        {
+            var raw = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return long.TryParse(raw, out var userId) ? userId : null;
         }
     }
 }

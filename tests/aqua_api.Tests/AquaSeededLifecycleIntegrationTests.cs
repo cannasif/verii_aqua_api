@@ -87,6 +87,8 @@ public class AquaSeededLifecycleIntegrationTests
         var transferService = scope.ServiceProvider.GetRequiredService<ITransferService>();
         var cageWarehouseTransferLineService = scope.ServiceProvider.GetRequiredService<ICageWarehouseTransferLineService>();
         var cageWarehouseTransferService = scope.ServiceProvider.GetRequiredService<ICageWarehouseTransferService>();
+        var warehouseTransferLineService = scope.ServiceProvider.GetRequiredService<IWarehouseTransferLineService>();
+        var warehouseTransferService = scope.ServiceProvider.GetRequiredService<IWarehouseTransferService>();
         var warehouseCageTransferLineService = scope.ServiceProvider.GetRequiredService<IWarehouseCageTransferLineService>();
         var warehouseCageTransferService = scope.ServiceProvider.GetRequiredService<IWarehouseCageTransferService>();
         var shipmentLineService = scope.ServiceProvider.GetRequiredService<IShipmentLineService>();
@@ -241,6 +243,7 @@ public class AquaSeededLifecycleIntegrationTests
         var fish10Stock = await db.Stocks.SingleAsync(x => !x.IsDeleted && x.ErpStockCode == "PLAMUT-10G");
         var feedStock = await db.Stocks.SingleAsync(x => !x.IsDeleted && x.ErpStockCode == "YEM-STD");
         var warehouse = await db.Warehouses.SingleAsync(x => !x.IsDeleted && x.ErpWarehouseCode == 10);
+        var targetWarehouse = await db.Warehouses.SingleAsync(x => !x.IsDeleted && x.ErpWarehouseCode == 20);
 
         var convertedBatchCreate = await fishBatchService.CreateAsync(new CreateFishBatchDto
         {
@@ -520,7 +523,7 @@ public class AquaSeededLifecycleIntegrationTests
         Assert.Equal(warehouseBalanceBeforeCancel.LiveCount + 100, warehouseBalanceAfterPost.LiveCount);
         Assert.Equal(warehouseBalanceBeforeCancel.BiomassGram + 1_000m, warehouseBalanceAfterPost.BiomassGram);
 
-        Assert.True((await cageWarehouseTransferService.SoftDeleteAsync(reversibleTransferHeader.Id, 1)).Success);
+        Assert.True((await cageWarehouseTransferLineService.SoftDeleteAsync(reversibleTransferLine.Data!.Id, 1)).Success);
 
         var cancelledTransferHeader = await db.CageWarehouseTransfers
             .IgnoreQueryFilters()
@@ -540,13 +543,128 @@ public class AquaSeededLifecycleIntegrationTests
         Assert.Equal(warehouseBalanceBeforeCancel.LiveCount, warehouseBalanceAfterCancel.LiveCount);
         Assert.Equal(warehouseBalanceBeforeCancel.BiomassGram, warehouseBalanceAfterCancel.BiomassGram);
 
+        var warehouseTransferSourceBeforeCancel = await db.BatchWarehouseBalances
+            .AsNoTracking()
+            .SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.FishBatchId == convertedBatchId && x.WarehouseId == warehouse.Id);
+        var warehouseTransferTargetBeforeCancel = await db.BatchWarehouseBalances
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.FishBatchId == convertedBatchId && x.WarehouseId == targetWarehouse.Id);
+        Assert.Null(warehouseTransferTargetBeforeCancel);
+
+        var reversibleWarehouseTransferLine = await warehouseTransferLineService.CreateWithAutoHeaderAsync(new CreateWarehouseTransferLineWithAutoHeaderDto
+        {
+            ProjectId = project.Id,
+            TransferDate = new DateTime(2026, 4, 8),
+            FishBatchId = convertedBatchId,
+            FromWarehouseId = warehouse.Id,
+            ToWarehouseId = targetWarehouse.Id,
+            FishCount = 100,
+            AverageGram = 10m,
+            BiomassGram = BatchMath.CalculateBiomassGram(100, 10m),
+        });
+        Assert.True(reversibleWarehouseTransferLine.Success, $"{reversibleWarehouseTransferLine.Message} | {reversibleWarehouseTransferLine.ExceptionMessage}");
+
+        var reversibleWarehouseTransferHeader = await db.WarehouseTransfers
+            .SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.TransferDate.Date == new DateTime(2026, 4, 8));
+        Assert.True((await warehouseTransferService.Post(reversibleWarehouseTransferHeader.Id, 1)).Success);
+
+        var warehouseTransferSourceAfterPost = await db.BatchWarehouseBalances
+            .AsNoTracking()
+            .SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.FishBatchId == convertedBatchId && x.WarehouseId == warehouse.Id);
+        var warehouseTransferTargetAfterPost = await db.BatchWarehouseBalances
+            .AsNoTracking()
+            .SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.FishBatchId == convertedBatchId && x.WarehouseId == targetWarehouse.Id);
+
+        Assert.Equal(warehouseTransferSourceBeforeCancel.LiveCount - 100, warehouseTransferSourceAfterPost.LiveCount);
+        Assert.Equal(warehouseTransferSourceBeforeCancel.BiomassGram - 1_000m, warehouseTransferSourceAfterPost.BiomassGram);
+        Assert.Equal(100, warehouseTransferTargetAfterPost.LiveCount);
+        Assert.Equal(1_000m, warehouseTransferTargetAfterPost.BiomassGram);
+
+        Assert.True((await warehouseTransferLineService.SoftDeleteAsync(reversibleWarehouseTransferLine.Data!.Id, 1)).Success);
+
+        var cancelledWarehouseTransferHeader = await db.WarehouseTransfers
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == reversibleWarehouseTransferHeader.Id);
+        var warehouseTransferSourceAfterCancel = await db.BatchWarehouseBalances
+            .AsNoTracking()
+            .SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.FishBatchId == convertedBatchId && x.WarehouseId == warehouse.Id);
+        var warehouseTransferTargetAfterCancel = await db.BatchWarehouseBalances
+            .AsNoTracking()
+            .SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.FishBatchId == convertedBatchId && x.WarehouseId == targetWarehouse.Id);
+
+        Assert.True(cancelledWarehouseTransferHeader.IsDeleted);
+        Assert.Equal(DocumentStatus.Cancelled, cancelledWarehouseTransferHeader.Status);
+        Assert.Equal(warehouseTransferSourceBeforeCancel.LiveCount, warehouseTransferSourceAfterCancel.LiveCount);
+        Assert.Equal(warehouseTransferSourceBeforeCancel.BiomassGram, warehouseTransferSourceAfterCancel.BiomassGram);
+        Assert.Equal(0, warehouseTransferTargetAfterCancel.LiveCount);
+        Assert.Equal(0m, warehouseTransferTargetAfterCancel.BiomassGram);
+
+        var warehouseCageSourceBeforeLineCancel = await db.BatchWarehouseBalances
+            .AsNoTracking()
+            .SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.FishBatchId == convertedBatchId && x.WarehouseId == warehouse.Id);
+        var warehouseCageTargetBeforeLineCancel = await db.BatchCageBalances
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => !x.IsDeleted && x.FishBatchId == convertedBatchId && x.ProjectCageId == targetProjectCage.Id);
+        Assert.Null(warehouseCageTargetBeforeLineCancel);
+
+        var reversibleWarehouseCageLine = await warehouseCageTransferLineService.CreateWithAutoHeaderAsync(new CreateWarehouseCageTransferLineWithAutoHeaderDto
+        {
+            ProjectId = project.Id,
+            TransferDate = new DateTime(2026, 4, 8),
+            FishBatchId = convertedBatchId,
+            FromWarehouseId = warehouse.Id,
+            ToProjectCageId = targetProjectCage.Id,
+            FishCount = 100,
+            AverageGram = 10m,
+            BiomassGram = BatchMath.CalculateBiomassGram(100, 10m),
+        });
+        Assert.True(reversibleWarehouseCageLine.Success, $"{reversibleWarehouseCageLine.Message} | {reversibleWarehouseCageLine.ExceptionMessage}");
+
+        var reversibleWarehouseCageHeader = await db.WarehouseCageTransfers
+            .SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.TransferDate.Date == new DateTime(2026, 4, 8));
+        Assert.True((await warehouseCageTransferService.Post(reversibleWarehouseCageHeader.Id, 1)).Success);
+
+        var warehouseCageSourceAfterPost = await db.BatchWarehouseBalances
+            .AsNoTracking()
+            .SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.FishBatchId == convertedBatchId && x.WarehouseId == warehouse.Id);
+        var warehouseCageTargetAfterPost = await db.BatchCageBalances
+            .AsNoTracking()
+            .SingleAsync(x => !x.IsDeleted && x.FishBatchId == convertedBatchId && x.ProjectCageId == targetProjectCage.Id);
+
+        Assert.Equal(warehouseCageSourceBeforeLineCancel.LiveCount - 100, warehouseCageSourceAfterPost.LiveCount);
+        Assert.Equal(warehouseCageSourceBeforeLineCancel.BiomassGram - 1_000m, warehouseCageSourceAfterPost.BiomassGram);
+        Assert.Equal(100, warehouseCageTargetAfterPost.LiveCount);
+        Assert.Equal(1_000m, warehouseCageTargetAfterPost.BiomassGram);
+
+        Assert.True((await warehouseCageTransferLineService.SoftDeleteAsync(reversibleWarehouseCageLine.Data!.Id, 1)).Success);
+
+        var cancelledWarehouseCageHeader = await db.WarehouseCageTransfers
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == reversibleWarehouseCageHeader.Id);
+        var warehouseCageSourceAfterCancel = await db.BatchWarehouseBalances
+            .AsNoTracking()
+            .SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.FishBatchId == convertedBatchId && x.WarehouseId == warehouse.Id);
+        var warehouseCageTargetAfterCancel = await db.BatchCageBalances
+            .AsNoTracking()
+            .SingleAsync(x => !x.IsDeleted && x.FishBatchId == convertedBatchId && x.ProjectCageId == targetProjectCage.Id);
+
+        Assert.True(cancelledWarehouseCageHeader.IsDeleted);
+        Assert.Equal(DocumentStatus.Cancelled, cancelledWarehouseCageHeader.Status);
+        Assert.Equal(warehouseCageSourceBeforeLineCancel.LiveCount, warehouseCageSourceAfterCancel.LiveCount);
+        Assert.Equal(warehouseCageSourceBeforeLineCancel.BiomassGram, warehouseCageSourceAfterCancel.BiomassGram);
+        Assert.Equal(0, warehouseCageTargetAfterCancel.LiveCount);
+        Assert.Equal(0m, warehouseCageTargetAfterCancel.BiomassGram);
+
         var sourceCageBeforeTransferCancel = await db.BatchCageBalances
             .AsNoTracking()
             .SingleAsync(x => !x.IsDeleted && x.FishBatchId == convertedBatchId && x.ProjectCageId == projectCage.Id);
         var targetBalanceBeforeTransferCancel = await db.BatchCageBalances
             .AsNoTracking()
             .FirstOrDefaultAsync(x => !x.IsDeleted && x.FishBatchId == convertedBatchId && x.ProjectCageId == targetProjectCage.Id);
-        Assert.Null(targetBalanceBeforeTransferCancel);
+        Assert.True(targetBalanceBeforeTransferCancel == null || targetBalanceBeforeTransferCancel.LiveCount == 0);
+        Assert.True(targetBalanceBeforeTransferCancel == null || targetBalanceBeforeTransferCancel.BiomassGram == 0m);
 
         var reversibleCageTransferLine = await transferLineService.CreateWithAutoHeaderAsync(new CreateTransferLineWithAutoHeaderDto
         {
@@ -577,7 +695,7 @@ public class AquaSeededLifecycleIntegrationTests
         Assert.Equal(100, targetCageAfterTransferPost.LiveCount);
         Assert.Equal(1_000m, targetCageAfterTransferPost.BiomassGram);
 
-        Assert.True((await transferService.SoftDeleteAsync(reversibleCageTransferHeader.Id, 1)).Success);
+        Assert.True((await transferLineService.SoftDeleteAsync(reversibleCageTransferLine.Data!.Id, 1)).Success);
 
         var cancelledCageTransferHeader = await db.Transfers
             .IgnoreQueryFilters()
@@ -606,13 +724,13 @@ public class AquaSeededLifecycleIntegrationTests
             .GroupBy(x => x.MovementType)
             .OrderBy(x => x.Key)
             .Select(x => $"{x.Key}={x.Count()}"));
-        Assert.True(movements.Count == 23, movementSummary);
+        Assert.True(movements.Count == 31, movementSummary);
         Assert.Equal(1, movements.Count(x => x.MovementType == BatchMovementType.OpeningImport));
         Assert.Equal(4, movements.Count(x => x.MovementType == BatchMovementType.Feeding));
         Assert.Equal(2, movements.Count(x => x.MovementType == BatchMovementType.Mortality));
         Assert.Equal(2, movements.Count(x => x.MovementType == BatchMovementType.StockConvert));
         Assert.Equal(4, movements.Count(x => x.MovementType == BatchMovementType.Transfer));
-        Assert.Equal(8, movements.Count(x => x.MovementType == BatchMovementType.WarehouseTransfer));
+        Assert.Equal(16, movements.Count(x => x.MovementType == BatchMovementType.WarehouseTransfer));
         Assert.Equal(2, movements.Count(x => x.MovementType == BatchMovementType.Shipment));
     }
 
@@ -654,14 +772,23 @@ public class AquaSeededLifecycleIntegrationTests
                 BranchCode = 1,
             });
 
-        db.Warehouses.Add(new Warehouse
-        {
-            ErpWarehouseCode = 10,
-            WarehouseName = "Ana Depo",
-            BranchCode = 1,
-            AllowNegativeBalance = false,
-            IsLocked = false,
-        });
+        db.Warehouses.AddRange(
+            new Warehouse
+            {
+                ErpWarehouseCode = 10,
+                WarehouseName = "Ana Depo",
+                BranchCode = 1,
+                AllowNegativeBalance = false,
+                IsLocked = false,
+            },
+            new Warehouse
+            {
+                ErpWarehouseCode = 20,
+                WarehouseName = "Yedek Depo",
+                BranchCode = 1,
+                AllowNegativeBalance = false,
+                IsLocked = false,
+            });
 
         await db.SaveChangesAsync();
     }

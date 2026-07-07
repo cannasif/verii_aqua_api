@@ -7,6 +7,6 @@ namespace aqua_api.Modules.Transfers.Application.Services
         Task<ApiResponse<WarehouseTransferLineDto>> CreateAsync(CreateWarehouseTransferLineDto dto);
         Task<ApiResponse<WarehouseTransferLineDto>> CreateWithAutoHeaderAsync(CreateWarehouseTransferLineWithAutoHeaderDto dto);
         Task<ApiResponse<WarehouseTransferLineDto>> UpdateAsync(long id, UpdateWarehouseTransferLineDto dto);
-        Task<ApiResponse<bool>> SoftDeleteAsync(long id);
+        Task<ApiResponse<bool>> SoftDeleteAsync(long id, long? userId = null);
     }
 }

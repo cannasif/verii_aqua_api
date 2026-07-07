@@ -8,16 +8,19 @@ namespace aqua_api.Modules.Transfers.Application.Services
     public class WarehouseTransferLineService : IWarehouseTransferLineService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IBalanceLedgerManager _balanceLedgerManager;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
 
         public WarehouseTransferLineService(
             IUnitOfWork unitOfWork,
+            IBalanceLedgerManager balanceLedgerManager,
             IMapper mapper,
             ILocalizationService localizationService,
             IErpService erpService)
         {
             _unitOfWork = unitOfWork;
+            _balanceLedgerManager = balanceLedgerManager;
             _mapper = mapper;
             _localizationService = localizationService;
         }
@@ -217,24 +220,104 @@ namespace aqua_api.Modules.Transfers.Application.Services
             }
         }
 
-        public async Task<ApiResponse<bool>> SoftDeleteAsync(long id)
+        public async Task<ApiResponse<bool>> SoftDeleteAsync(long id, long? userId = null)
         {
             try
             {
-                var deleted = await _unitOfWork.Repository<WarehouseTransferLine>().SoftDeleteAsync(id);
-                if (!deleted)
+                await _unitOfWork.BeginTransaction();
+
+                var line = await _unitOfWork.Repository<WarehouseTransferLine>()
+                    .Query(tracking: true)
+                    .Include(x => x.WarehouseTransfer)
+                    .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+                if (line == null || line.WarehouseTransfer == null || line.WarehouseTransfer.IsDeleted)
                 {
+                    await _unitOfWork.Rollback();
                     return ApiResponse<bool>.ErrorResult(
                         _localizationService.GetLocalizedString("WarehouseTransferLineService.NotFound"),
                         _localizationService.GetLocalizedString("WarehouseTransferLineService.NotFound"),
                         StatusCodes.Status404NotFound);
                 }
 
-                await _unitOfWork.SaveChangesAsync();
+                var transfer = line.WarehouseTransfer;
+                var hasPostedLedger = await _unitOfWork.Db.BatchMovements.AnyAsync(x =>
+                    !x.IsDeleted &&
+                    x.ReferenceTable == "RII_WAREHOUSE_TRANSFER" &&
+                    x.ReferenceId == transfer.Id);
+
+                if (transfer.Status == DocumentStatus.Posted || hasPostedLedger)
+                {
+                    await _balanceLedgerManager.ApplyWarehouseDelta(
+                        transfer.ProjectId,
+                        line.FishBatchId,
+                        line.ToWarehouseId,
+                        -line.FishCount,
+                        -line.BiomassGram,
+                        BatchMovementType.WarehouseTransfer,
+                        transfer.TransferDate,
+                        "Warehouse transfer line cancellation out",
+                        "RII_WAREHOUSE_TRANSFER",
+                        transfer.Id,
+                        line.FromWarehouseId,
+                        line.ToWarehouseId,
+                        null,
+                        null,
+                        line.AverageGram,
+                        line.AverageGram,
+                        userId);
+
+                    await _balanceLedgerManager.ApplyWarehouseDelta(
+                        transfer.ProjectId,
+                        line.FishBatchId,
+                        line.FromWarehouseId,
+                        line.FishCount,
+                        line.BiomassGram,
+                        BatchMovementType.WarehouseTransfer,
+                        transfer.TransferDate,
+                        "Warehouse transfer line cancellation in",
+                        "RII_WAREHOUSE_TRANSFER",
+                        transfer.Id,
+                        line.FromWarehouseId,
+                        line.ToWarehouseId,
+                        null,
+                        null,
+                        line.AverageGram,
+                        line.AverageGram,
+                        userId);
+                }
+
+                line.IsDeleted = true;
+                line.DeletedBy = userId;
+                line.DeletedDate = DateTimeProvider.UtcNow;
+
+                var hasRemainingLines = await _unitOfWork.Db.WarehouseTransferLines.AnyAsync(x =>
+                    x.WarehouseTransferId == transfer.Id && x.Id != line.Id && !x.IsDeleted);
+                if (!hasRemainingLines)
+                {
+                    transfer.Status = DocumentStatus.Cancelled;
+                    transfer.IsDeleted = true;
+                    transfer.DeletedBy = userId;
+                    transfer.DeletedDate = DateTimeProvider.UtcNow;
+                    transfer.UpdatedBy = userId;
+                    transfer.UpdatedDate = DateTimeProvider.UtcNow;
+                }
+
+                await _unitOfWork.SaveChanges();
+                await _unitOfWork.Commit();
                 return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("WarehouseTransferLineService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                await _unitOfWork.Rollback();
+                return ApiResponse<bool>.ErrorResult(
+                    _localizationService.GetLocalizedString("WarehouseTransferLineService.InternalServerError"),
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {
+                await _unitOfWork.Rollback();
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("WarehouseTransferLineService.InternalServerError"),
                     ex.Message,
