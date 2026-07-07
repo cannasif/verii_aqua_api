@@ -145,24 +145,101 @@ namespace aqua_api.Modules.Transfers.Application.Services
             }
         }
 
-        public async Task<ApiResponse<bool>> SoftDeleteAsync(long id)
+        public async Task<ApiResponse<bool>> SoftDeleteAsync(long id, long? userId = null)
         {
             try
             {
-                var deleted = await _unitOfWork.Repository<CageWarehouseTransfer>().SoftDeleteAsync(id);
-                if (!deleted)
+                await _unitOfWork.BeginTransaction();
+
+                var repo = _unitOfWork.Repository<CageWarehouseTransfer>();
+                var transfer = await repo
+                    .Query(tracking: true)
+                    .Include(x => x.Lines)
+                    .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+                if (transfer == null)
                 {
+                    await _unitOfWork.Rollback();
                     return ApiResponse<bool>.ErrorResult(
                         _localizationService.GetLocalizedString("CageWarehouseTransferService.NotFound"),
                         _localizationService.GetLocalizedString("CageWarehouseTransferService.NotFound"),
                         StatusCodes.Status404NotFound);
                 }
 
-                await _unitOfWork.SaveChangesAsync();
+                var hasPostedLedger = await _unitOfWork.Db.BatchMovements.AnyAsync(x =>
+                    !x.IsDeleted &&
+                    x.ReferenceTable == "RII_CAGE_WAREHOUSE_TRANSFER" &&
+                    x.ReferenceId == transfer.Id);
+
+                if (transfer.Status == DocumentStatus.Posted || hasPostedLedger)
+                {
+                    var lines = transfer.Lines.Where(x => !x.IsDeleted).ToList();
+                    foreach (var line in lines)
+                    {
+                        await _balanceLedgerManager.ApplyWarehouseDelta(
+                            transfer.ProjectId,
+                            line.FishBatchId,
+                            line.ToWarehouseId,
+                            -line.FishCount,
+                            -line.BiomassGram,
+                            BatchMovementType.WarehouseTransfer,
+                            transfer.TransferDate,
+                            "Cage to warehouse transfer cancellation - warehouse out",
+                            "RII_CAGE_WAREHOUSE_TRANSFER",
+                            transfer.Id,
+                            line.ToWarehouseId,
+                            null,
+                            null,
+                            null,
+                            line.AverageGram,
+                            null,
+                            userId);
+
+                        await _balanceLedgerManager.ApplyDelta(
+                            transfer.ProjectId,
+                            line.FishBatchId,
+                            line.FromProjectCageId,
+                            line.FishCount,
+                            line.BiomassGram,
+                            BatchMovementType.WarehouseTransfer,
+                            transfer.TransferDate,
+                            "Cage to warehouse transfer cancellation - cage in",
+                            "RII_CAGE_WAREHOUSE_TRANSFER",
+                            transfer.Id,
+                            null,
+                            line.FromProjectCageId,
+                            null,
+                            null,
+                            null,
+                            line.AverageGram,
+                            userId);
+                    }
+
+                    transfer.Status = DocumentStatus.Cancelled;
+                    transfer.UpdatedBy = userId;
+                    transfer.UpdatedDate = DateTimeProvider.UtcNow;
+                }
+
+                transfer.IsDeleted = true;
+                transfer.DeletedDate = DateTimeProvider.UtcNow;
+                transfer.DeletedBy = userId;
+
+                await _unitOfWork.SaveChanges();
+                await _unitOfWork.Commit();
+
                 return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("CageWarehouseTransferService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                await _unitOfWork.Rollback();
+                return ApiResponse<bool>.ErrorResult(
+                    _localizationService.GetLocalizedString("CageWarehouseTransferService.BusinessRuleError"),
+                    ex.Message,
+                    StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {
+                await _unitOfWork.Rollback();
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("CageWarehouseTransferService.InternalServerError"),
                     ex.Message,
@@ -177,7 +254,7 @@ namespace aqua_api.Modules.Transfers.Application.Services
                 await _unitOfWork.BeginTransaction();
 
                 var transfer = await _unitOfWork.Repository<CageWarehouseTransfer>()
-                    .Query()
+                    .Query(tracking: true)
                     .Include(x => x.Lines)
                     .FirstOrDefaultAsync(x => x.Id == cageWarehouseTransferId && !x.IsDeleted);
 
