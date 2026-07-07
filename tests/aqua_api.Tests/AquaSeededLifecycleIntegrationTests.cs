@@ -695,6 +695,10 @@ public class AquaSeededLifecycleIntegrationTests
         Assert.Equal(100, targetCageAfterTransferPost.LiveCount);
         Assert.Equal(1_000m, targetCageAfterTransferPost.BiomassGram);
 
+        var releasedSourceCage = await db.ProjectCages.SingleAsync(x => x.Id == projectCage.Id);
+        releasedSourceCage.ReleasedDate = reversibleCageTransferHeader.TransferDate;
+        await db.SaveChangesAsync();
+
         Assert.True((await transferLineService.SoftDeleteAsync(reversibleCageTransferLine.Data!.Id, 1)).Success);
 
         var cancelledCageTransferHeader = await db.Transfers
@@ -714,6 +718,7 @@ public class AquaSeededLifecycleIntegrationTests
         Assert.Equal(sourceCageBeforeTransferCancel.BiomassGram, sourceCageAfterTransferCancel.BiomassGram);
         Assert.Equal(0, targetCageAfterTransferCancel.LiveCount);
         Assert.Equal(0m, targetCageAfterTransferCancel.BiomassGram);
+        Assert.Null((await db.ProjectCages.AsNoTracking().SingleAsync(x => x.Id == projectCage.Id)).ReleasedDate);
 
         var movements = await db.BatchMovements
             .Where(x => !x.IsDeleted)

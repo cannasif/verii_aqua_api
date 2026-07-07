@@ -348,6 +348,20 @@ namespace aqua_api.Modules.Transfers.Application.Services
                         line.AverageGram,
                         line.AverageGram,
                         userId);
+
+                    var sourceCage = await _unitOfWork.Db.ProjectCages
+                        .FirstOrDefaultAsync(x => x.Id == line.FromProjectCageId && !x.IsDeleted && x.ReleasedDate != null);
+                    if (sourceCage != null)
+                    {
+                        var hasLiveBalance = await _unitOfWork.Db.BatchCageBalances
+                            .AnyAsync(x => x.ProjectCageId == sourceCage.Id && !x.IsDeleted && x.LiveCount > 0);
+                        if (hasLiveBalance)
+                        {
+                            sourceCage.ReleasedDate = null;
+                            sourceCage.UpdatedBy = userId;
+                            sourceCage.UpdatedDate = DateTimeProvider.UtcNow;
+                        }
+                    }
                 }
 
                 line.IsDeleted = true;
