@@ -1067,22 +1067,6 @@ public class BudgetPlanningService : IBudgetPlanningService
             .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
             .ToListAsync();
 
-        var hasSavedProjections = await _unitOfWork.Db.BudgetPlanMonthlyProjections
-            .AnyAsync(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted);
-        if (!includeSalesAndOperations && plan.Status >= BudgetPlanStatus.GrowthCalculated && hasSavedProjections)
-        {
-            return await GetProjectionsAsync(budgetPlanId);
-        }
-
-        var hasSavedOperationResults = await _unitOfWork.Db.BudgetPlanFeedingLines
-            .AnyAsync(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted) ||
-            await _unitOfWork.Db.BudgetPlanMortalityLines
-                .AnyAsync(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted);
-        if (includeSalesAndOperations && plan.Status == BudgetPlanStatus.Calculated && hasSavedProjections && hasSavedOperationResults)
-        {
-            return await GetProjectionsAsync(budgetPlanId);
-        }
-
         if (includeSalesAndOperations && plan.Status < BudgetPlanStatus.SalesPlanned)
         {
             return ApiResponse<List<BudgetPlanMonthlyProjectionDto>>.ErrorResult("Yemleme ve fire hesabi icin once buyutme yapilmali ve satis plani girilmelidir.", "Yemleme ve fire hesabi icin once buyutme yapilmali ve satis plani girilmelidir.", StatusCodes.Status400BadRequest);
@@ -1109,6 +1093,24 @@ public class BudgetPlanningService : IBudgetPlanningService
         var mortalityRates = await _unitOfWork.Db.BudgetMortalityRateDefinitions
             .Where(x => !x.IsDeleted)
             .ToListAsync();
+
+        var definitionValidation = ValidateProjectionDefinitions(
+            batches,
+            periods,
+            sales,
+            growthProfiles,
+            waterTemperatures,
+            calibrations,
+            feedRates,
+            mortalityRates,
+            includeSalesAndOperations);
+        if (!definitionValidation.Success)
+        {
+            return ApiResponse<List<BudgetPlanMonthlyProjectionDto>>.ErrorResult(
+                definitionValidation.Message,
+                definitionValidation.Message,
+                StatusCodes.Status400BadRequest);
+        }
 
         await _unitOfWork.BeginTransactionAsync();
         try
@@ -1145,8 +1147,10 @@ public class BudgetPlanningService : IBudgetPlanningService
                     salesCount = Math.Min(salesCount, liveCount);
                     var afterSalesLiveCount = Math.Max(0, liveCount - salesCount);
                     var calibration = FindCalibration(calibrations, closingAverageBeforeLoss);
-                    var waterTemperature = waterTemperatures.FirstOrDefault(x => x.Year == period.Year && x.Month == period.Month);
-                    var mortalityRate = includeSalesAndOperations ? FindMortalityRate(mortalityRates, batch.FishStockId, calibration?.Id, monthIndex) : 0m;
+                    var waterTemperature = FindWaterTemperature(waterTemperatures, period.Year, period.Month);
+                    var mortalityRate = includeSalesAndOperations
+                        ? FindMortalityRateDefinition(mortalityRates, batch.FishStockId, calibration?.Id, monthIndex)?.MortalityRatePercent ?? 0m
+                        : 0m;
                     var mortalityCount = Math.Min(afterSalesLiveCount, (int)Math.Round(afterSalesLiveCount * mortalityRate / 100m, MidpointRounding.AwayFromZero));
                     var mortalityKg = Round(mortalityCount * closingAverageBeforeLoss / 1000m);
                     var closingLiveCount = Math.Max(0, afterSalesLiveCount - mortalityCount);
@@ -1605,7 +1609,7 @@ public class BudgetPlanningService : IBudgetPlanningService
     private static BudgetCalibrationDefinition? FindCalibration(List<BudgetCalibrationDefinition> calibrations, decimal averageGram)
     {
         return calibrations
-            .Select(x => new { Calibration = x, Range = TryParseRange(x.CalibrationCode) ?? TryParseRange(x.CalibrationInfo) })
+            .Select(x => new { Calibration = x, Range = TryParseRange(x.CalibrationInfo) ?? TryParseRange(x.CalibrationCode) })
             .Where(x => x.Range != null && averageGram >= x.Range.Value.Min && averageGram <= x.Range.Value.Max)
             .OrderBy(x => x.Range!.Value.Max - x.Range.Value.Min)
             .Select(x => x.Calibration)
@@ -1627,17 +1631,58 @@ public class BudgetPlanningService : IBudgetPlanningService
 
         var first = ParseDecimal(matches[0].Value);
         var second = matches.Count > 1 ? ParseDecimal(matches[1].Value) : first;
+
+        if (matches.Count == 1 && IsOpenEndedUpperRange(value))
+        {
+            return (first, decimal.MaxValue);
+        }
+
+        if (matches.Count == 1 && IsOpenEndedLowerRange(value))
+        {
+            return (0m, first);
+        }
+
         return (Math.Min(first, second), Math.Max(first, second));
     }
 
     private static BudgetFeedConsumptionRate? FindFeedRate(List<BudgetFeedConsumptionRate> rates, long? waterTemperatureId, long? calibrationId)
     {
+        if (!waterTemperatureId.HasValue || !calibrationId.HasValue)
+        {
+            return null;
+        }
+
         return rates.FirstOrDefault(x =>
-            (!waterTemperatureId.HasValue || x.WaterTemperatureId == waterTemperatureId.Value) &&
-            (!calibrationId.HasValue || x.CalibrationDefinitionId == calibrationId.Value));
+            x.WaterTemperatureId == waterTemperatureId.Value &&
+            x.CalibrationDefinitionId == calibrationId.Value);
     }
 
-    private static decimal FindMortalityRate(List<BudgetMortalityRateDefinition> rates, long fishStockId, long? calibrationId, int growthMonthNo)
+    private static BudgetWaterTemperature? FindWaterTemperature(List<BudgetWaterTemperature> temperatures, int year, int month)
+    {
+        return temperatures.FirstOrDefault(x => x.Year == year && x.Month == month) ??
+               temperatures.FirstOrDefault(x => x.Month == month);
+    }
+
+    private static bool IsOpenEndedUpperRange(string value)
+    {
+        return value.Contains("+", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("üzeri", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("uzeri", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("üstü", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("ustu", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("above", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("greater", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsOpenEndedLowerRange(string value)
+    {
+        return value.Contains("altı", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("alti", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("below", StringComparison.OrdinalIgnoreCase) ||
+               value.Contains("less", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static BudgetMortalityRateDefinition? FindMortalityRateDefinition(List<BudgetMortalityRateDefinition> rates, long fishStockId, long? calibrationId, int growthMonthNo)
     {
         return rates
             .Where(x => !x.FishStockId.HasValue || x.FishStockId == fishStockId)
@@ -1646,8 +1691,115 @@ public class BudgetPlanningService : IBudgetPlanningService
             .OrderByDescending(x => x.FishStockId.HasValue)
             .ThenByDescending(x => x.CalibrationDefinitionId.HasValue)
             .ThenByDescending(x => x.GrowthMonthNo.HasValue)
-            .Select(x => x.MortalityRatePercent)
             .FirstOrDefault();
+    }
+
+    private static ApiResponse<bool> ValidateProjectionDefinitions(
+        List<BudgetPlanFishBatch> batches,
+        List<BudgetPeriod> periods,
+        List<BudgetPlanSalesLine> sales,
+        List<BudgetFishGrowthProfile> growthProfiles,
+        List<BudgetWaterTemperature> waterTemperatures,
+        List<BudgetCalibrationDefinition> calibrations,
+        List<BudgetFeedConsumptionRate> feedRates,
+        List<BudgetMortalityRateDefinition> mortalityRates,
+        bool includeSalesAndOperations)
+    {
+        var errors = new List<string>();
+
+        foreach (var batch in batches.OrderBy(x => x.BudgetPlanProject.ProjectCode).ThenBy(x => x.BatchCode))
+        {
+            var liveCount = batch.InitialLiveCount;
+            var averageGram = batch.InitialAverageGram;
+            var profile = growthProfiles.FirstOrDefault(x => x.StockId == batch.FishStockId && x.StartMonth == batch.GrowthStartMonth);
+
+            if (profile == null)
+            {
+                errors.Add($"{DescribeBudgetBatch(batch)} icin {batch.GrowthStartMonth}. ay baslangicli buyume profili yok.");
+                continue;
+            }
+
+            foreach (var period in periods)
+            {
+                var monthIndex = MonthsBetween(batch.GrowthStartYear, batch.GrowthStartMonth, period.Year, period.Month) + 1;
+                var growthLine = profile.Lines.FirstOrDefault(x => x.GrowthMonthNo == monthIndex && !x.IsDeleted);
+                if (monthIndex < 1 || growthLine == null)
+                {
+                    errors.Add($"{DescribeBudgetBatch(batch)} icin {period.Year}/{period.Month:00} donemi {monthIndex}. buyume ayi tanimi yok.");
+                    continue;
+                }
+
+                var closingAverageBeforeLoss = averageGram + growthLine.MonthlyGrowthGram;
+                var calibration = FindCalibration(calibrations, closingAverageBeforeLoss);
+                if (calibration == null)
+                {
+                    errors.Add($"{DescribeBudgetBatch(batch)} icin {period.Year}/{period.Month:00} doneminde {Round(closingAverageBeforeLoss)} gr kalibrasyon tanimi yok.");
+                }
+
+                var periodSales = includeSalesAndOperations
+                    ? sales.Where(x => x.BudgetPlanFishBatchId == batch.Id && x.Year == period.Year && x.Month == period.Month).ToList()
+                    : new List<BudgetPlanSalesLine>();
+                var salesKg = includeSalesAndOperations
+                    ? Math.Min(periodSales.Sum(x => x.SalesKg), Round(liveCount * closingAverageBeforeLoss / 1000m))
+                    : 0m;
+                var salesCount = includeSalesAndOperations ? periodSales.Sum(x => x.SalesCount ?? 0) : 0;
+                if (salesCount <= 0 && closingAverageBeforeLoss > 0)
+                {
+                    salesCount = (int)Math.Round(salesKg * 1000m / closingAverageBeforeLoss, MidpointRounding.AwayFromZero);
+                }
+
+                salesCount = Math.Min(salesCount, liveCount);
+                var afterSalesLiveCount = Math.Max(0, liveCount - salesCount);
+
+                if (includeSalesAndOperations)
+                {
+                    var waterTemperature = FindWaterTemperature(waterTemperatures, period.Year, period.Month);
+                    if (waterTemperature == null)
+                    {
+                        errors.Add($"{period.Year}/{period.Month:00} donemi icin su sicakligi tanimi yok.");
+                    }
+
+                    if (calibration != null && waterTemperature != null && FindFeedRate(feedRates, waterTemperature.Id, calibration.Id) == null)
+                    {
+                        errors.Add($"{period.Year}/{period.Month:00} donemi ve {calibration.CalibrationCode} kalibrasyonu icin yem tuketim orani tanimi yok.");
+                    }
+
+                    var mortalityRate = calibration == null
+                        ? null
+                        : FindMortalityRateDefinition(mortalityRates, batch.FishStockId, calibration.Id, monthIndex);
+                    if (mortalityRate == null)
+                    {
+                        errors.Add($"{DescribeBudgetBatch(batch)} icin {period.Year}/{period.Month:00} donemi fire orani tanimi yok.");
+                    }
+
+                    var mortalityCount = Math.Min(afterSalesLiveCount, (int)Math.Round(afterSalesLiveCount * (mortalityRate?.MortalityRatePercent ?? 0m) / 100m, MidpointRounding.AwayFromZero));
+                    liveCount = Math.Max(0, afterSalesLiveCount - mortalityCount);
+                }
+
+                averageGram = closingAverageBeforeLoss;
+
+                if (errors.Count >= 20)
+                {
+                    return ApiResponse<bool>.ErrorResult(BuildDefinitionErrorMessage(errors), BuildDefinitionErrorMessage(errors), StatusCodes.Status400BadRequest);
+                }
+            }
+        }
+
+        return errors.Count == 0
+            ? ApiResponse<bool>.SuccessResult(true, "Valid")
+            : ApiResponse<bool>.ErrorResult(BuildDefinitionErrorMessage(errors), BuildDefinitionErrorMessage(errors), StatusCodes.Status400BadRequest);
+    }
+
+    private static string DescribeBudgetBatch(BudgetPlanFishBatch batch)
+    {
+        var projectCode = batch.BudgetPlanProject?.ProjectCode;
+        var stockCode = batch.FishStock?.ErpStockCode;
+        return $"{projectCode ?? "-"} / {batch.BatchCode} / {stockCode ?? batch.FishStockId.ToString()}";
+    }
+
+    private static string BuildDefinitionErrorMessage(List<string> errors)
+    {
+        return $"Butce hesaplama icin eksik tanimlar var: {string.Join(" | ", errors.Distinct().Take(20))}";
     }
 
     private static BudgetPlanDto MapPlan(BudgetPlan plan)
