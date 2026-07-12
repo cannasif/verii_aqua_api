@@ -1,6 +1,7 @@
 using aqua_api.Modules.Budget.Domain.Entities;
 using aqua_api.Modules.BudgetPlanning.Domain.Enums;
 using aqua_api.Modules.BudgetPlanning.Domain.Entities;
+using aqua_api.Modules.BudgetPlanning.Application.Dtos;
 using aqua_api.Modules.BudgetPlanning.Application.Services;
 using aqua_api.Modules.BudgetKpi.Application.Services;
 using aqua_api.Modules.Stock.Domain.Entities;
@@ -101,7 +102,8 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.Equal(Round(result.Data.Sum(x => x.MortalityKg)), report.Data.Summary.MortalityKg);
         Assert.Equal(planningKpi.Data!.Fcr, report.Data.Summary.Fcr);
         Assert.Equal(planningKpi.Data.FinalBiomassKg, report.Data.Summary.FinalBiomassKg);
-        Assert.Equal(12.162m, report.Data.Summary.Fcr);
+        Assert.Equal(700.3m, report.Data.Summary.ProducedBiomassKg);
+        Assert.Equal(10.425m, report.Data.Summary.Fcr);
     }
 
     [Fact]
@@ -136,6 +138,137 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.Equal(400, result.StatusCode);
         Assert.Contains("yem tuketim orani tanimi yok", result.Message);
         Assert.False(await db.BudgetPlanMonthlyProjections.AnyAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task UpsertSalesTon_ConvertsTonToKgAndCalculatesSalesCount()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var service = fixture.Service;
+
+        var fishStock = new Stock { ErpStockCode = "FISH-BUD-TON", StockName = "Budget Fish", Unit = "AD" };
+        var feedStock = new Stock { ErpStockCode = "FEED-BUD-TON", StockName = "Budget Feed", Unit = "KG", GrupKodu = "YEM" };
+        db.Stocks.AddRange(fishStock, feedStock);
+        await db.SaveChangesAsync();
+
+        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.LiveImported);
+        await SeedCompleteBudgetDefinitionsAsync(db, fishStock.Id, feedStock.Id);
+        await db.SaveChangesAsync();
+
+        var growthResult = await service.CalculateGrowthAsync(plan.Id);
+        Assert.True(growthResult.Success, growthResult.Message);
+
+        var projection = await db.BudgetPlanMonthlyProjections
+            .OrderBy(x => x.Year)
+            .ThenBy(x => x.Month)
+            .FirstAsync(x => x.BudgetPlanId == plan.Id);
+
+        var result = await service.UpsertSalesTonAsync(plan.Id, new UpsertBudgetPlanSalesTonDto
+        {
+            BudgetPlanFishBatchId = projection.BudgetPlanFishBatchId,
+            Year = projection.Year,
+            Month = projection.Month,
+            SalesTon = 0.05m
+        });
+
+        Assert.True(result.Success, result.Message);
+        Assert.NotNull(result.Data);
+        Assert.Equal(50m, result.Data!.SalesKg);
+        Assert.Equal(455, result.Data.SalesCount);
+
+        var saved = await db.BudgetPlanSalesLines.SingleAsync(x => x.BudgetPlanId == plan.Id);
+        Assert.Equal(50m, saved.SalesKg);
+        Assert.Equal(455, saved.SalesCount);
+    }
+
+    [Fact]
+    public async Task ImportSalesTons_RollsBackAllRowsWhenOneRowIsInvalid()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var service = fixture.Service;
+
+        var fishStock = new Stock { ErpStockCode = "FISH-BUD-IMPORT", StockName = "Budget Fish", Unit = "AD" };
+        var feedStock = new Stock { ErpStockCode = "FEED-BUD-IMPORT", StockName = "Budget Feed", Unit = "KG", GrupKodu = "YEM" };
+        db.Stocks.AddRange(fishStock, feedStock);
+        await db.SaveChangesAsync();
+
+        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.LiveImported);
+        await SeedCompleteBudgetDefinitionsAsync(db, fishStock.Id, feedStock.Id);
+        await db.SaveChangesAsync();
+        var growth = await service.CalculateGrowthAsync(plan.Id);
+        Assert.True(growth.Success, growth.Message);
+
+        var projection = await db.BudgetPlanMonthlyProjections
+            .OrderBy(x => x.Year)
+            .ThenBy(x => x.Month)
+            .FirstAsync(x => x.BudgetPlanId == plan.Id);
+        var result = await service.ImportSalesTonsAsync(plan.Id, new ImportBudgetPlanSalesTonsDto
+        {
+            Lines =
+            {
+                new UpsertBudgetPlanSalesTonDto
+                {
+                    BudgetPlanFishBatchId = projection.BudgetPlanFishBatchId,
+                    Year = projection.Year,
+                    Month = projection.Month,
+                    SalesTon = 0.05m
+                },
+                new UpsertBudgetPlanSalesTonDto
+                {
+                    BudgetPlanFishBatchId = projection.BudgetPlanFishBatchId,
+                    Year = 2099,
+                    Month = 1,
+                    SalesTon = 0.01m
+                }
+            }
+        });
+
+        Assert.False(result.Success);
+        Assert.Contains("Excel 3. satır", result.Message);
+        db.ChangeTracker.Clear();
+        Assert.False(await db.BudgetPlanSalesLines.AnyAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task KpiReport_UsesDevirFcrProducedBiomassFormula()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+
+        var fishStock = new Stock { ErpStockCode = "FISH-BUD-ZERO", StockName = "Budget Fish", Unit = "AD" };
+        db.Stocks.Add(fishStock);
+        await db.SaveChangesAsync();
+
+        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.Calculated);
+        var batch = await db.BudgetPlanFishBatches.SingleAsync(x => x.BudgetPlanId == plan.Id);
+        db.BudgetPlanMonthlyProjections.Add(new BudgetPlanMonthlyProjection
+        {
+            BudgetPlanId = plan.Id,
+            BudgetPlanFishBatchId = batch.Id,
+            Year = 2026,
+            Month = 1,
+            MonthIndex = 1,
+            OpeningLiveCount = 1000,
+            OpeningAverageGram = 100m,
+            OpeningBiomassKg = 100m,
+            MonthlyGrowthGram = 0m,
+            ClosingAverageGram = 100m,
+            FeedKg = 25m,
+            ClosingLiveCount = 1000,
+            ClosingBiomassKg = 100m
+        });
+        await db.SaveChangesAsync();
+
+        var result = await fixture.KpiService.GetReportAsync(plan.Id);
+
+        Assert.True(result.Success, result.Message);
+        Assert.NotNull(result.Data);
+        Assert.Equal(100m, result.Data!.Summary.ProducedBiomassKg);
+        Assert.Equal(0.25m, result.Data.Summary.Fcr);
+        Assert.Equal(100m, result.Data.MonthlyRows.Single().ProducedBiomassKg);
+        Assert.Equal(0.25m, result.Data.MonthlyRows.Single().Fcr);
     }
 
     private static async Task<BudgetPlan> SeedBudgetPlanAsync(AquaDbContext db, long fishStockId, BudgetPlanStatus status)

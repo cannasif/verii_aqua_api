@@ -341,14 +341,14 @@ public class BudgetPlanningService : IBudgetPlanningService
 #pragma warning restore CS8602
 
         var rows = cageBalances
-            .Select(x => new BalanceSeed(x.FishBatch!, x.LiveCount, x.BiomassGram, x.AsOfDate))
-            .Concat(warehouseBalances.Select(x => new BalanceSeed(x.FishBatch!, x.LiveCount, x.BiomassGram, x.AsOfDate)))
+            .Select(x => new BalanceSeed(x.FishBatch!, x.LiveCount, x.AverageGram, x.BiomassGram, x.AsOfDate))
+            .Concat(warehouseBalances.Select(x => new BalanceSeed(x.FishBatch!, x.LiveCount, x.AverageGram, x.BiomassGram, x.AsOfDate)))
             .GroupBy(x => x.FishBatch.Id)
             .Select(group =>
             {
                 var first = group.First().FishBatch;
                 var liveCount = group.Sum(x => x.LiveCount);
-                var biomassKg = group.Sum(x => x.BiomassGram) / 1000m;
+                var biomassKg = group.Sum(x => x.BiomassGram > 0m ? x.BiomassGram : x.LiveCount * x.AverageGram) / 1000m;
                 var averageGram = liveCount <= 0 ? first.CurrentAverageGram : (biomassKg * 1000m) / liveCount;
                 return new BudgetAvailableFishBatchDto
                 {
@@ -366,7 +366,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                     AsOfDate = group.Max(x => x.AsOfDate)
                 };
             })
-            .Where(x => x.LiveCount > 0)
+            .Where(x => x.LiveCount > 0 && x.BiomassKg > 0)
             .OrderBy(x => x.ProjectCode)
             .ThenBy(x => x.BatchCode)
             .ToList();
@@ -659,6 +659,56 @@ public class BudgetPlanningService : IBudgetPlanningService
             UnitPrice = dto.UnitPrice,
             Description = NormalizeOptional(dto.Description)
         });
+    }
+
+    public async Task<ApiResponse<List<BudgetPlanSalesLineDto>>> ImportSalesTonsAsync(long budgetPlanId, ImportBudgetPlanSalesTonsDto dto)
+    {
+        if (dto.Lines.Count == 0)
+        {
+            return ApiResponse<List<BudgetPlanSalesLineDto>>.ErrorResult(
+                "Excel dosyasında aktarılacak satış satırı bulunamadı.",
+                "Excel dosyasında aktarılacak satış satırı bulunamadı.",
+                StatusCodes.Status400BadRequest);
+        }
+
+        var duplicatePeriod = dto.Lines
+            .GroupBy(x => new { x.BudgetPlanFishBatchId, x.Year, x.Month })
+            .FirstOrDefault(x => x.Count() > 1);
+        if (duplicatePeriod != null)
+        {
+            return ApiResponse<List<BudgetPlanSalesLineDto>>.ErrorResult(
+                $"Aynı parti ve dönem Excel içerisinde birden fazla kez yer alıyor: {duplicatePeriod.Key.Year}/{duplicatePeriod.Key.Month:00}.",
+                $"Aynı parti ve dönem Excel içerisinde birden fazla kez yer alıyor: {duplicatePeriod.Key.Year}/{duplicatePeriod.Key.Month:00}.",
+                StatusCodes.Status400BadRequest);
+        }
+
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            var savedRows = new List<BudgetPlanSalesLineDto>();
+            for (var index = 0; index < dto.Lines.Count; index++)
+            {
+                var result = await UpsertSalesTonAsync(budgetPlanId, dto.Lines[index]);
+                if (!result.Success || result.Data == null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ApiResponse<List<BudgetPlanSalesLineDto>>.ErrorResult(
+                        $"Excel {index + 2}. satır işlenemedi: {result.Message}",
+                        result.ExceptionMessage,
+                        result.StatusCode);
+                }
+
+                savedRows.Add(result.Data);
+            }
+
+            await _unitOfWork.CommitTransactionAsync();
+            return ApiResponse<List<BudgetPlanSalesLineDto>>.SuccessResult(savedRows, $"{savedRows.Count} satış satırı Excel'den aktarıldı.");
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
     }
 
     public async Task<ApiResponse<List<BudgetPlanSalesLineDto>>> GetSalesLinesAsync(long budgetPlanId)
@@ -1326,7 +1376,13 @@ public class BudgetPlanningService : IBudgetPlanningService
         var feed = rows.Sum(x => x.FeedKg);
         var mortality = rows.Sum(x => x.MortalityKg);
         var mortalityCount = rows.Sum(x => x.MortalityCount);
-        var gain = Math.Max(0m, final + sales + mortality - initial);
+        var initialLiveCount = plan.FishBatches.Sum(x => x.InitialLiveCount);
+        var salesCount = rows.Sum(x => x.SalesCount);
+        var finalLiveCount = rows
+            .GroupBy(x => x.BudgetPlanFishBatchId)
+            .Select(x => x.OrderByDescending(r => r.Year).ThenByDescending(r => r.Month).FirstOrDefault()?.ClosingLiveCount ?? 0)
+            .Sum();
+        var produced = Math.Max(0m, final + sales + mortality);
 
         return ApiResponse<BudgetKpiSummaryDto>.SuccessResult(new BudgetKpiSummaryDto
         {
@@ -1339,10 +1395,14 @@ public class BudgetPlanningService : IBudgetPlanningService
             FeedKg = Round(feed),
             MortalityKg = Round(mortality),
             MortalityCount = mortalityCount,
-            Fcr = gain <= 0 ? 0m : Round(feed / gain),
-            MortalityRatePercent = plan.FishBatches.Sum(x => x.InitialLiveCount) <= 0
+            InitialLiveCount = initialLiveCount,
+            SalesCount = salesCount,
+            FinalLiveCount = finalLiveCount,
+            ProducedBiomassKg = Round(produced),
+            Fcr = produced <= 0 ? 0m : Round(feed / produced),
+            MortalityRatePercent = initialLiveCount <= 0
                 ? 0m
-                : Round(mortalityCount * 100m / plan.FishBatches.Sum(x => x.InitialLiveCount))
+                : Round(mortalityCount * 100m / initialLiveCount)
         }, "Islem basarili.");
     }
 
@@ -2145,6 +2205,6 @@ public class BudgetPlanningService : IBudgetPlanningService
         return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToUpperInvariant();
     }
 
-    private sealed record BalanceSeed(FishBatch FishBatch, int LiveCount, decimal BiomassGram, DateTime AsOfDate);
+    private sealed record BalanceSeed(FishBatch FishBatch, int LiveCount, decimal AverageGram, decimal BiomassGram, DateTime AsOfDate);
     private sealed record BudgetPeriod(int Year, int Month);
 }

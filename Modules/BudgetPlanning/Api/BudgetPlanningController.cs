@@ -99,6 +99,13 @@ public class BudgetPlanningController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    [HttpPost("{budgetPlanId:long}/sales-ton-lines/import")]
+    public async Task<ActionResult<ApiResponse<List<BudgetPlanSalesLineDto>>>> ImportSalesTons(long budgetPlanId, [FromBody] ImportBudgetPlanSalesTonsDto dto)
+    {
+        var result = await _service.ImportSalesTonsAsync(budgetPlanId, dto);
+        return StatusCode(result.StatusCode, result);
+    }
+
     [HttpGet("{budgetPlanId:long}/sales-planning-rows")]
     public async Task<ActionResult<ApiResponse<List<BudgetSalesPlanningRowDto>>>> GetSalesPlanningRows(long budgetPlanId)
     {

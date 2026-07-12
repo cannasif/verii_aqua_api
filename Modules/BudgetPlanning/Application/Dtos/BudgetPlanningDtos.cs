@@ -196,6 +196,11 @@ public class UpsertBudgetPlanSalesTonDto
     public string? Description { get; set; }
 }
 
+public class ImportBudgetPlanSalesTonsDto
+{
+    public List<UpsertBudgetPlanSalesTonDto> Lines { get; set; } = new();
+}
+
 public class GenerateBudgetPlanExchangeRatesDto
 {
     public List<string> CurrencyCodes { get; set; } = new();
@@ -320,6 +325,10 @@ public class BudgetKpiSummaryDto
     public decimal FeedKg { get; set; }
     public decimal MortalityKg { get; set; }
     public int MortalityCount { get; set; }
+    public int InitialLiveCount { get; set; }
+    public int SalesCount { get; set; }
+    public int FinalLiveCount { get; set; }
+    public decimal ProducedBiomassKg { get; set; }
     public decimal Fcr { get; set; }
     public decimal MortalityRatePercent { get; set; }
 }

@@ -42,7 +42,12 @@ public class BudgetKpiService : IBudgetKpiService
         var feed = rows.Sum(x => x.FeedKg);
         var mortality = rows.Sum(x => x.MortalityKg);
         var mortalityCount = rows.Sum(x => x.MortalityCount);
-        var produced = Math.Max(0m, final + sales + mortality - initial);
+        var salesCount = rows.Sum(x => x.SalesCount);
+        var finalLiveCount = rows
+            .GroupBy(x => x.BudgetPlanFishBatchId)
+            .Select(x => x.OrderByDescending(r => r.Year).ThenByDescending(r => r.Month).FirstOrDefault()?.ClosingLiveCount ?? 0)
+            .Sum();
+        var produced = Math.Max(0m, final + sales + mortality);
         var initialLiveCount = plan.FishBatches.Where(x => !x.IsDeleted).Sum(x => x.InitialLiveCount);
 
         var monthlyRows = rows
@@ -56,19 +61,20 @@ public class BudgetKpiService : IBudgetKpiService
                 var groupSales = group.Sum(x => x.SalesKg);
                 var groupFeed = group.Sum(x => x.FeedKg);
                 var groupMortality = group.Sum(x => x.MortalityKg);
-                var gain = Math.Max(0m, closing + groupSales + groupMortality - opening);
+                var producedBiomassKg = Math.Max(0m, closing + groupSales + groupMortality);
                 return new BudgetKpiMonthlyDto
                 {
                     Year = group.Key.Year,
                     Month = group.Key.Month,
                     OpeningBiomassKg = Round(opening),
                     ClosingBiomassKg = Round(closing),
-                    GrowthBiomassKg = Round(gain),
+                    GrowthBiomassKg = Round(producedBiomassKg),
+                    ProducedBiomassKg = Round(producedBiomassKg),
                     SalesKg = Round(groupSales),
                     FeedKg = Round(groupFeed),
                     MortalityKg = Round(groupMortality),
                     MortalityCount = group.Sum(x => x.MortalityCount),
-                    Fcr = gain <= 0 ? 0m : Round(groupFeed / gain)
+                    Fcr = producedBiomassKg <= 0 ? 0m : Round(groupFeed / producedBiomassKg)
                 };
             })
             .ToList();
@@ -86,6 +92,10 @@ public class BudgetKpiService : IBudgetKpiService
                 FeedKg = Round(feed),
                 MortalityKg = Round(mortality),
                 MortalityCount = mortalityCount,
+                InitialLiveCount = initialLiveCount,
+                SalesCount = salesCount,
+                FinalLiveCount = finalLiveCount,
+                ProducedBiomassKg = Round(produced),
                 Fcr = produced <= 0 ? 0m : Round(feed / produced),
                 MortalityRatePercent = initialLiveCount <= 0 ? 0m : Round(mortalityCount * 100m / initialLiveCount)
             },
