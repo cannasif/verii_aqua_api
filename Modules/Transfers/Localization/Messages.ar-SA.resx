@@ -21,6 +21,10 @@
   <data name="TransferLineService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
   </data>
+  <data name="TransferLineService.TargetRequired" xml:space="preserve"><value>يجب تحديد قفص مشروع مستهدف أو قفص مستهدف غير مخصص.</value></data>
+  <data name="TransferLineService.TargetNotFound" xml:space="preserve"><value>لم يتم العثور على المشروع أو القفص المستهدف.</value></data>
+  <data name="TransferLineService.TargetProjectMismatch" xml:space="preserve"><value>القفص المستهدف المحدد لا يتبع المشروع المستهدف.</value></data>
+  <data name="TransferLineService.TargetCageOccupied" xml:space="preserve"><value>القفص المحدد مخصص لمشروع نشط آخر.</value></data>
   <data name="TransferService.OperationSuccessful" xml:space="preserve">
     <value>العملية ناجحة.</value>
   </data>

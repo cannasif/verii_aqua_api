@@ -173,6 +173,101 @@ namespace aqua_api.Modules.Transfers.Application.Services
             {
                 await _unitOfWork.BeginTransactionAsync();
 
+                var targetProjectId = dto.TargetProjectId.GetValueOrDefault(dto.ProjectId);
+                var targetProjectCage = dto.ToProjectCageId.GetValueOrDefault() > 0
+                    ? await _unitOfWork.Db.ProjectCages
+                        .FirstOrDefaultAsync(x =>
+                            x.Id == dto.ToProjectCageId!.Value &&
+                            !x.IsDeleted &&
+                            x.ReleasedDate == null)
+                    : null;
+
+                if (targetProjectCage != null && targetProjectCage.ProjectId != targetProjectId)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ApiResponse<TransferLineDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("TransferLineService.TargetProjectMismatch"),
+                        _localizationService.GetLocalizedString("TransferLineService.TargetProjectMismatch"),
+                        StatusCodes.Status409Conflict);
+                }
+
+                if (targetProjectCage == null && dto.ToCageId.GetValueOrDefault() > 0)
+                {
+                    var targetCageId = dto.ToCageId.GetValueOrDefault();
+                    var targetProjectExists = await _unitOfWork.Db.Projects
+                        .AsNoTracking()
+                        .AnyAsync(x => x.Id == targetProjectId && !x.IsDeleted);
+                    var targetCageExists = await _unitOfWork.Db.Cages
+                        .AsNoTracking()
+                        .AnyAsync(x => x.Id == targetCageId && !x.IsDeleted);
+
+                    if (!targetProjectExists || !targetCageExists)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return ApiResponse<TransferLineDto>.ErrorResult(
+                            _localizationService.GetLocalizedString("TransferLineService.TargetNotFound"),
+                            _localizationService.GetLocalizedString("TransferLineService.TargetNotFound"),
+                            StatusCodes.Status404NotFound);
+                    }
+
+                    targetProjectCage = await _unitOfWork.Db.ProjectCages
+                        .FirstOrDefaultAsync(x =>
+                            x.CageId == targetCageId &&
+                            !x.IsDeleted &&
+                            x.ReleasedDate == null);
+
+                    if (targetProjectCage != null && targetProjectCage.ProjectId != targetProjectId)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return ApiResponse<TransferLineDto>.ErrorResult(
+                            _localizationService.GetLocalizedString("TransferLineService.TargetCageOccupied"),
+                            _localizationService.GetLocalizedString("TransferLineService.TargetCageOccupied"),
+                            StatusCodes.Status409Conflict);
+                    }
+
+                    if (targetProjectCage == null)
+                    {
+                        targetProjectCage = new ProjectCage
+                        {
+                            ProjectId = targetProjectId,
+                            CageId = targetCageId,
+                            AssignedDate = dto.TransferDate,
+                        };
+                        await _unitOfWork.ProjectCages.AddAsync(targetProjectCage);
+                        await _unitOfWork.SaveChangesAsync();
+                    }
+                }
+
+                if (targetProjectCage == null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ApiResponse<TransferLineDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("TransferLineService.TargetRequired"),
+                        _localizationService.GetLocalizedString("TransferLineService.TargetRequired"),
+                        StatusCodes.Status400BadRequest);
+                }
+
+                var sourceProjectCage = await _unitOfWork.Db.ProjectCages
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Id == dto.FromProjectCageId && !x.IsDeleted);
+                if (sourceProjectCage == null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ApiResponse<TransferLineDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("TransferLineService.NotFound"),
+                        _localizationService.GetLocalizedString("TransferLineService.NotFound"),
+                        StatusCodes.Status404NotFound);
+                }
+
+                if (sourceProjectCage.CageId == targetProjectCage.CageId)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ApiResponse<TransferLineDto>.ErrorResult(
+                        _localizationService.GetLocalizedString("TransferService.SourceAndTargetCageCannotBeSame"),
+                        _localizationService.GetLocalizedString("TransferService.SourceAndTargetCageCannotBeSame"),
+                        StatusCodes.Status409Conflict);
+                }
+
                 var transfer = await _unitOfWork.Transfers
                     .Query()
                     .Where(x =>
@@ -216,7 +311,7 @@ namespace aqua_api.Modules.Transfers.Application.Services
                     TransferId = transfer.Id,
                     FishBatchId = dto.FishBatchId,
                     FromProjectCageId = dto.FromProjectCageId,
-                    ToProjectCageId = dto.ToProjectCageId,
+                    ToProjectCageId = targetProjectCage.Id,
                     FishCount = dto.FishCount,
                     AverageGram = dto.AverageGram,
                     BiomassGram = dto.BiomassGram,

@@ -21,6 +21,10 @@
   <data name="TransferLineService.InternalServerError" xml:space="preserve">
     <value>Ocurrió un error interno del server.</value>
   </data>
+  <data name="TransferLineService.TargetRequired" xml:space="preserve"><value>Debe seleccionarse una jaula de proyecto de destino o una jaula de destino sin asignar.</value></data>
+  <data name="TransferLineService.TargetNotFound" xml:space="preserve"><value>No se encontró el proyecto o la jaula de destino.</value></data>
+  <data name="TransferLineService.TargetProjectMismatch" xml:space="preserve"><value>La jaula de destino seleccionada no pertenece al proyecto de destino.</value></data>
+  <data name="TransferLineService.TargetCageOccupied" xml:space="preserve"><value>La jaula seleccionada está asignada a otro proyecto activo.</value></data>
   <data name="TransferService.OperationSuccessful" xml:space="preserve">
     <value>Operación exitosa.</value>
   </data>

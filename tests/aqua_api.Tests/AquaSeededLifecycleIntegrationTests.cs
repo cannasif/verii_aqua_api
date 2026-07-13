@@ -221,7 +221,12 @@ public class AquaSeededLifecycleIntegrationTests
             CageCode = "CAGE-02",
             CageName = "Target Cage",
         };
-        db.Cages.Add(targetCage);
+        var unassignedTargetCage = new Cage
+        {
+            CageCode = "CAGE-03",
+            CageName = "Unassigned Target Cage",
+        };
+        db.Cages.AddRange(targetCage, unassignedTargetCage);
         await db.SaveChangesAsync();
 
         var targetProjectCage = new ProjectCage
@@ -718,6 +723,7 @@ public class AquaSeededLifecycleIntegrationTests
         Assert.Equal(sourceCageBeforeTransferCancel.BiomassGram, sourceCageAfterTransferCancel.BiomassGram);
         Assert.Equal(0, targetCageAfterTransferCancel.LiveCount);
         Assert.Equal(0m, targetCageAfterTransferCancel.BiomassGram);
+
         Assert.Null((await db.ProjectCages.AsNoTracking().SingleAsync(x => x.Id == projectCage.Id)).ReleasedDate);
 
         var movements = await db.BatchMovements
@@ -737,6 +743,48 @@ public class AquaSeededLifecycleIntegrationTests
         Assert.Equal(4, movements.Count(x => x.MovementType == BatchMovementType.Transfer));
         Assert.Equal(16, movements.Count(x => x.MovementType == BatchMovementType.WarehouseTransfer));
         Assert.Equal(2, movements.Count(x => x.MovementType == BatchMovementType.Shipment));
+
+        var transferToUnassignedCage = await transferLineService.CreateWithAutoHeaderAsync(new CreateTransferLineWithAutoHeaderDto
+        {
+            ProjectId = project.Id,
+            TargetProjectId = project.Id,
+            TransferDate = new DateTime(2026, 4, 10),
+            FishBatchId = convertedBatchId,
+            FromProjectCageId = projectCage.Id,
+            ToCageId = unassignedTargetCage.Id,
+            FishCount = 50,
+            AverageGram = 10m,
+            BiomassGram = BatchMath.CalculateBiomassGram(50, 10m),
+        });
+        Assert.True(transferToUnassignedCage.Success, $"{transferToUnassignedCage.Message} | {transferToUnassignedCage.ExceptionMessage}");
+
+        var createdTargetAssignment = await db.ProjectCages
+            .AsNoTracking()
+            .SingleAsync(x =>
+                !x.IsDeleted &&
+                x.ProjectId == project.Id &&
+                x.CageId == unassignedTargetCage.Id &&
+                x.ReleasedDate == null);
+        Assert.Equal(createdTargetAssignment.Id, transferToUnassignedCage.Data!.ToProjectCageId);
+
+        var unassignedTargetBalance = await db.BatchCageBalances
+            .AsNoTracking()
+            .SingleAsync(x =>
+                !x.IsDeleted &&
+                x.FishBatchId == convertedBatchId &&
+                x.ProjectCageId == createdTargetAssignment.Id);
+        Assert.Equal(50, unassignedTargetBalance.LiveCount);
+        Assert.Equal(500m, unassignedTargetBalance.BiomassGram);
+
+        Assert.True((await transferLineService.SoftDeleteAsync(transferToUnassignedCage.Data.Id, 1)).Success);
+        var unassignedTargetBalanceAfterCancel = await db.BatchCageBalances
+            .AsNoTracking()
+            .SingleAsync(x =>
+                !x.IsDeleted &&
+                x.FishBatchId == convertedBatchId &&
+                x.ProjectCageId == createdTargetAssignment.Id);
+        Assert.Equal(0, unassignedTargetBalanceAfterCancel.LiveCount);
+        Assert.Equal(0m, unassignedTargetBalanceAfterCancel.BiomassGram);
     }
 
     private static async Task SeedMasterDataAsync(AquaDbContext db)

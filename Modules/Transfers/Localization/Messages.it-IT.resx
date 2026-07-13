@@ -21,6 +21,10 @@
   <data name="TransferLineService.InternalServerError" xml:space="preserve">
     <value>Si è verificato un errore interno del server.</value>
   </data>
+  <data name="TransferLineService.TargetRequired" xml:space="preserve"><value>È necessario selezionare una gabbia progetto di destinazione o una gabbia non assegnata.</value></data>
+  <data name="TransferLineService.TargetNotFound" xml:space="preserve"><value>Il progetto o la gabbia di destinazione non è stato trovato.</value></data>
+  <data name="TransferLineService.TargetProjectMismatch" xml:space="preserve"><value>La gabbia di destinazione selezionata non appartiene al progetto di destinazione.</value></data>
+  <data name="TransferLineService.TargetCageOccupied" xml:space="preserve"><value>La gabbia selezionata è assegnata a un altro progetto attivo.</value></data>
   <data name="TransferService.OperationSuccessful" xml:space="preserve">
     <value>Operazione riuscita.</value>
   </data>

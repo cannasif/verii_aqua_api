@@ -21,6 +21,10 @@
   <data name="TransferLineService.InternalServerError" xml:space="preserve">
     <value>Dahili sunucu hatası oluştu.</value>
   </data>
+  <data name="TransferLineService.TargetRequired" xml:space="preserve"><value>Hedef proje kafesi veya atanmamış hedef kafes seçilmelidir.</value></data>
+  <data name="TransferLineService.TargetNotFound" xml:space="preserve"><value>Hedef proje veya kafes bulunamadı.</value></data>
+  <data name="TransferLineService.TargetProjectMismatch" xml:space="preserve"><value>Seçilen hedef kafes hedef projeye ait değildir.</value></data>
+  <data name="TransferLineService.TargetCageOccupied" xml:space="preserve"><value>Seçilen kafes başka bir aktif projeye atanmıştır.</value></data>
   <data name="TransferService.OperationSuccessful" xml:space="preserve">
     <value>İşlem başarılı.</value>
   </data>

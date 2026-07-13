@@ -21,6 +21,10 @@
   <data name="TransferLineService.InternalServerError" xml:space="preserve">
     <value>An internal server error occurred.</value>
   </data>
+  <data name="TransferLineService.TargetRequired" xml:space="preserve"><value>A target project cage or an unassigned target cage must be selected.</value></data>
+  <data name="TransferLineService.TargetNotFound" xml:space="preserve"><value>The target project or cage was not found.</value></data>
+  <data name="TransferLineService.TargetProjectMismatch" xml:space="preserve"><value>The selected target cage does not belong to the target project.</value></data>
+  <data name="TransferLineService.TargetCageOccupied" xml:space="preserve"><value>The selected cage is assigned to another active project.</value></data>
   <data name="TransferService.OperationSuccessful" xml:space="preserve">
     <value>Operation successful.</value>
   </data>

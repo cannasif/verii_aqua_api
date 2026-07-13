@@ -21,6 +21,10 @@
   <data name="TransferLineService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>
   </data>
+  <data name="TransferLineService.TargetRequired" xml:space="preserve"><value>Ein Ziel-Projektkäfig oder ein nicht zugewiesener Zielkäfig muss ausgewählt werden.</value></data>
+  <data name="TransferLineService.TargetNotFound" xml:space="preserve"><value>Das Zielprojekt oder der Zielkäfig wurde nicht gefunden.</value></data>
+  <data name="TransferLineService.TargetProjectMismatch" xml:space="preserve"><value>Der ausgewählte Zielkäfig gehört nicht zum Zielprojekt.</value></data>
+  <data name="TransferLineService.TargetCageOccupied" xml:space="preserve"><value>Der ausgewählte Käfig ist einem anderen aktiven Projekt zugewiesen.</value></data>
   <data name="TransferService.OperationSuccessful" xml:space="preserve">
     <value>Operation erfolgreich.</value>
   </data>
