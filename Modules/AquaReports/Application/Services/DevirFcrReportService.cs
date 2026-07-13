@@ -18,6 +18,19 @@ namespace aqua_api.Modules.AquaReports.Application.Services
         {
             try
             {
+                var requestedFromDate = request.FromDate == default ? (DateTime?)null : request.FromDate.Date;
+                var requestedToDate = request.ToDate == default ? (DateTime?)null : request.ToDate.Date;
+
+                if (requestedFromDate.HasValue &&
+                    requestedToDate.HasValue &&
+                    requestedFromDate.Value > requestedToDate.Value)
+                {
+                    return ApiResponse<DevirFcrReportDto>.ErrorResult(
+                        L("DevirFcrReportService.ToDateGreaterThanOrEqualFromDate"),
+                        L("DevirFcrReportService.InvalidDateRange"),
+                        StatusCodes.Status400BadRequest);
+                }
+
                 var projectIds = (request.ProjectIds ?? new List<long>())
                     .Where(id => id > 0)
                     .Distinct()
@@ -27,12 +40,12 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 {
                     return ApiResponse<DevirFcrReportDto>.SuccessResult(new DevirFcrReportDto
                     {
-                        FromDate = request.FromDate.Date,
-                        ToDate = request.ToDate.Date,
+                        FromDate = requestedFromDate ?? DateTimeProvider.Now.Date,
+                        ToDate = requestedToDate ?? DateTimeProvider.Now.Date,
                     }, L("DevirFcrReportService.ReportLoaded"));
                 }
 
-                var toDate = DateTimeProvider.Now.Date;
+                var toDate = requestedToDate ?? DateTimeProvider.Now.Date;
 
                 var projects = await _unitOfWork.Db.Projects
                     .AsNoTracking()
@@ -61,9 +74,9 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     x => ResolveProjectLifecycleStart(
                         x,
                         movements.Where(m => projectIdByFishBatchId.GetValueOrDefault(m.FishBatchId) == x.Id)));
-                var fromDate = projectStartById.Count == 0
+                var fromDate = requestedFromDate ?? (projectStartById.Count == 0
                     ? toDate
-                    : projectStartById.Values.Min();
+                    : projectStartById.Values.Min());
 
                 var feedings = await _unitOfWork.Db.Feedings
                     .AsNoTracking()
@@ -133,7 +146,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 var rows = projects
                     .Select(project => BuildRow(
                         project,
-                        projectStartById.GetValueOrDefault(project.Id, project.StartDate.Date),
+                        requestedFromDate ?? projectStartById.GetValueOrDefault(project.Id, project.StartDate.Date),
                         toDate,
                         movements.Where(x => projectIdByFishBatchId.GetValueOrDefault(x.FishBatchId) == project.Id),
                         feedingDistributions.Where(x =>

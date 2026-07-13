@@ -68,8 +68,6 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             var reportResponse = await _devirFcrReportService.GetReportAsync(new DevirFcrReportRequestDto
             {
                 ProjectIds = uniqueProjectIds,
-                FromDate = DateTimeProvider.Now.Date,
-                ToDate = DateTimeProvider.Now.Date
             });
 
             return reportResponse.Success && reportResponse.Data != null

@@ -1065,6 +1065,31 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.Equal(63m, devirFcrRow.TotalFeedKg);
         Assert.Equal(0.9m, devirFcrRow.Fcr);
 
+        var rangedDevirFcr = await PostAsync<DevirFcrReportDto>(client, "/api/kpi-report/devir-fcr", new DevirFcrReportRequestDto
+        {
+            ProjectIds = [projectId],
+            FromDate = new DateTime(2026, 4, 3),
+            ToDate = new DateTime(2026, 4, 4),
+        });
+        Assert.True(rangedDevirFcr.Success, $"{rangedDevirFcr.Message} | {rangedDevirFcr.ExceptionMessage}");
+        Assert.Equal(new DateTime(2026, 4, 3), rangedDevirFcr.Data!.FromDate);
+        Assert.Equal(new DateTime(2026, 4, 4), rangedDevirFcr.Data.ToDate);
+        var rangedDevirFcrRow = Assert.Single(rangedDevirFcr.Data.Rows);
+        Assert.Equal(9_900, rangedDevirFcrRow.OpeningFishCount);
+        Assert.Equal(1_200, rangedDevirFcrRow.ShipmentFishCount);
+        Assert.Equal(50, rangedDevirFcrRow.MortalityFishCount);
+        Assert.Equal(43m, rangedDevirFcrRow.TotalFeedKg);
+        Assert.Equal(12m, rangedDevirFcrRow.ShippedBiomassKg);
+        Assert.Equal(0.25m, rangedDevirFcrRow.MortalityBiomassKg);
+
+        var invalidDevirFcrRange = await PostAsync<DevirFcrReportDto>(client, "/api/kpi-report/devir-fcr", new DevirFcrReportRequestDto
+        {
+            ProjectIds = [projectId],
+            FromDate = new DateTime(2026, 4, 4),
+            ToDate = new DateTime(2026, 4, 3),
+        });
+        Assert.False(invalidDevirFcrRange.Success);
+
         var dashboardSummary = await PostAsync<DashboardProjectsResponseDto>(client, "/api/aqua/dashboard-project/summary", new DashboardProjectsRequestDto
         {
             ProjectIds = [projectId]
