@@ -726,8 +726,12 @@ namespace aqua_api.Modules.Integrations.Application.Services
                 if (!string.IsNullOrWhiteSpace(normalizedSearch))
                 {
                     var pattern = BuildLikePattern(normalizedSearch);
+                    short? warehouseCode = short.TryParse(normalizedSearch, out var parsedWarehouseCode)
+                        ? parsedWarehouseCode
+                        : null;
                     query = query.Where(x =>
                         EF.Functions.Like(x.DocumentNo ?? string.Empty, pattern)
+                        || (warehouseCode.HasValue && x.ErpWarehouseCode == warehouseCode.Value)
                         || EF.Functions.Like(x.ErpProjectCode ?? string.Empty, pattern)
                         || EF.Functions.Like(x.ErpStockCode, pattern)
                         || EF.Functions.Like(x.ErpStockName ?? string.Empty, pattern)
