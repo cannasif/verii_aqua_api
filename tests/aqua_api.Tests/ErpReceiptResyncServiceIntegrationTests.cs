@@ -10,6 +10,7 @@ using aqua_api.Modules.Integrations.Application.Services;
 using aqua_api.Modules.Integrations.Domain.Entities;
 using aqua_api.Modules.Identity.Domain.Entities;
 using aqua_api.Modules.Stock.Domain.Entities;
+using aqua_api.Modules.System.Infrastructure.BackgroundJobs;
 using aqua_api.Modules.System.Infrastructure.BackgroundJobs.Interfaces;
 using aqua_api.Shared.Common.Dtos;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
@@ -95,10 +96,10 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
     }
 
     [Fact]
-    public async Task Resync_SoftDeletesReceiptGraph_AndBalancesLedger_WhenReprocessingSucceeds()
+    public async Task Resync_PreservesReceiptGraphAndDependentOperations_WhenReprocessingSucceeds()
     {
         var currentRows = new List<MalKabulVeSevkiyatDto>();
-        await using var fixture = await CreateFixtureAsync(currentRows);
+        await using var fixture = await CreateFixtureAsync(currentRows, useRealSyncJob: true);
         var seeded = await SeedReceiptGraphAsync(fixture.Db, erpIntegratedFeeding: false);
         var feedStock = await fixture.Db.Stocks.SingleAsync(x => x.ErpStockCode == "FEED-001");
         var otherOperationLine = new GoodsReceiptLine
@@ -143,7 +144,7 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
             ProjeKodu = "ERP-PRJ-001",
             StokKodu = "FISH-001",
             StokAdi = "Levrek",
-            Miktar = 1_000,
+            Miktar = 1_200,
             HareketTuru = "J",
             GcKodu = "G",
             GrupKodu = "BALIK",
@@ -160,8 +161,8 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
 
         Assert.True(response.Success, response.ExceptionMessage);
         Assert.NotNull(response.Data);
-        Assert.Equal(1, response.Data!.CancelledSourceMovementCount);
-        Assert.Equal(2, response.Data.ReversedLedgerMovementCount);
+        Assert.Equal(0, response.Data!.CancelledSourceMovementCount);
+        Assert.Equal(0, response.Data.ReversedLedgerMovementCount);
         Assert.Equal(1, response.Data.ReprocessedSourceMovementCount);
 
         var oldReceipt = await fixture.Db.GoodsReceipts.IgnoreQueryFilters().SingleAsync(x => x.Id == seeded.GoodsReceiptId);
@@ -177,21 +178,33 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
             .SingleAsync(x => x.ErpSourceMovementKey == "ERP-GR-001-LINE-1");
         Assert.False(oldReceipt.IsDeleted);
         Assert.False(otherOperationReceiptLine.IsDeleted);
-        Assert.True(selectedReceiptLine.IsDeleted);
-        Assert.True(oldBatch.IsDeleted);
-        Assert.True(oldMirror.IsDeleted);
+        Assert.False(selectedReceiptLine.IsDeleted);
+        Assert.False(oldBatch.IsDeleted);
+        Assert.False(oldMirror.IsDeleted);
         Assert.True(otherOperationMirror.IsProcessed);
         Assert.False(otherOperationMirror.IsDeleted);
-        Assert.True(oldFeeding.IsDeleted);
+        Assert.False(oldFeeding.IsDeleted);
+        Assert.Equal(1_200, selectedReceiptLine.FishCount);
+        var distribution = await fixture.Db.GoodsReceiptFishDistributions.SingleAsync(x => x.GoodsReceiptLineId == selectedReceiptLine.Id);
+        var balance = await fixture.Db.BatchCageBalances.SingleAsync(x => x.FishBatchId == seeded.FishBatchId);
+        Assert.Equal(1_200, distribution.FishCount);
+        Assert.Equal(1_200, balance.LiveCount);
 
         var ledger = await fixture.Db.BatchMovements.Where(x => x.FishBatchId == seeded.FishBatchId).ToListAsync();
-        Assert.Equal(4, ledger.Count);
-        Assert.Equal(0, ledger.Sum(x => x.SignedCount));
-        Assert.Equal(0m, ledger.Sum(x => x.SignedBiomassGram));
-        Assert.Equal(0m, ledger.Sum(x => x.FeedGram ?? 0m));
+        Assert.Equal(3, ledger.Count);
+        Assert.Equal(1_200, ledger.Sum(x => x.SignedCount));
+        Assert.Equal(120_000m, ledger.Sum(x => x.SignedBiomassGram));
+        Assert.Equal(2_500m, ledger.Sum(x => x.FeedGram ?? 0m));
+
+        await fixture.SyncJob.ExecuteAsync();
+        Assert.Equal(1, await fixture.Db.GoodsReceiptLines.CountAsync(x => x.ErpSourceMovementKey == "ERP-GR-001-LINE-1"));
+        Assert.Equal(3, await fixture.Db.BatchMovements.CountAsync(x => x.FishBatchId == seeded.FishBatchId));
     }
 
-    private static async Task<Fixture> CreateFixtureAsync(List<MalKabulVeSevkiyatDto>? currentRows = null, bool throwDuringSync = false)
+    private static async Task<Fixture> CreateFixtureAsync(
+        List<MalKabulVeSevkiyatDto>? currentRows = null,
+        bool throwDuringSync = false,
+        bool useRealSyncJob = false)
     {
         var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -199,13 +212,24 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
         var db = new ResyncSqliteAquaDbContext(options);
         await db.Database.EnsureCreatedAsync();
         var unitOfWork = new EfUnitOfWork(db, new HttpContextAccessor());
+        var localization = new LocalizationService(NullLogger<LocalizationService>.Instance);
+        var netsisReadService = new FakeNetsisReadService(currentRows ?? []);
+        IErpReceiptShipmentMovementSyncJob syncJob = useRealSyncJob
+            ? new ErpReceiptShipmentMovementSyncJob(
+                netsisReadService,
+                db,
+                unitOfWork,
+                new aqua_api.Modules.Aqua.Application.Services.BalanceLedgerManager(unitOfWork, localization),
+                localization,
+                NullLogger<ErpReceiptShipmentMovementSyncJob>.Instance)
+            : new FakeSyncJob(throwDuringSync);
         var service = new ErpReceiptResyncService(
             db,
             unitOfWork,
-            new FakeNetsisReadService(currentRows ?? []),
-            new FakeSyncJob(throwDuringSync),
-            new LocalizationService(NullLogger<LocalizationService>.Instance));
-        return new Fixture(connection, db, unitOfWork, service);
+            netsisReadService,
+            syncJob,
+            localization);
+        return new Fixture(connection, db, unitOfWork, service, syncJob);
     }
 
     private static async Task<SeededGraph> SeedReceiptGraphAsync(AquaDbContext db, bool erpIntegratedFeeding, bool includeFeeding = true)
@@ -224,9 +248,18 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
 
         var project = new Project { ProjectCode = "ERP-PRJ-001", ProjectName = "ERP Project", StartDate = receiptDate, Status = DocumentStatus.Posted };
         var cage = new Cage { CageCode = "B3", CageName = "B3 Cage" };
+        var warehouse = new aqua_api.Modules.Warehouse.Domain.Entities.Warehouse { ErpWarehouseCode = 110, WarehouseName = "B3", BranchCode = 1 };
         var stock = new Stock { ErpStockCode = "FISH-001", StockName = "Levrek", Unit = "ADET", BranchCode = 1 };
         var feedStock = new Stock { ErpStockCode = "FEED-001", StockName = "Yem", Unit = "KG", GrupKodu = "YEM", BranchCode = 1 };
-        db.AddRange(project, cage, stock, feedStock);
+        db.AddRange(project, cage, warehouse, stock, feedStock);
+        await db.SaveChangesAsync();
+
+        db.CageWarehouseMappings.Add(new aqua_api.Modules.Cages.Domain.Entities.CageWarehouseMapping
+        {
+            CageId = cage.Id,
+            WarehouseId = warehouse.Id,
+            IsActive = true
+        });
         await db.SaveChangesAsync();
 
         var projectCage = new ProjectCage { ProjectId = project.Id, CageId = cage.Id, AssignedDate = receiptDate };
@@ -342,16 +375,23 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
         private readonly SqliteConnection _connection;
         private readonly EfUnitOfWork _unitOfWork;
 
-        public Fixture(SqliteConnection connection, AquaDbContext db, EfUnitOfWork unitOfWork, ErpReceiptResyncService service)
+        public Fixture(
+            SqliteConnection connection,
+            AquaDbContext db,
+            EfUnitOfWork unitOfWork,
+            ErpReceiptResyncService service,
+            IErpReceiptShipmentMovementSyncJob syncJob)
         {
             _connection = connection;
             _unitOfWork = unitOfWork;
             Db = db;
             Service = service;
+            SyncJob = syncJob;
         }
 
         public AquaDbContext Db { get; }
         public ErpReceiptResyncService Service { get; }
+        public IErpReceiptShipmentMovementSyncJob SyncJob { get; }
 
         public async ValueTask DisposeAsync()
         {
@@ -363,7 +403,7 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
     private sealed class FakeSyncJob(bool shouldThrow) : IErpReceiptShipmentMovementSyncJob
     {
         public Task ExecuteAsync() => Task.CompletedTask;
-        public Task ProcessMovementInCurrentTransactionAsync(MalKabulVeSevkiyatDto movement) =>
+        public Task ProcessMovementInCurrentTransactionAsync(MalKabulVeSevkiyatDto movement, string? sourceMovementKeyOverride = null) =>
             shouldThrow ? Task.FromException(new InvalidOperationException("Simulated ERP reprocessing failure")) : Task.CompletedTask;
     }
 

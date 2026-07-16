@@ -91,7 +91,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                     continue;
                 }
 
-                if (await IsSourceMovementAlreadyProcessedAsync(sourceMovementKey))
+                if (await IsSourceMovementAlreadyProcessedAsync(sourceMovementKey, erpMovement))
                 {
                     skippedCount++;
                     continue;
@@ -142,9 +142,11 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             _logger.LogInformation(_localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.Completed"));
         }
 
-        public async Task ProcessMovementInCurrentTransactionAsync(MalKabulVeSevkiyatDto movement)
+        public async Task ProcessMovementInCurrentTransactionAsync(MalKabulVeSevkiyatDto movement, string? sourceMovementKeyOverride = null)
         {
-            var sourceMovementKey = BuildSourceMovementKey(movement);
+            var sourceMovementKey = string.IsNullOrWhiteSpace(sourceMovementKeyOverride)
+                ? BuildSourceMovementKey(movement)
+                : sourceMovementKeyOverride.Trim();
             if (string.IsNullOrWhiteSpace(movement.StokKodu) || movement.Tarih == default || (movement.Miktar ?? 0) <= 0)
             {
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.InvalidMovementData"));
@@ -156,12 +158,31 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             await _unitOfWork.SaveChangesAsync();
         }
 
-        private async Task<bool> IsSourceMovementAlreadyProcessedAsync(string sourceMovementKey)
+        private async Task<bool> IsSourceMovementAlreadyProcessedAsync(
+            string sourceMovementKey,
+            MalKabulVeSevkiyatDto movement)
         {
+            var documentNo = OptionalShorten(movement.FisNo, 15);
+            var projectCode = OptionalShorten(movement.ProjeKodu, 15);
+            var stockCode = Shorten(Clean(movement.StokKodu), 35);
+            var movementKind = Shorten(Clean(movement.HareketTuru), 1);
+            var inOutCode = Shorten(Clean(movement.GcKodu), 1);
+            var operationType = Shorten(Clean(movement.IslemTuru), 50);
+
             return await _db.ErpReceiptShipmentMovements
                 .IgnoreQueryFilters()
                 .AsNoTracking()
-                .AnyAsync(x => !x.IsDeleted && x.SourceMovementKey == sourceMovementKey && x.IsProcessed);
+                .AnyAsync(x => !x.IsDeleted
+                    && x.IsProcessed
+                    && (x.SourceMovementKey == sourceMovementKey
+                        || (x.MovementDate == movement.Tarih
+                            && x.DocumentNo == documentNo
+                            && x.ErpWarehouseCode == movement.KafesKodu
+                            && x.ErpProjectCode == projectCode
+                            && x.ErpStockCode == stockCode
+                            && x.MovementKind == movementKind
+                            && x.InOutCode == inOutCode
+                            && x.OperationType == operationType)));
         }
 
         private async Task<ApplyOutcome> ApplyMovementAsync(MalKabulVeSevkiyatDto movement, string sourceMovementKey)

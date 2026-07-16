@@ -162,26 +162,11 @@ namespace aqua_api.Modules.Integrations.Application.Services
                 {
                     throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpReceiptResync.DocumentChanged"));
                 }
-                var fishBatchIds = sourceRows.Where(x => x.FishBatchId.HasValue).Select(x => x.FishBatchId!.Value).Distinct().ToList();
-                var goodsReceiptLineIds = sourceRows.Where(x => x.GoodsReceiptLineId.HasValue).Select(x => x.GoodsReceiptLineId!.Value).Distinct().ToList();
-                var goodsReceiptIds = sourceRows.Where(x => x.GoodsReceiptId.HasValue).Select(x => x.GoodsReceiptId!.Value).Distinct().ToList();
 
-                var reversedMovementCount = await ReverseBatchMovementsAsync(fishBatchIds, sourceRows[0].Id, userId);
-                await SoftDeleteDependentOperationsAsync(fishBatchIds, userId);
-                await SoftDeleteReceiptGraphAsync(goodsReceiptIds, goodsReceiptLineIds, fishBatchIds, userId);
-
-                foreach (var sourceRow in sourceRows)
+                var matchedRows = MatchCurrentRowsToSources(sourceRows, currentErpRows);
+                foreach (var (sourceRow, erpRow) in matchedRows)
                 {
-                    MarkDeleted(sourceRow, userId);
-                    sourceRow.IsProcessed = false;
-                    sourceRow.ProcessedAt = null;
-                }
-
-                await _unitOfWork.SaveChangesAsync();
-
-                foreach (var erpRow in currentErpRows)
-                {
-                    await _syncJob.ProcessMovementInCurrentTransactionAsync(erpRow);
+                    await _syncJob.ProcessMovementInCurrentTransactionAsync(erpRow, sourceRow.SourceMovementKey);
                 }
 
                 await _unitOfWork.CommitTransactionAsync();
@@ -190,8 +175,8 @@ namespace aqua_api.Modules.Integrations.Application.Services
                     {
                         DocumentNo = documentNo,
                         OperationType = operationType,
-                        CancelledSourceMovementCount = sourceRows.Count,
-                        ReversedLedgerMovementCount = reversedMovementCount,
+                        CancelledSourceMovementCount = 0,
+                        ReversedLedgerMovementCount = 0,
                         ReprocessedSourceMovementCount = currentErpRows.Count
                     },
                     _localizationService.GetLocalizedString("ErpReceiptResync.Completed"));
@@ -206,6 +191,43 @@ namespace aqua_api.Modules.Integrations.Application.Services
                     StatusCodes.Status500InternalServerError);
             }
         }
+
+        private List<(ErpReceiptShipmentMovement SourceRow, MalKabulVeSevkiyatDto ErpRow)> MatchCurrentRowsToSources(
+            List<ErpReceiptShipmentMovement> sourceRows,
+            List<MalKabulVeSevkiyatDto> currentErpRows)
+        {
+            if (sourceRows.Count != currentErpRows.Count)
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpReceiptResync.DocumentChanged"));
+
+            var unmatchedSources = sourceRows.ToList();
+            var matches = new List<(ErpReceiptShipmentMovement, MalKabulVeSevkiyatDto)>();
+            foreach (var erpRow in currentErpRows)
+            {
+                var sourceIndex = unmatchedSources.FindIndex(source => HasSameMovementIdentity(source, erpRow));
+                if (sourceIndex < 0)
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpReceiptResync.DocumentChanged"));
+
+                matches.Add((unmatchedSources[sourceIndex], erpRow));
+                unmatchedSources.RemoveAt(sourceIndex);
+            }
+
+            return matches;
+        }
+
+        private static bool HasSameMovementIdentity(ErpReceiptShipmentMovement source, MalKabulVeSevkiyatDto current)
+        {
+            return source.MovementDate.Date == current.Tarih.Date
+                && source.ErpWarehouseCode == current.KafesKodu
+                && SameText(source.DocumentNo, current.FisNo)
+                && SameText(source.ErpProjectCode, current.ProjeKodu)
+                && SameText(source.ErpStockCode, current.StokKodu)
+                && SameText(source.MovementKind, current.HareketTuru)
+                && SameText(source.InOutCode, current.GcKodu)
+                && SameText(source.OperationType, current.IslemTuru);
+        }
+
+        private static bool SameText(string? left, string? right) =>
+            string.Equals(left?.Trim(), right?.Trim(), StringComparison.OrdinalIgnoreCase);
 
         private async Task<int> ReverseBatchMovementsAsync(List<long> fishBatchIds, long resyncReferenceId, long userId)
         {
