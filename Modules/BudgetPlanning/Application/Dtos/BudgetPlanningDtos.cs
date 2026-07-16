@@ -17,7 +17,7 @@ public class BudgetPlanDto
     public DateTime? CalculatedAt { get; set; }
     public int FishBatchCount { get; set; }
     public decimal TotalInitialBiomassKg { get; set; }
-    public decimal TotalSalesKg { get; set; }
+    public decimal TotalSalesTon { get; set; }
     public decimal TotalFeedKg { get; set; }
     public decimal TotalMortalityKg { get; set; }
 }
@@ -142,7 +142,7 @@ public class UpsertBudgetPlanSalesLineDto
     public long BudgetPlanFishBatchId { get; set; }
     public int Year { get; set; }
     public int Month { get; set; }
-    public decimal SalesKg { get; set; }
+    public decimal SalesTon { get; set; }
     public int? SalesCount { get; set; }
     public decimal? UnitPrice { get; set; }
     public string? Description { get; set; }
@@ -178,7 +178,6 @@ public class BudgetSalesPlanningRowDto
     public int AvailableCount { get; set; }
     public decimal AvailableKg { get; set; }
     public decimal AvailableTon { get; set; }
-    public decimal PlannedSalesKg { get; set; }
     public decimal PlannedSalesTon { get; set; }
     public int PlannedSalesCount { get; set; }
     public decimal RemainingKg { get; set; }
@@ -307,7 +306,7 @@ public class BudgetPlanMonthlyProjectionDto
     public decimal GrowthQualityPercent { get; set; }
     public decimal MonthlyGrowthGram { get; set; }
     public decimal ClosingAverageGram { get; set; }
-    public decimal SalesKg { get; set; }
+    public decimal SalesTon { get; set; }
     public int SalesCount { get; set; }
     public decimal MortalityKg { get; set; }
     public int MortalityCount { get; set; }
@@ -327,7 +326,7 @@ public class BudgetKpiSummaryDto
     public string BudgetCode { get; set; } = string.Empty;
     public decimal InitialBiomassKg { get; set; }
     public decimal FinalBiomassKg { get; set; }
-    public decimal SalesKg { get; set; }
+    public decimal SalesTon { get; set; }
     public decimal FeedKg { get; set; }
     public decimal MortalityKg { get; set; }
     public int MortalityCount { get; set; }

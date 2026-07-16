@@ -11,7 +11,7 @@ public class BudgetPlanSalesLineConfiguration : BaseEntityConfiguration<BudgetPl
         builder.ToTable("RII_BUDGET_PLAN_SALES_LINE", table =>
         {
             table.HasCheckConstraint("CK_RII_BUDGET_PLAN_SALES_LINE_MONTH", "[Month] BETWEEN 1 AND 12");
-            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_SALES_LINE_NON_NEGATIVE", "[SalesKg] >= 0");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_SALES_LINE_NON_NEGATIVE", "[SalesTon] >= 0");
         });
 
         builder.Property(x => x.Description).HasMaxLength(500);

@@ -113,7 +113,7 @@ public class BudgetPlanningServiceIntegrationTests
             BudgetPlanFishBatchId = budgetBatch.Id,
             Year = 2026,
             Month = 1,
-            SalesKg = 0m
+            SalesTon = 0m
         });
         await SeedCompleteBudgetDefinitionsAsync(db, fishStock.Id, feedStock.Id);
         await db.SaveChangesAsync();
@@ -178,7 +178,7 @@ public class BudgetPlanningServiceIntegrationTests
             BudgetPlanFishBatchId = budgetBatch.Id,
             Year = 2030,
             Month = 12,
-            SalesKg = 50m
+            SalesTon = 0.05m
         });
 
         await SeedCompleteBudgetDefinitionsAsync(db, fishStock.Id, feedStock.Id);
@@ -203,7 +203,7 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.Equal(929, lastProjection.ClosingLiveCount);
         Assert.Equal(650.3m, lastProjection.ClosingBiomassKg);
         Assert.Equal(207.747m, lastProjection.FeedKg);
-        Assert.Equal(50m, lastProjection.SalesKg);
+        Assert.Equal(0.05m, lastProjection.SalesTon);
         Assert.Equal(7300.597m, Round(result.Data.Sum(x => x.FeedKg)));
 
         var planningKpi = await service.GetKpiSummaryAsync(plan.Id);
@@ -215,7 +215,7 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.NotNull(report.Data);
         Assert.Equal(60, report.Data!.MonthlyRows.Count);
         Assert.Equal(Round(result.Data.Sum(x => x.FeedKg)), report.Data.Summary.FeedKg);
-        Assert.Equal(Round(result.Data.Sum(x => x.SalesKg)), report.Data.Summary.SalesKg);
+        Assert.Equal(Round(result.Data.Sum(x => x.SalesTon)), report.Data.Summary.SalesTon);
         Assert.Equal(Round(result.Data.Sum(x => x.MortalityKg)), report.Data.Summary.MortalityKg);
         Assert.Equal(planningKpi.Data!.Fcr, report.Data.Summary.Fcr);
         Assert.Equal(planningKpi.Data.FinalBiomassKg, report.Data.Summary.FinalBiomassKg);
@@ -243,7 +243,7 @@ public class BudgetPlanningServiceIntegrationTests
             BudgetPlanFishBatchId = budgetBatch.Id,
             Year = 2026,
             Month = 12,
-            SalesKg = 10m
+            SalesTon = 0.01m
         });
 
         await SeedCompleteBudgetDefinitionsAsync(db, fishStock.Id, feedStock.Id, includeFeedRates: false);
@@ -291,11 +291,11 @@ public class BudgetPlanningServiceIntegrationTests
 
         Assert.True(result.Success, result.Message);
         Assert.NotNull(result.Data);
-        Assert.Equal(50m, result.Data!.SalesKg);
+        Assert.Equal(0.05m, result.Data!.SalesTon);
         Assert.Equal(455, result.Data.SalesCount);
 
         var saved = await db.BudgetPlanSalesLines.SingleAsync(x => x.BudgetPlanId == plan.Id);
-        Assert.Equal(50m, saved.SalesKg);
+        Assert.Equal(0.05m, saved.SalesTon);
         Assert.Equal(455, saved.SalesCount);
     }
 

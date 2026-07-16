@@ -38,7 +38,7 @@ public class BudgetKpiService : IBudgetKpiService
             .GroupBy(x => x.BudgetPlanFishBatchId)
             .Select(x => x.OrderByDescending(r => r.Year).ThenByDescending(r => r.Month).FirstOrDefault()?.ClosingBiomassKg ?? 0m)
             .Sum();
-        var sales = rows.Sum(x => x.SalesKg);
+        var sales = rows.Sum(x => x.SalesTon * 1000m);
         var feed = rows.Sum(x => x.FeedKg);
         var mortality = rows.Sum(x => x.MortalityKg);
         var mortalityCount = rows.Sum(x => x.MortalityCount);
@@ -58,7 +58,7 @@ public class BudgetKpiService : IBudgetKpiService
             {
                 var opening = group.Sum(x => x.OpeningBiomassKg);
                 var closing = group.Sum(x => x.ClosingBiomassKg);
-                var groupSales = group.Sum(x => x.SalesKg);
+                var groupSales = group.Sum(x => x.SalesTon * 1000m);
                 var groupFeed = group.Sum(x => x.FeedKg);
                 var groupMortality = group.Sum(x => x.MortalityKg);
                 var producedBiomassKg = Math.Max(0m, closing + groupSales + groupMortality);
@@ -70,7 +70,7 @@ public class BudgetKpiService : IBudgetKpiService
                     ClosingBiomassKg = Round(closing),
                     GrowthBiomassKg = Round(producedBiomassKg),
                     ProducedBiomassKg = Round(producedBiomassKg),
-                    SalesKg = Round(groupSales),
+                    SalesTon = Round(groupSales / 1000m),
                     FeedKg = Round(groupFeed),
                     MortalityKg = Round(groupMortality),
                     MortalityCount = group.Sum(x => x.MortalityCount),
@@ -88,7 +88,7 @@ public class BudgetKpiService : IBudgetKpiService
                 BudgetCode = plan.BudgetCode,
                 InitialBiomassKg = Round(initial),
                 FinalBiomassKg = Round(final),
-                SalesKg = Round(sales),
+                SalesTon = Round(sales / 1000m),
                 FeedKg = Round(feed),
                 MortalityKg = Round(mortality),
                 MortalityCount = mortalityCount,

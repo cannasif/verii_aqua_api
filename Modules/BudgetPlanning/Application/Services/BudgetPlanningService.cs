@@ -239,7 +239,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                     BudgetPlanFishBatchId = batchIdMap[sale.BudgetPlanFishBatchId],
                     Year = sale.Year,
                     Month = sale.Month,
-                    SalesKg = sale.SalesKg,
+                    SalesTon = sale.SalesTon,
                     SalesCount = sale.SalesCount,
                     UnitPrice = sale.UnitPrice,
                     Description = sale.Description
@@ -263,7 +263,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                         OpeningBiomassKg = projection.OpeningBiomassKg,
                         MonthlyGrowthGram = projection.MonthlyGrowthGram,
                         ClosingAverageGram = projection.ClosingAverageGram,
-                        SalesKg = projection.SalesKg,
+                        SalesTon = projection.SalesTon,
                         SalesCount = projection.SalesCount,
                         MortalityKg = projection.MortalityKg,
                         MortalityCount = projection.MortalityCount,
@@ -573,7 +573,7 @@ public class BudgetPlanningService : IBudgetPlanningService
 
     public async Task<ApiResponse<BudgetPlanSalesLineDto>> UpsertSalesLineAsync(long budgetPlanId, UpsertBudgetPlanSalesLineDto dto)
     {
-        if (!IsValidMonth(dto.Month) || dto.SalesKg < 0)
+        if (!IsValidMonth(dto.Month) || dto.SalesTon < 0)
         {
             return ApiResponse<BudgetPlanSalesLineDto>.ErrorResult("Satis donemi veya miktari hatali.", "Satis donemi veya miktari hatali.", StatusCodes.Status400BadRequest);
         }
@@ -612,7 +612,7 @@ public class BudgetPlanningService : IBudgetPlanningService
         entity.BudgetPlanFishBatchId = dto.BudgetPlanFishBatchId;
         entity.Year = dto.Year;
         entity.Month = dto.Month;
-        entity.SalesKg = dto.SalesKg;
+        entity.SalesTon = Round(dto.SalesTon);
         entity.SalesCount = dto.SalesCount;
         entity.UnitPrice = dto.UnitPrice ?? await FindFishPriceEuroAsync(budgetPlanId, dto.BudgetPlanFishBatchId, dto.Year, dto.Month);
         entity.Description = NormalizeOptional(dto.Description);
@@ -654,7 +654,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             BudgetPlanFishBatchId = dto.BudgetPlanFishBatchId,
             Year = dto.Year,
             Month = dto.Month,
-            SalesKg = salesKg,
+            SalesTon = dto.SalesTon,
             SalesCount = salesCount,
             UnitPrice = dto.UnitPrice,
             Description = NormalizeOptional(dto.Description)
@@ -756,7 +756,7 @@ public class BudgetPlanningService : IBudgetPlanningService
         {
             var plannedSalesKg = sales
                 .Where(x => x.BudgetPlanFishBatchId == row.BudgetPlanFishBatchId && x.Year == row.Year && x.Month == row.Month)
-                .Sum(x => x.SalesKg);
+                .Sum(x => x.SalesTon * 1000m);
             var averageKg = row.ClosingAverageGram / 1000m;
             var plannedSalesCount = averageKg <= 0 ? 0 : (int)Math.Round(plannedSalesKg / averageKg, MidpointRounding.AwayFromZero);
             var remainingKg = Math.Max(0m, row.ClosingBiomassKg - plannedSalesKg);
@@ -777,7 +777,6 @@ public class BudgetPlanningService : IBudgetPlanningService
                 AvailableCount = row.ClosingLiveCount,
                 AvailableKg = Round(row.ClosingBiomassKg),
                 AvailableTon = Round(row.ClosingBiomassKg / 1000m),
-                PlannedSalesKg = Round(plannedSalesKg),
                 PlannedSalesTon = Round(plannedSalesKg / 1000m),
                 PlannedSalesCount = plannedSalesCount,
                 RemainingKg = Round(remainingKg),
@@ -1194,7 +1193,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                         ? sales.Where(x => x.BudgetPlanFishBatchId == batch.Id && x.Year == period.Year && x.Month == period.Month).ToList()
                         : new List<BudgetPlanSalesLine>();
                     var salesKg = includeSalesAndOperations
-                        ? Math.Min(periodSales.Sum(x => x.SalesKg), Round(liveCount * closingAverageBeforeLoss / 1000m))
+                        ? Math.Min(periodSales.Sum(x => x.SalesTon * 1000m), Round(liveCount * closingAverageBeforeLoss / 1000m))
                         : 0m;
                     var salesCount = includeSalesAndOperations ? periodSales.Sum(x => x.SalesCount ?? 0) : 0;
                     if (salesCount <= 0 && closingAverageBeforeLoss > 0)
@@ -1239,7 +1238,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                         GrowthQualityPercent = growthQualityPercent,
                         MonthlyGrowthGram = Round(monthlyGrowth),
                         ClosingAverageGram = Round(closingAverageBeforeLoss),
-                        SalesKg = Round(salesKg),
+                        SalesTon = Round(salesKg / 1000m),
                         SalesCount = salesCount,
                         MortalityKg = mortalityKg,
                         MortalityCount = mortalityCount,
@@ -1393,7 +1392,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             .GroupBy(x => x.BudgetPlanFishBatchId)
             .Select(x => x.OrderByDescending(r => r.Year).ThenByDescending(r => r.Month).FirstOrDefault()?.ClosingBiomassKg ?? 0m)
             .Sum();
-        var sales = rows.Sum(x => x.SalesKg);
+        var sales = rows.Sum(x => x.SalesTon * 1000m);
         var feed = rows.Sum(x => x.FeedKg);
         var mortality = rows.Sum(x => x.MortalityKg);
         var mortalityCount = rows.Sum(x => x.MortalityCount);
@@ -1412,7 +1411,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             BudgetCode = plan.BudgetCode,
             InitialBiomassKg = Round(initial),
             FinalBiomassKg = Round(final),
-            SalesKg = Round(sales),
+            SalesTon = Round(sales / 1000m),
             FeedKg = Round(feed),
             MortalityKg = Round(mortality),
             MortalityCount = mortalityCount,
@@ -1840,7 +1839,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                     ? sales.Where(x => x.BudgetPlanFishBatchId == batch.Id && x.Year == period.Year && x.Month == period.Month).ToList()
                     : new List<BudgetPlanSalesLine>();
                 var salesKg = includeSalesAndOperations
-                    ? Math.Min(periodSales.Sum(x => x.SalesKg), Round(liveCount * closingAverageBeforeLoss / 1000m))
+                    ? Math.Min(periodSales.Sum(x => x.SalesTon * 1000m), Round(liveCount * closingAverageBeforeLoss / 1000m))
                     : 0m;
                 var salesCount = includeSalesAndOperations ? periodSales.Sum(x => x.SalesCount ?? 0) : 0;
                 if (salesCount <= 0 && closingAverageBeforeLoss > 0)
@@ -1919,7 +1918,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             CalculatedAt = plan.CalculatedAt,
             FishBatchCount = plan.FishBatches.Count(x => !x.IsDeleted),
             TotalInitialBiomassKg = Round(plan.FishBatches.Where(x => !x.IsDeleted).Sum(x => x.InitialBiomassKg)),
-            TotalSalesKg = Round(plan.MonthlyProjections.Where(x => !x.IsDeleted).Sum(x => x.SalesKg)),
+            TotalSalesTon = Round(plan.MonthlyProjections.Where(x => !x.IsDeleted).Sum(x => x.SalesTon)),
             TotalFeedKg = Round(plan.MonthlyProjections.Where(x => !x.IsDeleted).Sum(x => x.FeedKg)),
             TotalMortalityKg = Round(plan.MonthlyProjections.Where(x => !x.IsDeleted).Sum(x => x.MortalityKg))
         };
@@ -1953,7 +1952,7 @@ public class BudgetPlanningService : IBudgetPlanningService
 
     private static BudgetPlanSalesLineDto MapSalesLine(BudgetPlanSalesLine entity, decimal? exchangeRate = null)
     {
-        var salesAmountEuro = Round(entity.SalesKg * (entity.UnitPrice ?? 0m));
+        var salesAmountEuro = Round(entity.SalesTon * 1000m * (entity.UnitPrice ?? 0m));
         return new BudgetPlanSalesLineDto
         {
             Id = entity.Id,
@@ -1965,7 +1964,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             FishStockName = entity.BudgetPlanFishBatch.FishStock.StockName,
             Year = entity.Year,
             Month = entity.Month,
-            SalesKg = entity.SalesKg,
+            SalesTon = entity.SalesTon,
             SalesCount = entity.SalesCount,
             UnitPrice = entity.UnitPrice,
             SalesAmount = salesAmountEuro,
@@ -2092,7 +2091,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             GrowthQualityPercent = entity.GrowthQualityPercent,
             MonthlyGrowthGram = entity.MonthlyGrowthGram,
             ClosingAverageGram = entity.ClosingAverageGram,
-            SalesKg = entity.SalesKg,
+            SalesTon = entity.SalesTon,
             SalesCount = entity.SalesCount,
             MortalityKg = entity.MortalityKg,
             MortalityCount = entity.MortalityCount,

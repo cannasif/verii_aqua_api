@@ -14,7 +14,7 @@ public class BudgetPlanMonthlyProjection : BaseEntity
     public decimal GrowthQualityPercent { get; set; } = 100m;
     public decimal MonthlyGrowthGram { get; set; }
     public decimal ClosingAverageGram { get; set; }
-    public decimal SalesKg { get; set; }
+    public decimal SalesTon { get; set; }
     public int SalesCount { get; set; }
     public decimal MortalityKg { get; set; }
     public int MortalityCount { get; set; }

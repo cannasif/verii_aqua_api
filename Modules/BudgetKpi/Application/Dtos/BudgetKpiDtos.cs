@@ -14,7 +14,7 @@ public class BudgetKpiMonthlyDto
     public decimal ClosingBiomassKg { get; set; }
     public decimal GrowthBiomassKg { get; set; }
     public decimal ProducedBiomassKg { get; set; }
-    public decimal SalesKg { get; set; }
+    public decimal SalesTon { get; set; }
     public decimal FeedKg { get; set; }
     public decimal MortalityKg { get; set; }
     public int MortalityCount { get; set; }

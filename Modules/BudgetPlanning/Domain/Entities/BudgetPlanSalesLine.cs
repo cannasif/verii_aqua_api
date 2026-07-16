@@ -6,7 +6,7 @@ public class BudgetPlanSalesLine : BaseEntity
     public long BudgetPlanFishBatchId { get; set; }
     public int Year { get; set; }
     public int Month { get; set; }
-    public decimal SalesKg { get; set; }
+    public decimal SalesTon { get; set; }
     public int? SalesCount { get; set; }
     public decimal? UnitPrice { get; set; }
     public string? Description { get; set; }
