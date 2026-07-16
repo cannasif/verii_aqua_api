@@ -11,6 +11,8 @@ public class BudgetPlanFeedingLine : BaseEntity
     public int Month { get; set; }
     public long? FeedStockId { get; set; }
     public decimal FeedAmountRate { get; set; }
+    public decimal MortalityReductionPercent { get; set; }
+    public decimal MortalityReductionKg { get; set; }
     public decimal FeedKg { get; set; }
 
     public BudgetPlan BudgetPlan { get; set; } = null!;

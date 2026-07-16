@@ -12,6 +12,7 @@ public class BudgetPlanMonthlyProjectionConfiguration : BaseEntityConfiguration<
         {
             table.HasCheckConstraint("CK_RII_BUDGET_PLAN_MONTHLY_PROJECTION_MONTH", "[Month] BETWEEN 1 AND 12");
             table.HasCheckConstraint("CK_RII_BUDGET_PLAN_MONTHLY_PROJECTION_NON_NEGATIVE", "[OpeningLiveCount] >= 0 AND [ClosingLiveCount] >= 0 AND [OpeningBiomassKg] >= 0 AND [ClosingBiomassKg] >= 0");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_MONTHLY_PROJECTION_ADJUSTMENT_PERCENT", "[GrowthQualityPercent] >= 0 AND [GrowthQualityPercent] <= 100 AND [FeedMortalityReductionPercent] >= 0 AND [FeedMortalityReductionPercent] <= 100");
         });
 
         builder.HasOne(x => x.BudgetPlan)
@@ -33,6 +34,9 @@ public class BudgetPlanMonthlyProjectionConfiguration : BaseEntityConfiguration<
             .WithMany()
             .HasForeignKey(x => x.WaterTemperatureId)
             .OnDelete(DeleteBehavior.NoAction);
+
+        builder.Property(x => x.GrowthQualityPercent)
+            .HasDefaultValue(100m);
 
         builder.HasIndex(x => new { x.BudgetPlanId, x.BudgetPlanFishBatchId, x.Year, x.Month })
             .IsUnique()

@@ -1,4 +1,6 @@
 using aqua_api.Modules.Budget.Domain.Entities;
+using aqua_api.Modules.Budget.Application.Dtos;
+using aqua_api.Modules.Budget.Application.Services;
 using aqua_api.Modules.BudgetPlanning.Domain.Enums;
 using aqua_api.Modules.BudgetPlanning.Domain.Entities;
 using aqua_api.Modules.BudgetPlanning.Application.Dtos;
@@ -7,6 +9,7 @@ using aqua_api.Modules.BudgetKpi.Application.Services;
 using aqua_api.Modules.Stock.Domain.Entities;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 using aqua_api.Shared.Infrastructure.Persistence.UnitOfWork;
+using aqua_api.Shared.Common.Dtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +20,58 @@ namespace aqua_api.Tests;
 
 public class BudgetPlanningServiceIntegrationTests
 {
+    [Fact]
+    public async Task AdjustmentDefinitions_SupportCreateUpdateListAndSoftDelete()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var service = fixture.AdjustmentDefinitionService;
+
+        var fishStock = new Stock { ErpStockCode = "FISH-DEF", StockName = "Definition Fish", Unit = "AD" };
+        var feedStock = new Stock { ErpStockCode = "FEED-DEF", StockName = "Definition Feed", Unit = "KG", GrupKodu = "YEM" };
+        var calibration = new BudgetCalibrationDefinition { CalibrationCode = "K-DEF", CalibrationInfo = "Definition" };
+        var temperature = new BudgetWaterTemperature { Year = 2026, Month = 1, WaterTemperatureCelsius = 16m };
+        db.AddRange(fishStock, feedStock, calibration, temperature);
+        await db.SaveChangesAsync();
+
+        var feedCreated = await service.CreateFeedMortalityRateAsync(new CreateBudgetFeedMortalityRateDto
+        {
+            WaterTemperatureId = temperature.Id,
+            CalibrationDefinitionId = calibration.Id,
+            FeedStockId = feedStock.Id,
+            ReductionRatePercent = 25m
+        });
+        Assert.True(feedCreated.Success, feedCreated.Message);
+
+        var feedUpdated = await service.UpdateFeedMortalityRateAsync(feedCreated.Data!.Id, new CreateBudgetFeedMortalityRateDto
+        {
+            WaterTemperatureId = temperature.Id,
+            CalibrationDefinitionId = calibration.Id,
+            FeedStockId = feedStock.Id,
+            ReductionRatePercent = 30m
+        });
+        Assert.True(feedUpdated.Success, feedUpdated.Message);
+        Assert.Equal(30m, feedUpdated.Data!.ReductionRatePercent);
+
+        var growthCreated = await service.CreateFishGrowthQualityAsync(new CreateBudgetFishGrowthQualityDto
+        {
+            FishStockId = fishStock.Id,
+            GrowthMonthNo = 1,
+            QualityPercent = 85m
+        });
+        Assert.True(growthCreated.Success, growthCreated.Message);
+
+        var feedList = await service.GetFeedMortalityRatesAsync(new PagedRequest());
+        var growthList = await service.GetFishGrowthQualitiesAsync(new PagedRequest());
+        Assert.Single(feedList.Data!.Items);
+        Assert.Single(growthList.Data!.Items);
+
+        Assert.True((await service.DeleteFeedMortalityRateAsync(feedCreated.Data.Id)).Success);
+        Assert.True((await service.DeleteFishGrowthQualityAsync(growthCreated.Data!.Id)).Success);
+        Assert.False((await service.GetFeedMortalityRateAsync(feedCreated.Data.Id)).Success);
+        Assert.False((await service.GetFishGrowthQualityAsync(growthCreated.Data.Id)).Success);
+    }
+
     [Fact]
     public async Task CalculateGrowth_BlocksWhenGrowthProfileIsMissing()
     {
@@ -36,6 +91,68 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.Equal(400, result.StatusCode);
         Assert.Contains("buyume profili yok", result.Message);
         Assert.False(await db.BudgetPlanMonthlyProjections.AnyAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task Calculate_AppliesGrowthQualityAndFeedMortalityReduction()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var service = fixture.Service;
+
+        var fishStock = new Stock { ErpStockCode = "FISH-BUD-ADJ", StockName = "Adjusted Fish", Unit = "AD" };
+        var feedStock = new Stock { ErpStockCode = "FEED-BUD-ADJ", StockName = "Adjusted Feed", Unit = "KG", GrupKodu = "YEM" };
+        db.Stocks.AddRange(fishStock, feedStock);
+        await db.SaveChangesAsync();
+
+        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.SalesPlanned);
+        var budgetBatch = await db.BudgetPlanFishBatches.SingleAsync(x => x.BudgetPlanId == plan.Id);
+        db.BudgetPlanSalesLines.Add(new BudgetPlanSalesLine
+        {
+            BudgetPlanId = plan.Id,
+            BudgetPlanFishBatchId = budgetBatch.Id,
+            Year = 2026,
+            Month = 1,
+            SalesKg = 0m
+        });
+        await SeedCompleteBudgetDefinitionsAsync(db, fishStock.Id, feedStock.Id);
+        await db.SaveChangesAsync();
+
+        var calibration = await db.BudgetCalibrationDefinitions.SingleAsync();
+        var januaryTemperature = await db.BudgetWaterTemperatures.SingleAsync(x => x.Year == 2026 && x.Month == 1);
+        var mortality = await db.BudgetMortalityRateDefinitions.SingleAsync();
+        mortality.MortalityRatePercent = 10m;
+
+        db.BudgetFishGrowthQualities.Add(new BudgetFishGrowthQuality
+        {
+            FishStockId = fishStock.Id,
+            GrowthMonthNo = 1,
+            QualityPercent = 50m
+        });
+        db.BudgetFeedMortalityRates.Add(new BudgetFeedMortalityRate
+        {
+            WaterTemperatureId = januaryTemperature.Id,
+            CalibrationDefinitionId = calibration.Id,
+            FeedStockId = feedStock.Id,
+            ReductionRatePercent = 50m
+        });
+        await db.SaveChangesAsync();
+
+        var result = await service.CalculateAsync(plan.Id);
+
+        Assert.True(result.Success, result.Message);
+        var january = Assert.Single(result.Data!, x => x.Year == 2026 && x.Month == 1);
+        Assert.Equal(10m, january.RawMonthlyGrowthGram);
+        Assert.Equal(50m, january.GrowthQualityPercent);
+        Assert.Equal(5m, january.MonthlyGrowthGram);
+        Assert.Equal(50m, january.FeedMortalityReductionPercent);
+        Assert.Equal(1.507m, january.FeedMortalityReductionKg);
+        Assert.Equal(28.641m, january.FeedKg);
+
+        var feedingLine = await db.BudgetPlanFeedingLines.SingleAsync(x =>
+            x.BudgetPlanId == plan.Id && x.Year == 2026 && x.Month == 1);
+        Assert.Equal(january.FeedMortalityReductionKg, feedingLine.MortalityReductionKg);
+        Assert.Equal(january.FeedMortalityReductionPercent, feedingLine.MortalityReductionPercent);
     }
 
     [Fact]
@@ -383,23 +500,35 @@ public class BudgetPlanningServiceIntegrationTests
         await db.Database.EnsureCreatedAsync();
 
         var unitOfWork = new EfUnitOfWork(db, new HttpContextAccessor());
-        return new BudgetFixture(connection, db, new BudgetPlanningService(unitOfWork), new BudgetKpiService(db));
+        return new BudgetFixture(
+            connection,
+            db,
+            new BudgetPlanningService(unitOfWork),
+            new BudgetAdjustmentRateDefinitionService(unitOfWork),
+            new BudgetKpiService(db));
     }
 
     private sealed class BudgetFixture : IAsyncDisposable
     {
         private readonly SqliteConnection _connection;
 
-        public BudgetFixture(SqliteConnection connection, AquaDbContext db, BudgetPlanningService service, BudgetKpiService kpiService)
+        public BudgetFixture(
+            SqliteConnection connection,
+            AquaDbContext db,
+            BudgetPlanningService service,
+            BudgetAdjustmentRateDefinitionService adjustmentDefinitionService,
+            BudgetKpiService kpiService)
         {
             _connection = connection;
             Db = db;
             Service = service;
+            AdjustmentDefinitionService = adjustmentDefinitionService;
             KpiService = kpiService;
         }
 
         public AquaDbContext Db { get; }
         public BudgetPlanningService Service { get; }
+        public BudgetAdjustmentRateDefinitionService AdjustmentDefinitionService { get; }
         public BudgetKpiService KpiService { get; }
 
         public async ValueTask DisposeAsync()

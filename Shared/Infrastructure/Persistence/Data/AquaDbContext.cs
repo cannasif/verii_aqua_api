@@ -98,6 +98,8 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<BudgetFishGrowthProfileLine> BudgetFishGrowthProfileLines { get; set; }
         public DbSet<BudgetCalibrationDefinition> BudgetCalibrationDefinitions { get; set; }
         public DbSet<BudgetFeedConsumptionRate> BudgetFeedConsumptionRates { get; set; }
+        public DbSet<BudgetFeedMortalityRate> BudgetFeedMortalityRates { get; set; }
+        public DbSet<BudgetFishGrowthQuality> BudgetFishGrowthQualities { get; set; }
         public DbSet<BudgetPlan> BudgetPlans { get; set; }
         public DbSet<BudgetPlanProject> BudgetPlanProjects { get; set; }
         public DbSet<BudgetPlanFishBatch> BudgetPlanFishBatches { get; set; }

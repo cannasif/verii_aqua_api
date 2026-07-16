@@ -271,6 +271,8 @@ public class BudgetPlanFeedingLineDto
     public string? FeedStockCode { get; set; }
     public string? FeedStockName { get; set; }
     public decimal FeedAmountRate { get; set; }
+    public decimal MortalityReductionPercent { get; set; }
+    public decimal MortalityReductionKg { get; set; }
     public decimal FeedKg { get; set; }
 }
 
@@ -301,6 +303,8 @@ public class BudgetPlanMonthlyProjectionDto
     public int OpeningLiveCount { get; set; }
     public decimal OpeningAverageGram { get; set; }
     public decimal OpeningBiomassKg { get; set; }
+    public decimal RawMonthlyGrowthGram { get; set; }
+    public decimal GrowthQualityPercent { get; set; }
     public decimal MonthlyGrowthGram { get; set; }
     public decimal ClosingAverageGram { get; set; }
     public decimal SalesKg { get; set; }
@@ -308,6 +312,8 @@ public class BudgetPlanMonthlyProjectionDto
     public decimal MortalityKg { get; set; }
     public int MortalityCount { get; set; }
     public decimal FeedKg { get; set; }
+    public decimal FeedMortalityReductionPercent { get; set; }
+    public decimal FeedMortalityReductionKg { get; set; }
     public int ClosingLiveCount { get; set; }
     public decimal ClosingBiomassKg { get; set; }
     public string? CalibrationCode { get; set; }

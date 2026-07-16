@@ -10,6 +10,8 @@ public class BudgetPlanMonthlyProjection : BaseEntity
     public int OpeningLiveCount { get; set; }
     public decimal OpeningAverageGram { get; set; }
     public decimal OpeningBiomassKg { get; set; }
+    public decimal RawMonthlyGrowthGram { get; set; }
+    public decimal GrowthQualityPercent { get; set; } = 100m;
     public decimal MonthlyGrowthGram { get; set; }
     public decimal ClosingAverageGram { get; set; }
     public decimal SalesKg { get; set; }
@@ -17,6 +19,8 @@ public class BudgetPlanMonthlyProjection : BaseEntity
     public decimal MortalityKg { get; set; }
     public int MortalityCount { get; set; }
     public decimal FeedKg { get; set; }
+    public decimal FeedMortalityReductionPercent { get; set; }
+    public decimal FeedMortalityReductionKg { get; set; }
     public int ClosingLiveCount { get; set; }
     public decimal ClosingBiomassKg { get; set; }
     public long? CalibrationDefinitionId { get; set; }

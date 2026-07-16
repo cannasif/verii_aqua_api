@@ -1140,6 +1140,12 @@ public class BudgetPlanningService : IBudgetPlanningService
         var feedRates = await _unitOfWork.Db.BudgetFeedConsumptionRates
             .Where(x => !x.IsDeleted)
             .ToListAsync();
+        var feedMortalityRates = await _unitOfWork.Db.BudgetFeedMortalityRates
+            .Where(x => !x.IsDeleted)
+            .ToListAsync();
+        var growthQualities = await _unitOfWork.Db.BudgetFishGrowthQualities
+            .Where(x => !x.IsDeleted)
+            .ToListAsync();
         var mortalityRates = await _unitOfWork.Db.BudgetMortalityRateDefinitions
             .Where(x => !x.IsDeleted)
             .ToListAsync();
@@ -1180,7 +1186,9 @@ public class BudgetPlanningService : IBudgetPlanningService
                 {
                     var monthIndex = MonthsBetween(batch.GrowthStartYear, batch.GrowthStartMonth, period.Year, period.Month) + 1;
                     var openingBiomassKg = Round(liveCount * averageGram / 1000m);
-                    var monthlyGrowth = profile?.Lines.FirstOrDefault(x => x.GrowthMonthNo == monthIndex && !x.IsDeleted)?.MonthlyGrowthGram ?? 0m;
+                    var rawMonthlyGrowth = profile?.Lines.FirstOrDefault(x => x.GrowthMonthNo == monthIndex && !x.IsDeleted)?.MonthlyGrowthGram ?? 0m;
+                    var growthQualityPercent = FindGrowthQuality(growthQualities, batch.FishStockId, monthIndex)?.QualityPercent ?? 100m;
+                    var monthlyGrowth = Round(rawMonthlyGrowth * growthQualityPercent / 100m);
                     var closingAverageBeforeLoss = averageGram + monthlyGrowth;
                     var periodSales = includeSalesAndOperations
                         ? sales.Where(x => x.BudgetPlanFishBatchId == batch.Id && x.Year == period.Year && x.Month == period.Month).ToList()
@@ -1208,7 +1216,14 @@ public class BudgetPlanningService : IBudgetPlanningService
 
                     var feedRate = includeSalesAndOperations ? FindFeedRate(feedRates, waterTemperature?.Id, calibration?.Id) : null;
                     var averageBiomassKg = (openingBiomassKg + closingBiomassKg) / 2m;
-                    var feedKg = feedRate == null ? 0m : Round(averageBiomassKg * (feedRate.FeedAmount / 100m) * DateTime.DaysInMonth(period.Year, period.Month));
+                    var baseFeedKg = feedRate == null ? 0m : Round(averageBiomassKg * (feedRate.FeedAmount / 100m) * DateTime.DaysInMonth(period.Year, period.Month));
+                    var feedMortalityRate = feedRate == null
+                        ? null
+                        : FindFeedMortalityRate(feedMortalityRates, waterTemperature?.Id, calibration?.Id, feedRate.FeedStockId);
+                    var mortalityShare = afterSalesLiveCount <= 0 ? 0m : Math.Clamp(mortalityCount / (decimal)afterSalesLiveCount, 0m, 1m);
+                    var feedMortalityReductionPercent = feedMortalityRate?.ReductionRatePercent ?? 0m;
+                    var feedMortalityReductionKg = Round(baseFeedKg * mortalityShare * feedMortalityReductionPercent / 100m);
+                    var feedKg = Math.Max(0m, Round(baseFeedKg - feedMortalityReductionKg));
 
                     var projection = new BudgetPlanMonthlyProjection
                     {
@@ -1220,6 +1235,8 @@ public class BudgetPlanningService : IBudgetPlanningService
                         OpeningLiveCount = liveCount,
                         OpeningAverageGram = Round(averageGram),
                         OpeningBiomassKg = openingBiomassKg,
+                        RawMonthlyGrowthGram = Round(rawMonthlyGrowth),
+                        GrowthQualityPercent = growthQualityPercent,
                         MonthlyGrowthGram = Round(monthlyGrowth),
                         ClosingAverageGram = Round(closingAverageBeforeLoss),
                         SalesKg = Round(salesKg),
@@ -1227,6 +1244,8 @@ public class BudgetPlanningService : IBudgetPlanningService
                         MortalityKg = mortalityKg,
                         MortalityCount = mortalityCount,
                         FeedKg = feedKg,
+                        FeedMortalityReductionPercent = feedMortalityReductionPercent,
+                        FeedMortalityReductionKg = feedMortalityReductionKg,
                         ClosingLiveCount = closingLiveCount,
                         ClosingBiomassKg = closingBiomassKg,
                         CalibrationDefinitionId = calibration?.Id,
@@ -1247,6 +1266,8 @@ public class BudgetPlanningService : IBudgetPlanningService
                             Month = period.Month,
                             FeedStockId = feedRate?.FeedStockId,
                             FeedAmountRate = feedRate?.FeedAmount ?? 0m,
+                            MortalityReductionPercent = feedMortalityReductionPercent,
+                            MortalityReductionKg = feedMortalityReductionKg,
                             FeedKg = feedKg
                         });
 
@@ -1717,6 +1738,25 @@ public class BudgetPlanningService : IBudgetPlanningService
             x.CalibrationDefinitionId == calibrationId.Value);
     }
 
+    private static BudgetFeedMortalityRate? FindFeedMortalityRate(
+        List<BudgetFeedMortalityRate> rates,
+        long? waterTemperatureId,
+        long? calibrationId,
+        long feedStockId)
+    {
+        if (!waterTemperatureId.HasValue || !calibrationId.HasValue) return null;
+        return rates.FirstOrDefault(x =>
+            x.WaterTemperatureId == waterTemperatureId.Value &&
+            x.CalibrationDefinitionId == calibrationId.Value &&
+            x.FeedStockId == feedStockId);
+    }
+
+    private static BudgetFishGrowthQuality? FindGrowthQuality(
+        List<BudgetFishGrowthQuality> qualities,
+        long fishStockId,
+        int growthMonthNo) =>
+        qualities.FirstOrDefault(x => x.FishStockId == fishStockId && x.GrowthMonthNo == growthMonthNo);
+
     private static BudgetWaterTemperature? FindWaterTemperature(List<BudgetWaterTemperature> temperatures, int year, int month)
     {
         return temperatures.FirstOrDefault(x => x.Year == year && x.Month == month) ??
@@ -2010,6 +2050,8 @@ public class BudgetPlanningService : IBudgetPlanningService
             FeedStockCode = entity.FeedStock?.ErpStockCode,
             FeedStockName = entity.FeedStock?.StockName,
             FeedAmountRate = entity.FeedAmountRate,
+            MortalityReductionPercent = entity.MortalityReductionPercent,
+            MortalityReductionKg = entity.MortalityReductionKg,
             FeedKg = entity.FeedKg
         };
     }
@@ -2046,6 +2088,8 @@ public class BudgetPlanningService : IBudgetPlanningService
             OpeningLiveCount = entity.OpeningLiveCount,
             OpeningAverageGram = entity.OpeningAverageGram,
             OpeningBiomassKg = entity.OpeningBiomassKg,
+            RawMonthlyGrowthGram = entity.RawMonthlyGrowthGram,
+            GrowthQualityPercent = entity.GrowthQualityPercent,
             MonthlyGrowthGram = entity.MonthlyGrowthGram,
             ClosingAverageGram = entity.ClosingAverageGram,
             SalesKg = entity.SalesKg,
@@ -2053,6 +2097,8 @@ public class BudgetPlanningService : IBudgetPlanningService
             MortalityKg = entity.MortalityKg,
             MortalityCount = entity.MortalityCount,
             FeedKg = entity.FeedKg,
+            FeedMortalityReductionPercent = entity.FeedMortalityReductionPercent,
+            FeedMortalityReductionKg = entity.FeedMortalityReductionKg,
             ClosingLiveCount = entity.ClosingLiveCount,
             ClosingBiomassKg = entity.ClosingBiomassKg,
             CalibrationCode = entity.CalibrationDefinition?.CalibrationCode,

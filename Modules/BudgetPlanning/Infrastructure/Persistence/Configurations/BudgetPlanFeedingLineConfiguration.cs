@@ -11,7 +11,7 @@ public class BudgetPlanFeedingLineConfiguration : BaseEntityConfiguration<Budget
         builder.ToTable("RII_BUDGET_PLAN_FEEDING_LINE", table =>
         {
             table.HasCheckConstraint("CK_RII_BUDGET_PLAN_FEEDING_LINE_MONTH", "[Month] BETWEEN 1 AND 12");
-            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_FEEDING_LINE_NON_NEGATIVE", "[FeedAmountRate] >= 0 AND [FeedKg] >= 0");
+            table.HasCheckConstraint("CK_RII_BUDGET_PLAN_FEEDING_LINE_NON_NEGATIVE", "[FeedAmountRate] >= 0 AND [MortalityReductionPercent] >= 0 AND [MortalityReductionKg] >= 0 AND [FeedKg] >= 0");
         });
 
         builder.HasOne(x => x.BudgetPlan)
