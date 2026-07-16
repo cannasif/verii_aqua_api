@@ -101,6 +101,68 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
         var currentRows = new List<MalKabulVeSevkiyatDto>();
         await using var fixture = await CreateFixtureAsync(currentRows, useRealSyncJob: true);
         var seeded = await SeedReceiptGraphAsync(fixture.Db, erpIntegratedFeeding: false);
+        var project = await fixture.Db.Projects.SingleAsync(x => x.ProjectCode == "ERP-PRJ-001");
+        var targetCage = new Cage { CageCode = "B4", CageName = "B4 Cage" };
+        var targetWarehouse = new aqua_api.Modules.Warehouse.Domain.Entities.Warehouse
+        {
+            ErpWarehouseCode = 120,
+            WarehouseName = "B4",
+            BranchCode = 1
+        };
+        fixture.Db.AddRange(targetCage, targetWarehouse);
+        await fixture.Db.SaveChangesAsync();
+        fixture.Db.CageWarehouseMappings.Add(new aqua_api.Modules.Cages.Domain.Entities.CageWarehouseMapping
+        {
+            CageId = targetCage.Id,
+            WarehouseId = targetWarehouse.Id,
+            IsActive = true
+        });
+        var targetProjectCage = new ProjectCage
+        {
+            ProjectId = project.Id,
+            CageId = targetCage.Id,
+            AssignedDate = seeded.ReceiptDate
+        };
+        fixture.Db.ProjectCages.Add(targetProjectCage);
+        await fixture.Db.SaveChangesAsync();
+        var sourceProjectCage = await fixture.Db.ProjectCages
+            .SingleAsync(x => x.ProjectId == project.Id && x.Id != targetProjectCage.Id);
+        var mortality = new Mortality
+        {
+            ProjectId = project.Id,
+            MortalityNo = "MT-001",
+            MortalityDate = seeded.ReceiptDate.AddDays(2),
+            Status = DocumentStatus.Posted,
+            IsERPIntegrated = false
+        };
+        fixture.Db.Mortalities.Add(mortality);
+        await fixture.Db.SaveChangesAsync();
+        var mortalityLine = new MortalityLine
+        {
+            MortalityId = mortality.Id,
+            FishBatchId = seeded.FishBatchId,
+            ProjectCageId = sourceProjectCage.Id,
+            DeadCount = 10
+        };
+        fixture.Db.MortalityLines.Add(mortalityLine);
+        await fixture.Db.SaveChangesAsync();
+        fixture.Db.BatchMovements.Add(new BatchMovement
+        {
+            FishBatchId = seeded.FishBatchId,
+            ProjectCageId = sourceProjectCage.Id,
+            MovementDate = mortality.MortalityDate,
+            MovementType = BatchMovementType.Mortality,
+            SignedCount = -10,
+            SignedBiomassGram = -1_000,
+            ReferenceTable = "RII_MORTALITY_LINE",
+            ReferenceId = mortalityLine.Id
+        });
+        var sourceBalanceBeforeCorrection = await fixture.Db.BatchCageBalances
+            .SingleAsync(x => x.FishBatchId == seeded.FishBatchId && x.ProjectCageId == sourceProjectCage.Id);
+        sourceBalanceBeforeCorrection.LiveCount = 990;
+        sourceBalanceBeforeCorrection.BiomassGram = 99_000;
+        sourceBalanceBeforeCorrection.AverageGram = 100;
+        await fixture.Db.SaveChangesAsync();
         var feedStock = await fixture.Db.Stocks.SingleAsync(x => x.ErpStockCode == "FEED-001");
         var otherOperationLine = new GoodsReceiptLine
         {
@@ -140,7 +202,7 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
         {
             Tarih = seeded.ReceiptDate,
             FisNo = seeded.DocumentNo,
-            KafesKodu = 110,
+            KafesKodu = 120,
             ProjeKodu = "ERP-PRJ-001",
             StokKodu = "FISH-001",
             StokAdi = "Levrek",
@@ -181,24 +243,36 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
         Assert.False(selectedReceiptLine.IsDeleted);
         Assert.False(oldBatch.IsDeleted);
         Assert.False(oldMirror.IsDeleted);
+        Assert.Equal((short)120, oldMirror.ErpWarehouseCode);
+        Assert.Equal(targetProjectCage.Id, oldMirror.ProjectCageId);
         Assert.True(otherOperationMirror.IsProcessed);
         Assert.False(otherOperationMirror.IsDeleted);
         Assert.False(oldFeeding.IsDeleted);
         Assert.Equal(1_200, selectedReceiptLine.FishCount);
         var distribution = await fixture.Db.GoodsReceiptFishDistributions.SingleAsync(x => x.GoodsReceiptLineId == selectedReceiptLine.Id);
-        var balance = await fixture.Db.BatchCageBalances.SingleAsync(x => x.FishBatchId == seeded.FishBatchId);
+        var balances = await fixture.Db.BatchCageBalances
+            .Where(x => x.FishBatchId == seeded.FishBatchId)
+            .ToListAsync();
         Assert.Equal(1_200, distribution.FishCount);
-        Assert.Equal(1_200, balance.LiveCount);
+        Assert.Equal(targetProjectCage.Id, distribution.ProjectCageId);
+        Assert.Equal(0, balances.Single(x => x.ProjectCageId != targetProjectCage.Id).LiveCount);
+        Assert.Equal(1_190, balances.Single(x => x.ProjectCageId == targetProjectCage.Id).LiveCount);
+        var feedingDistribution = await fixture.Db.FeedingDistributions.SingleAsync(x => x.FishBatchId == seeded.FishBatchId);
+        Assert.False(feedingDistribution.IsDeleted);
+        Assert.NotEqual(targetProjectCage.Id, feedingDistribution.ProjectCageId);
+        var preservedMortalityLine = await fixture.Db.MortalityLines.SingleAsync(x => x.Id == mortalityLine.Id);
+        Assert.False(preservedMortalityLine.IsDeleted);
+        Assert.Equal(sourceProjectCage.Id, preservedMortalityLine.ProjectCageId);
 
         var ledger = await fixture.Db.BatchMovements.Where(x => x.FishBatchId == seeded.FishBatchId).ToListAsync();
-        Assert.Equal(3, ledger.Count);
-        Assert.Equal(1_200, ledger.Sum(x => x.SignedCount));
-        Assert.Equal(120_000m, ledger.Sum(x => x.SignedBiomassGram));
+        Assert.Equal(5, ledger.Count);
+        Assert.Equal(1_190, ledger.Sum(x => x.SignedCount));
+        Assert.Equal(119_000m, ledger.Sum(x => x.SignedBiomassGram));
         Assert.Equal(2_500m, ledger.Sum(x => x.FeedGram ?? 0m));
 
         await fixture.SyncJob.ExecuteAsync();
         Assert.Equal(1, await fixture.Db.GoodsReceiptLines.CountAsync(x => x.ErpSourceMovementKey == "ERP-GR-001-LINE-1"));
-        Assert.Equal(3, await fixture.Db.BatchMovements.CountAsync(x => x.FishBatchId == seeded.FishBatchId));
+        Assert.Equal(5, await fixture.Db.BatchMovements.CountAsync(x => x.FishBatchId == seeded.FishBatchId));
     }
 
     private static async Task<Fixture> CreateFixtureAsync(

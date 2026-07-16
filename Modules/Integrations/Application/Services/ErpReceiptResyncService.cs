@@ -200,15 +200,33 @@ namespace aqua_api.Modules.Integrations.Application.Services
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpReceiptResync.DocumentChanged"));
 
             var unmatchedSources = sourceRows.ToList();
+            var unmatchedErpRows = currentErpRows.ToList();
             var matches = new List<(ErpReceiptShipmentMovement, MalKabulVeSevkiyatDto)>();
-            foreach (var erpRow in currentErpRows)
+
+            // Keep unchanged warehouse/cage rows bound to their original source keys first.
+            foreach (var erpRow in currentErpRows.ToList())
             {
-                var sourceIndex = unmatchedSources.FindIndex(source => HasSameMovementIdentity(source, erpRow));
-                if (sourceIndex < 0)
-                    throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpReceiptResync.DocumentChanged"));
+                var sourceIndex = unmatchedSources.FindIndex(source =>
+                    source.ErpWarehouseCode == erpRow.KafesKodu && HasSameMovementIdentity(source, erpRow));
+                if (sourceIndex < 0) continue;
 
                 matches.Add((unmatchedSources[sourceIndex], erpRow));
                 unmatchedSources.RemoveAt(sourceIndex);
+                unmatchedErpRows.Remove(erpRow);
+            }
+
+            // ERP permits quantity and warehouse/cage corrections. Every remaining row must
+            // still have one unambiguous match by its stable document/stock identity.
+            foreach (var erpRow in unmatchedErpRows)
+            {
+                var candidates = unmatchedSources
+                    .Where(source => HasSameMovementIdentity(source, erpRow))
+                    .ToList();
+                if (candidates.Count != 1)
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpReceiptResync.DocumentChanged"));
+
+                matches.Add((candidates[0], erpRow));
+                unmatchedSources.Remove(candidates[0]);
             }
 
             return matches;
@@ -217,7 +235,6 @@ namespace aqua_api.Modules.Integrations.Application.Services
         private static bool HasSameMovementIdentity(ErpReceiptShipmentMovement source, MalKabulVeSevkiyatDto current)
         {
             return source.MovementDate.Date == current.Tarih.Date
-                && source.ErpWarehouseCode == current.KafesKodu
                 && SameText(source.DocumentNo, current.FisNo)
                 && SameText(source.ErpProjectCode, current.ProjeKodu)
                 && SameText(source.ErpStockCode, current.StokKodu)

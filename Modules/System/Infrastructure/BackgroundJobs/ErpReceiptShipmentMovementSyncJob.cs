@@ -372,7 +372,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             else
             {
                 if (!receipt.ProjectId.HasValue && project != null) receipt.ProjectId = project.Id;
-                if (!receipt.WarehouseId.HasValue && warehouse != null) receipt.WarehouseId = warehouse.Id;
+                if (warehouse != null) receipt.WarehouseId = warehouse.Id;
                 receipt.UpdatedDate = now;
             }
 
@@ -537,6 +537,17 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             var oldBiomass = existingLine.FishTotalGram ?? 0;
             var deltaCount = fishCount - oldCount;
             var deltaBiomass = biomassGram - oldBiomass;
+            var activeDistributions = existingLine.FishDistributions.Where(x => !x.IsDeleted).ToList();
+            if (activeDistributions.Count > 1)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString(
+                    "ErpReceiptResync.DocumentChanged"));
+            }
+
+            var existingDistribution = activeDistributions.SingleOrDefault();
+            var isCageCorrection = projectCage != null
+                && existingDistribution != null
+                && existingDistribution.ProjectCageId != projectCage.Id;
 
             existingLine.StockId = stock.Id;
             existingLine.FishBatchId = fishBatch.Id;
@@ -545,9 +556,77 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             existingLine.FishTotalGram = biomassGram;
             existingLine.UpdatedDate = DateTimeProvider.Now;
 
+            if (isCageCorrection)
+            {
+                var targetProjectCage = projectCage!;
+                var sourceProjectCageId = existingDistribution!.ProjectCageId;
+                var sourceBalance = await _db.BatchCageBalances.FirstOrDefaultAsync(x =>
+                    !x.IsDeleted &&
+                    x.FishBatchId == fishBatch.Id &&
+                    x.ProjectCageId == sourceProjectCageId);
+                var relocatedCount = sourceBalance?.LiveCount ?? 0;
+                var relocatedBiomass = sourceBalance?.BiomassGram ?? 0m;
+                var targetCountDelta = relocatedCount + deltaCount;
+                var targetBiomassDelta = relocatedBiomass + deltaBiomass;
+
+                if (targetCountDelta < 0 || targetBiomassDelta < 0)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString(
+                        "ErpReceiptResync.DocumentChanged"));
+                }
+
+                if (relocatedCount != 0 || relocatedBiomass != 0)
+                {
+                    await _balanceLedgerManager.ApplyDelta(
+                        project.Id,
+                        fishBatch.Id,
+                        sourceProjectCageId,
+                        -relocatedCount,
+                        -relocatedBiomass,
+                        BatchMovementType.Transfer,
+                        DateTimeProvider.Now,
+                        "ERP fish receipt cage correction out",
+                        GoodsReceiptRefTable,
+                        existingLine.Id,
+                        sourceProjectCageId,
+                        targetProjectCage.Id,
+                        stock.Id,
+                        stock.Id,
+                        averageGram,
+                        averageGram);
+                }
+
+                if (targetCountDelta != 0 || targetBiomassDelta != 0)
+                {
+                    await _balanceLedgerManager.ApplyDelta(
+                        project.Id,
+                        fishBatch.Id,
+                        targetProjectCage.Id,
+                        targetCountDelta,
+                        targetBiomassDelta,
+                        BatchMovementType.Transfer,
+                        DateTimeProvider.Now,
+                        "ERP fish receipt cage correction in",
+                        GoodsReceiptRefTable,
+                        existingLine.Id,
+                        sourceProjectCageId,
+                        targetProjectCage.Id,
+                        stock.Id,
+                        stock.Id,
+                        averageGram,
+                        averageGram);
+                }
+
+                existingDistribution.ProjectCageId = targetProjectCage.Id;
+                existingDistribution.FishBatchId = fishBatch.Id;
+                existingDistribution.FishCount = fishCount;
+                existingDistribution.UpdatedDate = DateTimeProvider.Now;
+                return ApplyOutcome.Updated;
+            }
+
             if (projectCage != null)
             {
-                var distribution = existingLine.FishDistributions.FirstOrDefault(x => !x.IsDeleted && x.ProjectCageId == projectCage.Id);
+                var distribution = activeDistributions.FirstOrDefault(x => x.ProjectCageId == projectCage.Id);
                 if (distribution == null)
                 {
                     await _db.GoodsReceiptFishDistributions.AddAsync(new GoodsReceiptFishDistribution
