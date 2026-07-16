@@ -387,6 +387,9 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                     CreatedDate = DateTimeProvider.Now,
                     IsDeleted = false
                 });
+                // Enrichment queries the persisted receipt line to attach its generated id
+                // to the mirror row in the same transaction.
+                await _unitOfWork.SaveChangesAsync();
                 return ApplyOutcome.Created;
             }
 
