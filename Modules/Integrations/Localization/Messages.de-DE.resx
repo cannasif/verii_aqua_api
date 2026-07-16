@@ -184,4 +184,16 @@
   <data name="ErpService.ReceiptShipmentMovementMirrorRetrievalError" xml:space="preserve">
     <value>Beim Abrufen der ERP-Mirror-Datensätze für Wareneingang und Versand ist ein Fehler aufgetreten: {0}</value>
   </data>
-  </root>
+  <data name="ErpReceiptResync.InvalidRequest" xml:space="preserve"><value>Nur automatisch aus dem ERP erzeugte Wareneingangsbelege können erneut synchronisiert werden.</value></data>
+  <data name="ErpReceiptResync.DocumentNotFound" xml:space="preserve"><value>Kein verarbeiteter ERP-Wareneingangsbeleg zur erneuten Synchronisierung gefunden.</value></data>
+  <data name="ErpReceiptResync.ErpIntegratedDependency" xml:space="preserve"><value>Mindestens eine zugehörige Bewegung wurde an das ERP übertragen. Der ERP-Beleg muss vor der Rücknahme in Aqua storniert werden.</value></data>
+  <data name="ErpReceiptResync.PreviewLoaded" xml:space="preserve"><value>Die Vorschau für Rücknahme und erneute Synchronisierung wurde erstellt.</value></data>
+  <data name="ErpReceiptResync.ConfirmationMismatch" xml:space="preserve"><value>Die Bestätigungsnummer stimmt nicht mit dem ausgewählten ERP-Beleg überein.</value></data>
+  <data name="ErpReceiptResync.Blocked" xml:space="preserve"><value>Der Beleg kann wegen bereits an das ERP übertragener Bewegungen nicht sicher zurückgenommen werden.</value></data>
+  <data name="ErpReceiptResync.CurrentErpDocumentNotFound" xml:space="preserve"><value>Der aktuelle ERP-Beleg wurde nicht gefunden. Aqua-Daten wurden nicht geändert.</value></data>
+  <data name="ErpReceiptResync.DocumentChanged" xml:space="preserve"><value>Der Beleg wurde nach der Vorschau geändert. Bitte aktualisieren Sie die Vorschau.</value></data>
+  <data name="ErpReceiptResync.NegativeCageBalance" xml:space="preserve"><value>Die Rücknahme würde einen negativen Käfigbestand erzeugen.</value></data>
+  <data name="ErpReceiptResync.NegativeWarehouseBalance" xml:space="preserve"><value>Die Rücknahme würde einen negativen Lagerbestand erzeugen.</value></data>
+  <data name="ErpReceiptResync.Completed" xml:space="preserve"><value>Die Bewegungen wurden zurückgenommen und der ERP-Beleg erneut verarbeitet.</value></data>
+  <data name="ErpReceiptResync.Failed" xml:space="preserve"><value>Der ERP-Beleg konnte nicht erneut synchronisiert werden. Alle Änderungen wurden zurückgenommen.</value></data>
+</root>

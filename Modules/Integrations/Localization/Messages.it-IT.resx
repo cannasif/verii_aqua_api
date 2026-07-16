@@ -184,4 +184,16 @@
   <data name="ErpService.ReceiptShipmentMovementMirrorRetrievalError" xml:space="preserve">
     <value>Si è verificato un errore durante il recupero dei record mirror ERP di carico e spedizione: {0}</value>
   </data>
-  </root>
+  <data name="ErpReceiptResync.InvalidRequest" xml:space="preserve"><value>È possibile risincronizzare solo i documenti di carico generati automaticamente dall'ERP.</value></data>
+  <data name="ErpReceiptResync.DocumentNotFound" xml:space="preserve"><value>Non è stato trovato alcun documento di carico ERP elaborato da risincronizzare.</value></data>
+  <data name="ErpReceiptResync.ErpIntegratedDependency" xml:space="preserve"><value>Almeno un movimento collegato è stato inviato all'ERP. Il documento ERP deve essere stornato prima del ripristino in Aqua.</value></data>
+  <data name="ErpReceiptResync.PreviewLoaded" xml:space="preserve"><value>È pronta l'anteprima di ripristino e risincronizzazione del documento ERP.</value></data>
+  <data name="ErpReceiptResync.ConfirmationMismatch" xml:space="preserve"><value>Il numero di conferma non corrisponde al documento ERP selezionato.</value></data>
+  <data name="ErpReceiptResync.Blocked" xml:space="preserve"><value>Il documento non può essere ripristinato in sicurezza perché alcuni movimenti sono stati inviati all'ERP.</value></data>
+  <data name="ErpReceiptResync.CurrentErpDocumentNotFound" xml:space="preserve"><value>Il documento ERP corrente non è stato trovato. I dati Aqua non sono stati modificati.</value></data>
+  <data name="ErpReceiptResync.DocumentChanged" xml:space="preserve"><value>Il documento è cambiato dopo l'anteprima. Aggiornare l'anteprima e riprovare.</value></data>
+  <data name="ErpReceiptResync.NegativeCageBalance" xml:space="preserve"><value>Il ripristino produrrebbe un saldo gabbia negativo.</value></data>
+  <data name="ErpReceiptResync.NegativeWarehouseBalance" xml:space="preserve"><value>Il ripristino produrrebbe un saldo magazzino negativo.</value></data>
+  <data name="ErpReceiptResync.Completed" xml:space="preserve"><value>I movimenti sono stati ripristinati e il documento ERP è stato rielaborato.</value></data>
+  <data name="ErpReceiptResync.Failed" xml:space="preserve"><value>Impossibile risincronizzare il documento ERP. Tutte le modifiche sono state annullate.</value></data>
+</root>

@@ -142,6 +142,20 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             _logger.LogInformation(_localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.Completed"));
         }
 
+        public async Task ProcessMovementInCurrentTransactionAsync(MalKabulVeSevkiyatDto movement)
+        {
+            var sourceMovementKey = BuildSourceMovementKey(movement);
+            if (string.IsNullOrWhiteSpace(movement.StokKodu) || movement.Tarih == default || (movement.Miktar ?? 0) <= 0)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.InvalidMovementData"));
+            }
+
+            var mirrorMovement = await UpsertMirrorMovementAsync(movement, sourceMovementKey);
+            var outcome = await ApplyMovementAsync(movement, sourceMovementKey);
+            await EnrichMirrorMovementAsync(mirrorMovement, movement, sourceMovementKey, outcome);
+            await _unitOfWork.SaveChangesAsync();
+        }
+
         private async Task<bool> IsSourceMovementAlreadyProcessedAsync(string sourceMovementKey)
         {
             return await _db.ErpReceiptShipmentMovements

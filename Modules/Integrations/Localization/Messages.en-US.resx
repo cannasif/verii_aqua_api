@@ -196,4 +196,16 @@
   <data name="ErpService.ReceiptShipmentMovementMirrorRetrievalError" xml:space="preserve">
     <value>An error occurred while retrieving ERP goods receipt and shipment mirror records: {0}</value>
   </data>
+  <data name="ErpReceiptResync.InvalidRequest" xml:space="preserve"><value>Only ERP-generated automatic goods receipt documents can be resynchronized.</value></data>
+  <data name="ErpReceiptResync.DocumentNotFound" xml:space="preserve"><value>No processed ERP goods receipt document was found for resynchronization.</value></data>
+  <data name="ErpReceiptResync.ErpIntegratedDependency" xml:space="preserve"><value>At least one related transaction has been posted to ERP. The related ERP document must be reversed before Aqua records can be rolled back.</value></data>
+  <data name="ErpReceiptResync.PreviewLoaded" xml:space="preserve"><value>The rollback and resynchronization preview has been prepared for the ERP document.</value></data>
+  <data name="ErpReceiptResync.ConfirmationMismatch" xml:space="preserve"><value>The confirmation document number does not match the selected ERP document.</value></data>
+  <data name="ErpReceiptResync.Blocked" xml:space="preserve"><value>The document cannot be safely rolled back because related transactions were posted to ERP.</value></data>
+  <data name="ErpReceiptResync.CurrentErpDocumentNotFound" xml:space="preserve"><value>The current ERP document was not found. Existing Aqua records were not changed.</value></data>
+  <data name="ErpReceiptResync.DocumentChanged" xml:space="preserve"><value>The document changed after preview. Refresh the preview and try again.</value></data>
+  <data name="ErpReceiptResync.NegativeCageBalance" xml:space="preserve"><value>Rollback was stopped because it would create a negative cage balance.</value></data>
+  <data name="ErpReceiptResync.NegativeWarehouseBalance" xml:space="preserve"><value>Rollback was stopped because it would create a negative warehouse balance.</value></data>
+  <data name="ErpReceiptResync.Completed" xml:space="preserve"><value>Related transactions were rolled back and the ERP document was reprocessed with its current data.</value></data>
+  <data name="ErpReceiptResync.Failed" xml:space="preserve"><value>The ERP document could not be resynchronized. All changes were rolled back.</value></data>
 </root>

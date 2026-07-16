@@ -184,4 +184,16 @@
   <data name="ErpService.ReceiptShipmentMovementMirrorRetrievalError" xml:space="preserve">
     <value>حدث خطأ أثناء جلب سجلات مرآة ERP لاستلام البضائع والشحن: {0}</value>
   </data>
-  </root>
+  <data name="ErpReceiptResync.InvalidRequest" xml:space="preserve"><value>يمكن إعادة مزامنة مستندات استلام البضاعة التلقائية المنشأة من نظام ERP فقط.</value></data>
+  <data name="ErpReceiptResync.DocumentNotFound" xml:space="preserve"><value>لم يتم العثور على مستند استلام ERP معالج لإعادة مزامنته.</value></data>
+  <data name="ErpReceiptResync.ErpIntegratedDependency" xml:space="preserve"><value>تم ترحيل حركة مرتبطة واحدة على الأقل إلى نظام ERP. يجب عكس مستند ERP قبل التراجع عن سجلات Aqua.</value></data>
+  <data name="ErpReceiptResync.PreviewLoaded" xml:space="preserve"><value>تم إعداد معاينة التراجع وإعادة المزامنة لمستند ERP.</value></data>
+  <data name="ErpReceiptResync.ConfirmationMismatch" xml:space="preserve"><value>رقم التأكيد لا يطابق مستند ERP المحدد.</value></data>
+  <data name="ErpReceiptResync.Blocked" xml:space="preserve"><value>لا يمكن التراجع عن المستند بأمان لوجود حركات تم ترحيلها إلى ERP.</value></data>
+  <data name="ErpReceiptResync.CurrentErpDocumentNotFound" xml:space="preserve"><value>لم يتم العثور على مستند ERP الحالي ولم يتم تغيير سجلات Aqua.</value></data>
+  <data name="ErpReceiptResync.DocumentChanged" xml:space="preserve"><value>تغير المستند بعد المعاينة. يرجى تحديث المعاينة والمحاولة مجددًا.</value></data>
+  <data name="ErpReceiptResync.NegativeCageBalance" xml:space="preserve"><value>تم إيقاف التراجع لأنه سيؤدي إلى رصيد قفص سالب.</value></data>
+  <data name="ErpReceiptResync.NegativeWarehouseBalance" xml:space="preserve"><value>تم إيقاف التراجع لأنه سيؤدي إلى رصيد مستودع سالب.</value></data>
+  <data name="ErpReceiptResync.Completed" xml:space="preserve"><value>تم التراجع عن الحركات وإعادة معالجة مستند ERP ببياناته الحالية.</value></data>
+  <data name="ErpReceiptResync.Failed" xml:space="preserve"><value>تعذرت إعادة مزامنة مستند ERP وتم التراجع عن جميع التغييرات.</value></data>
+</root>

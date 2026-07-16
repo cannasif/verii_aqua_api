@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace aqua_api.Modules.Integrations.Api
 {
@@ -13,11 +14,16 @@ namespace aqua_api.Modules.Integrations.Api
     public class NetsisReadController : ControllerBase
     {
         private readonly INetsisReadService _netsisReadService;
+        private readonly IErpReceiptResyncService _erpReceiptResyncService;
         private readonly ILocalizationService _localizationService;
 
-        public NetsisReadController(INetsisReadService netsisReadService, ILocalizationService localizationService)
+        public NetsisReadController(
+            INetsisReadService netsisReadService,
+            IErpReceiptResyncService erpReceiptResyncService,
+            ILocalizationService localizationService)
         {
             _netsisReadService = netsisReadService;
+            _erpReceiptResyncService = erpReceiptResyncService;
             _localizationService = localizationService;
         }
 
@@ -167,6 +173,26 @@ namespace aqua_api.Modules.Integrations.Api
         {
             var paged = await _netsisReadService.GetReceiptShipmentMovementMirrorPagedAsync(pageNumber, pageSize, search, sortBy, sortDirection);
             return StatusCode(paged.StatusCode, paged);
+        }
+
+        [HttpGet("receipt-shipment-movements/{documentNo}/resync-preview")]
+        public async Task<ActionResult<ApiResponse<ErpReceiptResyncPreviewDto>>> PreviewReceiptResync(
+            string documentNo,
+            [FromQuery] string operationType,
+            [FromQuery] string inOutCode = "G")
+        {
+            var result = await _erpReceiptResyncService.PreviewAsync(documentNo, inOutCode, operationType);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost("receipt-shipment-movements/resync")]
+        public async Task<ActionResult<ApiResponse<ErpReceiptResyncResultDto>>> ResyncReceipt(
+            [FromBody] ErpReceiptResyncRequestDto request)
+        {
+            var rawUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = long.TryParse(rawUserId, out var parsedUserId) ? parsedUserId : 1L;
+            var result = await _erpReceiptResyncService.ResyncAsync(request, userId);
+            return StatusCode(result.StatusCode, result);
         }
 
         [HttpGet("health-check")]

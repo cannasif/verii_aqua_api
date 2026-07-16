@@ -6,6 +6,7 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddIntegrationsModule(this IServiceCollection services)
     {
         services.AddScoped<INetsisReadService, NetsisReadService>();
+        services.AddScoped<IErpReceiptResyncService, ErpReceiptResyncService>();
         services.AddScoped<IErpService, ErpService>();
         services.AddScoped<INetsisItemSlipService, NetsisItemSlipService>();
         services.AddScoped<IMailService, MailService>();

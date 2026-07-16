@@ -196,4 +196,24 @@
   <data name="ErpService.ReceiptShipmentMovementMirrorRetrievalError" xml:space="preserve">
     <value>ERP mal kabul ve sevkiyat mirror kayıtları getirilirken bir hata oluştu: {0}</value>
   </data>
+  <data name="ErpReceiptResync.InvalidRequest" xml:space="preserve">
+    <value>Yalnızca ERP kaynaklı otomatik mal kabul fişleri yeniden eşitlenebilir.</value>
+  </data>
+  <data name="ErpReceiptResync.DocumentNotFound" xml:space="preserve">
+    <value>Yeniden eşitlenecek işlenmiş ERP mal kabul fişi bulunamadı.</value>
+  </data>
+  <data name="ErpReceiptResync.ErpIntegratedDependency" xml:space="preserve">
+    <value>Bu fişe bağlı hareketlerden en az biri ERP'ye aktarılmıştır. Aqua kayıtları geri alınmadan önce ilgili ERP belgesi ters işlemle kapatılmalıdır.</value>
+  </data>
+  <data name="ErpReceiptResync.PreviewLoaded" xml:space="preserve">
+    <value>ERP fişi için geri alma ve yeniden eşitleme önizlemesi hazırlandı.</value>
+  </data>
+  <data name="ErpReceiptResync.ConfirmationMismatch" xml:space="preserve"><value>Onay için girdiğiniz fiş numarası seçili ERP fişiyle eşleşmiyor.</value></data>
+  <data name="ErpReceiptResync.Blocked" xml:space="preserve"><value>ERP'ye aktarılmış bağlı hareketler bulunduğu için fiş güvenli biçimde geri alınamaz.</value></data>
+  <data name="ErpReceiptResync.CurrentErpDocumentNotFound" xml:space="preserve"><value>Fişin ERP'deki güncel hali bulunamadı. Mevcut Aqua kayıtları değiştirilmedi.</value></data>
+  <data name="ErpReceiptResync.DocumentChanged" xml:space="preserve"><value>Fiş önizlemeden sonra değiştirildi. Lütfen önizlemeyi yenileyip tekrar deneyin.</value></data>
+  <data name="ErpReceiptResync.NegativeCageBalance" xml:space="preserve"><value>Geri alma işlemi kafes bakiyesini negatife düşüreceği için durduruldu.</value></data>
+  <data name="ErpReceiptResync.NegativeWarehouseBalance" xml:space="preserve"><value>Geri alma işlemi depo bakiyesini negatife düşüreceği için durduruldu.</value></data>
+  <data name="ErpReceiptResync.Completed" xml:space="preserve"><value>ERP fişine bağlı hareketler geri alındı ve fiş güncel haliyle yeniden işlendi.</value></data>
+  <data name="ErpReceiptResync.Failed" xml:space="preserve"><value>ERP fişi yeniden eşitlenemedi. Yapılan değişikliklerin tamamı geri alındı.</value></data>
 </root>

@@ -184,4 +184,16 @@
   <data name="ErpService.ReceiptShipmentMovementMirrorRetrievalError" xml:space="preserve">
     <value>Une erreur s'est produite lors de la récupération des enregistrements mirror ERP de réception et d'expédition : {0}</value>
   </data>
-  </root>
+  <data name="ErpReceiptResync.InvalidRequest" xml:space="preserve"><value>Seules les réceptions automatiques générées par l'ERP peuvent être resynchronisées.</value></data>
+  <data name="ErpReceiptResync.DocumentNotFound" xml:space="preserve"><value>Aucune réception ERP traitée n'a été trouvée pour la resynchronisation.</value></data>
+  <data name="ErpReceiptResync.ErpIntegratedDependency" xml:space="preserve"><value>Au moins un mouvement associé a été envoyé à l'ERP. Le document ERP doit être contrepassé avant l'annulation dans Aqua.</value></data>
+  <data name="ErpReceiptResync.PreviewLoaded" xml:space="preserve"><value>L'aperçu de l'annulation et de la resynchronisation du document ERP est prêt.</value></data>
+  <data name="ErpReceiptResync.ConfirmationMismatch" xml:space="preserve"><value>Le numéro de confirmation ne correspond pas au document ERP sélectionné.</value></data>
+  <data name="ErpReceiptResync.Blocked" xml:space="preserve"><value>Le document ne peut pas être annulé en toute sécurité car des mouvements ont été envoyés à l'ERP.</value></data>
+  <data name="ErpReceiptResync.CurrentErpDocumentNotFound" xml:space="preserve"><value>Le document ERP actuel est introuvable. Les données Aqua n'ont pas été modifiées.</value></data>
+  <data name="ErpReceiptResync.DocumentChanged" xml:space="preserve"><value>Le document a changé après l'aperçu. Actualisez l'aperçu et réessayez.</value></data>
+  <data name="ErpReceiptResync.NegativeCageBalance" xml:space="preserve"><value>L'annulation créerait un solde de cage négatif.</value></data>
+  <data name="ErpReceiptResync.NegativeWarehouseBalance" xml:space="preserve"><value>L'annulation créerait un solde de dépôt négatif.</value></data>
+  <data name="ErpReceiptResync.Completed" xml:space="preserve"><value>Les mouvements ont été annulés et le document ERP a été retraité.</value></data>
+  <data name="ErpReceiptResync.Failed" xml:space="preserve"><value>Le document ERP n'a pas pu être resynchronisé. Toutes les modifications ont été annulées.</value></data>
+</root>

@@ -184,4 +184,16 @@
   <data name="ErpService.ReceiptShipmentMovementMirrorRetrievalError" xml:space="preserve">
     <value>Se produjo un error al obtener los registros mirror ERP de recepción y envío: {0}</value>
   </data>
-  </root>
+  <data name="ErpReceiptResync.InvalidRequest" xml:space="preserve"><value>Solo se pueden resincronizar recepciones automáticas generadas por el ERP.</value></data>
+  <data name="ErpReceiptResync.DocumentNotFound" xml:space="preserve"><value>No se encontró una recepción ERP procesada para resincronizar.</value></data>
+  <data name="ErpReceiptResync.ErpIntegratedDependency" xml:space="preserve"><value>Al menos un movimiento relacionado se envió al ERP. El documento ERP debe revertirse antes de deshacer los registros de Aqua.</value></data>
+  <data name="ErpReceiptResync.PreviewLoaded" xml:space="preserve"><value>Se preparó la vista previa de reversión y resincronización del documento ERP.</value></data>
+  <data name="ErpReceiptResync.ConfirmationMismatch" xml:space="preserve"><value>El número de confirmación no coincide con el documento ERP seleccionado.</value></data>
+  <data name="ErpReceiptResync.Blocked" xml:space="preserve"><value>El documento no puede revertirse de forma segura porque hay movimientos enviados al ERP.</value></data>
+  <data name="ErpReceiptResync.CurrentErpDocumentNotFound" xml:space="preserve"><value>No se encontró el documento ERP actual. Los registros de Aqua no cambiaron.</value></data>
+  <data name="ErpReceiptResync.DocumentChanged" xml:space="preserve"><value>El documento cambió después de la vista previa. Actualícela e inténtelo de nuevo.</value></data>
+  <data name="ErpReceiptResync.NegativeCageBalance" xml:space="preserve"><value>La reversión produciría un saldo negativo en la jaula.</value></data>
+  <data name="ErpReceiptResync.NegativeWarehouseBalance" xml:space="preserve"><value>La reversión produciría un saldo negativo en el almacén.</value></data>
+  <data name="ErpReceiptResync.Completed" xml:space="preserve"><value>Los movimientos se revirtieron y el documento ERP se procesó nuevamente.</value></data>
+  <data name="ErpReceiptResync.Failed" xml:space="preserve"><value>No se pudo resincronizar el documento ERP. Se revirtieron todos los cambios.</value></data>
+</root>
