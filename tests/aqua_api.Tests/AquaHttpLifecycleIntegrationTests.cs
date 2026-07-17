@@ -1065,6 +1065,18 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.Equal(63m, devirFcrRow.TotalFeedKg);
         Assert.Equal(0.9m, devirFcrRow.Fcr);
 
+        var preLifecycleDevirFcr = await PostAsync<DevirFcrReportDto>(client, "/api/kpi-report/devir-fcr", new DevirFcrReportRequestDto
+        {
+            ProjectIds = [projectId],
+            FromDate = new DateTime(2024, 1, 1),
+            ToDate = new DateTime(2026, 4, 4),
+        });
+        Assert.True(preLifecycleDevirFcr.Success, $"{preLifecycleDevirFcr.Message} | {preLifecycleDevirFcr.ExceptionMessage}");
+        var preLifecycleDevirFcrRow = Assert.Single(preLifecycleDevirFcr.Data!.Rows);
+        Assert.Equal(10_000, preLifecycleDevirFcrRow.OpeningFishCount);
+        Assert.Equal(150, preLifecycleDevirFcrRow.MortalityFishCount);
+        Assert.Equal(1.5m, preLifecycleDevirFcrRow.MortalityPct);
+
         var rangedDevirFcr = await PostAsync<DevirFcrReportDto>(client, "/api/kpi-report/devir-fcr", new DevirFcrReportRequestDto
         {
             ProjectIds = [projectId],

@@ -194,15 +194,12 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             IEnumerable<ShipmentLine> shipmentLines)
         {
             var movementList = movements.ToList();
-            var openingFishCount = movementList
-                .Where(x => IsOpeningSnapshotMovement(x, projectFromDate))
-                .Sum(x => x.SignedCount);
+            var openingMovements = ResolveOpeningMovements(movementList, projectFromDate, toDate);
+            var openingFishCount = openingMovements.Sum(x => x.SignedCount);
             var endingFishCount = movementList
                 .Where(x => x.MovementDate.Date <= toDate)
                 .Sum(x => x.SignedCount);
-            var openingBiomassGram = movementList
-                .Where(x => IsOpeningSnapshotMovement(x, projectFromDate))
-                .Sum(x => x.SignedBiomassGram);
+            var openingBiomassGram = openingMovements.Sum(x => x.SignedBiomassGram);
             var endingBiomassGram = movementList
                 .Where(x => x.MovementDate.Date <= toDate)
                 .Sum(x => x.SignedBiomassGram);
@@ -310,6 +307,28 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             return date == fromDate &&
                    movement.SignedCount > 0 &&
                    movement.MovementType is BatchMovementType.OpeningImport or BatchMovementType.Stocking;
+        }
+
+        private static List<BatchMovement> ResolveOpeningMovements(
+            IReadOnlyCollection<BatchMovement> movements,
+            DateTime fromDate,
+            DateTime toDate)
+        {
+            var snapshotMovements = movements
+                .Where(x => IsOpeningSnapshotMovement(x, fromDate))
+                .ToList();
+
+            if (snapshotMovements.Sum(x => x.SignedCount) > 0)
+            {
+                return snapshotMovements;
+            }
+
+            return movements
+                .Where(x =>
+                    IsInRange(x.MovementDate, fromDate, toDate) &&
+                    x.SignedCount > 0 &&
+                    x.MovementType is BatchMovementType.OpeningImport or BatchMovementType.Stocking)
+                .ToList();
         }
 
         private static DateTime ResolveProjectLifecycleStart(Project project, IEnumerable<BatchMovement> movements)
