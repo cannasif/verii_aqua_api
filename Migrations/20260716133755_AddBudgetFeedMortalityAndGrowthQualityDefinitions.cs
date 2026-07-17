@@ -9,9 +9,7 @@ namespace aqua_api.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropCheckConstraint(
-                name: "CK_RII_BUDGET_PLAN_FEEDING_LINE_NON_NEGATIVE",
-                table: "RII_BUDGET_PLAN_FEEDING_LINE");
+            DropFeedingLineNonNegativeConstraint(migrationBuilder);
 
             migrationBuilder.AddColumn<decimal>(
                 name: "FeedMortalityReductionKg",
@@ -203,9 +201,7 @@ namespace aqua_api.Migrations
             migrationBuilder.DropCheckConstraint(
                 name: "CK_RII_BUDGET_PLAN_MONTHLY_PROJECTION_ADJUSTMENT_PERCENT",
                 table: "RII_BUDGET_PLAN_MONTHLY_PROJECTION");
-            migrationBuilder.DropCheckConstraint(
-                name: "CK_RII_BUDGET_PLAN_FEEDING_LINE_NON_NEGATIVE",
-                table: "RII_BUDGET_PLAN_FEEDING_LINE");
+            DropFeedingLineNonNegativeConstraint(migrationBuilder);
 
             migrationBuilder.DropColumn(name: "FeedMortalityReductionKg", table: "RII_BUDGET_PLAN_MONTHLY_PROJECTION");
             migrationBuilder.DropColumn(name: "FeedMortalityReductionPercent", table: "RII_BUDGET_PLAN_MONTHLY_PROJECTION");
@@ -218,6 +214,30 @@ namespace aqua_api.Migrations
                 name: "CK_RII_BUDGET_PLAN_FEEDING_LINE_NON_NEGATIVE",
                 table: "RII_BUDGET_PLAN_FEEDING_LINE",
                 sql: "[FeedAmountRate] >= 0 AND [FeedKg] >= 0");
+        }
+
+        private static void DropFeedingLineNonNegativeConstraint(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.Sql(
+                """
+                DECLARE @ConstraintName sysname;
+                DECLARE @Sql nvarchar(max);
+
+                SELECT TOP (1) @ConstraintName = cc.[name]
+                FROM sys.check_constraints AS cc
+                INNER JOIN sys.tables AS t ON t.[object_id] = cc.[parent_object_id]
+                INNER JOIN sys.schemas AS s ON s.[schema_id] = t.[schema_id]
+                WHERE s.[name] = N'dbo'
+                  AND t.[name] = N'RII_BUDGET_PLAN_FEEDING_LINE'
+                  AND cc.[definition] LIKE N'%FeedAmountRate%'
+                  AND cc.[definition] LIKE N'%FeedKg%';
+
+                IF @ConstraintName IS NOT NULL
+                BEGIN
+                    SET @Sql = N'ALTER TABLE [dbo].[RII_BUDGET_PLAN_FEEDING_LINE] DROP CONSTRAINT ' + QUOTENAME(@ConstraintName) + N';';
+                    EXEC sys.sp_executesql @Sql;
+                END;
+                """);
         }
     }
 }
