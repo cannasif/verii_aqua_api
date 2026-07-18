@@ -234,13 +234,25 @@ public class UpsertBudgetPlanFishPriceDto
     public long CalibrationDefinitionId { get; set; }
     public int Year { get; set; }
     public int Month { get; set; }
-    public decimal UnitPriceEuro { get; set; }
+    public BudgetFishPriceType PriceType { get; set; } = BudgetFishPriceType.Sales;
+    public BudgetMarketType MarketType { get; set; } = BudgetMarketType.Domestic;
+    public string CurrencyCode { get; set; } = "EUR";
+    public decimal UnitPrice { get; set; }
+    public decimal? UnitPriceEuro { get; set; }
+    public decimal IncreaseRatePercent { get; set; }
+    public int IncreasePeriodMonths { get; set; } = 1;
     public string? Description { get; set; }
 }
 
 public class GenerateBudgetPlanFishPricesDto
 {
-    public decimal DefaultUnitPriceEuro { get; set; }
+    public BudgetFishPriceType PriceType { get; set; } = BudgetFishPriceType.Sales;
+    public BudgetMarketType MarketType { get; set; } = BudgetMarketType.Domestic;
+    public string CurrencyCode { get; set; } = "EUR";
+    public decimal DefaultUnitPrice { get; set; }
+    public decimal? DefaultUnitPriceEuro { get; set; }
+    public decimal IncreaseRatePercent { get; set; }
+    public int IncreasePeriodMonths { get; set; } = 1;
     public List<long> FishStockIds { get; set; } = new();
     public List<long> CalibrationDefinitionIds { get; set; } = new();
 }
@@ -253,6 +265,9 @@ public class BudgetPlanFishPriceDto : UpsertBudgetPlanFishPriceDto
     public string? FishStockName { get; set; }
     public string CalibrationCode { get; set; } = string.Empty;
     public string CalibrationInfo { get; set; } = string.Empty;
+    public string CurrencyName { get; set; } = string.Empty;
+    public decimal? ExchangeRate { get; set; }
+    public decimal? UnitPriceTry { get; set; }
 }
 
 public class BudgetPlanFeedingLineDto

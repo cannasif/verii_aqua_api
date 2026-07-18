@@ -226,7 +226,12 @@ public class BudgetPlanningService : IBudgetPlanningService
                     CalibrationDefinitionId = price.CalibrationDefinitionId,
                     Year = price.Year,
                     Month = price.Month,
-                    UnitPriceEuro = price.UnitPriceEuro,
+                    PriceType = price.PriceType,
+                    MarketType = price.MarketType,
+                    CurrencyCode = price.CurrencyCode,
+                    UnitPrice = price.UnitPrice,
+                    IncreaseRatePercent = price.IncreaseRatePercent,
+                    IncreasePeriodMonths = price.IncreasePeriodMonths,
                     Description = price.Description
                 });
             }
@@ -950,10 +955,18 @@ public class BudgetPlanningService : IBudgetPlanningService
             .Where(x => x.BudgetPlanId == budgetPlanId)
             .OrderBy(x => x.Year)
             .ThenBy(x => x.Month)
+            .ThenBy(x => x.PriceType)
+            .ThenBy(x => x.MarketType)
+            .ThenBy(x => x.CurrencyCode)
             .ThenBy(x => x.CalibrationDefinition.CalibrationCode)
             .ToListAsync();
 
-        return ApiResponse<List<BudgetPlanFishPriceDto>>.SuccessResult(rows.Select(MapFishPrice).ToList(), "Islem basarili.");
+        var exchangeRateLookup = await LoadFishPriceExchangeRateLookupAsync(budgetPlanId, rows);
+        var result = rows.Select(x => MapFishPrice(
+            x,
+            ResolveFishPriceExchangeRate(exchangeRateLookup, x.Year, x.Month, x.CurrencyCode))).ToList();
+
+        return ApiResponse<List<BudgetPlanFishPriceDto>>.SuccessResult(result, "Islem basarili.");
     }
 
     public async Task<ApiResponse<List<BudgetPlanFishPriceDto>>> GenerateFishPricesAsync(long budgetPlanId, GenerateBudgetPlanFishPricesDto dto)
@@ -964,9 +977,18 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<List<BudgetPlanFishPriceDto>>.ErrorResult("Butce plani bulunamadi.", "Butce plani bulunamadi.", StatusCodes.Status404NotFound);
         }
 
-        if (dto.DefaultUnitPriceEuro < 0)
+        var defaultUnitPrice = ResolveUnitPrice(dto.DefaultUnitPrice, dto.DefaultUnitPriceEuro);
+        var currencyCode = NormalizeCurrencyCode(dto.CurrencyCode);
+        if (defaultUnitPrice < 0 || dto.IncreaseRatePercent < 0 || dto.IncreasePeriodMonths < 1)
         {
-            return ApiResponse<List<BudgetPlanFishPriceDto>>.ErrorResult("Balik fiyati negatif olamaz.", "Balik fiyati negatif olamaz.", StatusCodes.Status400BadRequest);
+            return ApiResponse<List<BudgetPlanFishPriceDto>>.ErrorResult("Fiyat, artis orani veya periyot hatali.", "Fiyat, artis orani veya periyot hatali.", StatusCodes.Status400BadRequest);
+        }
+
+        if (string.IsNullOrWhiteSpace(currencyCode) ||
+            !Enum.IsDefined(dto.PriceType) ||
+            !Enum.IsDefined(dto.MarketType))
+        {
+            return ApiResponse<List<BudgetPlanFishPriceDto>>.ErrorResult("Fiyat tipi, pazar veya doviz bilgisi hatali.", "Fiyat tipi, pazar veya doviz bilgisi hatali.", StatusCodes.Status400BadRequest);
         }
 
         var calibrationIds = dto.CalibrationDefinitionIds.Where(x => x > 0).Distinct().ToList();
@@ -994,13 +1016,22 @@ public class BudgetPlanningService : IBudgetPlanningService
         {
             foreach (var calibrationId in calibrationIds)
             {
-                foreach (var period in periods)
+                for (var periodIndex = 0; periodIndex < periods.Count; periodIndex++)
                 {
+                    var period = periods[periodIndex];
                     var entity = existingRows.FirstOrDefault(x =>
                         x.FishStockId == fishStockId &&
                         x.CalibrationDefinitionId == calibrationId &&
                         x.Year == period.Year &&
-                        x.Month == period.Month);
+                        x.Month == period.Month &&
+                        x.PriceType == dto.PriceType &&
+                        x.MarketType == dto.MarketType &&
+                        x.CurrencyCode == currencyCode);
+                    var unitPrice = CalculateEscalatedPrice(
+                        defaultUnitPrice,
+                        dto.IncreaseRatePercent,
+                        dto.IncreasePeriodMonths,
+                        periodIndex);
                     if (entity == null)
                     {
                         entity = new BudgetPlanFishPrice
@@ -1010,13 +1041,20 @@ public class BudgetPlanningService : IBudgetPlanningService
                             CalibrationDefinitionId = calibrationId,
                             Year = period.Year,
                             Month = period.Month,
-                            UnitPriceEuro = dto.DefaultUnitPriceEuro
+                            PriceType = dto.PriceType,
+                            MarketType = dto.MarketType,
+                            CurrencyCode = currencyCode,
+                            UnitPrice = unitPrice,
+                            IncreaseRatePercent = dto.IncreaseRatePercent,
+                            IncreasePeriodMonths = dto.IncreasePeriodMonths
                         };
                         await _unitOfWork.Repository<BudgetPlanFishPrice>().AddAsync(entity);
                     }
                     else
                     {
-                        entity.UnitPriceEuro = dto.DefaultUnitPriceEuro;
+                        entity.UnitPrice = unitPrice;
+                        entity.IncreaseRatePercent = dto.IncreaseRatePercent;
+                        entity.IncreasePeriodMonths = dto.IncreasePeriodMonths;
                     }
                 }
             }
@@ -1028,7 +1066,15 @@ public class BudgetPlanningService : IBudgetPlanningService
 
     public async Task<ApiResponse<BudgetPlanFishPriceDto>> UpsertFishPriceAsync(long budgetPlanId, UpsertBudgetPlanFishPriceDto dto)
     {
-        if (!IsValidMonth(dto.Month) || dto.UnitPriceEuro < 0)
+        var unitPrice = ResolveUnitPrice(dto.UnitPrice, dto.UnitPriceEuro);
+        var currencyCode = NormalizeCurrencyCode(dto.CurrencyCode);
+        if (!IsValidMonth(dto.Month) ||
+            unitPrice < 0 ||
+            dto.IncreaseRatePercent < 0 ||
+            dto.IncreasePeriodMonths < 1 ||
+            string.IsNullOrWhiteSpace(currencyCode) ||
+            !Enum.IsDefined(dto.PriceType) ||
+            !Enum.IsDefined(dto.MarketType))
         {
             return ApiResponse<BudgetPlanFishPriceDto>.ErrorResult("Fiyat donemi veya tutari hatali.", "Fiyat donemi veya tutari hatali.", StatusCodes.Status400BadRequest);
         }
@@ -1065,6 +1111,9 @@ public class BudgetPlanningService : IBudgetPlanningService
             x.CalibrationDefinitionId == dto.CalibrationDefinitionId &&
             x.Year == dto.Year &&
             x.Month == dto.Month &&
+            x.PriceType == dto.PriceType &&
+            x.MarketType == dto.MarketType &&
+            x.CurrencyCode == currencyCode &&
             !x.IsDeleted);
 
         if (entity == null)
@@ -1077,12 +1126,18 @@ public class BudgetPlanningService : IBudgetPlanningService
         entity.CalibrationDefinitionId = dto.CalibrationDefinitionId;
         entity.Year = dto.Year;
         entity.Month = dto.Month;
-        entity.UnitPriceEuro = dto.UnitPriceEuro;
+        entity.PriceType = dto.PriceType;
+        entity.MarketType = dto.MarketType;
+        entity.CurrencyCode = currencyCode;
+        entity.UnitPrice = unitPrice;
+        entity.IncreaseRatePercent = dto.IncreaseRatePercent;
+        entity.IncreasePeriodMonths = dto.IncreasePeriodMonths;
         entity.Description = NormalizeOptional(dto.Description);
 
         await _unitOfWork.SaveChangesAsync();
         var saved = await FishPriceQuery().FirstAsync(x => x.Id == entity.Id);
-        return ApiResponse<BudgetPlanFishPriceDto>.SuccessResult(MapFishPrice(saved), "Balik fiyati kaydedildi.");
+        var exchangeRate = await FindExchangeRateAsync(budgetPlanId, dto.Year, dto.Month, currencyCode);
+        return ApiResponse<BudgetPlanFishPriceDto>.SuccessResult(MapFishPrice(saved, exchangeRate), "Balik fiyati kaydedildi.");
     }
 
     public Task<ApiResponse<List<BudgetPlanMonthlyProjectionDto>>> CalculateGrowthAsync(long budgetPlanId)
@@ -1994,8 +2049,10 @@ public class BudgetPlanningService : IBudgetPlanningService
         };
     }
 
-    private static BudgetPlanFishPriceDto MapFishPrice(BudgetPlanFishPrice entity)
+    private static BudgetPlanFishPriceDto MapFishPrice(BudgetPlanFishPrice entity, decimal? exchangeRate)
     {
+        var normalizedCurrency = NormalizeCurrencyCode(entity.CurrencyCode);
+        var resolvedExchangeRate = normalizedCurrency == "TRY" ? 1m : exchangeRate;
         return new BudgetPlanFishPriceDto
         {
             Id = entity.Id,
@@ -2008,7 +2065,16 @@ public class BudgetPlanningService : IBudgetPlanningService
             CalibrationInfo = entity.CalibrationDefinition.CalibrationInfo,
             Year = entity.Year,
             Month = entity.Month,
-            UnitPriceEuro = entity.UnitPriceEuro,
+            PriceType = entity.PriceType,
+            MarketType = entity.MarketType,
+            CurrencyCode = normalizedCurrency,
+            CurrencyName = ResolveCurrencyName(normalizedCurrency),
+            UnitPrice = entity.UnitPrice,
+            UnitPriceEuro = normalizedCurrency == "EUR" ? entity.UnitPrice : null,
+            IncreaseRatePercent = entity.IncreaseRatePercent,
+            IncreasePeriodMonths = entity.IncreasePeriodMonths,
+            ExchangeRate = resolvedExchangeRate,
+            UnitPriceTry = resolvedExchangeRate.HasValue ? Round(entity.UnitPrice * resolvedExchangeRate.Value) : null,
             Description = entity.Description
         };
     }
@@ -2160,11 +2226,100 @@ public class BudgetPlanningService : IBudgetPlanningService
                 x.CalibrationDefinitionId == projection.CalibrationDefinitionId.Value &&
                 x.Year == year &&
                 x.Month == month &&
+                x.PriceType == BudgetFishPriceType.Sales &&
+                x.MarketType == BudgetMarketType.Domestic &&
+                x.CurrencyCode == "EUR" &&
                 (!x.FishStockId.HasValue || x.FishStockId == projection.BudgetPlanFishBatch.FishStockId) &&
                 !x.IsDeleted)
             .OrderByDescending(x => x.FishStockId.HasValue)
-            .Select(x => (decimal?)x.UnitPriceEuro)
+            .Select(x => (decimal?)x.UnitPrice)
             .FirstOrDefaultAsync();
+    }
+
+    private async Task<Dictionary<string, decimal>> LoadFishPriceExchangeRateLookupAsync(
+        long budgetPlanId,
+        IReadOnlyCollection<BudgetPlanFishPrice> prices)
+    {
+        var currencyCodes = prices
+            .Select(x => NormalizeCurrencyCode(x.CurrencyCode))
+            .Where(x => x != "TRY")
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (currencyCodes.Count == 0)
+        {
+            return new Dictionary<string, decimal>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var rates = await _unitOfWork.Db.BudgetPlanExchangeRates
+            .AsNoTracking()
+            .Where(x =>
+                x.BudgetPlanId == budgetPlanId &&
+                currencyCodes.Contains(x.CurrencyCode) &&
+                !x.IsDeleted)
+            .ToListAsync();
+
+        return rates
+            .GroupBy(x => FishPriceExchangeRateKey(x.Year, x.Month, x.CurrencyCode), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                x => x.Key,
+                x => x.OrderByDescending(row => row.IsManualOverride).ThenByDescending(row => row.Id).First().ExchangeRate,
+                StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static decimal? ResolveFishPriceExchangeRate(
+        IReadOnlyDictionary<string, decimal> exchangeRates,
+        int year,
+        int month,
+        string currencyCode)
+    {
+        var normalizedCurrency = NormalizeCurrencyCode(currencyCode);
+        if (normalizedCurrency == "TRY")
+        {
+            return 1m;
+        }
+
+        return exchangeRates.TryGetValue(FishPriceExchangeRateKey(year, month, normalizedCurrency), out var rate)
+            ? rate
+            : null;
+    }
+
+    private static string FishPriceExchangeRateKey(int year, int month, string currencyCode)
+    {
+        return $"{year:D4}-{month:D2}-{NormalizeCurrencyCode(currencyCode)}";
+    }
+
+    private static decimal ResolveUnitPrice(decimal unitPrice, decimal? legacyUnitPriceEuro)
+    {
+        return unitPrice == 0m && legacyUnitPriceEuro.HasValue ? legacyUnitPriceEuro.Value : unitPrice;
+    }
+
+    private static decimal CalculateEscalatedPrice(
+        decimal basePrice,
+        decimal increaseRatePercent,
+        int increasePeriodMonths,
+        int zeroBasedMonthIndex)
+    {
+        var increaseCount = zeroBasedMonthIndex / increasePeriodMonths;
+        var multiplier = 1m + increaseRatePercent / 100m;
+        var result = basePrice;
+        for (var index = 0; index < increaseCount; index++)
+        {
+            result *= multiplier;
+        }
+
+        return Round(result);
+    }
+
+    private static string ResolveCurrencyName(string currencyCode)
+    {
+        return currencyCode switch
+        {
+            "TRY" => "Turk Lirasi",
+            "EUR" => "Euro",
+            "USD" => "ABD Dolari",
+            "GBP" => "Ingiliz Sterlini",
+            _ => currencyCode
+        };
     }
 
     private async Task<Dictionary<BudgetPeriod, decimal>> LoadExchangeRateLookupAsync(long budgetPlanId, string currencyCode)

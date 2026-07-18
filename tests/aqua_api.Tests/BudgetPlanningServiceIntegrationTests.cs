@@ -21,6 +21,89 @@ namespace aqua_api.Tests;
 public class BudgetPlanningServiceIntegrationTests
 {
     [Fact]
+    public async Task FishPrices_GenerateByEnteredMonthPeriod_AndKeepPriceDimensionsSeparate()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var service = fixture.Service;
+
+        var fishStock = new Stock { ErpStockCode = "FISH-PRICE", StockName = "Price Fish", Unit = "AD" };
+        var calibration = new BudgetCalibrationDefinition { CalibrationCode = "K-PRICE", CalibrationInfo = "Price Calibration" };
+        db.AddRange(fishStock, calibration);
+        await db.SaveChangesAsync();
+
+        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.LiveImported);
+        db.BudgetPlanExchangeRates.AddRange(
+            new BudgetPlanExchangeRate
+            {
+                BudgetPlanId = plan.Id,
+                Year = 2026,
+                Month = 1,
+                CurrencyCode = "EUR",
+                RateType = "Budget",
+                ExchangeRate = 40m,
+                SourceType = "Manual",
+                IsManualOverride = true
+            },
+            new BudgetPlanExchangeRate
+            {
+                BudgetPlanId = plan.Id,
+                Year = 2026,
+                Month = 4,
+                CurrencyCode = "EUR",
+                RateType = "Budget",
+                ExchangeRate = 42m,
+                SourceType = "Manual",
+                IsManualOverride = true
+            });
+        await db.SaveChangesAsync();
+
+        var salesResult = await service.GenerateFishPricesAsync(plan.Id, new GenerateBudgetPlanFishPricesDto
+        {
+            PriceType = BudgetFishPriceType.Sales,
+            MarketType = BudgetMarketType.Domestic,
+            CurrencyCode = "eur",
+            DefaultUnitPrice = 100m,
+            IncreaseRatePercent = 10m,
+            IncreasePeriodMonths = 3,
+            FishStockIds = [fishStock.Id],
+            CalibrationDefinitionIds = [calibration.Id]
+        });
+
+        Assert.True(salesResult.Success, salesResult.Message);
+        Assert.Equal(12, salesResult.Data!.Count);
+        Assert.Equal(100m, salesResult.Data.Single(x => x.Month == 1).UnitPrice);
+        Assert.Equal(100m, salesResult.Data.Single(x => x.Month == 3).UnitPrice);
+        Assert.Equal(110m, salesResult.Data.Single(x => x.Month == 4).UnitPrice);
+        Assert.Equal(110m, salesResult.Data.Single(x => x.Month == 6).UnitPrice);
+        Assert.Equal(121m, salesResult.Data.Single(x => x.Month == 7).UnitPrice);
+        Assert.Equal(4_000m, salesResult.Data.Single(x => x.Month == 1).UnitPriceTry);
+        Assert.Equal(4_620m, salesResult.Data.Single(x => x.Month == 4).UnitPriceTry);
+        Assert.Null(salesResult.Data.Single(x => x.Month == 2).UnitPriceTry);
+
+        var purchaseResult = await service.GenerateFishPricesAsync(plan.Id, new GenerateBudgetPlanFishPricesDto
+        {
+            PriceType = BudgetFishPriceType.Purchase,
+            MarketType = BudgetMarketType.Domestic,
+            CurrencyCode = "TRY",
+            DefaultUnitPrice = 25m,
+            IncreasePeriodMonths = 1,
+            FishStockIds = [fishStock.Id],
+            CalibrationDefinitionIds = [calibration.Id]
+        });
+
+        Assert.True(purchaseResult.Success, purchaseResult.Message);
+        Assert.Equal(24, purchaseResult.Data!.Count);
+        var januaryRows = purchaseResult.Data.Where(x => x.Month == 1).ToList();
+        Assert.Equal(2, januaryRows.Count);
+        Assert.Contains(januaryRows, x => x.PriceType == BudgetFishPriceType.Sales && x.CurrencyCode == "EUR");
+        Assert.Contains(januaryRows, x =>
+            x.PriceType == BudgetFishPriceType.Purchase &&
+            x.CurrencyCode == "TRY" &&
+            x.UnitPriceTry == 25m);
+    }
+
+    [Fact]
     public async Task AdjustmentDefinitions_SupportCreateUpdateListAndSoftDelete()
     {
         await using var fixture = await CreateFixtureAsync();

@@ -25,3 +25,15 @@ public enum BudgetPlanFishBatchAdjustmentType : byte
     Transfer = 2,
     Correction = 3
 }
+
+public enum BudgetFishPriceType : byte
+{
+    Purchase = 0,
+    Sales = 1
+}
+
+public enum BudgetMarketType : byte
+{
+    Domestic = 0,
+    Foreign = 1
+}
