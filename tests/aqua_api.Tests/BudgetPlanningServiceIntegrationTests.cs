@@ -177,6 +177,32 @@ public class BudgetPlanningServiceIntegrationTests
     }
 
     [Fact]
+    public async Task CalculateGrowth_UsesGeneralSpeciesProfileForNewFishStock()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var service = fixture.Service;
+
+        var generalSeaBassStock = new Stock { ErpStockCode = "L001", StockName = "Levrek", Unit = "AD" };
+        var newSeaBassStock = new Stock { ErpStockCode = "FISH-LVRK-10-20", StockName = "Levrek 10-20g", Unit = "AD" };
+        var feedStock = new Stock { ErpStockCode = "FEED-BUD-SPECIES", StockName = "Budget Feed", Unit = "KG", GrupKodu = "YEM" };
+        db.Stocks.AddRange(generalSeaBassStock, newSeaBassStock, feedStock);
+        await db.SaveChangesAsync();
+
+        var plan = await SeedBudgetPlanAsync(db, newSeaBassStock.Id, BudgetPlanStatus.LiveImported);
+        await SeedCompleteBudgetDefinitionsAsync(db, generalSeaBassStock.Id, feedStock.Id);
+        await db.SaveChangesAsync();
+
+        var result = await service.CalculateGrowthAsync(plan.Id);
+
+        Assert.True(result.Success, result.Message);
+        Assert.NotNull(result.Data);
+        Assert.Equal(12, result.Data!.Count);
+        Assert.Equal(110m, result.Data[0].ClosingAverageGram);
+        Assert.Equal(220m, result.Data[^1].ClosingAverageGram);
+    }
+
+    [Fact]
     public async Task Calculate_AppliesGrowthQualityAndFeedMortalityReduction()
     {
         await using var fixture = await CreateFixtureAsync();

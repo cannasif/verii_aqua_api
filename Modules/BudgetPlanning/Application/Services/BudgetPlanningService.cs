@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 using aqua_api.Modules.BudgetPlanning.Domain.Entities;
 using aqua_api.Modules.BudgetPlanning.Domain.Enums;
@@ -1182,6 +1184,7 @@ public class BudgetPlanningService : IBudgetPlanningService
         }
 
         var growthProfiles = await _unitOfWork.Db.BudgetFishGrowthProfiles
+            .Include(x => x.Stock)
             .Include(x => x.Lines)
             .Where(x => !x.IsDeleted)
             .ToListAsync();
@@ -1234,7 +1237,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             {
                 var liveCount = batch.InitialLiveCount;
                 var averageGram = batch.InitialAverageGram;
-                var profile = growthProfiles.FirstOrDefault(x => x.StockId == batch.FishStockId && x.StartMonth == batch.GrowthStartMonth);
+                var profile = FindGrowthProfile(growthProfiles, batch);
 
                 foreach (var period in periods)
                 {
@@ -1811,6 +1814,57 @@ public class BudgetPlanningService : IBudgetPlanningService
         int growthMonthNo) =>
         qualities.FirstOrDefault(x => x.FishStockId == fishStockId && x.GrowthMonthNo == growthMonthNo);
 
+    private static BudgetFishGrowthProfile? FindGrowthProfile(
+        List<BudgetFishGrowthProfile> profiles,
+        BudgetPlanFishBatch batch)
+    {
+        var exactProfile = profiles.FirstOrDefault(x =>
+            x.StockId == batch.FishStockId &&
+            x.StartMonth == batch.GrowthStartMonth);
+        if (exactProfile != null)
+        {
+            return exactProfile;
+        }
+
+        var speciesKey = FindFishSpeciesKey(batch.FishStock?.StockName);
+        if (speciesKey == null)
+        {
+            return null;
+        }
+
+        return profiles
+            .Where(x => x.StartMonth == batch.GrowthStartMonth)
+            .Where(x => FindFishSpeciesKey(x.Stock?.StockName) == speciesKey)
+            .OrderBy(x => x.Id)
+            .FirstOrDefault();
+    }
+
+    private static string? FindFishSpeciesKey(string? stockName)
+    {
+        if (string.IsNullOrWhiteSpace(stockName))
+        {
+            return null;
+        }
+
+        var normalized = new string(stockName
+            .Normalize(NormalizationForm.FormD)
+            .Where(x => CharUnicodeInfo.GetUnicodeCategory(x) != UnicodeCategory.NonSpacingMark)
+            .ToArray())
+            .ToLowerInvariant();
+
+        if (Regex.IsMatch(normalized, @"\blevrek\b|\bsea\s*bass\b"))
+        {
+            return "LEVREK";
+        }
+
+        if (Regex.IsMatch(normalized, @"\bcipura\b|\bsea\s*bream\b"))
+        {
+            return "CIPURA";
+        }
+
+        return null;
+    }
+
     private static BudgetWaterTemperature? FindWaterTemperature(List<BudgetWaterTemperature> temperatures, int year, int month)
     {
         return temperatures.FirstOrDefault(x => x.Year == year && x.Month == month) ??
@@ -1865,7 +1919,7 @@ public class BudgetPlanningService : IBudgetPlanningService
         {
             var liveCount = batch.InitialLiveCount;
             var averageGram = batch.InitialAverageGram;
-            var profile = growthProfiles.FirstOrDefault(x => x.StockId == batch.FishStockId && x.StartMonth == batch.GrowthStartMonth);
+            var profile = FindGrowthProfile(growthProfiles, batch);
 
             if (profile == null)
             {
