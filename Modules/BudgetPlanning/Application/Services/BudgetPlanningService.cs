@@ -470,6 +470,14 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<BudgetPlanFishBatchDto>.ErrorResult("Sanal balik bilgileri eksik veya hatali.", "Sanal balik bilgileri eksik veya hatali.", StatusCodes.Status400BadRequest);
         }
 
+        if (!IsPeriodWithinPlan(plan, dto.GrowthStartYear, dto.GrowthStartMonth))
+        {
+            return ApiResponse<BudgetPlanFishBatchDto>.ErrorResult(
+                "Sanal baligin buyume baslangici butce donemi icinde olmalidir.",
+                "Sanal baligin buyume baslangici butce donemi icinde olmalidir.",
+                StatusCodes.Status400BadRequest);
+        }
+
         var fishStockExists = await _unitOfWork.Db.Stocks.AnyAsync(x => x.Id == dto.FishStockId && !x.IsDeleted);
         if (!fishStockExists)
         {
@@ -1241,7 +1249,13 @@ public class BudgetPlanningService : IBudgetPlanningService
 
                 foreach (var period in periods)
                 {
-                    var monthIndex = MonthsBetween(batch.GrowthStartYear, batch.GrowthStartMonth, period.Year, period.Month) + 1;
+                    var elapsedMonths = MonthsBetween(batch.GrowthStartYear, batch.GrowthStartMonth, period.Year, period.Month);
+                    if (elapsedMonths < 0)
+                    {
+                        continue;
+                    }
+
+                    var monthIndex = elapsedMonths + 1;
                     var openingBiomassKg = Round(liveCount * averageGram / 1000m);
                     var rawMonthlyGrowth = profile?.Lines.FirstOrDefault(x => x.GrowthMonthNo == monthIndex && !x.IsDeleted)?.MonthlyGrowthGram ?? 0m;
                     var growthQualityPercent = FindGrowthQuality(growthQualities, batch.FishStockId, monthIndex)?.QualityPercent ?? 100m;
@@ -1929,9 +1943,15 @@ public class BudgetPlanningService : IBudgetPlanningService
 
             foreach (var period in periods)
             {
-                var monthIndex = MonthsBetween(batch.GrowthStartYear, batch.GrowthStartMonth, period.Year, period.Month) + 1;
+                var elapsedMonths = MonthsBetween(batch.GrowthStartYear, batch.GrowthStartMonth, period.Year, period.Month);
+                if (elapsedMonths < 0)
+                {
+                    continue;
+                }
+
+                var monthIndex = elapsedMonths + 1;
                 var growthLine = profile.Lines.FirstOrDefault(x => x.GrowthMonthNo == monthIndex && !x.IsDeleted);
-                if (monthIndex < 1 || growthLine == null)
+                if (growthLine == null)
                 {
                     errors.Add($"{DescribeBudgetBatch(batch)} icin {period.Year}/{period.Month:00} donemi {monthIndex}. buyume ayi tanimi yok.");
                     continue;

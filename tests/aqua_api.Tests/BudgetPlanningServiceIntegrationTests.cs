@@ -203,6 +203,36 @@ public class BudgetPlanningServiceIntegrationTests
     }
 
     [Fact]
+    public async Task CalculateGrowth_VirtualBatchUsesSharedDefinitionsFromItsStartPeriod()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var service = fixture.Service;
+
+        var fishStock = new Stock { ErpStockCode = "FISH-BUD-VIRTUAL", StockName = "Virtual Budget Fish", Unit = "AD" };
+        var feedStock = new Stock { ErpStockCode = "FEED-BUD-VIRTUAL", StockName = "Virtual Budget Feed", Unit = "KG", GrupKodu = "YEM" };
+        db.Stocks.AddRange(fishStock, feedStock);
+        await db.SaveChangesAsync();
+
+        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.LiveImported);
+        var virtualBatch = await db.BudgetPlanFishBatches.SingleAsync(x => x.BudgetPlanId == plan.Id);
+        virtualBatch.GrowthStartMonth = 3;
+        await SeedCompleteBudgetDefinitionsAsync(db, fishStock.Id, feedStock.Id, growthStartMonth: 3);
+        await db.SaveChangesAsync();
+
+        var result = await service.CalculateGrowthAsync(plan.Id);
+
+        Assert.True(result.Success, result.Message);
+        Assert.NotNull(result.Data);
+        Assert.Equal(10, result.Data!.Count);
+        Assert.DoesNotContain(result.Data, row => row.Year == 2026 && row.Month < 3);
+        Assert.Equal(3, result.Data[0].Month);
+        Assert.Equal(1, result.Data[0].MonthIndex);
+        Assert.Equal(110m, result.Data[0].ClosingAverageGram);
+        Assert.Equal(200m, result.Data[^1].ClosingAverageGram);
+    }
+
+    [Fact]
     public async Task Calculate_AppliesGrowthQualityAndFeedMortalityReduction()
     {
         await using var fixture = await CreateFixtureAsync();
@@ -542,7 +572,12 @@ public class BudgetPlanningServiceIntegrationTests
         return plan;
     }
 
-    private static async Task SeedCompleteBudgetDefinitionsAsync(AquaDbContext db, long fishStockId, long feedStockId, bool includeFeedRates = true)
+    private static async Task SeedCompleteBudgetDefinitionsAsync(
+        AquaDbContext db,
+        long fishStockId,
+        long feedStockId,
+        bool includeFeedRates = true,
+        int growthStartMonth = 1)
     {
         var calibration = new BudgetCalibrationDefinition
         {
@@ -555,7 +590,7 @@ public class BudgetPlanningServiceIntegrationTests
         var profile = new BudgetFishGrowthProfile
         {
             StockId = fishStockId,
-            StartMonth = 1,
+            StartMonth = growthStartMonth,
             Name = "60 Month Growth"
         };
         for (var month = 1; month <= 60; month++)
