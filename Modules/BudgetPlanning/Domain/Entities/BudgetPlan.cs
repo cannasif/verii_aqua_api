@@ -20,6 +20,7 @@ public class BudgetPlan : BaseEntity
     public ICollection<BudgetPlanFishBatchAdjustment> FishBatchAdjustments { get; set; } = new List<BudgetPlanFishBatchAdjustment>();
     public ICollection<BudgetPlanMonthlyProjection> MonthlyProjections { get; set; } = new List<BudgetPlanMonthlyProjection>();
     public ICollection<BudgetPlanSalesLine> SalesLines { get; set; } = new List<BudgetPlanSalesLine>();
+    public ICollection<BudgetPlanSalesDistribution> SalesDistributions { get; set; } = new List<BudgetPlanSalesDistribution>();
     public ICollection<BudgetPlanFeedingLine> FeedingLines { get; set; } = new List<BudgetPlanFeedingLine>();
     public ICollection<BudgetPlanMortalityLine> MortalityLines { get; set; } = new List<BudgetPlanMortalityLine>();
     public ICollection<BudgetPlanExchangeRate> ExchangeRates { get; set; } = new List<BudgetPlanExchangeRate>();

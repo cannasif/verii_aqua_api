@@ -106,6 +106,7 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<BudgetPlanFishBatchAdjustment> BudgetPlanFishBatchAdjustments { get; set; }
         public DbSet<BudgetPlanMonthlyProjection> BudgetPlanMonthlyProjections { get; set; }
         public DbSet<BudgetPlanSalesLine> BudgetPlanSalesLines { get; set; }
+        public DbSet<BudgetPlanSalesDistribution> BudgetPlanSalesDistributions { get; set; }
         public DbSet<BudgetPlanFeedingLine> BudgetPlanFeedingLines { get; set; }
         public DbSet<BudgetPlanMortalityLine> BudgetPlanMortalityLines { get; set; }
         public DbSet<BudgetPlanExchangeRate> BudgetPlanExchangeRates { get; set; }

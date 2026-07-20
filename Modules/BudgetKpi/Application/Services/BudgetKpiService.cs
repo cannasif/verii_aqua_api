@@ -42,6 +42,10 @@ public class BudgetKpiService : IBudgetKpiService
         var salesLineLookup = salesLines
             .GroupBy(x => (x.BudgetPlanFishBatchId, x.Year, x.Month))
             .ToDictionary(x => x.Key, x => x.OrderByDescending(row => row.Id).First());
+        var salesDistributions = await _db.BudgetPlanSalesDistributions
+            .AsNoTracking()
+            .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
+            .ToListAsync();
 
         var exchangeRates = await _db.BudgetPlanExchangeRates
             .AsNoTracking()
@@ -91,14 +95,23 @@ public class BudgetKpiService : IBudgetKpiService
                 var groupFeed = group.Sum(x => x.FeedKg);
                 var groupMortality = group.Sum(x => x.MortalityKg);
                 var producedBiomassKg = Math.Max(0m, closing + groupSales + groupMortality);
-                var amountEuro = group.Sum(projection =>
-                    salesLineLookup.TryGetValue((projection.BudgetPlanFishBatchId, projection.Year, projection.Month), out var salesLine)
-                        ? projection.SalesTon * 1000m * (salesLine.UnitPrice ?? 0m)
-                        : 0m);
+                var batchIds = group.Select(x => x.BudgetPlanFishBatchId).ToHashSet();
+                var groupDistributions = salesDistributions
+                    .Where(x => x.Year == group.Key.Year && x.Month == group.Key.Month && batchIds.Contains(x.BudgetPlanFishBatchId))
+                    .ToList();
+                var amountEuro = groupDistributions.Count > 0
+                    ? groupDistributions.Sum(x => x.AmountEuro)
+                    : group.Sum(projection =>
+                        salesLineLookup.TryGetValue((projection.BudgetPlanFishBatchId, projection.Year, projection.Month), out var salesLine)
+                            ? projection.SalesTon * 1000m * (salesLine.UnitPrice ?? 0m)
+                            : 0m);
                 var averagePriceEuro = groupSales <= 0m ? 0m : amountEuro / groupSales;
                 var exchangeRate = exchangeRateLookup.GetValueOrDefault((group.Key.Year, group.Key.Month));
                 var hasExchangeRate = exchangeRate > 0m;
-                var amountTry = hasExchangeRate ? amountEuro * exchangeRate : (decimal?)null;
+                var hasDistributionAmountTry = groupDistributions.Count > 0 && groupDistributions.All(x => x.AmountTry.HasValue);
+                var amountTry = hasDistributionAmountTry
+                    ? groupDistributions.Sum(x => x.AmountTry!.Value)
+                    : hasExchangeRate ? amountEuro * exchangeRate : (decimal?)null;
                 return new BudgetKpiMonthlyDto
                 {
                     Year = group.Key.Year,
@@ -111,6 +124,12 @@ public class BudgetKpiService : IBudgetKpiService
                     ProducedBiomassKg = Round(producedBiomassKg),
                     SalesCount = groupSalesCount,
                     SalesTon = Round(groupSales / 1000m),
+                    DomesticSalesTon = Round(groupDistributions.Count > 0
+                        ? groupDistributions.Where(x => x.MarketType == BudgetMarketType.Domestic).Sum(x => x.SalesTon)
+                        : groupSales / 1000m),
+                    ForeignSalesTon = Round(groupDistributions.Count > 0
+                        ? groupDistributions.Where(x => x.MarketType == BudgetMarketType.Foreign).Sum(x => x.SalesTon)
+                        : 0m),
                     SalesKg = Round(groupSales),
                     StockCount = groupStockCount,
                     StockTon = Round(closing / 1000m),

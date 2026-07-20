@@ -16,6 +16,7 @@ public interface IBudgetPlanningService
     Task<ApiResponse<BudgetPlanSalesLineDto>> UpsertSalesTonAsync(long budgetPlanId, UpsertBudgetPlanSalesTonDto dto);
     Task<ApiResponse<List<BudgetPlanSalesLineDto>>> ImportSalesTonsAsync(long budgetPlanId, ImportBudgetPlanSalesTonsDto dto);
     Task<ApiResponse<List<BudgetPlanSalesLineDto>>> GetSalesLinesAsync(long budgetPlanId);
+    Task<ApiResponse<List<BudgetPlanSalesDistributionDto>>> GetSalesDistributionsAsync(long budgetPlanId);
     Task<ApiResponse<List<BudgetSalesPlanningRowDto>>> GetSalesPlanningRowsAsync(long budgetPlanId);
     Task<ApiResponse<List<BudgetPlanExchangeRateDto>>> GetExchangeRatesAsync(long budgetPlanId);
     Task<ApiResponse<List<BudgetPlanExchangeRateDto>>> GenerateExchangeRatesAsync(long budgetPlanId, GenerateBudgetPlanExchangeRatesDto dto);

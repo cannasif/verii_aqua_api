@@ -553,6 +553,112 @@ public class BudgetPlanningServiceIntegrationTests
     }
 
     [Fact]
+    public async Task Calculate_DistributesDomesticAndForeignSalesByCalibrationAndPrice()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var service = fixture.Service;
+
+        var fishStock = new Stock { ErpStockCode = "FISH-BUD-MARKET", StockName = "Levrek", Unit = "AD" };
+        var feedStock = new Stock { ErpStockCode = "FEED-BUD-MARKET", StockName = "Yem", Unit = "KG", GrupKodu = "YEM" };
+        db.Stocks.AddRange(fishStock, feedStock);
+        await db.SaveChangesAsync();
+
+        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.LiveImported);
+        await SeedCompleteBudgetDefinitionsAsync(db, fishStock.Id, feedStock.Id);
+        await db.SaveChangesAsync();
+
+        var growth = await service.CalculateGrowthAsync(plan.Id);
+        Assert.True(growth.Success, growth.Message);
+        var january = growth.Data!.Single(x => x.Year == 2026 && x.Month == 1);
+        var calibration = await db.BudgetCalibrationDefinitions.SingleAsync();
+
+        db.BudgetPlanFishPrices.AddRange(
+            new BudgetPlanFishPrice
+            {
+                BudgetPlanId = plan.Id,
+                FishStockId = fishStock.Id,
+                CalibrationDefinitionId = calibration.Id,
+                Year = 2026,
+                Month = 1,
+                PriceType = BudgetFishPriceType.Sales,
+                MarketType = BudgetMarketType.Domestic,
+                CurrencyCode = "EUR",
+                UnitPrice = 6m
+            },
+            new BudgetPlanFishPrice
+            {
+                BudgetPlanId = plan.Id,
+                FishStockId = fishStock.Id,
+                CalibrationDefinitionId = calibration.Id,
+                Year = 2026,
+                Month = 1,
+                PriceType = BudgetFishPriceType.Sales,
+                MarketType = BudgetMarketType.Foreign,
+                CurrencyCode = "EUR",
+                UnitPrice = 7m
+            });
+        db.BudgetPlanExchangeRates.Add(new BudgetPlanExchangeRate
+        {
+            BudgetPlanId = plan.Id,
+            Year = 2026,
+            Month = 1,
+            CurrencyCode = "EUR",
+            RateType = "Budget",
+            ExchangeRate = 50m,
+            SourceType = "Manual",
+            IsManualOverride = true
+        });
+        await db.SaveChangesAsync();
+
+        var domestic = await service.UpsertSalesTonAsync(plan.Id, new UpsertBudgetPlanSalesTonDto
+        {
+            BudgetPlanFishBatchId = january.BudgetPlanFishBatchId,
+            Year = 2026,
+            Month = 1,
+            MarketType = BudgetMarketType.Domestic,
+            SalesTon = 0.03m
+        });
+        var foreign = await service.UpsertSalesTonAsync(plan.Id, new UpsertBudgetPlanSalesTonDto
+        {
+            BudgetPlanFishBatchId = january.BudgetPlanFishBatchId,
+            Year = 2026,
+            Month = 1,
+            MarketType = BudgetMarketType.Foreign,
+            SalesTon = 0.02m
+        });
+
+        Assert.True(domestic.Success, domestic.Message);
+        Assert.True(foreign.Success, foreign.Message);
+        Assert.Equal(6m, domestic.Data!.UnitPriceEuro);
+        Assert.Equal(7m, foreign.Data!.UnitPriceEuro);
+
+        var calculation = await service.CalculateAsync(plan.Id);
+
+        Assert.True(calculation.Success, calculation.Message);
+        var projection = calculation.Data!.Single(x => x.Year == 2026 && x.Month == 1);
+        Assert.Equal(0.05m, projection.SalesTon);
+        Assert.Equal(455, projection.SalesCount);
+
+        var distributions = await service.GetSalesDistributionsAsync(plan.Id);
+        Assert.True(distributions.Success, distributions.Message);
+        Assert.Equal(2, distributions.Data!.Count);
+        Assert.Equal(455, distributions.Data.Sum(x => x.SalesCount));
+        Assert.All(distributions.Data, x => Assert.Equal("K-ALL", x.CalibrationCode));
+        Assert.Equal(180m, distributions.Data.Single(x => x.MarketType == BudgetMarketType.Domestic).AmountEuro);
+        Assert.Equal(140m, distributions.Data.Single(x => x.MarketType == BudgetMarketType.Foreign).AmountEuro);
+        Assert.Equal(16000m, distributions.Data.Sum(x => x.AmountTry));
+
+        var report = await fixture.KpiService.GetReportAsync(plan.Id);
+        Assert.True(report.Success, report.Message);
+        var reportRow = report.Data!.MonthlyRows.Single(x => x.Year == 2026 && x.Month == 1);
+        Assert.Equal(0.03m, reportRow.DomesticSalesTon);
+        Assert.Equal(0.02m, reportRow.ForeignSalesTon);
+        Assert.Equal(320m, reportRow.AmountEuro);
+        Assert.Equal(16000m, reportRow.AmountTry);
+    }
+
+    [Fact]
     public async Task ImportSalesTons_RollsBackAllRowsWhenOneRowIsInvalid()
     {
         await using var fixture = await CreateFixtureAsync();

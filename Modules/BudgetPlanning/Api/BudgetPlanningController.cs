@@ -120,6 +120,13 @@ public class BudgetPlanningController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    [HttpGet("{budgetPlanId:long}/sales-distributions")]
+    public async Task<ActionResult<ApiResponse<List<BudgetPlanSalesDistributionDto>>>> GetSalesDistributions(long budgetPlanId)
+    {
+        var result = await _service.GetSalesDistributionsAsync(budgetPlanId);
+        return StatusCode(result.StatusCode, result);
+    }
+
     [HttpGet("{budgetPlanId:long}/exchange-rates")]
     public async Task<ActionResult<ApiResponse<List<BudgetPlanExchangeRateDto>>>> GetExchangeRates(long budgetPlanId)
     {

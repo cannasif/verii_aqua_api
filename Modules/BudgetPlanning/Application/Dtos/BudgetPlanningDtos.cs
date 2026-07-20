@@ -142,8 +142,10 @@ public class UpsertBudgetPlanSalesLineDto
     public long BudgetPlanFishBatchId { get; set; }
     public int Year { get; set; }
     public int Month { get; set; }
+    public BudgetMarketType MarketType { get; set; } = BudgetMarketType.Domestic;
     public decimal SalesTon { get; set; }
     public int? SalesCount { get; set; }
+    public string CurrencyCode { get; set; } = "EUR";
     public decimal? UnitPrice { get; set; }
     public string? Description { get; set; }
 }
@@ -157,6 +159,8 @@ public class BudgetPlanSalesLineDto : UpsertBudgetPlanSalesLineDto
     public string? FishStockCode { get; set; }
     public string? FishStockName { get; set; }
     public decimal SalesAmount { get; set; }
+    public decimal? SourceUnitPrice { get; set; }
+    public decimal SalesAmountCurrency { get; set; }
     public decimal? UnitPriceEuro { get; set; }
     public decimal SalesAmountEuro { get; set; }
     public decimal? ExchangeRate { get; set; }
@@ -179,6 +183,8 @@ public class BudgetSalesPlanningRowDto
     public decimal AvailableKg { get; set; }
     public decimal AvailableTon { get; set; }
     public decimal PlannedSalesTon { get; set; }
+    public decimal DomesticSalesTon { get; set; }
+    public decimal ForeignSalesTon { get; set; }
     public int PlannedSalesCount { get; set; }
     public decimal RemainingKg { get; set; }
     public decimal RemainingTon { get; set; }
@@ -190,7 +196,9 @@ public class UpsertBudgetPlanSalesTonDto
     public long BudgetPlanFishBatchId { get; set; }
     public int Year { get; set; }
     public int Month { get; set; }
+    public BudgetMarketType MarketType { get; set; } = BudgetMarketType.Domestic;
     public decimal SalesTon { get; set; }
+    public string CurrencyCode { get; set; } = "EUR";
     public decimal? UnitPrice { get; set; }
     public string? Description { get; set; }
 }
@@ -242,6 +250,30 @@ public class UpsertBudgetPlanFishPriceDto
     public decimal IncreaseRatePercent { get; set; }
     public int IncreasePeriodMonths { get; set; } = 1;
     public string? Description { get; set; }
+}
+
+public class BudgetPlanSalesDistributionDto
+{
+    public long Id { get; set; }
+    public long BudgetPlanFishBatchId { get; set; }
+    public string ProjectCode { get; set; } = string.Empty;
+    public string ProjectName { get; set; } = string.Empty;
+    public string BatchCode { get; set; } = string.Empty;
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public BudgetMarketType MarketType { get; set; }
+    public string? CalibrationCode { get; set; }
+    public decimal SalesTon { get; set; }
+    public decimal SalesKg { get; set; }
+    public int SalesCount { get; set; }
+    public decimal UnitGram { get; set; }
+    public string CurrencyCode { get; set; } = "EUR";
+    public decimal UnitPrice { get; set; }
+    public decimal UnitPriceEuro { get; set; }
+    public decimal? ExchangeRate { get; set; }
+    public decimal Amount { get; set; }
+    public decimal AmountEuro { get; set; }
+    public decimal? AmountTry { get; set; }
 }
 
 public class GenerateBudgetPlanFishPricesDto

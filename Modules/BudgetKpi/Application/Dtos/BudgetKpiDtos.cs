@@ -18,6 +18,8 @@ public class BudgetKpiMonthlyDto
     public decimal ProducedBiomassKg { get; set; }
     public int SalesCount { get; set; }
     public decimal SalesTon { get; set; }
+    public decimal DomesticSalesTon { get; set; }
+    public decimal ForeignSalesTon { get; set; }
     public decimal SalesKg { get; set; }
     public int StockCount { get; set; }
     public decimal StockTon { get; set; }

@@ -238,19 +238,26 @@ public class BudgetPlanningService : IBudgetPlanningService
                 });
             }
 
+            var salesLineIdMap = new Dictionary<long, long>();
             foreach (var sale in source.SalesLines.Where(x => !x.IsDeleted).OrderBy(x => x.Id))
             {
-                await _unitOfWork.Repository<BudgetPlanSalesLine>().AddAsync(new BudgetPlanSalesLine
+                var copy = new BudgetPlanSalesLine
                 {
                     BudgetPlanId = target.Id,
                     BudgetPlanFishBatchId = batchIdMap[sale.BudgetPlanFishBatchId],
                     Year = sale.Year,
                     Month = sale.Month,
+                    MarketType = sale.MarketType,
                     SalesTon = sale.SalesTon,
                     SalesCount = sale.SalesCount,
+                    CurrencyCode = sale.CurrencyCode,
+                    SourceUnitPrice = sale.SourceUnitPrice,
                     UnitPrice = sale.UnitPrice,
                     Description = sale.Description
-                });
+                };
+                await _unitOfWork.Repository<BudgetPlanSalesLine>().AddAsync(copy);
+                await _unitOfWork.SaveChangesAsync();
+                salesLineIdMap[sale.Id] = copy.Id;
             }
 
             if (dto.IncludeCalculatedResults && !dto.ResetToDraft)
@@ -312,6 +319,32 @@ public class BudgetPlanningService : IBudgetPlanningService
                         MortalityRatePercent = line.MortalityRatePercent,
                         MortalityCount = line.MortalityCount,
                         MortalityKg = line.MortalityKg
+                    });
+                }
+
+                foreach (var distribution in source.SalesDistributions.Where(x => !x.IsDeleted).OrderBy(x => x.Id))
+                {
+                    await _unitOfWork.Repository<BudgetPlanSalesDistribution>().AddAsync(new BudgetPlanSalesDistribution
+                    {
+                        BudgetPlanId = target.Id,
+                        BudgetPlanMonthlyProjectionId = projectionIdMap[distribution.BudgetPlanMonthlyProjectionId],
+                        BudgetPlanSalesLineId = salesLineIdMap[distribution.BudgetPlanSalesLineId],
+                        BudgetPlanFishBatchId = batchIdMap[distribution.BudgetPlanFishBatchId],
+                        CalibrationDefinitionId = distribution.CalibrationDefinitionId,
+                        Year = distribution.Year,
+                        Month = distribution.Month,
+                        MarketType = distribution.MarketType,
+                        SalesTon = distribution.SalesTon,
+                        SalesKg = distribution.SalesKg,
+                        SalesCount = distribution.SalesCount,
+                        UnitGram = distribution.UnitGram,
+                        CurrencyCode = distribution.CurrencyCode,
+                        UnitPrice = distribution.UnitPrice,
+                        UnitPriceEuro = distribution.UnitPriceEuro,
+                        ExchangeRate = distribution.ExchangeRate,
+                        Amount = distribution.Amount,
+                        AmountEuro = distribution.AmountEuro,
+                        AmountTry = distribution.AmountTry
                     });
                 }
             }
@@ -654,7 +687,7 @@ public class BudgetPlanningService : IBudgetPlanningService
 
     public async Task<ApiResponse<BudgetPlanSalesLineDto>> UpsertSalesLineAsync(long budgetPlanId, UpsertBudgetPlanSalesLineDto dto)
     {
-        if (!IsValidMonth(dto.Month) || dto.SalesTon < 0)
+        if (!IsValidMonth(dto.Month) || dto.SalesTon < 0 || !Enum.IsDefined(dto.MarketType))
         {
             return ApiResponse<BudgetPlanSalesLineDto>.ErrorResult("Satis donemi veya miktari hatali.", "Satis donemi veya miktari hatali.", StatusCodes.Status400BadRequest);
         }
@@ -682,6 +715,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             x.BudgetPlanFishBatchId == dto.BudgetPlanFishBatchId &&
             x.Year == dto.Year &&
             x.Month == dto.Month &&
+            x.MarketType == dto.MarketType &&
             !x.IsDeleted);
 
         if (entity == null)
@@ -693,9 +727,15 @@ public class BudgetPlanningService : IBudgetPlanningService
         entity.BudgetPlanFishBatchId = dto.BudgetPlanFishBatchId;
         entity.Year = dto.Year;
         entity.Month = dto.Month;
+        entity.MarketType = dto.MarketType;
         entity.SalesTon = Round(dto.SalesTon);
         entity.SalesCount = dto.SalesCount;
-        entity.UnitPrice = dto.UnitPrice ?? await FindFishPriceEuroAsync(budgetPlanId, dto.BudgetPlanFishBatchId, dto.Year, dto.Month);
+        var resolvedPrice = dto.UnitPrice.HasValue
+            ? await ResolveSalesPriceAsync(budgetPlanId, dto.Year, dto.Month, dto.CurrencyCode, dto.UnitPrice.Value)
+            : await FindFishPriceAsync(budgetPlanId, dto.BudgetPlanFishBatchId, dto.Year, dto.Month, dto.MarketType);
+        entity.CurrencyCode = resolvedPrice?.CurrencyCode ?? NormalizeCurrencyCode(dto.CurrencyCode, "EUR");
+        entity.SourceUnitPrice = resolvedPrice?.UnitPrice;
+        entity.UnitPrice = resolvedPrice?.UnitPriceEuro;
         entity.Description = NormalizeOptional(dto.Description);
         plan.Status = BudgetPlanStatus.SalesPlanned;
         plan.CalculatedAt = null;
@@ -735,8 +775,10 @@ public class BudgetPlanningService : IBudgetPlanningService
             BudgetPlanFishBatchId = dto.BudgetPlanFishBatchId,
             Year = dto.Year,
             Month = dto.Month,
+            MarketType = dto.MarketType,
             SalesTon = dto.SalesTon,
             SalesCount = salesCount,
+            CurrencyCode = dto.CurrencyCode,
             UnitPrice = dto.UnitPrice,
             Description = NormalizeOptional(dto.Description)
         });
@@ -753,7 +795,7 @@ public class BudgetPlanningService : IBudgetPlanningService
         }
 
         var duplicatePeriod = dto.Lines
-            .GroupBy(x => new { x.BudgetPlanFishBatchId, x.Year, x.Month })
+            .GroupBy(x => new { x.BudgetPlanFishBatchId, x.Year, x.Month, x.MarketType })
             .FirstOrDefault(x => x.Count() > 1);
         if (duplicatePeriod != null)
         {
@@ -800,6 +842,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             .ThenBy(x => x.Month)
             .ThenBy(x => x.BudgetPlanFishBatch.BudgetPlanProject.ProjectCode)
             .ThenBy(x => x.BudgetPlanFishBatch.BatchCode)
+            .ThenBy(x => x.MarketType)
             .ToListAsync();
 
         var exchangeRates = await LoadExchangeRateLookupAsync(budgetPlanId, "EUR");
@@ -838,6 +881,12 @@ public class BudgetPlanningService : IBudgetPlanningService
             var plannedSalesKg = sales
                 .Where(x => x.BudgetPlanFishBatchId == row.BudgetPlanFishBatchId && x.Year == row.Year && x.Month == row.Month)
                 .Sum(x => x.SalesTon * 1000m);
+            var domesticSalesTon = sales
+                .Where(x => x.BudgetPlanFishBatchId == row.BudgetPlanFishBatchId && x.Year == row.Year && x.Month == row.Month && x.MarketType == BudgetMarketType.Domestic)
+                .Sum(x => x.SalesTon);
+            var foreignSalesTon = sales
+                .Where(x => x.BudgetPlanFishBatchId == row.BudgetPlanFishBatchId && x.Year == row.Year && x.Month == row.Month && x.MarketType == BudgetMarketType.Foreign)
+                .Sum(x => x.SalesTon);
             var averageKg = row.ClosingAverageGram / 1000m;
             var plannedSalesCount = averageKg <= 0 ? 0 : (int)Math.Round(plannedSalesKg / averageKg, MidpointRounding.AwayFromZero);
             var remainingKg = Math.Max(0m, row.ClosingBiomassKg - plannedSalesKg);
@@ -859,6 +908,8 @@ public class BudgetPlanningService : IBudgetPlanningService
                 AvailableKg = Round(row.ClosingBiomassKg),
                 AvailableTon = Round(row.ClosingBiomassKg / 1000m),
                 PlannedSalesTon = Round(plannedSalesKg / 1000m),
+                DomesticSalesTon = Round(domesticSalesTon),
+                ForeignSalesTon = Round(foreignSalesTon),
                 PlannedSalesCount = plannedSalesCount,
                 RemainingKg = Round(remainingKg),
                 RemainingTon = Round(remainingKg / 1000m),
@@ -1280,6 +1331,7 @@ public class BudgetPlanningService : IBudgetPlanningService
         var mortalityRates = await _unitOfWork.Db.BudgetMortalityRateDefinitions
             .Where(x => !x.IsDeleted)
             .ToListAsync();
+        var exchangeRateLookup = await LoadAllExchangeRateLookupAsync(budgetPlanId);
 
         var definitionValidation = ValidateProjectionDefinitions(
             batches,
@@ -1302,6 +1354,7 @@ public class BudgetPlanningService : IBudgetPlanningService
         await _unitOfWork.BeginTransactionAsync();
         try
         {
+            _unitOfWork.Db.BudgetPlanSalesDistributions.RemoveRange(_unitOfWork.Db.BudgetPlanSalesDistributions.Where(x => x.BudgetPlanId == budgetPlanId));
             _unitOfWork.Db.BudgetPlanFeedingLines.RemoveRange(_unitOfWork.Db.BudgetPlanFeedingLines.Where(x => x.BudgetPlanId == budgetPlanId));
             _unitOfWork.Db.BudgetPlanMortalityLines.RemoveRange(_unitOfWork.Db.BudgetPlanMortalityLines.Where(x => x.BudgetPlanId == budgetPlanId));
             _unitOfWork.Db.BudgetPlanMonthlyProjections.RemoveRange(_unitOfWork.Db.BudgetPlanMonthlyProjections.Where(x => x.BudgetPlanId == budgetPlanId));
@@ -1338,10 +1391,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                         : 0;
 
                     salesCount = Math.Min(salesCount, liveCount);
-                    if (periodSales.Count == 1)
-                    {
-                        periodSales[0].SalesCount = salesCount;
-                    }
+                    var salesAllocations = AllocateSales(periodSales, salesKg, salesCount);
                     var afterSalesLiveCount = Math.Max(0, liveCount - salesCount);
                     var calibration = FindCalibration(calibrations, closingAverageBeforeLoss);
                     var waterTemperature = FindWaterTemperature(waterTemperatures, period.Year, period.Month);
@@ -1396,6 +1446,40 @@ public class BudgetPlanningService : IBudgetPlanningService
 
                     if (includeSalesAndOperations)
                     {
+                        foreach (var allocation in salesAllocations.Where(x => x.SalesKg > 0m))
+                        {
+                            var currencyCode = NormalizeCurrencyCode(allocation.SalesLine.CurrencyCode, "EUR");
+                            var sourceUnitPrice = allocation.SalesLine.SourceUnitPrice ?? allocation.SalesLine.UnitPrice ?? 0m;
+                            var unitPriceEuro = allocation.SalesLine.UnitPrice ?? 0m;
+                            var sourceRate = ResolveExchangeRate(exchangeRateLookup, period.Year, period.Month, currencyCode);
+                            var amount = Round(allocation.SalesKg * sourceUnitPrice);
+                            var amountEuro = Round(allocation.SalesKg * unitPriceEuro);
+                            var amountTry = sourceRate.HasValue ? (decimal?)Round(amount * sourceRate.Value) : null;
+
+                            await _unitOfWork.Repository<BudgetPlanSalesDistribution>().AddAsync(new BudgetPlanSalesDistribution
+                            {
+                                BudgetPlanId = budgetPlanId,
+                                BudgetPlanMonthlyProjectionId = projection.Id,
+                                BudgetPlanSalesLineId = allocation.SalesLine.Id,
+                                BudgetPlanFishBatchId = batch.Id,
+                                CalibrationDefinitionId = calibration?.Id,
+                                Year = period.Year,
+                                Month = period.Month,
+                                MarketType = allocation.SalesLine.MarketType,
+                                SalesTon = Round(allocation.SalesKg / 1000m),
+                                SalesKg = allocation.SalesKg,
+                                SalesCount = allocation.SalesCount,
+                                UnitGram = Round(closingAverageBeforeLoss),
+                                CurrencyCode = currencyCode,
+                                UnitPrice = Round(sourceUnitPrice),
+                                UnitPriceEuro = Round(unitPriceEuro),
+                                ExchangeRate = sourceRate,
+                                Amount = amount,
+                                AmountEuro = amountEuro,
+                                AmountTry = amountTry
+                            });
+                        }
+
                         await _unitOfWork.Repository<BudgetPlanFeedingLine>().AddAsync(new BudgetPlanFeedingLine
                         {
                             BudgetPlanId = budgetPlanId,
@@ -1687,6 +1771,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             .Include(x => x.FishBatchAdjustments)
             .Include(x => x.MonthlyProjections)
             .Include(x => x.SalesLines)
+            .Include(x => x.SalesDistributions)
             .Include(x => x.FeedingLines)
             .Include(x => x.MortalityLines)
             .Include(x => x.ExchangeRates)
@@ -2148,6 +2233,7 @@ public class BudgetPlanningService : IBudgetPlanningService
     private static BudgetPlanSalesLineDto MapSalesLine(BudgetPlanSalesLine entity, decimal? exchangeRate = null)
     {
         var salesAmountEuro = Round(entity.SalesTon * 1000m * (entity.UnitPrice ?? 0m));
+        var salesAmountCurrency = Round(entity.SalesTon * 1000m * (entity.SourceUnitPrice ?? entity.UnitPrice ?? 0m));
         return new BudgetPlanSalesLineDto
         {
             Id = entity.Id,
@@ -2159,15 +2245,46 @@ public class BudgetPlanningService : IBudgetPlanningService
             FishStockName = entity.BudgetPlanFishBatch.FishStock.StockName,
             Year = entity.Year,
             Month = entity.Month,
+            MarketType = entity.MarketType,
             SalesTon = entity.SalesTon,
             SalesCount = entity.SalesCount,
+            CurrencyCode = entity.CurrencyCode,
             UnitPrice = entity.UnitPrice,
             SalesAmount = salesAmountEuro,
+            SourceUnitPrice = entity.SourceUnitPrice ?? entity.UnitPrice,
+            SalesAmountCurrency = salesAmountCurrency,
             UnitPriceEuro = entity.UnitPrice,
             SalesAmountEuro = salesAmountEuro,
             ExchangeRate = exchangeRate,
             SalesAmountTry = exchangeRate.HasValue ? Round(salesAmountEuro * exchangeRate.Value) : null,
             Description = entity.Description
+        };
+    }
+
+    private static BudgetPlanSalesDistributionDto MapSalesDistribution(BudgetPlanSalesDistribution entity)
+    {
+        return new BudgetPlanSalesDistributionDto
+        {
+            Id = entity.Id,
+            BudgetPlanFishBatchId = entity.BudgetPlanFishBatchId,
+            ProjectCode = entity.BudgetPlanFishBatch.BudgetPlanProject.ProjectCode,
+            ProjectName = entity.BudgetPlanFishBatch.BudgetPlanProject.ProjectName,
+            BatchCode = entity.BudgetPlanFishBatch.BatchCode,
+            Year = entity.Year,
+            Month = entity.Month,
+            MarketType = entity.MarketType,
+            CalibrationCode = entity.CalibrationDefinition?.CalibrationCode,
+            SalesTon = entity.SalesTon,
+            SalesKg = entity.SalesKg,
+            SalesCount = entity.SalesCount,
+            UnitGram = entity.UnitGram,
+            CurrencyCode = entity.CurrencyCode,
+            UnitPrice = entity.UnitPrice,
+            UnitPriceEuro = entity.UnitPriceEuro,
+            ExchangeRate = entity.ExchangeRate,
+            Amount = entity.Amount,
+            AmountEuro = entity.AmountEuro,
+            AmountTry = entity.AmountTry
         };
     }
 
@@ -2342,7 +2459,12 @@ public class BudgetPlanningService : IBudgetPlanningService
         return ApiResponse<bool>.SuccessResult(true, "Valid");
     }
 
-    private async Task<decimal?> FindFishPriceEuroAsync(long budgetPlanId, long budgetPlanFishBatchId, int year, int month)
+    private async Task<ResolvedSalesPrice?> FindFishPriceAsync(
+        long budgetPlanId,
+        long budgetPlanFishBatchId,
+        int year,
+        int month,
+        BudgetMarketType marketType)
     {
         var projection = await _unitOfWork.Db.BudgetPlanMonthlyProjections
             .AsNoTracking()
@@ -2359,7 +2481,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             return null;
         }
 
-        return await _unitOfWork.Db.BudgetPlanFishPrices
+        var price = await _unitOfWork.Db.BudgetPlanFishPrices
             .AsNoTracking()
             .Where(x =>
                 x.BudgetPlanId == budgetPlanId &&
@@ -2367,13 +2489,96 @@ public class BudgetPlanningService : IBudgetPlanningService
                 x.Year == year &&
                 x.Month == month &&
                 x.PriceType == BudgetFishPriceType.Sales &&
-                x.MarketType == BudgetMarketType.Domestic &&
-                x.CurrencyCode == "EUR" &&
+                x.MarketType == marketType &&
                 (!x.FishStockId.HasValue || x.FishStockId == projection.BudgetPlanFishBatch.FishStockId) &&
                 !x.IsDeleted)
             .OrderByDescending(x => x.FishStockId.HasValue)
-            .Select(x => (decimal?)x.UnitPrice)
+            .ThenByDescending(x => x.CurrencyCode == "EUR")
             .FirstOrDefaultAsync();
+
+        return price == null
+            ? null
+            : await ResolveSalesPriceAsync(budgetPlanId, year, month, price.CurrencyCode, price.UnitPrice);
+    }
+
+    public async Task<ApiResponse<List<BudgetPlanSalesDistributionDto>>> GetSalesDistributionsAsync(long budgetPlanId)
+    {
+        var rows = await _unitOfWork.Db.BudgetPlanSalesDistributions
+            .AsNoTracking()
+            .Include(x => x.BudgetPlanFishBatch).ThenInclude(x => x.BudgetPlanProject)
+            .Include(x => x.CalibrationDefinition)
+            .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
+            .OrderBy(x => x.Year)
+            .ThenBy(x => x.Month)
+            .ThenBy(x => x.BudgetPlanFishBatch.BudgetPlanProject.ProjectCode)
+            .ThenBy(x => x.BudgetPlanFishBatch.BatchCode)
+            .ThenBy(x => x.MarketType)
+            .ThenBy(x => x.CalibrationDefinition!.CalibrationCode)
+            .ToListAsync();
+
+        return ApiResponse<List<BudgetPlanSalesDistributionDto>>.SuccessResult(rows.Select(MapSalesDistribution).ToList(), "Islem basarili.");
+    }
+
+    private async Task<ResolvedSalesPrice?> ResolveSalesPriceAsync(
+        long budgetPlanId,
+        int year,
+        int month,
+        string? currencyCode,
+        decimal unitPrice)
+    {
+        var normalizedCurrency = NormalizeCurrencyCode(currencyCode, "EUR");
+        var sourceRate = normalizedCurrency == "TRY"
+            ? 1m
+            : await FindExchangeRateAsync(budgetPlanId, year, month, normalizedCurrency);
+        var euroRate = normalizedCurrency == "EUR"
+            ? sourceRate
+            : await FindExchangeRateAsync(budgetPlanId, year, month, "EUR");
+
+        decimal? unitPriceEuro = normalizedCurrency switch
+        {
+            "EUR" => unitPrice,
+            "TRY" when euroRate > 0m => unitPrice / euroRate.Value,
+            _ when sourceRate > 0m && euroRate > 0m => unitPrice * sourceRate.Value / euroRate.Value,
+            _ => null
+        };
+
+        return new ResolvedSalesPrice(
+            normalizedCurrency,
+            Round(unitPrice),
+            unitPriceEuro.HasValue ? Round(unitPriceEuro.Value) : null,
+            sourceRate);
+    }
+
+    private async Task<Dictionary<string, decimal>> LoadAllExchangeRateLookupAsync(long budgetPlanId)
+    {
+        var rates = await _unitOfWork.Db.BudgetPlanExchangeRates
+            .AsNoTracking()
+            .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
+            .ToListAsync();
+
+        return rates
+            .GroupBy(x => FishPriceExchangeRateKey(x.Year, x.Month, x.CurrencyCode), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                x => x.Key,
+                x => x.OrderByDescending(row => row.IsManualOverride).ThenByDescending(row => row.Id).First().ExchangeRate,
+                StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static decimal? ResolveExchangeRate(
+        IReadOnlyDictionary<string, decimal> exchangeRates,
+        int year,
+        int month,
+        string currencyCode)
+    {
+        var normalizedCurrency = NormalizeCurrencyCode(currencyCode, "EUR");
+        if (normalizedCurrency == "TRY")
+        {
+            return 1m;
+        }
+
+        return exchangeRates.TryGetValue(FishPriceExchangeRateKey(year, month, normalizedCurrency), out var rate)
+            ? rate
+            : null;
     }
 
     private async Task<Dictionary<string, decimal>> LoadFishPriceExchangeRateLookupAsync(
@@ -2520,6 +2725,46 @@ public class BudgetPlanningService : IBudgetPlanningService
         return month >= 1 && month <= 12;
     }
 
+    private static List<SalesAllocation> AllocateSales(
+        IReadOnlyCollection<BudgetPlanSalesLine> salesLines,
+        decimal actualSalesKg,
+        int actualSalesCount)
+    {
+        var orderedLines = salesLines.OrderBy(x => x.MarketType).ThenBy(x => x.Id).ToList();
+        foreach (var line in orderedLines)
+        {
+            line.SalesCount = 0;
+        }
+
+        var positiveLines = orderedLines.Where(x => x.SalesTon > 0m).ToList();
+        var requestedKg = positiveLines.Sum(x => x.SalesTon * 1000m);
+        if (positiveLines.Count == 0 || requestedKg <= 0m || actualSalesKg <= 0m)
+        {
+            return new List<SalesAllocation>();
+        }
+
+        var allocations = new List<SalesAllocation>(positiveLines.Count);
+        var remainingKg = actualSalesKg;
+        var remainingCount = actualSalesCount;
+        for (var index = 0; index < positiveLines.Count; index++)
+        {
+            var line = positiveLines[index];
+            var isLast = index == positiveLines.Count - 1;
+            var share = line.SalesTon * 1000m / requestedKg;
+            var allocatedKg = isLast ? remainingKg : Math.Min(remainingKg, Round(actualSalesKg * share));
+            var allocatedCount = isLast
+                ? remainingCount
+                : Math.Min(remainingCount, (int)Math.Round(actualSalesCount * share, MidpointRounding.AwayFromZero));
+
+            line.SalesCount = allocatedCount;
+            allocations.Add(new SalesAllocation(line, allocatedKg, allocatedCount));
+            remainingKg = Math.Max(0m, remainingKg - allocatedKg);
+            remainingCount = Math.Max(0, remainingCount - allocatedCount);
+        }
+
+        return allocations;
+    }
+
     private static decimal ParseDecimal(string value)
     {
         return decimal.Parse(value.Replace(',', '.'), global::System.Globalization.CultureInfo.InvariantCulture);
@@ -2542,10 +2787,19 @@ public class BudgetPlanningService : IBudgetPlanningService
 
     private static string NormalizeCurrencyCode(string? value)
     {
-        return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToUpperInvariant();
+        var normalized = string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim().ToUpperInvariant();
+        return normalized == "TL" ? "TRY" : normalized;
+    }
+
+    private static string NormalizeCurrencyCode(string? value, string fallback)
+    {
+        var normalized = NormalizeCurrencyCode(value);
+        return string.IsNullOrEmpty(normalized) ? fallback : normalized;
     }
 
     private sealed record BalanceSeed(FishBatch FishBatch, int LiveCount, decimal AverageGram, decimal BiomassGram, DateTime AsOfDate);
     private sealed record ShipmentSeed(long FishBatchId, int FishCount, decimal BiomassGram, DateTime AsOfDate);
     private sealed record BudgetPeriod(int Year, int Month);
+    private sealed record SalesAllocation(BudgetPlanSalesLine SalesLine, decimal SalesKg, int SalesCount);
+    private sealed record ResolvedSalesPrice(string CurrencyCode, decimal UnitPrice, decimal? UnitPriceEuro, decimal? ExchangeRate);
 }
