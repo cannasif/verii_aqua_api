@@ -347,6 +347,62 @@ public class BudgetPlanningService : IBudgetPlanningService
             .ToListAsync();
 #pragma warning restore CS8602
 
+        var fishBatchIds = cageBalances.Select(x => x.FishBatchId)
+            .Concat(warehouseBalances.Select(x => x.FishBatchId))
+            .Distinct()
+            .ToList();
+
+        // Older imported shipments can have posted lines without ledger movements. Reports
+        // compensate for those rows, so budget opening snapshots must do the same.
+        var postedShipmentRows = fishBatchIds.Count == 0
+            ? []
+            : await _unitOfWork.Db.ShipmentLines
+                .AsNoTracking()
+                .Where(x =>
+                    !x.IsDeleted &&
+                    fishBatchIds.Contains(x.FishBatchId) &&
+                    x.Shipment != null &&
+                    !x.Shipment.IsDeleted &&
+                    x.Shipment.Status == DocumentStatus.Posted)
+                .Select(x => new ShipmentSeed(
+                    x.FishBatchId,
+                    x.FishCount,
+                    x.BiomassGram,
+                    x.Shipment!.ShipmentDate))
+                .ToListAsync();
+        var postedShipmentTotals = postedShipmentRows
+            .GroupBy(x => x.FishBatchId)
+            .ToDictionary(
+                group => group.Key,
+                group => (
+                    FishCount: group.Sum(x => x.FishCount),
+                    BiomassGram: group.Sum(x => x.BiomassGram),
+                    AsOfDate: group.Max(x => x.AsOfDate)));
+
+        var representedShipmentRows = fishBatchIds.Count == 0
+            ? []
+            : await _unitOfWork.Db.BatchMovements
+                .AsNoTracking()
+                .Where(x =>
+                    !x.IsDeleted &&
+                    fishBatchIds.Contains(x.FishBatchId) &&
+                    x.MovementType == BatchMovementType.Shipment &&
+                    (x.SignedCount < 0 || x.SignedBiomassGram < 0m))
+                .Select(x => new ShipmentSeed(
+                    x.FishBatchId,
+                    x.SignedCount < 0 ? -x.SignedCount : 0,
+                    x.SignedBiomassGram < 0m ? -x.SignedBiomassGram : 0m,
+                    x.MovementDate))
+                .ToListAsync();
+        var representedShipmentTotals = representedShipmentRows
+            .GroupBy(x => x.FishBatchId)
+            .ToDictionary(
+                group => group.Key,
+                group => (
+                    FishCount: group.Sum(x => x.FishCount),
+                    BiomassGram: group.Sum(x => x.BiomassGram),
+                    AsOfDate: group.Max(x => x.AsOfDate)));
+
         var rows = cageBalances
             .Select(x => new BalanceSeed(x.FishBatch!, x.LiveCount, x.AverageGram, x.BiomassGram, x.AsOfDate))
             .Concat(warehouseBalances.Select(x => new BalanceSeed(x.FishBatch!, x.LiveCount, x.AverageGram, x.BiomassGram, x.AsOfDate)))
@@ -354,8 +410,16 @@ public class BudgetPlanningService : IBudgetPlanningService
             .Select(group =>
             {
                 var first = group.First().FishBatch;
-                var liveCount = group.Sum(x => x.LiveCount);
-                var biomassKg = group.Sum(x => x.BiomassGram > 0m ? x.BiomassGram : x.LiveCount * x.AverageGram) / 1000m;
+                var balanceLiveCount = group.Sum(x => x.LiveCount);
+                var balanceBiomassGram = group.Sum(x => x.BiomassGram > 0m ? x.BiomassGram : x.LiveCount * x.AverageGram);
+                postedShipmentTotals.TryGetValue(first.Id, out var postedShipment);
+                representedShipmentTotals.TryGetValue(first.Id, out var representedShipment);
+                var unrepresentedFishCount = Math.Max(0, postedShipment.FishCount - representedShipment.FishCount);
+                var unrepresentedBiomassGram = Math.Max(0m, postedShipment.BiomassGram - representedShipment.BiomassGram);
+                var liveCount = Math.Max(0, balanceLiveCount - unrepresentedFishCount);
+                var biomassKg = liveCount <= 0
+                    ? 0m
+                    : Math.Max(0m, balanceBiomassGram - unrepresentedBiomassGram) / 1000m;
                 var averageGram = liveCount <= 0 ? first.CurrentAverageGram : (biomassKg * 1000m) / liveCount;
                 return new BudgetAvailableFishBatchDto
                 {
@@ -370,7 +434,9 @@ public class BudgetPlanningService : IBudgetPlanningService
                     LiveCount = liveCount,
                     AverageGram = Round(averageGram),
                     BiomassKg = Round(biomassKg),
-                    AsOfDate = group.Max(x => x.AsOfDate)
+                    AsOfDate = postedShipment.AsOfDate > group.Max(x => x.AsOfDate)
+                        ? postedShipment.AsOfDate
+                        : group.Max(x => x.AsOfDate)
                 };
             })
             .Where(x => x.LiveCount > 0 && x.BiomassKg > 0)
@@ -2480,5 +2546,6 @@ public class BudgetPlanningService : IBudgetPlanningService
     }
 
     private sealed record BalanceSeed(FishBatch FishBatch, int LiveCount, decimal AverageGram, decimal BiomassGram, DateTime AsOfDate);
+    private sealed record ShipmentSeed(long FishBatchId, int FishCount, decimal BiomassGram, DateTime AsOfDate);
     private sealed record BudgetPeriod(int Year, int Month);
 }

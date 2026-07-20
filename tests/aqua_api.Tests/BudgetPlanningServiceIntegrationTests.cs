@@ -6,6 +6,7 @@ using aqua_api.Modules.BudgetPlanning.Domain.Entities;
 using aqua_api.Modules.BudgetPlanning.Application.Dtos;
 using aqua_api.Modules.BudgetPlanning.Application.Services;
 using aqua_api.Modules.BudgetKpi.Application.Services;
+using aqua_api.Modules.Aqua.Domain.Enums;
 using aqua_api.Modules.Stock.Domain.Entities;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 using aqua_api.Shared.Infrastructure.Persistence.UnitOfWork;
@@ -20,6 +21,106 @@ namespace aqua_api.Tests;
 
 public class BudgetPlanningServiceIntegrationTests
 {
+    [Fact]
+    public async Task AvailableFishBatches_SubtractsPostedShipmentsMissingFromLedger()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+
+        var stock = new Stock { ErpStockCode = "L001", StockName = "Levrek", Unit = "AD" };
+        var cage = new Cage { CageCode = "A1", CageName = "A1" };
+        var project = new Project
+        {
+            ProjectCode = "20240331ILKNAK",
+            ProjectName = "15. PROJE",
+            StartDate = new DateTime(2026, 1, 1),
+            Status = DocumentStatus.Posted
+        };
+        db.AddRange(stock, cage, project);
+        await db.SaveChangesAsync();
+
+        var projectCage = new ProjectCage
+        {
+            ProjectId = project.Id,
+            CageId = cage.Id,
+            AssignedDate = project.StartDate
+        };
+        var fishBatch = new FishBatch
+        {
+            ProjectId = project.Id,
+            FishStockId = stock.Id,
+            BatchCode = "BATCH-004",
+            CurrentAverageGram = 643.12m,
+            StartDate = project.StartDate
+        };
+        db.AddRange(projectCage, fishBatch);
+        await db.SaveChangesAsync();
+
+        var balance = new BatchCageBalance
+        {
+            FishBatchId = fishBatch.Id,
+            ProjectCageId = projectCage.Id,
+            LiveCount = 728_489,
+            AverageGram = 643.12m,
+            BiomassGram = 468_505_730m,
+            AsOfDate = new DateTime(2026, 3, 31)
+        };
+        db.BatchCageBalances.Add(balance);
+        var shipment = new Shipment
+        {
+            ProjectId = project.Id,
+            ShipmentNo = "LEGACY-SHIPMENT",
+            ShipmentDate = new DateTime(2026, 7, 20),
+            Status = DocumentStatus.Posted
+        };
+        db.Shipments.Add(shipment);
+        await db.SaveChangesAsync();
+        db.ShipmentLines.Add(new ShipmentLine
+        {
+            ShipmentId = shipment.Id,
+            FishBatchId = fishBatch.Id,
+            FromProjectCageId = projectCage.Id,
+            FishCount = 301_022,
+            AverageGram = 534.89m,
+            BiomassGram = 161_012_000m
+        });
+        await db.SaveChangesAsync();
+
+        var result = await fixture.Service.GetAvailableFishBatchesAsync();
+
+        Assert.True(result.Success, result.Message);
+        var row = Assert.Single(result.Data!);
+        Assert.Equal(427_467, row.LiveCount);
+        Assert.Equal(307_493.73m, row.BiomassKg);
+        Assert.Equal(719.339m, row.AverageGram);
+        Assert.Equal(new DateTime(2026, 7, 20), row.AsOfDate);
+
+        balance.LiveCount = 427_467;
+        balance.AverageGram = 719.339m;
+        balance.BiomassGram = 307_493_730m;
+        balance.AsOfDate = shipment.ShipmentDate;
+        db.BatchMovements.Add(new BatchMovement
+        {
+            FishBatchId = fishBatch.Id,
+            ProjectCageId = projectCage.Id,
+            FromProjectCageId = projectCage.Id,
+            MovementDate = shipment.ShipmentDate,
+            MovementType = BatchMovementType.Shipment,
+            SignedCount = -301_022,
+            SignedBiomassGram = -161_012_000m,
+            ReferenceTable = "RII_SHIPMENT",
+            ReferenceId = shipment.Id
+        });
+        await db.SaveChangesAsync();
+
+        var representedResult = await fixture.Service.GetAvailableFishBatchesAsync();
+
+        var representedRow = Assert.Single(representedResult.Data!);
+        Assert.Equal(427_467, representedRow.LiveCount);
+        Assert.Equal(307_493.73m, representedRow.BiomassKg);
+        Assert.Equal(719.339m, representedRow.AverageGram);
+    }
+
     [Fact]
     public async Task FishPrices_GenerateByEnteredMonthPeriod_AndKeepPriceDimensionsSeparate()
     {
