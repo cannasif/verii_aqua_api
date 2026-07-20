@@ -30,8 +30,28 @@ public class BudgetKpiService : IBudgetKpiService
 
         var rows = await _db.BudgetPlanMonthlyProjections
             .AsNoTracking()
+            .Include(x => x.BudgetPlanFishBatch)
+                .ThenInclude(x => x.BudgetPlanProject)
             .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
             .ToListAsync();
+
+        var salesLines = await _db.BudgetPlanSalesLines
+            .AsNoTracking()
+            .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
+            .ToListAsync();
+        var salesLineLookup = salesLines
+            .GroupBy(x => (x.BudgetPlanFishBatchId, x.Year, x.Month))
+            .ToDictionary(x => x.Key, x => x.OrderByDescending(row => row.Id).First());
+
+        var exchangeRates = await _db.BudgetPlanExchangeRates
+            .AsNoTracking()
+            .Where(x => x.BudgetPlanId == budgetPlanId && x.CurrencyCode == "EUR" && !x.IsDeleted)
+            .ToListAsync();
+        var exchangeRateLookup = exchangeRates
+            .GroupBy(x => (x.Year, x.Month))
+            .ToDictionary(
+                x => x.Key,
+                x => x.OrderByDescending(row => row.IsManualOverride).ThenByDescending(row => row.Id).First().ExchangeRate);
 
         var initial = plan.FishBatches.Where(x => !x.IsDeleted).Sum(x => x.InitialBiomassKg);
         var final = rows
@@ -51,29 +71,59 @@ public class BudgetKpiService : IBudgetKpiService
         var initialLiveCount = plan.FishBatches.Where(x => !x.IsDeleted).Sum(x => x.InitialLiveCount);
 
         var monthlyRows = rows
-            .GroupBy(x => new { x.Year, x.Month })
+            .GroupBy(x => new
+            {
+                x.Year,
+                x.Month,
+                x.BudgetPlanFishBatch.BudgetPlanProject.ProjectCode,
+                x.BudgetPlanFishBatch.BudgetPlanProject.ProjectName
+            })
             .OrderBy(x => x.Key.Year)
             .ThenBy(x => x.Key.Month)
+            .ThenBy(x => x.Key.ProjectCode)
             .Select(group =>
             {
                 var opening = group.Sum(x => x.OpeningBiomassKg);
                 var closing = group.Sum(x => x.ClosingBiomassKg);
                 var groupSales = group.Sum(x => x.SalesTon * 1000m);
+                var groupSalesCount = group.Sum(x => x.SalesCount);
+                var groupStockCount = group.Sum(x => x.ClosingLiveCount);
                 var groupFeed = group.Sum(x => x.FeedKg);
                 var groupMortality = group.Sum(x => x.MortalityKg);
                 var producedBiomassKg = Math.Max(0m, closing + groupSales + groupMortality);
+                var amountEuro = group.Sum(projection =>
+                    salesLineLookup.TryGetValue((projection.BudgetPlanFishBatchId, projection.Year, projection.Month), out var salesLine)
+                        ? projection.SalesTon * 1000m * (salesLine.UnitPrice ?? 0m)
+                        : 0m);
+                var averagePriceEuro = groupSales <= 0m ? 0m : amountEuro / groupSales;
+                var exchangeRate = exchangeRateLookup.GetValueOrDefault((group.Key.Year, group.Key.Month));
+                var hasExchangeRate = exchangeRate > 0m;
+                var amountTry = hasExchangeRate ? amountEuro * exchangeRate : (decimal?)null;
                 return new BudgetKpiMonthlyDto
                 {
                     Year = group.Key.Year,
                     Month = group.Key.Month,
+                    ProjectCode = group.Key.ProjectCode,
+                    ProjectName = group.Key.ProjectName,
                     OpeningBiomassKg = Round(opening),
                     ClosingBiomassKg = Round(closing),
                     GrowthBiomassKg = Round(producedBiomassKg),
                     ProducedBiomassKg = Round(producedBiomassKg),
+                    SalesCount = groupSalesCount,
                     SalesTon = Round(groupSales / 1000m),
+                    SalesKg = Round(groupSales),
+                    StockCount = groupStockCount,
+                    StockTon = Round(closing / 1000m),
+                    StockKg = Round(closing),
                     FeedKg = Round(groupFeed),
                     MortalityKg = Round(groupMortality),
                     MortalityCount = group.Sum(x => x.MortalityCount),
+                    UnitGram = groupStockCount <= 0 ? 0m : Round(closing * 1000m / groupStockCount),
+                    AveragePriceEuro = Round(averagePriceEuro),
+                    AmountEuro = Round(amountEuro),
+                    ExchangeRate = hasExchangeRate ? Round(exchangeRate) : null,
+                    AveragePriceTry = hasExchangeRate ? Round(averagePriceEuro * exchangeRate) : null,
+                    AmountTry = amountTry.HasValue ? Round(amountTry.Value) : null,
                     Fcr = producedBiomassKg <= 0 ? 0m : Round(groupFeed / producedBiomassKg)
                 };
             })

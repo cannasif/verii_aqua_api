@@ -537,6 +537,19 @@ public class BudgetPlanningServiceIntegrationTests
         var saved = await db.BudgetPlanSalesLines.SingleAsync(x => x.BudgetPlanId == plan.Id);
         Assert.Equal(0.05m, saved.SalesTon);
         Assert.Equal(455, saved.SalesCount);
+
+        saved.SalesCount = 999;
+        await db.SaveChangesAsync();
+
+        var calculation = await service.CalculateAsync(plan.Id);
+
+        Assert.True(calculation.Success, calculation.Message);
+        var recalculatedProjection = Assert.Single(calculation.Data!, x => x.Year == projection.Year && x.Month == projection.Month);
+        Assert.Equal(455, recalculatedProjection.SalesCount);
+        Assert.Equal(455, await db.BudgetPlanSalesLines
+            .Where(x => x.BudgetPlanId == plan.Id)
+            .Select(x => x.SalesCount)
+            .SingleAsync());
     }
 
     [Fact]
@@ -626,6 +639,85 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.Equal(0.25m, result.Data.Summary.Fcr);
         Assert.Equal(100m, result.Data.MonthlyRows.Single().ProducedBiomassKg);
         Assert.Equal(0.25m, result.Data.MonthlyRows.Single().Fcr);
+    }
+
+    [Fact]
+    public async Task KpiReport_ReturnsProjectSalesStockAndPricingDetails()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+
+        var fishStock = new Stock { ErpStockCode = "FISH-KPI-DETAIL", StockName = "Levrek", Unit = "AD" };
+        db.Stocks.Add(fishStock);
+        await db.SaveChangesAsync();
+
+        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.Calculated);
+        var batch = await db.BudgetPlanFishBatches.SingleAsync(x => x.BudgetPlanId == plan.Id);
+        var project = await db.BudgetPlanProjects.SingleAsync(x => x.BudgetPlanId == plan.Id);
+
+        db.BudgetPlanMonthlyProjections.Add(new BudgetPlanMonthlyProjection
+        {
+            BudgetPlanId = plan.Id,
+            BudgetPlanFishBatchId = batch.Id,
+            Year = 2026,
+            Month = 3,
+            MonthIndex = 1,
+            OpeningLiveCount = 435471,
+            OpeningAverageGram = 721m,
+            OpeningBiomassKg = 313974.591m,
+            ClosingAverageGram = 721m,
+            SalesTon = 5m,
+            SalesCount = 6935,
+            MortalityCount = 1069,
+            MortalityKg = 770.749m,
+            FeedKg = 12500m,
+            ClosingLiveCount = 427467,
+            ClosingBiomassKg = 308203.707m
+        });
+        db.BudgetPlanSalesLines.Add(new BudgetPlanSalesLine
+        {
+            BudgetPlanId = plan.Id,
+            BudgetPlanFishBatchId = batch.Id,
+            Year = 2026,
+            Month = 3,
+            SalesTon = 5m,
+            SalesCount = 6935,
+            UnitPrice = 6m
+        });
+        db.BudgetPlanExchangeRates.Add(new BudgetPlanExchangeRate
+        {
+            BudgetPlanId = plan.Id,
+            Year = 2026,
+            Month = 3,
+            CurrencyCode = "EUR",
+            RateType = "Budget",
+            ExchangeRate = 50m,
+            SourceType = "Manual",
+            IsManualOverride = true
+        });
+        await db.SaveChangesAsync();
+
+        var result = await fixture.KpiService.GetReportAsync(plan.Id);
+
+        Assert.True(result.Success, result.Message);
+        var row = Assert.Single(result.Data!.MonthlyRows);
+        Assert.Equal(project.ProjectCode, row.ProjectCode);
+        Assert.Equal(project.ProjectName, row.ProjectName);
+        Assert.Equal(6935, row.SalesCount);
+        Assert.Equal(5m, row.SalesTon);
+        Assert.Equal(5000m, row.SalesKg);
+        Assert.Equal(427467, row.StockCount);
+        Assert.Equal(308.204m, row.StockTon);
+        Assert.Equal(308203.707m, row.StockKg);
+        Assert.Equal(1069, row.MortalityCount);
+        Assert.Equal(770.749m, row.MortalityKg);
+        Assert.Equal(12500m, row.FeedKg);
+        Assert.Equal(721m, row.UnitGram);
+        Assert.Equal(6m, row.AveragePriceEuro);
+        Assert.Equal(30000m, row.AmountEuro);
+        Assert.Equal(50m, row.ExchangeRate);
+        Assert.Equal(300m, row.AveragePriceTry);
+        Assert.Equal(1500000m, row.AmountTry);
     }
 
     private static async Task<BudgetPlan> SeedBudgetPlanAsync(AquaDbContext db, long fishStockId, BudgetPlanStatus status)

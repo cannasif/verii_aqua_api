@@ -1333,13 +1333,15 @@ public class BudgetPlanningService : IBudgetPlanningService
                     var salesKg = includeSalesAndOperations
                         ? Math.Min(periodSales.Sum(x => x.SalesTon * 1000m), Round(liveCount * closingAverageBeforeLoss / 1000m))
                         : 0m;
-                    var salesCount = includeSalesAndOperations ? periodSales.Sum(x => x.SalesCount ?? 0) : 0;
-                    if (salesCount <= 0 && closingAverageBeforeLoss > 0)
-                    {
-                        salesCount = (int)Math.Round(salesKg * 1000m / closingAverageBeforeLoss, MidpointRounding.AwayFromZero);
-                    }
+                    var salesCount = includeSalesAndOperations && closingAverageBeforeLoss > 0
+                        ? (int)Math.Round(salesKg * 1000m / closingAverageBeforeLoss, MidpointRounding.AwayFromZero)
+                        : 0;
 
                     salesCount = Math.Min(salesCount, liveCount);
+                    if (periodSales.Count == 1)
+                    {
+                        periodSales[0].SalesCount = salesCount;
+                    }
                     var afterSalesLiveCount = Math.Max(0, liveCount - salesCount);
                     var calibration = FindCalibration(calibrations, closingAverageBeforeLoss);
                     var waterTemperature = FindWaterTemperature(waterTemperatures, period.Year, period.Month);
@@ -2036,11 +2038,9 @@ public class BudgetPlanningService : IBudgetPlanningService
                 var salesKg = includeSalesAndOperations
                     ? Math.Min(periodSales.Sum(x => x.SalesTon * 1000m), Round(liveCount * closingAverageBeforeLoss / 1000m))
                     : 0m;
-                var salesCount = includeSalesAndOperations ? periodSales.Sum(x => x.SalesCount ?? 0) : 0;
-                if (salesCount <= 0 && closingAverageBeforeLoss > 0)
-                {
-                    salesCount = (int)Math.Round(salesKg * 1000m / closingAverageBeforeLoss, MidpointRounding.AwayFromZero);
-                }
+                var salesCount = includeSalesAndOperations && closingAverageBeforeLoss > 0
+                    ? (int)Math.Round(salesKg * 1000m / closingAverageBeforeLoss, MidpointRounding.AwayFromZero)
+                    : 0;
 
                 salesCount = Math.Min(salesCount, liveCount);
                 var afterSalesLiveCount = Math.Max(0, liveCount - salesCount);
