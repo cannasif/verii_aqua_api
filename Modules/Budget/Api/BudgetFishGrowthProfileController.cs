@@ -44,6 +44,14 @@ namespace aqua_api.Modules.Budget.Api
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpPost("import")]
+        public async Task<ActionResult<ApiResponse<ImportBudgetFishGrowthProfilesResultDto>>> Import(
+            [FromBody] ImportBudgetFishGrowthProfilesDto dto)
+        {
+            var result = await _service.ImportAsync(dto);
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpDelete("{id:long}")]
         public async Task<ActionResult<ApiResponse<bool>>> Delete(long id)
         {

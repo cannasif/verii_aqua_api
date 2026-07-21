@@ -1487,7 +1487,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                     }
 
                     growthSnapshotLookup.TryGetValue((batch.Id, period.Year, period.Month), out var growthSnapshot);
-                    var monthIndex = growthSnapshot?.MonthIndex ?? ResolveGrowthMonthNo(batch, elapsedMonths);
+                    var monthIndex = growthSnapshot?.MonthIndex ?? ResolveGrowthMonthNo(elapsedMonths);
                     var openingBiomassKg = Round(liveCount * averageGram / 1000m);
                     var rawMonthlyGrowth = growthSnapshot?.RawMonthlyGrowthGram
                         ?? profile?.Lines.FirstOrDefault(x => x.GrowthMonthNo == monthIndex && !x.IsDeleted)?.MonthlyGrowthGram
@@ -2044,13 +2044,11 @@ public class BudgetPlanningService : IBudgetPlanningService
         return (year - startYear) * 12 + (month - startMonth);
     }
 
-    private static int ResolveGrowthMonthNo(BudgetPlanFishBatch batch, int elapsedMonths)
+    private static int ResolveGrowthMonthNo(int elapsedMonths)
     {
-        // An actual batch already carries its biomass at the budget opening. Continue
-        // with the completed biological month; virtual batches start at profile month 1.
-        return batch.SourceType == BudgetPlanSourceType.Actual && elapsedMonths > 0
-            ? elapsedMonths
-            : elapsedMonths + 1;
+        // Growth profiles are one-based: the receipt/start month is month 1.
+        // Therefore 20 completed calendar months means the batch is in growth month 21.
+        return elapsedMonths + 1;
     }
 
     private static decimal CeilingWholeGram(decimal value) => Math.Ceiling(value);
@@ -2281,7 +2279,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                     continue;
                 }
 
-                var monthIndex = growthSnapshot?.MonthIndex ?? ResolveGrowthMonthNo(batch, elapsedMonths);
+                var monthIndex = growthSnapshot?.MonthIndex ?? ResolveGrowthMonthNo(elapsedMonths);
                 var growthLine = profile?.Lines.FirstOrDefault(x => x.GrowthMonthNo == monthIndex && !x.IsDeleted);
                 if (!includeSalesAndOperations && growthLine == null)
                 {

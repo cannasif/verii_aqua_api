@@ -524,21 +524,21 @@ public class BudgetPlanningServiceIntegrationTests
         };
         var legacyGrowth = new Dictionary<int, decimal>
         {
-            [20] = 1m,
             [21] = 1m,
-            [22] = 26.71739848m,
-            [23] = 37.03358581m,
-            [24] = 52.49510788m,
-            [25] = 40.32874169m,
-            [26] = 49.20051241m,
-            [27] = 46.86437724m,
-            [28] = 41.33052886m,
-            [29] = 35.77846115m,
-            [30] = 1m,
+            [22] = 1m,
+            [23] = 26.71739848m,
+            [24] = 37.03358581m,
+            [25] = 52.49510788m,
+            [26] = 40.32874169m,
+            [27] = 49.20051241m,
+            [28] = 46.86437724m,
+            [29] = 41.33052886m,
+            [30] = 35.77846115m,
             [31] = 1m,
-            [32] = 1m
+            [32] = 1m,
+            [33] = 1m
         };
-        for (var month = 1; month <= 32; month++)
+        for (var month = 1; month <= 33; month++)
         {
             profile.Lines.Add(new BudgetFishGrowthProfileLine
             {
@@ -561,7 +561,7 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.Equal(
             new[] { 721m, 722m, 748.72m, 785.75m, 838.25m, 878.57m, 927.78m, 974.64m, 1015.97m, 1051.75m, 1052.75m, 1053.75m, 1054.75m },
             projections.Select(x => decimal.Round(x.ClosingAverageGram, 2, MidpointRounding.AwayFromZero)).ToArray());
-        Assert.Equal(20, projections[0].MonthIndex);
+        Assert.Equal(21, projections[0].MonthIndex);
         var normalizedBatch = await db.BudgetPlanFishBatches.SingleAsync();
         Assert.Equal(720m, normalizedBatch.InitialAverageGram);
         Assert.Equal(307_776.24m, normalizedBatch.InitialBiomassKg);

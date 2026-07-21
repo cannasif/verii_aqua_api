@@ -49,4 +49,23 @@ namespace aqua_api.Modules.Budget.Application.Dtos
         public int GrowthMonthNo { get; set; }
         public decimal MonthlyGrowthGram { get; set; }
     }
+
+    public class ImportBudgetFishGrowthProfilesDto
+    {
+        public List<ImportBudgetFishGrowthProfileRowDto> Rows { get; set; } = new();
+    }
+
+    public class ImportBudgetFishGrowthProfileRowDto
+    {
+        public string StockCode { get; set; } = string.Empty;
+        public int StartMonth { get; set; }
+        public int GrowthMonthNo { get; set; }
+        public decimal MonthlyGrowthGram { get; set; }
+    }
+
+    public class ImportBudgetFishGrowthProfilesResultDto
+    {
+        public int ProfileCount { get; set; }
+        public int RowCount { get; set; }
+    }
 }
