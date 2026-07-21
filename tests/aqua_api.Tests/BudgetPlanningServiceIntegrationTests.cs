@@ -478,8 +478,8 @@ public class BudgetPlanningServiceIntegrationTests
             InitialLiveCount = 427_467,
             InitialAverageGram = 719.339m,
             InitialBiomassKg = 307_493.73m,
-            GrowthStartYear = 2026,
-            GrowthStartMonth = 3
+            GrowthStartYear = 2024,
+            GrowthStartMonth = 7
         });
 
         var calibration = new BudgetCalibrationDefinition

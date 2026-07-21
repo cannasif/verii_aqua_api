@@ -507,6 +507,16 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<List<BudgetPlanFishBatchDto>>.ErrorResult("En az bir balik partisi secilmelidir.", "En az bir balik partisi secilmelidir.", StatusCodes.Status400BadRequest);
         }
 
+        if (dto.GrowthStartMonth.HasValue && (dto.GrowthStartMonth < 1 || dto.GrowthStartMonth > 12))
+        {
+            return ApiResponse<List<BudgetPlanFishBatchDto>>.ErrorResult("Buyume baslangic ayi 1 ile 12 arasinda olmalidir.", "Buyume baslangic ayi 1 ile 12 arasinda olmalidir.", StatusCodes.Status400BadRequest);
+        }
+
+        if (dto.GrowthStartYear.HasValue && dto.GrowthStartYear < 1900)
+        {
+            return ApiResponse<List<BudgetPlanFishBatchDto>>.ErrorResult("Buyume baslangic yili gecersizdir.", "Buyume baslangic yili gecersizdir.", StatusCodes.Status400BadRequest);
+        }
+
         var available = (await GetAvailableFishBatchesAsync()).Data?
             .Where(x => dto.FishBatchIds.Contains(x.FishBatchId))
             .ToList() ?? new List<BudgetAvailableFishBatchDto>();
@@ -536,8 +546,8 @@ public class BudgetPlanningService : IBudgetPlanningService
                     InitialLiveCount = source.LiveCount,
                     InitialAverageGram = initialAverageGram,
                     InitialBiomassKg = Round(source.LiveCount * initialAverageGram / 1000m),
-                    GrowthStartYear = source.GrowthStartYear,
-                    GrowthStartMonth = source.GrowthStartMonth
+                    GrowthStartYear = dto.GrowthStartYear ?? source.GrowthStartYear,
+                    GrowthStartMonth = dto.GrowthStartMonth ?? source.GrowthStartMonth
                 });
             }
 
@@ -1440,7 +1450,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                     var openingBiomassKg = Round(liveCount * averageGram / 1000m);
                     var rawMonthlyGrowth = profile?.Lines.FirstOrDefault(x => x.GrowthMonthNo == monthIndex && !x.IsDeleted)?.MonthlyGrowthGram ?? 0m;
                     var growthQualityPercent = FindGrowthQuality(growthQualities, batch.FishStockId, monthIndex)?.QualityPercent ?? 100m;
-                    var monthlyGrowth = Round(rawMonthlyGrowth * growthQualityPercent / 100m);
+                    var monthlyGrowth = RoundGrowthGram(rawMonthlyGrowth * growthQualityPercent / 100m);
                     var closingAverageBeforeLoss = averageGram + monthlyGrowth;
                     var periodSales = includeSalesAndOperations
                         ? sales.Where(x => x.BudgetPlanFishBatchId == batch.Id && x.Year == period.Year && x.Month == period.Month).ToList()
@@ -1455,7 +1465,11 @@ public class BudgetPlanningService : IBudgetPlanningService
                     salesCount = Math.Min(salesCount, liveCount);
                     var salesAllocations = AllocateSales(periodSales, salesKg, salesCount);
                     var afterSalesLiveCount = Math.Max(0, liveCount - salesCount);
-                    var calibration = FindCalibration(calibrations, closingAverageBeforeLoss);
+                    // Netsis calibration bands are defined in whole grams (for
+                    // example 1001-1051 and 1052-1161). Keep the calculated
+                    // decimal gram value intact, but classify the value using
+                    // its next whole gram so 1051.749 maps to the 1052 band.
+                    var calibration = FindCalibration(calibrations, CeilingWholeGram(closingAverageBeforeLoss));
                     var waterTemperature = FindWaterTemperature(waterTemperatures, period.Year, period.Month);
                     var mortalityRate = includeSalesAndOperations
                         ? FindMortalityRateDefinition(mortalityRates, batch.FishStockId, calibration?.Id, monthIndex)?.MortalityRatePercent ?? 0m
@@ -1484,12 +1498,12 @@ public class BudgetPlanningService : IBudgetPlanningService
                         Month = period.Month,
                         MonthIndex = monthIndex,
                         OpeningLiveCount = liveCount,
-                        OpeningAverageGram = Round(averageGram),
+                        OpeningAverageGram = RoundGrowthGram(averageGram),
                         OpeningBiomassKg = openingBiomassKg,
-                        RawMonthlyGrowthGram = Round(rawMonthlyGrowth),
+                        RawMonthlyGrowthGram = RoundGrowthGram(rawMonthlyGrowth),
                         GrowthQualityPercent = growthQualityPercent,
-                        MonthlyGrowthGram = Round(monthlyGrowth),
-                        ClosingAverageGram = Round(closingAverageBeforeLoss),
+                        MonthlyGrowthGram = RoundGrowthGram(monthlyGrowth),
+                        ClosingAverageGram = RoundGrowthGram(closingAverageBeforeLoss),
                         SalesTon = Round(salesKg / 1000m),
                         SalesCount = salesCount,
                         MortalityKg = mortalityKg,
@@ -1990,8 +2004,9 @@ public class BudgetPlanningService : IBudgetPlanningService
             return;
         }
 
-        batch.GrowthStartYear = batch.SourceFishBatch.StartDate.Year;
-        batch.GrowthStartMonth = batch.SourceFishBatch.StartDate.Month;
+        // GrowthStartYear/Month belongs to the budget scenario. It defaults to the
+        // source batch date during import, but must remain editable for scenarios
+        // that intentionally start from a different biological month.
         batch.InitialAverageGram = CeilingWholeGram(batch.InitialAverageGram);
         batch.InitialBiomassKg = Round(batch.InitialLiveCount * batch.InitialAverageGram / 1000m);
     }
@@ -2224,7 +2239,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                 }
 
                 var closingAverageBeforeLoss = averageGram + growthLine.MonthlyGrowthGram;
-                var calibration = FindCalibration(calibrations, closingAverageBeforeLoss);
+                var calibration = FindCalibration(calibrations, CeilingWholeGram(closingAverageBeforeLoss));
                 if (calibration == null)
                 {
                     errors.Add($"{DescribeBudgetBatch(batch)} icin {period.Year}/{period.Month:00} doneminde {Round(closingAverageBeforeLoss)} gr kalibrasyon tanimi yok.");
@@ -2893,6 +2908,11 @@ public class BudgetPlanningService : IBudgetPlanningService
     private static decimal Round(decimal value)
     {
         return Math.Round(value, 3, MidpointRounding.AwayFromZero);
+    }
+
+    private static decimal RoundGrowthGram(decimal value)
+    {
+        return Math.Round(value, 8, MidpointRounding.AwayFromZero);
     }
 
     private static string? NormalizeOptional(string? value)
