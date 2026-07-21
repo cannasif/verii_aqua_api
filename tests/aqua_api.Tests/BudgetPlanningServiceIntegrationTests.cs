@@ -334,6 +334,84 @@ public class BudgetPlanningServiceIntegrationTests
     }
 
     [Fact]
+    public async Task AddVirtualFishBatch_AllowsMultipleVirtualProjectsInSamePlan()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var service = fixture.Service;
+
+        var fishStock = new Stock { ErpStockCode = "FISH-MULTI-VIRTUAL", StockName = "Multi Virtual Fish", Unit = "AD" };
+        db.Stocks.Add(fishStock);
+        await db.SaveChangesAsync();
+        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.LiveImported);
+
+        foreach (var projectNo in new[] { 1, 2 })
+        {
+            var result = await service.AddVirtualFishBatchAsync(plan.Id, new AddVirtualFishBatchDto
+            {
+                ProjectCode = $"VIRTUAL-{projectNo}",
+                ProjectName = $"Virtual Project {projectNo}",
+                FishStockId = fishStock.Id,
+                BatchCode = $"VIRTUAL-BATCH-{projectNo}",
+                InitialLiveCount = 50_000 * projectNo,
+                InitialAverageGram = 100m,
+                GrowthStartYear = 2026,
+                GrowthStartMonth = projectNo
+            });
+
+            Assert.True(result.Success, result.Message);
+        }
+
+        Assert.Equal(3, await db.BudgetPlanProjects.CountAsync(x => x.BudgetPlanId == plan.Id));
+        Assert.Equal(3, await db.BudgetPlanFishBatches.CountAsync(x => x.BudgetPlanId == plan.Id));
+        Assert.Contains(await db.BudgetPlanProjects.Where(x => x.BudgetPlanId == plan.Id).ToListAsync(), x => x.ProjectCode == "VIRTUAL-1");
+        Assert.Contains(await db.BudgetPlanProjects.Where(x => x.BudgetPlanId == plan.Id).ToListAsync(), x => x.ProjectCode == "VIRTUAL-2");
+    }
+
+    [Fact]
+    public async Task CalculateGrowth_AppliesNovemberIncreaseToVirtualBatchStartingInJune()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var service = fixture.Service;
+
+        var fishStock = new Stock { ErpStockCode = "FISH-SCHEDULED", StockName = "Scheduled Budget Fish", Unit = "AD" };
+        var feedStock = new Stock { ErpStockCode = "FEED-SCHEDULED", StockName = "Scheduled Feed", Unit = "KG", GrupKodu = "YEM" };
+        db.Stocks.AddRange(fishStock, feedStock);
+        await db.SaveChangesAsync();
+        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.LiveImported);
+        plan.StartMonth = 6;
+        plan.EndMonth = 12;
+        await SeedCompleteBudgetDefinitionsAsync(db, fishStock.Id, feedStock.Id);
+        var batch = await db.BudgetPlanFishBatches.SingleAsync(x => x.BudgetPlanId == plan.Id);
+        Assert.Equal(BudgetPlanSourceType.Virtual, batch.SourceType);
+
+        var adjustmentResult = await service.CreateFishBatchAdjustmentAsync(plan.Id, new CreateBudgetPlanFishBatchAdjustmentDto
+        {
+            BudgetPlanFishBatchId = batch.Id,
+            AdjustmentType = BudgetPlanFishBatchAdjustmentType.Increase,
+            EffectiveYear = 2026,
+            EffectiveMonth = 11,
+            LiveCount = 50_000,
+            Description = "November planned intake"
+        });
+
+        Assert.True(adjustmentResult.Success, adjustmentResult.Message);
+        var unchangedVirtualBatch = await db.BudgetPlanFishBatches.SingleAsync(x => x.Id == batch.Id);
+        Assert.Equal(1000, unchangedVirtualBatch.InitialLiveCount);
+        Assert.Equal(100m, unchangedVirtualBatch.InitialAverageGram);
+
+        var result = await service.CalculateGrowthAsync(plan.Id);
+
+        Assert.True(result.Success, result.Message);
+        Assert.NotNull(result.Data);
+        Assert.Equal(7, result.Data!.Count);
+        Assert.All(result.Data.Where(x => x.Month < 11), x => Assert.Equal(1000, x.OpeningLiveCount));
+        Assert.Equal(51_000, result.Data.Single(x => x.Month == 11).OpeningLiveCount);
+        Assert.Equal(51_000, result.Data.Single(x => x.Month == 12).OpeningLiveCount);
+    }
+
+    [Fact]
     public async Task CalculateGrowth_ActualBatchContinuesBiologicalProfileAndKpiUsesPreMovementStock()
     {
         await using var fixture = await CreateFixtureAsync();

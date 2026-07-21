@@ -15,6 +15,8 @@ public class BudgetPlanFishBatchAdjustmentConfiguration : BaseEntityConfiguratio
         });
 
         builder.Property(x => x.AdjustmentType).HasConversion<byte>().IsRequired();
+        builder.Property(x => x.EffectiveYear);
+        builder.Property(x => x.EffectiveMonth);
         builder.Property(x => x.Description).HasMaxLength(500);
 
         builder.HasOne(x => x.BudgetPlan)
@@ -29,6 +31,11 @@ public class BudgetPlanFishBatchAdjustmentConfiguration : BaseEntityConfiguratio
 
         builder.HasIndex(x => new { x.BudgetPlanId, x.BudgetPlanFishBatchId, x.Id })
             .HasDatabaseName("IX_RII_BUDGET_PLAN_FISH_BATCH_ADJUSTMENT_BATCH");
+
+        builder.HasIndex(x => new { x.BudgetPlanFishBatchId, x.EffectiveYear, x.EffectiveMonth })
+            .HasDatabaseName("IX_RII_BUDGET_PLAN_FISH_BATCH_ADJUSTMENT_PERIOD");
+
+        builder.HasIndex(x => x.BudgetPlanFishBatchId);
 
         builder.HasQueryFilter(x => !x.IsDeleted);
     }

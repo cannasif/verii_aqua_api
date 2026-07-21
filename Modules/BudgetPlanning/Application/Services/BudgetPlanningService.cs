@@ -195,6 +195,8 @@ public class BudgetPlanningService : IBudgetPlanningService
                     BudgetPlanId = target.Id,
                     BudgetPlanFishBatchId = batchIdMap[adjustment.BudgetPlanFishBatchId],
                     AdjustmentType = adjustment.AdjustmentType,
+                    EffectiveYear = adjustment.EffectiveYear,
+                    EffectiveMonth = adjustment.EffectiveMonth,
                     LiveCount = adjustment.LiveCount,
                     AverageGram = adjustment.AverageGram,
                     BiomassKg = adjustment.BiomassKg,
@@ -639,6 +641,17 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<BudgetPlanFishBatchAdjustmentDto>.ErrorResult("Miktar sifirdan buyuk olmalidir.", "Miktar sifirdan buyuk olmalidir.", StatusCodes.Status400BadRequest);
         }
 
+        var hasEffectiveYear = dto.EffectiveYear.HasValue;
+        var hasEffectiveMonth = dto.EffectiveMonth.HasValue;
+        if (hasEffectiveYear != hasEffectiveMonth ||
+            (hasEffectiveYear && !IsPeriodWithinPlan(plan, dto.EffectiveYear!.Value, dto.EffectiveMonth!.Value)))
+        {
+            return ApiResponse<BudgetPlanFishBatchAdjustmentDto>.ErrorResult(
+                "Miktar hareketi donemi butce donemi icinde ve yil/ay birlikte girilmelidir.",
+                "Miktar hareketi donemi butce donemi icinde ve yil/ay birlikte girilmelidir.",
+                StatusCodes.Status400BadRequest);
+        }
+
         var batch = await _unitOfWork.Db.BudgetPlanFishBatches
             .Include(x => x.BudgetPlanProject)
             .Include(x => x.FishStock)
@@ -648,7 +661,16 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<BudgetPlanFishBatchAdjustmentDto>.ErrorResult("Butce balik satiri bulunamadi.", "Butce balik satiri bulunamadi.", StatusCodes.Status404NotFound);
         }
 
-        var averageGram = dto.AverageGram ?? batch.InitialAverageGram;
+        if (hasEffectiveYear && MonthsBetween(batch.GrowthStartYear, batch.GrowthStartMonth, dto.EffectiveYear!.Value, dto.EffectiveMonth!.Value) < 0)
+        {
+            return ApiResponse<BudgetPlanFishBatchAdjustmentDto>.ErrorResult(
+                "Miktar hareketi baligin butceye giris doneminden once olamaz.",
+                "Miktar hareketi baligin butceye giris doneminden once olamaz.",
+                StatusCodes.Status400BadRequest);
+        }
+
+        var isScheduled = hasEffectiveYear;
+        var averageGram = dto.AverageGram ?? (isScheduled ? 0m : batch.InitialAverageGram);
         if (averageGram < 0)
         {
             return ApiResponse<BudgetPlanFishBatchAdjustmentDto>.ErrorResult("Ortalama gram negatif olamaz.", "Ortalama gram negatif olamaz.", StatusCodes.Status400BadRequest);
@@ -656,22 +678,27 @@ public class BudgetPlanningService : IBudgetPlanningService
 
         var sign = dto.AdjustmentType == BudgetPlanFishBatchAdjustmentType.Increase ? 1 : -1;
         var newLiveCount = batch.InitialLiveCount + sign * dto.LiveCount;
-        if (newLiveCount < 0)
+        if (!isScheduled && newLiveCount < 0)
         {
             return ApiResponse<BudgetPlanFishBatchAdjustmentDto>.ErrorResult("Cikis miktari mevcut adetten fazla olamaz.", "Cikis miktari mevcut adetten fazla olamaz.", StatusCodes.Status400BadRequest);
         }
 
         var adjustmentBiomassKg = Round(dto.LiveCount * averageGram / 1000m);
-        var newBiomassKg = Math.Max(0m, Round(batch.InitialBiomassKg + sign * adjustmentBiomassKg));
-        batch.InitialLiveCount = newLiveCount;
-        batch.InitialBiomassKg = newBiomassKg;
-        batch.InitialAverageGram = newLiveCount <= 0 ? 0m : Round(newBiomassKg * 1000m / newLiveCount);
+        if (!isScheduled)
+        {
+            var newBiomassKg = Math.Max(0m, Round(batch.InitialBiomassKg + sign * adjustmentBiomassKg));
+            batch.InitialLiveCount = newLiveCount;
+            batch.InitialBiomassKg = newBiomassKg;
+            batch.InitialAverageGram = newLiveCount <= 0 ? 0m : Round(newBiomassKg * 1000m / newLiveCount);
+        }
 
         var entity = new BudgetPlanFishBatchAdjustment
         {
             BudgetPlanId = budgetPlanId,
             BudgetPlanFishBatchId = batch.Id,
             AdjustmentType = dto.AdjustmentType,
+            EffectiveYear = dto.EffectiveYear,
+            EffectiveMonth = dto.EffectiveMonth,
             LiveCount = dto.LiveCount,
             AverageGram = averageGram,
             BiomassKg = adjustmentBiomassKg,
@@ -679,7 +706,10 @@ public class BudgetPlanningService : IBudgetPlanningService
         };
 
         await _unitOfWork.Repository<BudgetPlanFishBatchAdjustment>().AddAsync(entity);
-        await _unitOfWork.Repository<BudgetPlanFishBatch>().UpdateAsync(batch);
+        if (!isScheduled)
+        {
+            await _unitOfWork.Repository<BudgetPlanFishBatch>().UpdateAsync(batch);
+        }
         plan.Status = BudgetPlanStatus.Adjusted;
         await _unitOfWork.Repository<BudgetPlan>().UpdateAsync(plan);
         await _unitOfWork.SaveChangesAsync();
@@ -870,7 +900,6 @@ public class BudgetPlanningService : IBudgetPlanningService
             .AsNoTracking()
             .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
             .ToListAsync();
-
         var rows = await ProjectionQuery()
             .Where(x => x.BudgetPlanId == budgetPlanId)
             .OrderBy(x => x.Year)
@@ -1305,6 +1334,10 @@ public class BudgetPlanningService : IBudgetPlanningService
         var sales = await _unitOfWork.Db.BudgetPlanSalesLines
             .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
             .ToListAsync();
+        var scheduledAdjustments = await _unitOfWork.Db.BudgetPlanFishBatchAdjustments
+            .Where(x => x.BudgetPlanId == budgetPlanId && x.EffectiveYear.HasValue && x.EffectiveMonth.HasValue && !x.IsDeleted)
+            .OrderBy(x => x.Id)
+            .ToListAsync();
 
         if (includeSalesAndOperations && plan.Status < BudgetPlanStatus.SalesPlanned)
         {
@@ -1350,6 +1383,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             calibrations,
             feedRates,
             mortalityRates,
+            scheduledAdjustments,
             includeSalesAndOperations);
         if (!definitionValidation.Success)
         {
@@ -1380,6 +1414,26 @@ public class BudgetPlanningService : IBudgetPlanningService
                     if (elapsedMonths < 0)
                     {
                         continue;
+                    }
+
+                    var periodAdjustments = scheduledAdjustments.Where(x =>
+                        x.BudgetPlanFishBatchId == batch.Id &&
+                        x.EffectiveYear == period.Year &&
+                        x.EffectiveMonth == period.Month);
+                    foreach (var adjustment in periodAdjustments)
+                    {
+                        if (adjustment.AdjustmentType == BudgetPlanFishBatchAdjustmentType.Increase)
+                        {
+                            var incomingAverageGram = adjustment.AverageGram > 0m ? adjustment.AverageGram : averageGram;
+                            var currentBiomassKg = liveCount * averageGram / 1000m;
+                            var incomingBiomassKg = adjustment.LiveCount * incomingAverageGram / 1000m;
+                            liveCount += adjustment.LiveCount;
+                            averageGram = liveCount <= 0 ? 0m : Round((currentBiomassKg + incomingBiomassKg) * 1000m / liveCount);
+                        }
+                        else
+                        {
+                            liveCount = Math.Max(0, liveCount - adjustment.LiveCount);
+                        }
                     }
 
                     var monthIndex = ResolveGrowthMonthNo(batch, elapsedMonths);
@@ -2111,6 +2165,7 @@ public class BudgetPlanningService : IBudgetPlanningService
         List<BudgetCalibrationDefinition> calibrations,
         List<BudgetFeedConsumptionRate> feedRates,
         List<BudgetMortalityRateDefinition> mortalityRates,
+        List<BudgetPlanFishBatchAdjustment> scheduledAdjustments,
         bool includeSalesAndOperations)
     {
         var errors = new List<string>();
@@ -2133,6 +2188,31 @@ public class BudgetPlanningService : IBudgetPlanningService
                 if (elapsedMonths < 0)
                 {
                     continue;
+                }
+
+                var periodAdjustments = scheduledAdjustments.Where(x =>
+                    x.BudgetPlanFishBatchId == batch.Id &&
+                    x.EffectiveYear == period.Year &&
+                    x.EffectiveMonth == period.Month);
+                foreach (var adjustment in periodAdjustments)
+                {
+                    if (adjustment.AdjustmentType == BudgetPlanFishBatchAdjustmentType.Increase)
+                    {
+                        var incomingAverageGram = adjustment.AverageGram > 0m ? adjustment.AverageGram : averageGram;
+                        var currentBiomassKg = liveCount * averageGram / 1000m;
+                        var incomingBiomassKg = adjustment.LiveCount * incomingAverageGram / 1000m;
+                        liveCount += adjustment.LiveCount;
+                        averageGram = liveCount <= 0 ? 0m : Round((currentBiomassKg + incomingBiomassKg) * 1000m / liveCount);
+                    }
+                    else if (adjustment.LiveCount > liveCount)
+                    {
+                        errors.Add($"{DescribeBudgetBatch(batch)} icin {period.Year}/{period.Month:00} donemi cikisi mevcut adetten fazladir.");
+                        liveCount = 0;
+                    }
+                    else
+                    {
+                        liveCount -= adjustment.LiveCount;
+                    }
                 }
 
                 var monthIndex = ResolveGrowthMonthNo(batch, elapsedMonths);
@@ -2376,6 +2456,8 @@ public class BudgetPlanningService : IBudgetPlanningService
             Id = entity.Id,
             BudgetPlanFishBatchId = entity.BudgetPlanFishBatchId,
             AdjustmentType = entity.AdjustmentType,
+            EffectiveYear = entity.EffectiveYear,
+            EffectiveMonth = entity.EffectiveMonth,
             LiveCount = entity.LiveCount,
             AverageGram = entity.AverageGram,
             BiomassKg = entity.BiomassKg,

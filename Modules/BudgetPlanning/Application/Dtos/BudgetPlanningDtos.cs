@@ -83,6 +83,8 @@ public class CreateBudgetPlanFishBatchAdjustmentDto
 {
     public long BudgetPlanFishBatchId { get; set; }
     public BudgetPlanFishBatchAdjustmentType AdjustmentType { get; set; }
+    public int? EffectiveYear { get; set; }
+    public int? EffectiveMonth { get; set; }
     public int LiveCount { get; set; }
     public decimal? AverageGram { get; set; }
     public string? Description { get; set; }

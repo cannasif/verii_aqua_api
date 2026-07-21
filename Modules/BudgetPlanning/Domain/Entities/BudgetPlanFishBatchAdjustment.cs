@@ -7,6 +7,8 @@ public class BudgetPlanFishBatchAdjustment : BaseEntity
     public long BudgetPlanId { get; set; }
     public long BudgetPlanFishBatchId { get; set; }
     public BudgetPlanFishBatchAdjustmentType AdjustmentType { get; set; }
+    public int? EffectiveYear { get; set; }
+    public int? EffectiveMonth { get; set; }
     public int LiveCount { get; set; }
     public decimal AverageGram { get; set; }
     public decimal BiomassKg { get; set; }
