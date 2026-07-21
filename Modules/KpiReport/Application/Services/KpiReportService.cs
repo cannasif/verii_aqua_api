@@ -1658,6 +1658,31 @@ public class KpiReportService : IKpiReportService
             }
         }
 
+        var growthByCageDate = new Dictionary<long, Dictionary<string, int>>();
+        var growthDetailsByCageDate = new Dictionary<long, Dictionary<string, List<string>>>();
+        foreach (var movement in batchMovements.Where(x => x.MovementType == BatchMovementType.FishGrowth))
+        {
+            if (!movement.ProjectCageId.HasValue || !reportCageIdSet.Contains(movement.ProjectCageId.Value)) continue;
+
+            var cageId = movement.ProjectCageId.Value;
+            var date = DateKey(movement.MovementDate);
+            var cageLabel = cageLabelById.GetValueOrDefault(cageId, cageId.ToString());
+            var batchLabel = fishBatchLabelById.GetValueOrDefault(movement.FishBatchId, movement.FishBatchId.ToString());
+            var fromAverageGram = movement.FromAverageGram ?? 0m;
+            var toAverageGram = movement.ToAverageGram ?? fromAverageGram;
+            var growthGram = Round(toAverageGram - fromAverageGram);
+            var detail = JoinDetail(
+                $"#{movement.ReferenceId}",
+                cageLabel,
+                batchLabel,
+                Detail("Average", $"{Round(fromAverageGram)}g + {growthGram}g = {Round(toAverageGram)}g"),
+                Detail("Biomass", $"+{Round(Math.Max(0m, movement.SignedBiomassGram))}g"),
+                movement.Note);
+
+            AddValue(growthByCageDate, cageId, date, 1);
+            AppendDetail(growthDetailsByCageDate, cageId, date, detail);
+        }
+
         var today = DateTimeProvider.Now.Date;
         var cages = reportProjectCages
             .OrderBy(x => CageLabel(x))
@@ -1678,6 +1703,7 @@ public class KpiReportService : IKpiReportService
                         .Concat(shipmentByCageDate.GetValueOrDefault(cageId)?.Keys ?? Enumerable.Empty<string>())
                         .Concat(weighingByCageDate.GetValueOrDefault(cageId)?.Keys ?? Enumerable.Empty<string>())
                         .Concat(convertByCageDate.GetValueOrDefault(cageId)?.Keys ?? Enumerable.Empty<string>())
+                        .Concat(growthByCageDate.GetValueOrDefault(cageId)?.Keys ?? Enumerable.Empty<string>())
                         .Concat(weatherByDate.Keys));
 
                 var dailyRows = activityDates
@@ -1700,6 +1726,8 @@ public class KpiReportService : IKpiReportService
                         WeighingDetails = weighingDetailsByCageDate.GetValueOrDefault(cageId)?.GetValueOrDefault(date) ?? new List<string>(),
                         StockConvertCount = convertByCageDate.GetValueOrDefault(cageId)?.GetValueOrDefault(date) ?? 0,
                         StockConvertDetails = convertDetailsByCageDate.GetValueOrDefault(cageId)?.GetValueOrDefault(date) ?? new List<string>(),
+                        FishGrowthCount = growthByCageDate.GetValueOrDefault(cageId)?.GetValueOrDefault(date) ?? 0,
+                        FishGrowthDetails = growthDetailsByCageDate.GetValueOrDefault(cageId)?.GetValueOrDefault(date) ?? new List<string>(),
                         ShipmentCount = shipmentByCageDate.GetValueOrDefault(cageId)?.GetValueOrDefault(date) ?? 0,
                         ShipmentDetails = shipmentDetailsByCageDate.GetValueOrDefault(cageId)?.GetValueOrDefault(date) ?? new List<string>(),
                         ShipmentFishCount = shipmentFishByCageDate.GetValueOrDefault(cageId)?.GetValueOrDefault(date) ?? 0,

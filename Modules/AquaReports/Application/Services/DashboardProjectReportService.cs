@@ -662,6 +662,33 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 }
             }
 
+            var growthByCageDate = new Dictionary<long, Dictionary<string, int>>();
+            var growthDetailsByCageDate = new Dictionary<long, Dictionary<string, List<string>>>();
+            foreach (var movement in batchMovements.Where(x => x.MovementType == BatchMovementType.FishGrowth))
+            {
+                if (!movement.ProjectCageId.HasValue || !reportCageIdSet.Contains(movement.ProjectCageId.Value)) continue;
+
+                var cageId = movement.ProjectCageId.Value;
+                var date = ToDateOnly(movement.MovementDate);
+                var cageLabel = cageLabelById.GetValueOrDefault(cageId, cageId.ToString());
+                var batchLabel = fishBatchLabelById.GetValueOrDefault(movement.FishBatchId, movement.FishBatchId.ToString());
+                var fromAverageGram = movement.FromAverageGram ?? 0m;
+                var toAverageGram = movement.ToAverageGram ?? fromAverageGram;
+                var growthGram = RoundGram(toAverageGram - fromAverageGram);
+                var detail = JoinDetail(new List<string?>
+                {
+                    $"#{movement.ReferenceId}",
+                    cageLabel,
+                    batchLabel,
+                    $"avg:{fromAverageGram}g + {growthGram}g = {toAverageGram}g",
+                    $"increase:{Math.Max(0m, movement.SignedBiomassGram)}g",
+                    movement.Note
+                });
+
+                AddByDate(growthByCageDate, cageId, date, 1);
+                AppendDetail(growthDetailsByCageDate, cageId, date, detail);
+            }
+
             var movementCountDeltaByCageDate = new Dictionary<long, Dictionary<string, int>>();
             var movementBiomassDeltaByCageDate = new Dictionary<long, Dictionary<string, decimal>>();
             foreach (var row in batchMovements)
@@ -699,6 +726,8 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 var weighingDetailsByDate = weighingDetailsByCageDate.GetValueOrDefault(cageId) ?? new Dictionary<string, List<string>>();
                 var convertByDate = convertByCageDate.GetValueOrDefault(cageId) ?? new Dictionary<string, int>();
                 var convertDetailsByDate = convertDetailsByCageDate.GetValueOrDefault(cageId) ?? new Dictionary<string, List<string>>();
+                var growthByDate = growthByCageDate.GetValueOrDefault(cageId) ?? new Dictionary<string, int>();
+                var growthDetailsByDate = growthDetailsByCageDate.GetValueOrDefault(cageId) ?? new Dictionary<string, List<string>>();
 
                 var activityDates = new HashSet<string>(
                     feedByDate.Keys
@@ -710,6 +739,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                         .Concat(shipmentByDate.Keys)
                         .Concat(weighingByDate.Keys)
                         .Concat(convertByDate.Keys)
+                        .Concat(growthByDate.Keys)
                         .Concat(weatherByDate.Keys));
 
                 var dailyRows = activityDates
@@ -736,6 +766,8 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                         WeighingDetails = weighingDetailsByDate.GetValueOrDefault(date) ?? new List<string>(),
                         StockConvertCount = convertByDate.GetValueOrDefault(date),
                         StockConvertDetails = convertDetailsByDate.GetValueOrDefault(date) ?? new List<string>(),
+                        FishGrowthCount = growthByDate.GetValueOrDefault(date),
+                        FishGrowthDetails = growthDetailsByDate.GetValueOrDefault(date) ?? new List<string>(),
                         Fed = feedByDate.GetValueOrDefault(date) > 0
                     })
                     .OrderByDescending(x => x.Date)
@@ -930,6 +962,8 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     WeighingDetails = row.WeighingDetails,
                     StockConvertCount = row.StockConvertCount,
                     StockConvertDetails = row.StockConvertDetails,
+                    FishGrowthCount = row.FishGrowthCount,
+                    FishGrowthDetails = row.FishGrowthDetails,
                     ShipmentCount = row.ShipmentCount,
                     ShipmentDetails = row.ShipmentDetails,
                     ShipmentFishCount = row.ShipmentFishCount,
@@ -953,6 +987,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 || row.TransferCount > 0
                 || row.WeighingCount > 0
                 || row.StockConvertCount > 0
+                || row.FishGrowthCount > 0
                 || row.ShipmentCount > 0
                 || row.ShipmentFishCount > 0
                 || row.ShipmentBiomassGram > 0;
@@ -1114,6 +1149,8 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             public List<string> WeighingDetails { get; init; } = new();
             public int StockConvertCount { get; init; }
             public List<string> StockConvertDetails { get; init; } = new();
+            public int FishGrowthCount { get; init; }
+            public List<string> FishGrowthDetails { get; init; } = new();
             public int ShipmentCount { get; init; }
             public List<string> ShipmentDetails { get; init; } = new();
             public int ShipmentFishCount { get; init; }

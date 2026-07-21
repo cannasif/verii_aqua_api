@@ -388,6 +388,8 @@ public class ProjectDetailCageDailyRowDto
     public List<string> WeighingDetails { get; set; } = new();
     public int StockConvertCount { get; set; }
     public List<string> StockConvertDetails { get; set; } = new();
+    public int FishGrowthCount { get; set; }
+    public List<string> FishGrowthDetails { get; set; } = new();
     public int ShipmentCount { get; set; }
     public List<string> ShipmentDetails { get; set; } = new();
     public int ShipmentFishCount { get; set; }

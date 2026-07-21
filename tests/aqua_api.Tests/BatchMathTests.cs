@@ -9,6 +9,7 @@ public class BatchMathTests
     [InlineData(50.000, 0.500, 50.500)]
     [InlineData(1.234, 6.000, 7.234)]
     [InlineData(0.500, 0.001, 0.501)]
+    [InlineData(720.000, 120.000, 840.000)]
     public void CalculateIncrementedAverageGram_ReturnsExpected(decimal currentAverageGram, decimal gramIncrement, decimal expected)
     {
         var result = BatchMath.CalculateIncrementedAverageGram(currentAverageGram, gramIncrement);

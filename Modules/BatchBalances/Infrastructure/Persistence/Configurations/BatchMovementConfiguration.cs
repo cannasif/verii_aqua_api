@@ -9,7 +9,7 @@ namespace aqua_api.Modules.BatchBalances.Infrastructure.Persistence.Configuratio
         {
             builder.ToTable("RII_BATCH_MOVEMENT", table =>
             {
-                table.HasCheckConstraint("CK_RII_BATCH_MOVEMENT_MOVEMENT_TYPE", "[MovementType] IN (0,1,2,3,4,5,6,7,8,9)");
+                table.HasCheckConstraint("CK_RII_BATCH_MOVEMENT_MOVEMENT_TYPE", "[MovementType] IN (0,1,2,3,4,5,6,7,8,9,10)");
             });
             builder.Property(x => x.MovementDate).HasPrecision(3).IsRequired();
             builder.Property(x => x.MovementType).HasConversion<byte>().IsRequired();

@@ -72,6 +72,7 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         public DbSet<WeighingLine> WeighingLines { get; set; }
         public DbSet<StockConvert> StockConverts { get; set; }
         public DbSet<StockConvertLine> StockConvertLines { get; set; }
+        public DbSet<FishGrowth> FishGrowths { get; set; }
         public DbSet<BatchMovement> BatchMovements { get; set; }
         public DbSet<WeatherSeverity> WeatherSeverities { get; set; }
         public DbSet<WeatherType> WeatherTypes { get; set; }

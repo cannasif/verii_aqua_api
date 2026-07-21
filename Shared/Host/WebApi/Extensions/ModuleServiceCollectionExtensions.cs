@@ -10,6 +10,7 @@ using aqua_api.Modules.CurrentDirection.DependencyInjection;
 using aqua_api.Modules.DailyWeathers.DependencyInjection;
 using aqua_api.Modules.Feedings.DependencyInjection;
 using aqua_api.Modules.FishBatches.DependencyInjection;
+using aqua_api.Modules.FishGrowths.DependencyInjection;
 using aqua_api.Modules.GoodsReceipts.DependencyInjection;
 using aqua_api.Modules.Identity.DependencyInjection;
 using aqua_api.Modules.Integrations.DependencyInjection;
@@ -47,6 +48,7 @@ public static class ModuleServiceCollectionExtensions
         services.AddProjectModule();
         services.AddCageModule();
         services.AddFishBatchModule();
+        services.AddFishGrowthsModule();
         services.AddWeatherModule();
         services.AddDailyWeathersModule();
         services.AddFeedingsModule();

@@ -24,7 +24,8 @@ namespace aqua_api.Modules.Aqua.Domain.Enums
         Shipment = 6,
         Feeding = 7,
         WarehouseTransfer = 8,
-        OpeningImport = 9
+        OpeningImport = 9,
+        FishGrowth = 10
     }
 
     public enum FeedingSlot : byte

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+  <resheader name="reader"><value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <resheader name="writer"><value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value></resheader>
+  <data name="FishGrowthService.Listed" xml:space="preserve"><value>Balık büyütme kayıtları listelendi.</value></data>
+  <data name="FishGrowthService.ListFailed" xml:space="preserve"><value>Balık büyütme kayıtları getirilemedi.</value></data>
+  <data name="FishGrowthService.Created" xml:space="preserve"><value>Balık büyütme kaydı başarıyla oluşturuldu.</value></data>
+  <data name="FishGrowthService.CreateFailed" xml:space="preserve"><value>Balık büyütme kaydı oluşturulamadı.</value></data>
+  <data name="FishGrowthService.BusinessRuleError" xml:space="preserve"><value>Balık büyütme işlemi iş kuralına uymuyor.</value></data>
+  <data name="FishGrowthService.GrowthMustBePositive" xml:space="preserve"><value>Gramaj artışı sıfırdan büyük olmalıdır.</value></data>
+  <data name="FishGrowthService.ProjectCageNotFound" xml:space="preserve"><value>Seçilen projeye ait kafes kaydı bulunamadı.</value></data>
+  <data name="FishGrowthService.FishBatchNotFound" xml:space="preserve"><value>Seçilen projeye ait balık partisi bulunamadı.</value></data>
+  <data name="FishGrowthService.ActiveBalanceNotFound" xml:space="preserve"><value>Seçilen kafes ve balık partisi için canlı bakiye bulunamadı.</value></data>
+  <data name="FishGrowthService.MonthlyGrowthAlreadyExists" xml:space="preserve"><value>Bu kafes ve balık partisi için seçilen ayda büyütme kaydı zaten bulunmaktadır.</value></data>
+</root>
