@@ -11,9 +11,20 @@ namespace aqua_api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropCheckConstraint(
-                name: "CK_RII_BATCH_MOVEMENT_MOVEMENT_TYPE",
-                table: "RII_BATCH_MOVEMENT");
+            // Existing customer databases may already have a different movement
+            // constraint name (or no constraint at all). Drop only the exact
+            // constraint when it exists so the pending migration remains safe.
+            migrationBuilder.Sql(@"
+IF EXISTS (
+    SELECT 1
+    FROM sys.check_constraints
+    WHERE name = N'CK_RII_BATCH_MOVEMENT_MOVEMENT_TYPE'
+      AND parent_object_id = OBJECT_ID(N'dbo.RII_BATCH_MOVEMENT')
+)
+BEGIN
+    ALTER TABLE [dbo].[RII_BATCH_MOVEMENT]
+        DROP CONSTRAINT [CK_RII_BATCH_MOVEMENT_MOVEMENT_TYPE];
+END");
 
             migrationBuilder.CreateTable(
                 name: "RII_FISH_GROWTH",
@@ -123,9 +134,17 @@ namespace aqua_api.Migrations
             migrationBuilder.DropTable(
                 name: "RII_FISH_GROWTH");
 
-            migrationBuilder.DropCheckConstraint(
-                name: "CK_RII_BATCH_MOVEMENT_MOVEMENT_TYPE",
-                table: "RII_BATCH_MOVEMENT");
+            migrationBuilder.Sql(@"
+IF EXISTS (
+    SELECT 1
+    FROM sys.check_constraints
+    WHERE name = N'CK_RII_BATCH_MOVEMENT_MOVEMENT_TYPE'
+      AND parent_object_id = OBJECT_ID(N'dbo.RII_BATCH_MOVEMENT')
+)
+BEGIN
+    ALTER TABLE [dbo].[RII_BATCH_MOVEMENT]
+        DROP CONSTRAINT [CK_RII_BATCH_MOVEMENT_MOVEMENT_TYPE];
+END");
 
             migrationBuilder.AddCheckConstraint(
                 name: "CK_RII_BATCH_MOVEMENT_MOVEMENT_TYPE",
