@@ -334,6 +334,120 @@ public class BudgetPlanningServiceIntegrationTests
     }
 
     [Fact]
+    public async Task CalculateGrowth_ActualBatchContinuesBiologicalProfileAndKpiUsesPreMovementStock()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+
+        var fishStock = new Stock { ErpStockCode = "01", StockName = "Levrek", Unit = "AD" };
+        db.Stocks.Add(fishStock);
+        await db.SaveChangesAsync();
+
+        var plan = new BudgetPlan
+        {
+            BudgetNo = "BUD-LEGACY-137",
+            BudgetCode = "LEGACY-137",
+            BudgetName = "Legacy comparison",
+            StartYear = 2026,
+            StartMonth = 3,
+            EndYear = 2027,
+            EndMonth = 3,
+            Status = BudgetPlanStatus.LiveImported
+        };
+        db.BudgetPlans.Add(plan);
+        await db.SaveChangesAsync();
+
+        var project = new BudgetPlanProject
+        {
+            BudgetPlanId = plan.Id,
+            SourceType = BudgetPlanSourceType.Actual,
+            ProjectCode = "20240715001A",
+            ProjectName = "Legacy project"
+        };
+        db.BudgetPlanProjects.Add(project);
+        await db.SaveChangesAsync();
+
+        db.BudgetPlanFishBatches.Add(new BudgetPlanFishBatch
+        {
+            BudgetPlanId = plan.Id,
+            BudgetPlanProjectId = project.Id,
+            SourceType = BudgetPlanSourceType.Actual,
+            FishStockId = fishStock.Id,
+            BatchCode = "LEGACY-BATCH",
+            InitialLiveCount = 427_467,
+            InitialAverageGram = 720m,
+            InitialBiomassKg = 307_776.24m,
+            GrowthStartYear = 2024,
+            GrowthStartMonth = 7
+        });
+
+        var calibration = new BudgetCalibrationDefinition
+        {
+            CalibrationCode = "K-ALL",
+            CalibrationInfo = "0 - 9999 gr"
+        };
+        db.BudgetCalibrationDefinitions.Add(calibration);
+
+        var profile = new BudgetFishGrowthProfile
+        {
+            StockId = fishStock.Id,
+            StartMonth = 7,
+            Name = "Legacy July profile"
+        };
+        var legacyGrowth = new Dictionary<int, decimal>
+        {
+            [20] = 1m,
+            [21] = 1m,
+            [22] = 26.717m,
+            [23] = 37.034m,
+            [24] = 52.495m,
+            [25] = 40.329m,
+            [26] = 49.201m,
+            [27] = 46.864m,
+            [28] = 41.331m,
+            [29] = 35.778m,
+            [30] = 1m,
+            [31] = 1m,
+            [32] = 1m
+        };
+        for (var month = 1; month <= 32; month++)
+        {
+            profile.Lines.Add(new BudgetFishGrowthProfileLine
+            {
+                GrowthMonthNo = month,
+                CalendarMonth = ((6 + month - 1) % 12) + 1,
+                MonthlyGrowthGram = legacyGrowth.GetValueOrDefault(month),
+                TotalGram = 0m
+            });
+        }
+        db.BudgetFishGrowthProfiles.Add(profile);
+        await db.SaveChangesAsync();
+
+        var result = await fixture.Service.CalculateGrowthAsync(plan.Id);
+
+        Assert.True(result.Success, result.Message);
+        var projections = result.Data!;
+        Assert.Equal(
+            new[] { 721m, 722m, 748.717m, 785.751m, 838.246m, 878.575m, 927.776m, 974.64m, 1015.971m, 1051.749m, 1052.749m, 1053.749m, 1054.749m },
+            projections.Select(x => x.ClosingAverageGram).ToArray());
+        Assert.Equal(20, projections[0].MonthIndex);
+
+        var march = await db.BudgetPlanMonthlyProjections.SingleAsync(x => x.BudgetPlanId == plan.Id && x.Year == 2026 && x.Month == 3);
+        march.SalesCount = 6_935;
+        march.MortalityCount = 1_069;
+        march.ClosingLiveCount = 419_463;
+        march.ClosingBiomassKg = 302_432.823m;
+        plan.Status = BudgetPlanStatus.Calculated;
+        await db.SaveChangesAsync();
+
+        var report = await fixture.KpiService.GetReportAsync(plan.Id);
+        var reportMarch = Assert.Single(report.Data!.MonthlyRows, x => x.Year == 2026 && x.Month == 3);
+        Assert.Equal(427_467, reportMarch.StockCount);
+        Assert.Equal(721m, reportMarch.UnitGram);
+        Assert.Equal(308.204m, reportMarch.StockTon);
+    }
+
+    [Fact]
     public async Task Calculate_AppliesGrowthQualityAndFeedMortalityReduction()
     {
         await using var fixture = await CreateFixtureAsync();
@@ -768,17 +882,17 @@ public class BudgetPlanningServiceIntegrationTests
             Year = 2026,
             Month = 3,
             MonthIndex = 1,
-            OpeningLiveCount = 435471,
+            OpeningLiveCount = 427467,
             OpeningAverageGram = 721m,
-            OpeningBiomassKg = 313974.591m,
+            OpeningBiomassKg = 308203.707m,
             ClosingAverageGram = 721m,
             SalesTon = 5m,
             SalesCount = 6935,
             MortalityCount = 1069,
             MortalityKg = 770.749m,
             FeedKg = 12500m,
-            ClosingLiveCount = 427467,
-            ClosingBiomassKg = 308203.707m
+            ClosingLiveCount = 419463,
+            ClosingBiomassKg = 302432.823m
         });
         db.BudgetPlanSalesLines.Add(new BudgetPlanSalesLine
         {

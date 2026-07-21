@@ -91,7 +91,8 @@ public class BudgetKpiService : IBudgetKpiService
                 var closing = group.Sum(x => x.ClosingBiomassKg);
                 var groupSales = group.Sum(x => x.SalesTon * 1000m);
                 var groupSalesCount = group.Sum(x => x.SalesCount);
-                var groupStockCount = group.Sum(x => x.ClosingLiveCount);
+                var groupStockCount = group.Sum(x => x.OpeningLiveCount);
+                var groupStockKg = group.Sum(x => x.OpeningLiveCount * x.ClosingAverageGram / 1000m);
                 var groupFeed = group.Sum(x => x.FeedKg);
                 var groupMortality = group.Sum(x => x.MortalityKg);
                 var producedBiomassKg = Math.Max(0m, closing + groupSales + groupMortality);
@@ -132,12 +133,12 @@ public class BudgetKpiService : IBudgetKpiService
                         : 0m),
                     SalesKg = Round(groupSales),
                     StockCount = groupStockCount,
-                    StockTon = Round(closing / 1000m),
-                    StockKg = Round(closing),
+                    StockTon = Round(groupStockKg / 1000m),
+                    StockKg = Round(groupStockKg),
                     FeedKg = Round(groupFeed),
                     MortalityKg = Round(groupMortality),
                     MortalityCount = group.Sum(x => x.MortalityCount),
-                    UnitGram = groupStockCount <= 0 ? 0m : Round(closing * 1000m / groupStockCount),
+                    UnitGram = groupStockCount <= 0 ? 0m : Round(groupStockKg * 1000m / groupStockCount),
                     AveragePriceEuro = Round(averagePriceEuro),
                     AmountEuro = Round(amountEuro),
                     ExchangeRate = hasExchangeRate ? Round(exchangeRate) : null,

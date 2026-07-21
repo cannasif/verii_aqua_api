@@ -469,7 +469,9 @@ public class BudgetPlanningService : IBudgetPlanningService
                     BiomassKg = Round(biomassKg),
                     AsOfDate = postedShipment.AsOfDate > group.Max(x => x.AsOfDate)
                         ? postedShipment.AsOfDate
-                        : group.Max(x => x.AsOfDate)
+                        : group.Max(x => x.AsOfDate),
+                    GrowthStartYear = first.StartDate.Year,
+                    GrowthStartMonth = first.StartDate.Month
                 };
             })
             .Where(x => x.LiveCount > 0 && x.BiomassKg > 0)
@@ -503,6 +505,25 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<List<BudgetPlanFishBatchDto>>.ErrorResult("En az bir balik partisi secilmelidir.", "En az bir balik partisi secilmelidir.", StatusCodes.Status400BadRequest);
         }
 
+        if (dto.GrowthStartYear.HasValue != dto.GrowthStartMonth.HasValue ||
+            (dto.GrowthStartMonth.HasValue && (dto.GrowthStartMonth < 1 || dto.GrowthStartMonth > 12)) ||
+            (dto.GrowthStartYear.HasValue && dto.GrowthStartYear <= 0))
+        {
+            return ApiResponse<List<BudgetPlanFishBatchDto>>.ErrorResult(
+                "Biyolojik buyume baslangic yil ve ayi birlikte ve gecerli girilmelidir.",
+                "Biyolojik buyume baslangic yil ve ayi birlikte ve gecerli girilmelidir.",
+                StatusCodes.Status400BadRequest);
+        }
+
+        if (dto.GrowthStartYear.HasValue &&
+            MonthsBetween(dto.GrowthStartYear.Value, dto.GrowthStartMonth!.Value, plan.StartYear, plan.StartMonth) < 0)
+        {
+            return ApiResponse<List<BudgetPlanFishBatchDto>>.ErrorResult(
+                "Biyolojik buyume baslangici butce baslangicindan ileri olamaz.",
+                "Biyolojik buyume baslangici butce baslangicindan ileri olamaz.",
+                StatusCodes.Status400BadRequest);
+        }
+
         var available = (await GetAvailableFishBatchesAsync()).Data?
             .Where(x => dto.FishBatchIds.Contains(x.FishBatchId))
             .ToList() ?? new List<BudgetAvailableFishBatchDto>();
@@ -531,8 +552,8 @@ public class BudgetPlanningService : IBudgetPlanningService
                     InitialLiveCount = source.LiveCount,
                     InitialAverageGram = source.AverageGram,
                     InitialBiomassKg = source.BiomassKg,
-                    GrowthStartYear = dto.GrowthStartYear ?? plan.StartYear,
-                    GrowthStartMonth = dto.GrowthStartMonth ?? plan.StartMonth
+                    GrowthStartYear = dto.GrowthStartYear ?? source.GrowthStartYear,
+                    GrowthStartMonth = dto.GrowthStartMonth ?? source.GrowthStartMonth
                 });
             }
 
@@ -1374,7 +1395,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                         continue;
                     }
 
-                    var monthIndex = elapsedMonths + 1;
+                    var monthIndex = ResolveGrowthMonthNo(batch, elapsedMonths);
                     var openingBiomassKg = Round(liveCount * averageGram / 1000m);
                     var rawMonthlyGrowth = profile?.Lines.FirstOrDefault(x => x.GrowthMonthNo == monthIndex && !x.IsDeleted)?.MonthlyGrowthGram ?? 0m;
                     var growthQualityPercent = FindGrowthQuality(growthQualities, batch.FishStockId, monthIndex)?.QualityPercent ?? 100m;
@@ -1911,6 +1932,15 @@ public class BudgetPlanningService : IBudgetPlanningService
         return (year - startYear) * 12 + (month - startMonth);
     }
 
+    private static int ResolveGrowthMonthNo(BudgetPlanFishBatch batch, int elapsedMonths)
+    {
+        // An actual batch already carries its biomass at the budget opening. Continue
+        // with the completed biological month; virtual batches start at profile month 1.
+        return batch.SourceType == BudgetPlanSourceType.Actual && elapsedMonths > 0
+            ? elapsedMonths
+            : elapsedMonths + 1;
+    }
+
     private static BudgetCalibrationDefinition? FindCalibration(List<BudgetCalibrationDefinition> calibrations, decimal averageGram)
     {
         return calibrations
@@ -2102,7 +2132,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                     continue;
                 }
 
-                var monthIndex = elapsedMonths + 1;
+                var monthIndex = ResolveGrowthMonthNo(batch, elapsedMonths);
                 var growthLine = profile.Lines.FirstOrDefault(x => x.GrowthMonthNo == monthIndex && !x.IsDeleted);
                 if (growthLine == null)
                 {

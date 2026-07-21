@@ -135,6 +135,8 @@ public class BudgetAvailableFishBatchDto
     public decimal AverageGram { get; set; }
     public decimal BiomassKg { get; set; }
     public DateTime AsOfDate { get; set; }
+    public int GrowthStartYear { get; set; }
+    public int GrowthStartMonth { get; set; }
 }
 
 public class UpsertBudgetPlanSalesLineDto
