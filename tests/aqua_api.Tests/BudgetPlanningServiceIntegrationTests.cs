@@ -665,16 +665,8 @@ public class BudgetPlanningServiceIntegrationTests
         db.Stocks.AddRange(fishStock, feedStock);
         await db.SaveChangesAsync();
 
-        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.SalesPlanned);
+        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.LiveImported);
         var budgetBatch = await db.BudgetPlanFishBatches.SingleAsync(x => x.BudgetPlanId == plan.Id);
-        db.BudgetPlanSalesLines.Add(new BudgetPlanSalesLine
-        {
-            BudgetPlanId = plan.Id,
-            BudgetPlanFishBatchId = budgetBatch.Id,
-            Year = 2026,
-            Month = 1,
-            SalesTon = 0m
-        });
         await SeedCompleteBudgetDefinitionsAsync(db, fishStock.Id, feedStock.Id);
         await db.SaveChangesAsync();
 
@@ -696,6 +688,19 @@ public class BudgetPlanningServiceIntegrationTests
             FeedStockId = feedStock.Id,
             ReductionRatePercent = 50m
         });
+        await db.SaveChangesAsync();
+
+        var growth = await service.CalculateGrowthAsync(plan.Id);
+        Assert.True(growth.Success, growth.Message);
+        db.BudgetPlanSalesLines.Add(new BudgetPlanSalesLine
+        {
+            BudgetPlanId = plan.Id,
+            BudgetPlanFishBatchId = budgetBatch.Id,
+            Year = 2026,
+            Month = 1,
+            SalesTon = 0m
+        });
+        plan.Status = BudgetPlanStatus.SalesPlanned;
         await db.SaveChangesAsync();
 
         var result = await service.CalculateAsync(plan.Id);
@@ -728,10 +733,16 @@ public class BudgetPlanningServiceIntegrationTests
         db.Stocks.AddRange(fishStock, feedStock);
         await db.SaveChangesAsync();
 
-        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.SalesPlanned);
+        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.LiveImported);
         plan.EndYear = 2030;
         plan.EndMonth = 12;
         var budgetBatch = await db.BudgetPlanFishBatches.SingleAsync(x => x.BudgetPlanId == plan.Id);
+
+        await SeedCompleteBudgetDefinitionsAsync(db, fishStock.Id, feedStock.Id);
+        await db.SaveChangesAsync();
+
+        var growth = await service.CalculateGrowthAsync(plan.Id);
+        Assert.True(growth.Success, growth.Message);
         db.BudgetPlanSalesLines.Add(new BudgetPlanSalesLine
         {
             BudgetPlanId = plan.Id,
@@ -740,8 +751,7 @@ public class BudgetPlanningServiceIntegrationTests
             Month = 12,
             SalesTon = 0.05m
         });
-
-        await SeedCompleteBudgetDefinitionsAsync(db, fishStock.Id, feedStock.Id);
+        plan.Status = BudgetPlanStatus.SalesPlanned;
         await db.SaveChangesAsync();
 
         var result = await service.CalculateAsync(plan.Id);
@@ -795,8 +805,14 @@ public class BudgetPlanningServiceIntegrationTests
         db.Stocks.AddRange(fishStock, feedStock);
         await db.SaveChangesAsync();
 
-        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.SalesPlanned);
+        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.LiveImported);
         var budgetBatch = await db.BudgetPlanFishBatches.SingleAsync(x => x.BudgetPlanId == plan.Id);
+
+        await SeedCompleteBudgetDefinitionsAsync(db, fishStock.Id, feedStock.Id, includeFeedRates: false);
+        await db.SaveChangesAsync();
+
+        var growth = await service.CalculateGrowthAsync(plan.Id);
+        Assert.True(growth.Success, growth.Message);
         db.BudgetPlanSalesLines.Add(new BudgetPlanSalesLine
         {
             BudgetPlanId = plan.Id,
@@ -805,8 +821,7 @@ public class BudgetPlanningServiceIntegrationTests
             Month = 12,
             SalesTon = 0.01m
         });
-
-        await SeedCompleteBudgetDefinitionsAsync(db, fishStock.Id, feedStock.Id, includeFeedRates: false);
+        plan.Status = BudgetPlanStatus.SalesPlanned;
         await db.SaveChangesAsync();
 
         var result = await service.CalculateAsync(plan.Id);
@@ -814,7 +829,9 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.False(result.Success);
         Assert.Equal(400, result.StatusCode);
         Assert.Contains("yem tuketim orani tanimi yok", result.Message);
-        Assert.False(await db.BudgetPlanMonthlyProjections.AnyAsync(x => x.BudgetPlanId == plan.Id));
+        Assert.Equal(12, await db.BudgetPlanMonthlyProjections.CountAsync(x => x.BudgetPlanId == plan.Id));
+        Assert.False(await db.BudgetPlanFeedingLines.AnyAsync(x => x.BudgetPlanId == plan.Id));
+        Assert.False(await db.BudgetPlanMortalityLines.AnyAsync(x => x.BudgetPlanId == plan.Id));
     }
 
     [Fact]
@@ -835,6 +852,11 @@ public class BudgetPlanningServiceIntegrationTests
 
         var growthResult = await service.CalculateGrowthAsync(plan.Id);
         Assert.True(growthResult.Success, growthResult.Message);
+        var savedGrowthGrams = growthResult.Data!
+            .OrderBy(x => x.Year)
+            .ThenBy(x => x.Month)
+            .Select(x => x.ClosingAverageGram)
+            .ToArray();
 
         var projection = await db.BudgetPlanMonthlyProjections
             .OrderBy(x => x.Year)
@@ -859,13 +881,25 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.Equal(455, saved.SalesCount);
 
         saved.SalesCount = 999;
+        var growthLines = await db.Set<BudgetFishGrowthProfileLine>().ToListAsync();
+        foreach (var growthLine in growthLines)
+        {
+            growthLine.MonthlyGrowthGram += 1_000m;
+        }
         await db.SaveChangesAsync();
 
         var calculation = await service.CalculateAsync(plan.Id);
 
         Assert.True(calculation.Success, calculation.Message);
+        var finalRows = calculation.Data!.OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
+        Assert.Equal(savedGrowthGrams, finalRows.Select(x => x.ClosingAverageGram).ToArray());
         var recalculatedProjection = Assert.Single(calculation.Data!, x => x.Year == projection.Year && x.Month == projection.Month);
+        Assert.Equal(projection.Id, recalculatedProjection.Id);
         Assert.Equal(455, recalculatedProjection.SalesCount);
+        Assert.Equal(recalculatedProjection.ClosingLiveCount, finalRows[1].OpeningLiveCount);
+        Assert.Equal(
+            Round(finalRows[1].OpeningLiveCount * finalRows[1].OpeningAverageGram / 1000m),
+            finalRows[1].OpeningBiomassKg);
         Assert.Equal(455, await db.BudgetPlanSalesLines
             .Where(x => x.BudgetPlanId == plan.Id)
             .Select(x => x.SalesCount)

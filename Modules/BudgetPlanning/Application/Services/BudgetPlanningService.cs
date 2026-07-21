@@ -750,6 +750,14 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<BudgetPlanSalesLineDto>.ErrorResult("Butce plani bulunamadi.", "Butce plani bulunamadi.", StatusCodes.Status404NotFound);
         }
 
+        if (!IsPeriodWithinPlan(plan, dto.Year, dto.Month))
+        {
+            return ApiResponse<BudgetPlanSalesLineDto>.ErrorResult(
+                "Satis donemi butce tarih araligi icinde olmalidir.",
+                "Satis donemi butce tarih araligi icinde olmalidir.",
+                StatusCodes.Status400BadRequest);
+        }
+
         if (plan.Status < BudgetPlanStatus.GrowthCalculated)
         {
             return ApiResponse<BudgetPlanSalesLineDto>.ErrorResult("Satis plani icin once baliklari sanalda buyutmelisiniz.", "Satis plani icin once baliklari sanalda buyutmelisiniz.", StatusCodes.Status400BadRequest);
@@ -1336,12 +1344,35 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<List<BudgetPlanMonthlyProjectionDto>>.ErrorResult("Butce plani bulunamadi.", "Butce plani bulunamadi.", StatusCodes.Status404NotFound);
         }
 
+        if (!includeSalesAndOperations && plan.Status >= BudgetPlanStatus.SalesPlanned)
+        {
+            return ApiResponse<List<BudgetPlanMonthlyProjectionDto>>.ErrorResult(
+                "Satis planlamasi basladiktan sonra buyutme yeniden calistirilamaz. Buyume senaryosunu degistirmek icin butceyi kopyalayin.",
+                "Satis planlamasi basladiktan sonra buyutme yeniden calistirilamaz. Buyume senaryosunu degistirmek icin butceyi kopyalayin.",
+                StatusCodes.Status400BadRequest);
+        }
+
         var batches = await FishBatchQuery()
             .Where(x => x.BudgetPlanId == budgetPlanId)
             .ToListAsync();
         if (batches.Count == 0)
         {
             return ApiResponse<List<BudgetPlanMonthlyProjectionDto>>.ErrorResult("Butceye en az bir balik satiri eklenmelidir.", "Butceye en az bir balik satiri eklenmelidir.", StatusCodes.Status400BadRequest);
+        }
+
+        var growthSnapshots = includeSalesAndOperations
+            ? await _unitOfWork.Db.BudgetPlanMonthlyProjections
+                .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
+                .ToListAsync()
+            : new List<BudgetPlanMonthlyProjection>();
+        var growthSnapshotLookup = growthSnapshots.ToDictionary(x => (x.BudgetPlanFishBatchId, x.Year, x.Month));
+
+        if (includeSalesAndOperations && growthSnapshots.Count == 0)
+        {
+            return ApiResponse<List<BudgetPlanMonthlyProjectionDto>>.ErrorResult(
+                "Yemleme ve fire hesabi icin kaydedilmis buyutme sonucu bulunamadi. Once baliklari sanalda buyutun.",
+                "Yemleme ve fire hesabi icin kaydedilmis buyutme sonucu bulunamadi. Once baliklari sanalda buyutun.",
+                StatusCodes.Status400BadRequest);
         }
 
         var periods = BuildPeriods(plan.StartYear, plan.StartMonth, plan.EndYear, plan.EndMonth);
@@ -1396,8 +1427,10 @@ public class BudgetPlanningService : IBudgetPlanningService
             waterTemperatures,
             calibrations,
             feedRates,
+            growthQualities,
             mortalityRates,
             scheduledAdjustments,
+            growthSnapshotLookup,
             includeSalesAndOperations);
         if (!definitionValidation.Success)
         {
@@ -1413,7 +1446,10 @@ public class BudgetPlanningService : IBudgetPlanningService
             _unitOfWork.Db.BudgetPlanSalesDistributions.RemoveRange(_unitOfWork.Db.BudgetPlanSalesDistributions.Where(x => x.BudgetPlanId == budgetPlanId));
             _unitOfWork.Db.BudgetPlanFeedingLines.RemoveRange(_unitOfWork.Db.BudgetPlanFeedingLines.Where(x => x.BudgetPlanId == budgetPlanId));
             _unitOfWork.Db.BudgetPlanMortalityLines.RemoveRange(_unitOfWork.Db.BudgetPlanMortalityLines.Where(x => x.BudgetPlanId == budgetPlanId));
-            _unitOfWork.Db.BudgetPlanMonthlyProjections.RemoveRange(_unitOfWork.Db.BudgetPlanMonthlyProjections.Where(x => x.BudgetPlanId == budgetPlanId));
+            if (!includeSalesAndOperations)
+            {
+                _unitOfWork.Db.BudgetPlanMonthlyProjections.RemoveRange(_unitOfWork.Db.BudgetPlanMonthlyProjections.Where(x => x.BudgetPlanId == budgetPlanId));
+            }
             await _unitOfWork.SaveChangesAsync();
 
             foreach (var batch in batches)
@@ -1450,12 +1486,23 @@ public class BudgetPlanningService : IBudgetPlanningService
                         }
                     }
 
-                    var monthIndex = ResolveGrowthMonthNo(batch, elapsedMonths);
+                    growthSnapshotLookup.TryGetValue((batch.Id, period.Year, period.Month), out var growthSnapshot);
+                    var monthIndex = growthSnapshot?.MonthIndex ?? ResolveGrowthMonthNo(batch, elapsedMonths);
+                    if (growthSnapshot != null)
+                    {
+                        averageGram = growthSnapshot.OpeningAverageGram;
+                    }
+
                     var openingBiomassKg = Round(liveCount * averageGram / 1000m);
-                    var rawMonthlyGrowth = profile?.Lines.FirstOrDefault(x => x.GrowthMonthNo == monthIndex && !x.IsDeleted)?.MonthlyGrowthGram ?? 0m;
-                    var growthQualityPercent = FindGrowthQuality(growthQualities, batch.FishStockId, monthIndex)?.QualityPercent ?? 100m;
-                    var monthlyGrowth = RoundGrowthGram(rawMonthlyGrowth * growthQualityPercent / 100m);
-                    var closingAverageBeforeLoss = averageGram + monthlyGrowth;
+                    var rawMonthlyGrowth = growthSnapshot?.RawMonthlyGrowthGram
+                        ?? profile?.Lines.FirstOrDefault(x => x.GrowthMonthNo == monthIndex && !x.IsDeleted)?.MonthlyGrowthGram
+                        ?? 0m;
+                    var growthQualityPercent = growthSnapshot?.GrowthQualityPercent
+                        ?? FindGrowthQuality(growthQualities, batch.FishStockId, monthIndex)?.QualityPercent
+                        ?? 100m;
+                    var monthlyGrowth = growthSnapshot?.MonthlyGrowthGram
+                        ?? RoundGrowthGram(rawMonthlyGrowth * growthQualityPercent / 100m);
+                    var closingAverageBeforeLoss = growthSnapshot?.ClosingAverageGram ?? averageGram + monthlyGrowth;
                     var periodSales = includeSalesAndOperations
                         ? sales.Where(x => x.BudgetPlanFishBatchId == batch.Id && x.Year == period.Year && x.Month == period.Month).ToList()
                         : new List<BudgetPlanSalesLine>();
@@ -1494,34 +1541,37 @@ public class BudgetPlanningService : IBudgetPlanningService
                     var feedMortalityReductionKg = Round(baseFeedKg * mortalityShare * feedMortalityReductionPercent / 100m);
                     var feedKg = Math.Max(0m, Round(baseFeedKg - feedMortalityReductionKg));
 
-                    var projection = new BudgetPlanMonthlyProjection
+                    var projection = growthSnapshot ?? new BudgetPlanMonthlyProjection
                     {
                         BudgetPlanId = budgetPlanId,
                         BudgetPlanFishBatchId = batch.Id,
                         Year = period.Year,
-                        Month = period.Month,
-                        MonthIndex = monthIndex,
-                        OpeningLiveCount = liveCount,
-                        OpeningAverageGram = RoundGrowthGram(averageGram),
-                        OpeningBiomassKg = openingBiomassKg,
-                        RawMonthlyGrowthGram = RoundGrowthGram(rawMonthlyGrowth),
-                        GrowthQualityPercent = growthQualityPercent,
-                        MonthlyGrowthGram = RoundGrowthGram(monthlyGrowth),
-                        ClosingAverageGram = RoundGrowthGram(closingAverageBeforeLoss),
-                        SalesTon = Round(salesKg / 1000m),
-                        SalesCount = salesCount,
-                        MortalityKg = mortalityKg,
-                        MortalityCount = mortalityCount,
-                        FeedKg = feedKg,
-                        FeedMortalityReductionPercent = feedMortalityReductionPercent,
-                        FeedMortalityReductionKg = feedMortalityReductionKg,
-                        ClosingLiveCount = closingLiveCount,
-                        ClosingBiomassKg = closingBiomassKg,
-                        CalibrationDefinitionId = calibration?.Id,
-                        WaterTemperatureId = waterTemperature?.Id
+                        Month = period.Month
                     };
+                    projection.MonthIndex = monthIndex;
+                    projection.OpeningLiveCount = liveCount;
+                    projection.OpeningAverageGram = RoundGrowthGram(averageGram);
+                    projection.OpeningBiomassKg = openingBiomassKg;
+                    projection.RawMonthlyGrowthGram = RoundGrowthGram(rawMonthlyGrowth);
+                    projection.GrowthQualityPercent = growthQualityPercent;
+                    projection.MonthlyGrowthGram = RoundGrowthGram(monthlyGrowth);
+                    projection.ClosingAverageGram = RoundGrowthGram(closingAverageBeforeLoss);
+                    projection.SalesTon = Round(salesKg / 1000m);
+                    projection.SalesCount = salesCount;
+                    projection.MortalityKg = mortalityKg;
+                    projection.MortalityCount = mortalityCount;
+                    projection.FeedKg = feedKg;
+                    projection.FeedMortalityReductionPercent = feedMortalityReductionPercent;
+                    projection.FeedMortalityReductionKg = feedMortalityReductionKg;
+                    projection.ClosingLiveCount = closingLiveCount;
+                    projection.ClosingBiomassKg = closingBiomassKg;
+                    projection.CalibrationDefinitionId = calibration?.Id;
+                    projection.WaterTemperatureId = waterTemperature?.Id;
 
-                    await _unitOfWork.Repository<BudgetPlanMonthlyProjection>().AddAsync(projection);
+                    if (growthSnapshot == null)
+                    {
+                        await _unitOfWork.Repository<BudgetPlanMonthlyProjection>().AddAsync(projection);
+                    }
                     await _unitOfWork.SaveChangesAsync();
 
                     if (includeSalesAndOperations)
@@ -2169,8 +2219,10 @@ public class BudgetPlanningService : IBudgetPlanningService
         List<BudgetWaterTemperature> waterTemperatures,
         List<BudgetCalibrationDefinition> calibrations,
         List<BudgetFeedConsumptionRate> feedRates,
+        List<BudgetFishGrowthQuality> growthQualities,
         List<BudgetMortalityRateDefinition> mortalityRates,
         List<BudgetPlanFishBatchAdjustment> scheduledAdjustments,
+        IReadOnlyDictionary<(long BatchId, int Year, int Month), BudgetPlanMonthlyProjection> growthSnapshotLookup,
         bool includeSalesAndOperations)
     {
         var errors = new List<string>();
@@ -2179,9 +2231,9 @@ public class BudgetPlanningService : IBudgetPlanningService
         {
             var liveCount = batch.InitialLiveCount;
             var averageGram = batch.InitialAverageGram;
-            var profile = FindGrowthProfile(growthProfiles, batch);
+            var profile = includeSalesAndOperations ? null : FindGrowthProfile(growthProfiles, batch);
 
-            if (profile == null)
+            if (!includeSalesAndOperations && profile == null)
             {
                 errors.Add($"{DescribeBudgetBatch(batch)} icin {batch.GrowthStartMonth}. ay baslangicli buyume profili yok.");
                 continue;
@@ -2220,15 +2272,27 @@ public class BudgetPlanningService : IBudgetPlanningService
                     }
                 }
 
-                var monthIndex = ResolveGrowthMonthNo(batch, elapsedMonths);
-                var growthLine = profile.Lines.FirstOrDefault(x => x.GrowthMonthNo == monthIndex && !x.IsDeleted);
-                if (growthLine == null)
+                growthSnapshotLookup.TryGetValue((batch.Id, period.Year, period.Month), out var growthSnapshot);
+                if (includeSalesAndOperations && growthSnapshot == null)
+                {
+                    errors.Add($"{DescribeBudgetBatch(batch)} icin {period.Year}/{period.Month:00} donemi kaydedilmis buyutme sonucu yok.");
+                    continue;
+                }
+
+                var monthIndex = growthSnapshot?.MonthIndex ?? ResolveGrowthMonthNo(batch, elapsedMonths);
+                var growthLine = profile?.Lines.FirstOrDefault(x => x.GrowthMonthNo == monthIndex && !x.IsDeleted);
+                if (!includeSalesAndOperations && growthLine == null)
                 {
                     errors.Add($"{DescribeBudgetBatch(batch)} icin {period.Year}/{period.Month:00} donemi {monthIndex}. buyume ayi tanimi yok.");
                     continue;
                 }
 
-                var closingAverageBeforeLoss = averageGram + growthLine.MonthlyGrowthGram;
+                var growthQualityPercent = growthSnapshot?.GrowthQualityPercent
+                    ?? FindGrowthQuality(growthQualities, batch.FishStockId, monthIndex)?.QualityPercent
+                    ?? 100m;
+                var monthlyGrowth = growthSnapshot?.MonthlyGrowthGram
+                    ?? RoundGrowthGram((growthLine?.MonthlyGrowthGram ?? 0m) * growthQualityPercent / 100m);
+                var closingAverageBeforeLoss = growthSnapshot?.ClosingAverageGram ?? averageGram + monthlyGrowth;
                 var calibration = FindCalibration(calibrations, CeilingWholeGram(closingAverageBeforeLoss));
                 if (calibration == null)
                 {
@@ -2238,9 +2302,14 @@ public class BudgetPlanningService : IBudgetPlanningService
                 var periodSales = includeSalesAndOperations
                     ? sales.Where(x => x.BudgetPlanFishBatchId == batch.Id && x.Year == period.Year && x.Month == period.Month).ToList()
                     : new List<BudgetPlanSalesLine>();
-                var salesKg = includeSalesAndOperations
-                    ? Math.Min(periodSales.Sum(x => x.SalesTon * 1000m), Round(liveCount * closingAverageBeforeLoss / 1000m))
-                    : 0m;
+                var requestedSalesKg = includeSalesAndOperations ? periodSales.Sum(x => x.SalesTon * 1000m) : 0m;
+                var availableSalesKg = Round(liveCount * closingAverageBeforeLoss / 1000m);
+                if (requestedSalesKg > availableSalesKg)
+                {
+                    errors.Add($"{DescribeBudgetBatch(batch)} icin {period.Year}/{period.Month:00} donemi satis tonaji mevcut stoktan fazladir.");
+                }
+
+                var salesKg = Math.Min(requestedSalesKg, availableSalesKg);
                 var salesCount = includeSalesAndOperations && closingAverageBeforeLoss > 0
                     ? (int)Math.Round(salesKg * 1000m / closingAverageBeforeLoss, MidpointRounding.AwayFromZero)
                     : 0;
