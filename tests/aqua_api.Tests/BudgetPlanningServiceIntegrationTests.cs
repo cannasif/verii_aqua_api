@@ -433,7 +433,7 @@ public class BudgetPlanningServiceIntegrationTests
             projections.Select(x => x.ClosingAverageGram).ToArray());
         Assert.Equal(20, projections[0].MonthIndex);
 
-        var legacySalesCounts = new[] { 6_935, 6_927, 6_677, 6_363, 5_964, 5_690, 5_389, 5_131, 4_921, 4_755, 4_748, 4_744, 4_742 };
+        var legacySalesCounts = new[] { 0, 13_851, 6_677, 6_363, 5_964, 5_690, 5_389, 5_131, 4_921, 4_755, 4_748, 4_744, 4_742 };
         for (var index = 0; index < projections.Count; index++)
         {
             var projection = projections[index];
@@ -480,19 +480,38 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.Equal(
             legacySalesCounts,
             calculatedRows.Select(x => x.SalesCount).ToArray());
+        var recalculatedSales = await fixture.Service.GetSalesLinesAsync(plan.Id);
+        Assert.True(recalculatedSales.Success, recalculatedSales.Message);
+        Assert.Equal(legacySalesCounts, recalculatedSales.Data!.Select(x => x.SalesCount ?? 0).ToArray());
         Assert.Equal(
-            new[] { 427_467, 419_463, 411_487, 403_781, 396_409, 389_454, 382_790, 376_444, 370_372, 364_525, 358_859, 353_214, 347_587 },
+            new[] { 427_467, 426_398, 411_481, 403_775, 396_403, 389_448, 382_784, 376_438, 370_366, 364_519, 358_853, 353_208, 347_581 },
             calculatedRows.Select(x => x.OpeningLiveCount).ToArray());
         Assert.Equal(
-            new[] { 1_069, 1_049, 1_029, 1_009, 991, 974, 957, 941, 926, 911, 897, 883 },
+            new[] { 1_069, 1_066, 1_029, 1_009, 991, 974, 957, 941, 926, 911, 897, 883 },
             calculatedRows.Take(12).Select(x => x.MortalityCount).ToArray());
+        for (var index = 0; index < calculatedRows.Count; index++)
+        {
+            var row = calculatedRows[index];
+            Assert.Equal(row.OpeningLiveCount, row.StockCount);
+            Assert.Equal(
+                Math.Round(row.OpeningLiveCount * row.ClosingAverageGram / 1000m, 3, MidpointRounding.AwayFromZero),
+                row.StockKg);
+            Assert.Equal(row.OpeningLiveCount - row.SalesCount - row.MortalityCount, row.ClosingLiveCount);
+            if (index > 0)
+            {
+                Assert.Equal(calculatedRows[index - 1].ClosingLiveCount, row.OpeningLiveCount);
+            }
+        }
 
         var report = await fixture.KpiService.GetReportAsync(plan.Id);
         Assert.True(report.Success, report.Message);
         var reportRows = report.Data!.MonthlyRows.OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
-        var legacyStockTons = new[] { 308.20m, 302.85m, 308.09m, 317.27m, 332.29m, 342.16m, 355.14m, 366.90m, 376.29m, 383.39m, 377.79m, 372.20m, 366.62m };
+        var legacyStockTons = new[] { 308.20m, 307.86m, 308.08m, 317.27m, 332.28m, 342.16m, 355.14m, 366.89m, 376.28m, 383.38m, 377.78m, 372.19m, 366.61m };
         Assert.All(reportRows.Select((row, index) => (row, index)), item =>
             Assert.InRange(Math.Abs(item.row.StockTon - legacyStockTons[item.index]), 0m, 0.011m));
+        Assert.Equal(reportRows.Select(x => x.StockCount), calculatedRows.Select(x => x.StockCount));
+        Assert.Equal(reportRows.Select(x => x.StockKg), calculatedRows.Select(x => x.StockKg));
+        Assert.Equal(reportRows.Select(x => x.StockTon), calculatedRows.Select(x => x.StockTon));
         var reportMarch = reportRows[0];
         Assert.Equal(427_467, reportMarch.StockCount);
         Assert.Equal(721m, reportMarch.UnitGram);

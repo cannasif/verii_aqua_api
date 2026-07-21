@@ -362,6 +362,9 @@ public class BudgetPlanMonthlyProjectionDto
     public decimal FeedKg { get; set; }
     public decimal FeedMortalityReductionPercent { get; set; }
     public decimal FeedMortalityReductionKg { get; set; }
+    public int StockCount { get; set; }
+    public decimal StockKg { get; set; }
+    public decimal StockTon { get; set; }
     public int ClosingLiveCount { get; set; }
     public decimal ClosingBiomassKg { get; set; }
     public string? CalibrationCode { get; set; }

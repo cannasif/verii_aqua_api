@@ -2429,6 +2429,8 @@ public class BudgetPlanningService : IBudgetPlanningService
 
     private static BudgetPlanMonthlyProjectionDto MapProjection(BudgetPlanMonthlyProjection entity)
     {
+        var stockKg = Round(entity.OpeningLiveCount * entity.ClosingAverageGram / 1000m);
+
         return new BudgetPlanMonthlyProjectionDto
         {
             Id = entity.Id,
@@ -2451,6 +2453,9 @@ public class BudgetPlanningService : IBudgetPlanningService
             FeedKg = entity.FeedKg,
             FeedMortalityReductionPercent = entity.FeedMortalityReductionPercent,
             FeedMortalityReductionKg = entity.FeedMortalityReductionKg,
+            StockCount = entity.OpeningLiveCount,
+            StockKg = stockKg,
+            StockTon = Round(stockKg / 1000m),
             ClosingLiveCount = entity.ClosingLiveCount,
             ClosingBiomassKg = entity.ClosingBiomassKg,
             CalibrationCode = entity.CalibrationDefinition?.CalibrationCode,
