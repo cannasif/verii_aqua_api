@@ -1419,7 +1419,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                     var mortalityRate = includeSalesAndOperations
                         ? FindMortalityRateDefinition(mortalityRates, batch.FishStockId, calibration?.Id, monthIndex)?.MortalityRatePercent ?? 0m
                         : 0m;
-                    var mortalityCount = Math.Min(afterSalesLiveCount, (int)Math.Round(afterSalesLiveCount * mortalityRate / 100m, MidpointRounding.AwayFromZero));
+                    var mortalityCount = Math.Min(afterSalesLiveCount, (int)Math.Round(liveCount * mortalityRate / 100m, MidpointRounding.AwayFromZero));
                     var mortalityKg = Round(mortalityCount * closingAverageBeforeLoss / 1000m);
                     var closingLiveCount = Math.Max(0, afterSalesLiveCount - mortalityCount);
                     var closingBiomassKg = Round(closingLiveCount * closingAverageBeforeLoss / 1000m);
@@ -1430,7 +1430,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                     var feedMortalityRate = feedRate == null
                         ? null
                         : FindFeedMortalityRate(feedMortalityRates, waterTemperature?.Id, calibration?.Id, feedRate.FeedStockId);
-                    var mortalityShare = afterSalesLiveCount <= 0 ? 0m : Math.Clamp(mortalityCount / (decimal)afterSalesLiveCount, 0m, 1m);
+                    var mortalityShare = liveCount <= 0 ? 0m : Math.Clamp(mortalityCount / (decimal)liveCount, 0m, 1m);
                     var feedMortalityReductionPercent = feedMortalityRate?.ReductionRatePercent ?? 0m;
                     var feedMortalityReductionKg = Round(baseFeedKg * mortalityShare * feedMortalityReductionPercent / 100m);
                     var feedKg = Math.Max(0m, Round(baseFeedKg - feedMortalityReductionKg));
@@ -2181,7 +2181,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                         errors.Add($"{DescribeBudgetBatch(batch)} icin {period.Year}/{period.Month:00} donemi fire orani tanimi yok.");
                     }
 
-                    var mortalityCount = Math.Min(afterSalesLiveCount, (int)Math.Round(afterSalesLiveCount * (mortalityRate?.MortalityRatePercent ?? 0m) / 100m, MidpointRounding.AwayFromZero));
+                    var mortalityCount = Math.Min(afterSalesLiveCount, (int)Math.Round(liveCount * (mortalityRate?.MortalityRatePercent ?? 0m) / 100m, MidpointRounding.AwayFromZero));
                     liveCount = Math.Max(0, afterSalesLiveCount - mortalityCount);
                 }
 

@@ -340,7 +340,8 @@ public class BudgetPlanningServiceIntegrationTests
         var db = fixture.Db;
 
         var fishStock = new Stock { ErpStockCode = "01", StockName = "Levrek", Unit = "AD" };
-        db.Stocks.Add(fishStock);
+        var feedStock = new Stock { ErpStockCode = "FEED-01", StockName = "Legacy Feed", Unit = "KG", GrupKodu = "YEM" };
+        db.Stocks.AddRange(fishStock, feedStock);
         await db.SaveChangesAsync();
 
         var plan = new BudgetPlan
@@ -432,16 +433,67 @@ public class BudgetPlanningServiceIntegrationTests
             projections.Select(x => x.ClosingAverageGram).ToArray());
         Assert.Equal(20, projections[0].MonthIndex);
 
-        var march = await db.BudgetPlanMonthlyProjections.SingleAsync(x => x.BudgetPlanId == plan.Id && x.Year == 2026 && x.Month == 3);
-        march.SalesCount = 6_935;
-        march.MortalityCount = 1_069;
-        march.ClosingLiveCount = 419_463;
-        march.ClosingBiomassKg = 302_432.823m;
-        plan.Status = BudgetPlanStatus.Calculated;
+        var legacySalesCounts = new[] { 6_935, 6_927, 6_677, 6_363, 5_964, 5_690, 5_389, 5_131, 4_921, 4_755, 4_748, 4_744, 4_742 };
+        for (var index = 0; index < projections.Count; index++)
+        {
+            var projection = projections[index];
+            var temperature = new BudgetWaterTemperature
+            {
+                Year = projection.Year,
+                Month = projection.Month,
+                WaterTemperatureCelsius = 18m
+            };
+            db.BudgetWaterTemperatures.Add(temperature);
+            await db.SaveChangesAsync();
+
+            db.BudgetFeedConsumptionRates.Add(new BudgetFeedConsumptionRate
+            {
+                WaterTemperatureId = temperature.Id,
+                CalibrationDefinitionId = calibration.Id,
+                FeedStockId = feedStock.Id,
+                FeedAmount = 0m
+            });
+            db.BudgetPlanSalesLines.Add(new BudgetPlanSalesLine
+            {
+                BudgetPlanId = plan.Id,
+                BudgetPlanFishBatchId = projection.BudgetPlanFishBatchId,
+                Year = projection.Year,
+                Month = projection.Month,
+                MarketType = BudgetMarketType.Domestic,
+                SalesTon = legacySalesCounts[index] * projection.ClosingAverageGram / 1_000_000m,
+                CurrencyCode = "EUR"
+            });
+        }
+        db.BudgetMortalityRateDefinitions.Add(new BudgetMortalityRateDefinition
+        {
+            FishStockId = fishStock.Id,
+            CalibrationDefinitionId = calibration.Id,
+            MortalityRatePercent = 0.25m
+        });
+        plan.Status = BudgetPlanStatus.SalesPlanned;
         await db.SaveChangesAsync();
 
+        var calculated = await fixture.Service.CalculateAsync(plan.Id);
+        Assert.True(calculated.Success, calculated.Message);
+        var calculatedRows = calculated.Data!.OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
+
+        Assert.Equal(
+            legacySalesCounts,
+            calculatedRows.Select(x => x.SalesCount).ToArray());
+        Assert.Equal(
+            new[] { 427_467, 419_463, 411_487, 403_781, 396_409, 389_454, 382_790, 376_444, 370_372, 364_525, 358_859, 353_214, 347_587 },
+            calculatedRows.Select(x => x.OpeningLiveCount).ToArray());
+        Assert.Equal(
+            new[] { 1_069, 1_049, 1_029, 1_009, 991, 974, 957, 941, 926, 911, 897, 883 },
+            calculatedRows.Take(12).Select(x => x.MortalityCount).ToArray());
+
         var report = await fixture.KpiService.GetReportAsync(plan.Id);
-        var reportMarch = Assert.Single(report.Data!.MonthlyRows, x => x.Year == 2026 && x.Month == 3);
+        Assert.True(report.Success, report.Message);
+        var reportRows = report.Data!.MonthlyRows.OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
+        var legacyStockTons = new[] { 308.20m, 302.85m, 308.09m, 317.27m, 332.29m, 342.16m, 355.14m, 366.90m, 376.29m, 383.39m, 377.79m, 372.20m, 366.62m };
+        Assert.All(reportRows.Select((row, index) => (row, index)), item =>
+            Assert.InRange(Math.Abs(item.row.StockTon - legacyStockTons[item.index]), 0m, 0.011m));
+        var reportMarch = reportRows[0];
         Assert.Equal(427_467, reportMarch.StockCount);
         Assert.Equal(721m, reportMarch.UnitGram);
         Assert.Equal(308.204m, reportMarch.StockTon);
