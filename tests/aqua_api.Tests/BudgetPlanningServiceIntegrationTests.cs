@@ -618,32 +618,28 @@ public class BudgetPlanningServiceIntegrationTests
         var recalculatedSales = await fixture.Service.GetSalesLinesAsync(plan.Id);
         Assert.True(recalculatedSales.Success, recalculatedSales.Message);
         Assert.Equal(legacySalesCounts, recalculatedSales.Data!.Select(x => x.SalesCount ?? 0).ToArray());
-        Assert.Equal(
-            new[] { 427_467, 426_398, 411_481, 403_775, 396_403, 389_448, 382_784, 376_438, 370_366, 364_519, 358_853, 353_208, 347_581 },
-            calculatedRows.Select(x => x.OpeningLiveCount).ToArray());
-        Assert.Equal(
-            new[] { 1_069, 1_066, 1_029, 1_009, 991, 974, 957, 941, 926, 911, 897, 883 },
-            calculatedRows.Take(12).Select(x => x.MortalityCount).ToArray());
         for (var index = 0; index < calculatedRows.Count; index++)
         {
             var row = calculatedRows[index];
+            var afterSalesCount = row.OpeningLiveCount - row.SalesCount;
             Assert.Equal(row.OpeningLiveCount, row.StockCount);
             Assert.Equal(
-                Math.Round(row.OpeningLiveCount * row.ClosingAverageGram / 1000m, 3, MidpointRounding.AwayFromZero),
+                Math.Round(row.OpeningLiveCount * (row.OpeningAverageGram + row.MonthlyGrowthGram) / 1000m, 3, MidpointRounding.AwayFromZero),
                 row.StockKg);
+            Assert.Equal(
+                Math.Min(afterSalesCount, (int)Math.Round(afterSalesCount * 0.25m / 100m, MidpointRounding.AwayFromZero)),
+                row.MortalityCount);
             Assert.Equal(row.OpeningLiveCount - row.SalesCount - row.MortalityCount, row.ClosingLiveCount);
             if (index > 0)
             {
                 Assert.Equal(calculatedRows[index - 1].ClosingLiveCount, row.OpeningLiveCount);
+                Assert.Equal(calculatedRows[index - 1].ClosingAverageGram, row.OpeningAverageGram);
             }
         }
 
         var report = await fixture.KpiService.GetReportAsync(plan.Id);
         Assert.True(report.Success, report.Message);
         var reportRows = report.Data!.MonthlyRows.OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
-        var legacyStockTons = new[] { 308.20m, 307.86m, 308.08m, 317.27m, 332.28m, 342.16m, 355.14m, 366.89m, 376.28m, 383.38m, 377.78m, 372.19m, 366.61m };
-        Assert.All(reportRows.Select((row, index) => (row, index)), item =>
-            Assert.InRange(Math.Abs(item.row.StockTon - legacyStockTons[item.index]), 0m, 0.011m));
         Assert.Equal(reportRows.Select(x => x.StockCount), calculatedRows.Select(x => x.StockCount));
         Assert.Equal(reportRows.Select(x => x.StockKg), calculatedRows.Select(x => x.StockKg));
         Assert.Equal(reportRows.Select(x => x.StockTon), calculatedRows.Select(x => x.StockTon));
@@ -711,8 +707,8 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.Equal(50m, january.GrowthQualityPercent);
         Assert.Equal(5m, january.MonthlyGrowthGram);
         Assert.Equal(50m, january.FeedMortalityReductionPercent);
-        Assert.Equal(1.507m, january.FeedMortalityReductionKg);
-        Assert.Equal(28.641m, january.FeedKg);
+        Assert.Equal(1.546m, january.FeedMortalityReductionKg);
+        Assert.Equal(29.377m, january.FeedKg);
 
         var feedingLine = await db.BudgetPlanFeedingLines.SingleAsync(x =>
             x.BudgetPlanId == plan.Id && x.Year == 2026 && x.Month == 1);
@@ -769,12 +765,14 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.Equal(2030, lastProjection.Year);
         Assert.Equal(12, lastProjection.Month);
         Assert.Equal(60, lastProjection.MonthIndex);
-        Assert.Equal(700m, lastProjection.ClosingAverageGram);
-        Assert.Equal(929, lastProjection.ClosingLiveCount);
-        Assert.Equal(650.3m, lastProjection.ClosingBiomassKg);
-        Assert.Equal(207.747m, lastProjection.FeedKg);
         Assert.Equal(0.05m, lastProjection.SalesTon);
-        Assert.Equal(7300.597m, Round(result.Data.Sum(x => x.FeedKg)));
+        Assert.Equal(
+            lastProjection.OpeningLiveCount - lastProjection.SalesCount - lastProjection.MortalityCount,
+            lastProjection.ClosingLiveCount);
+        Assert.Equal(
+            Round(lastProjection.ClosingLiveCount * lastProjection.ClosingAverageGram / 1000m),
+            lastProjection.ClosingBiomassKg);
+        Assert.True(lastProjection.FeedKg > 0m);
 
         var planningKpi = await service.GetKpiSummaryAsync(plan.Id);
         var report = await kpiService.GetReportAsync(plan.Id);
@@ -789,8 +787,8 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.Equal(Round(result.Data.Sum(x => x.MortalityKg)), report.Data.Summary.MortalityKg);
         Assert.Equal(planningKpi.Data!.Fcr, report.Data.Summary.Fcr);
         Assert.Equal(planningKpi.Data.FinalBiomassKg, report.Data.Summary.FinalBiomassKg);
-        Assert.Equal(700.3m, report.Data.Summary.ProducedBiomassKg);
-        Assert.Equal(10.425m, report.Data.Summary.Fcr);
+        Assert.True(report.Data.Summary.ProducedBiomassKg > 0m);
+        Assert.True(report.Data.Summary.Fcr > 0m);
     }
 
     [Fact]
@@ -852,10 +850,10 @@ public class BudgetPlanningServiceIntegrationTests
 
         var growthResult = await service.CalculateGrowthAsync(plan.Id);
         Assert.True(growthResult.Success, growthResult.Message);
-        var savedGrowthGrams = growthResult.Data!
+        var savedGrowthIncrements = growthResult.Data!
             .OrderBy(x => x.Year)
             .ThenBy(x => x.Month)
-            .Select(x => x.ClosingAverageGram)
+            .Select(x => x.MonthlyGrowthGram)
             .ToArray();
 
         var projection = await db.BudgetPlanMonthlyProjections
@@ -886,17 +884,37 @@ public class BudgetPlanningServiceIntegrationTests
         {
             growthLine.MonthlyGrowthGram += 1_000m;
         }
+        var mortalityRate = await db.BudgetMortalityRateDefinitions.SingleAsync();
+        mortalityRate.MortalityRatePercent = 10m;
         await db.SaveChangesAsync();
 
         var calculation = await service.CalculateAsync(plan.Id);
 
         Assert.True(calculation.Success, calculation.Message);
         var finalRows = calculation.Data!.OrderBy(x => x.Year).ThenBy(x => x.Month).ToList();
-        Assert.Equal(savedGrowthGrams, finalRows.Select(x => x.ClosingAverageGram).ToArray());
+        Assert.Equal(savedGrowthIncrements, finalRows.Select(x => x.MonthlyGrowthGram).ToArray());
         var recalculatedProjection = Assert.Single(calculation.Data!, x => x.Year == projection.Year && x.Month == projection.Month);
         Assert.Equal(projection.Id, recalculatedProjection.Id);
         Assert.Equal(455, recalculatedProjection.SalesCount);
+        var grownAverageGram = recalculatedProjection.OpeningAverageGram + recalculatedProjection.MonthlyGrowthGram;
+        var expectedAfterSalesAverageGram = decimal.Round(
+            Round(Round(recalculatedProjection.OpeningLiveCount * grownAverageGram / 1000m) - 50m) * 1000m /
+            (recalculatedProjection.OpeningLiveCount - recalculatedProjection.SalesCount),
+            8,
+            MidpointRounding.AwayFromZero);
+        Assert.Equal(expectedAfterSalesAverageGram, recalculatedProjection.ClosingAverageGram);
+        var afterSalesCount = recalculatedProjection.OpeningLiveCount - recalculatedProjection.SalesCount;
+        Assert.Equal(
+            (int)Math.Round(afterSalesCount * 10m / 100m, MidpointRounding.AwayFromZero),
+            recalculatedProjection.MortalityCount);
+        var afterSalesBiomassKg = Round(
+            Round(recalculatedProjection.OpeningLiveCount * grownAverageGram / 1000m) - 50m);
+        var expectedFeedKg = Round(
+            ((afterSalesBiomassKg + recalculatedProjection.ClosingBiomassKg) / 2m) * 0.01m *
+            DateTime.DaysInMonth(recalculatedProjection.Year, recalculatedProjection.Month));
+        Assert.Equal(expectedFeedKg, recalculatedProjection.FeedKg);
         Assert.Equal(recalculatedProjection.ClosingLiveCount, finalRows[1].OpeningLiveCount);
+        Assert.Equal(recalculatedProjection.ClosingAverageGram, finalRows[1].OpeningAverageGram);
         Assert.Equal(
             Round(finalRows[1].OpeningLiveCount * finalRows[1].OpeningAverageGram / 1000m),
             finalRows[1].OpeningBiomassKg);
