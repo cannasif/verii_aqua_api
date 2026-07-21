@@ -13,8 +13,11 @@ namespace aqua_api.Modules.Budget.Infrastructure.Persistence.Configurations
             builder.Property(x => x.BudgetFishGrowthProfileId).IsRequired();
             builder.Property(x => x.GrowthMonthNo).IsRequired();
             builder.Property(x => x.CalendarMonth).IsRequired();
-            builder.Property(x => x.MonthlyGrowthGram).HasColumnType("decimal(18,3)").IsRequired();
-            builder.Property(x => x.TotalGram).HasColumnType("decimal(18,3)").IsRequired();
+            // Netsis growth parameters arrive with up to eight decimal places.
+            // Keeping that precision prevents cumulative gram/biomass drift
+            // across long budget horizons.
+            builder.Property(x => x.MonthlyGrowthGram).HasColumnType("decimal(18,8)").IsRequired();
+            builder.Property(x => x.TotalGram).HasColumnType("decimal(18,8)").IsRequired();
 
             builder.HasIndex(x => new { x.BudgetFishGrowthProfileId, x.GrowthMonthNo })
                 .IsUnique()
