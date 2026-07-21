@@ -344,6 +344,27 @@ public class BudgetPlanningServiceIntegrationTests
         db.Stocks.AddRange(fishStock, feedStock);
         await db.SaveChangesAsync();
 
+        var sourceProject = new Project
+        {
+            ProjectCode = "20240715001A",
+            ProjectName = "Legacy project",
+            StartDate = new DateTime(2024, 7, 1),
+            Status = DocumentStatus.Posted
+        };
+        db.Projects.Add(sourceProject);
+        await db.SaveChangesAsync();
+
+        var sourceFishBatch = new FishBatch
+        {
+            ProjectId = sourceProject.Id,
+            FishStockId = fishStock.Id,
+            BatchCode = "LEGACY-BATCH",
+            CurrentAverageGram = 719.339m,
+            StartDate = new DateTime(2024, 7, 1)
+        };
+        db.FishBatches.Add(sourceFishBatch);
+        await db.SaveChangesAsync();
+
         var plan = new BudgetPlan
         {
             BudgetNo = "BUD-LEGACY-137",
@@ -373,13 +394,14 @@ public class BudgetPlanningServiceIntegrationTests
             BudgetPlanId = plan.Id,
             BudgetPlanProjectId = project.Id,
             SourceType = BudgetPlanSourceType.Actual,
+            SourceFishBatchId = sourceFishBatch.Id,
             FishStockId = fishStock.Id,
             BatchCode = "LEGACY-BATCH",
             InitialLiveCount = 427_467,
-            InitialAverageGram = 720m,
-            InitialBiomassKg = 307_776.24m,
-            GrowthStartYear = 2024,
-            GrowthStartMonth = 7
+            InitialAverageGram = 719.339m,
+            InitialBiomassKg = 307_493.73m,
+            GrowthStartYear = 2026,
+            GrowthStartMonth = 3
         });
 
         var calibration = new BudgetCalibrationDefinition
@@ -432,6 +454,11 @@ public class BudgetPlanningServiceIntegrationTests
             new[] { 721m, 722m, 748.717m, 785.751m, 838.246m, 878.575m, 927.776m, 974.64m, 1015.971m, 1051.749m, 1052.749m, 1053.749m, 1054.749m },
             projections.Select(x => x.ClosingAverageGram).ToArray());
         Assert.Equal(20, projections[0].MonthIndex);
+        var normalizedBatch = await db.BudgetPlanFishBatches.SingleAsync();
+        Assert.Equal(720m, normalizedBatch.InitialAverageGram);
+        Assert.Equal(307_776.24m, normalizedBatch.InitialBiomassKg);
+        Assert.Equal(2024, normalizedBatch.GrowthStartYear);
+        Assert.Equal(7, normalizedBatch.GrowthStartMonth);
 
         var legacySalesCounts = new[] { 0, 13_851, 6_677, 6_363, 5_964, 5_690, 5_389, 5_131, 4_921, 4_755, 4_748, 4_744, 4_742 };
         for (var index = 0; index < projections.Count; index++)

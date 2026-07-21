@@ -505,25 +505,6 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<List<BudgetPlanFishBatchDto>>.ErrorResult("En az bir balik partisi secilmelidir.", "En az bir balik partisi secilmelidir.", StatusCodes.Status400BadRequest);
         }
 
-        if (dto.GrowthStartYear.HasValue != dto.GrowthStartMonth.HasValue ||
-            (dto.GrowthStartMonth.HasValue && (dto.GrowthStartMonth < 1 || dto.GrowthStartMonth > 12)) ||
-            (dto.GrowthStartYear.HasValue && dto.GrowthStartYear <= 0))
-        {
-            return ApiResponse<List<BudgetPlanFishBatchDto>>.ErrorResult(
-                "Biyolojik buyume baslangic yil ve ayi birlikte ve gecerli girilmelidir.",
-                "Biyolojik buyume baslangic yil ve ayi birlikte ve gecerli girilmelidir.",
-                StatusCodes.Status400BadRequest);
-        }
-
-        if (dto.GrowthStartYear.HasValue &&
-            MonthsBetween(dto.GrowthStartYear.Value, dto.GrowthStartMonth!.Value, plan.StartYear, plan.StartMonth) < 0)
-        {
-            return ApiResponse<List<BudgetPlanFishBatchDto>>.ErrorResult(
-                "Biyolojik buyume baslangici butce baslangicindan ileri olamaz.",
-                "Biyolojik buyume baslangici butce baslangicindan ileri olamaz.",
-                StatusCodes.Status400BadRequest);
-        }
-
         var available = (await GetAvailableFishBatchesAsync()).Data?
             .Where(x => dto.FishBatchIds.Contains(x.FishBatchId))
             .ToList() ?? new List<BudgetAvailableFishBatchDto>();
@@ -541,6 +522,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                     continue;
                 }
 
+                var initialAverageGram = CeilingWholeGram(source.AverageGram);
                 await _unitOfWork.Repository<BudgetPlanFishBatch>().AddAsync(new BudgetPlanFishBatch
                 {
                     BudgetPlanId = plan.Id,
@@ -550,10 +532,10 @@ public class BudgetPlanningService : IBudgetPlanningService
                     FishStockId = source.FishStockId,
                     BatchCode = source.BatchCode,
                     InitialLiveCount = source.LiveCount,
-                    InitialAverageGram = source.AverageGram,
-                    InitialBiomassKg = source.BiomassKg,
-                    GrowthStartYear = dto.GrowthStartYear ?? source.GrowthStartYear,
-                    GrowthStartMonth = dto.GrowthStartMonth ?? source.GrowthStartMonth
+                    InitialAverageGram = initialAverageGram,
+                    InitialBiomassKg = Round(source.LiveCount * initialAverageGram / 1000m),
+                    GrowthStartYear = source.GrowthStartYear,
+                    GrowthStartMonth = source.GrowthStartMonth
                 });
             }
 
@@ -1314,6 +1296,11 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<List<BudgetPlanMonthlyProjectionDto>>.ErrorResult("Butceye en az bir balik satiri eklenmelidir.", "Butceye en az bir balik satiri eklenmelidir.", StatusCodes.Status400BadRequest);
         }
 
+        foreach (var batch in batches)
+        {
+            NormalizeActualBatchBaseline(batch);
+        }
+
         var periods = BuildPeriods(plan.StartYear, plan.StartMonth, plan.EndYear, plan.EndMonth);
         var sales = await _unitOfWork.Db.BudgetPlanSalesLines
             .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
@@ -1805,6 +1792,7 @@ public class BudgetPlanningService : IBudgetPlanningService
         return _unitOfWork.Db.BudgetPlanFishBatches
             .Include(x => x.BudgetPlanProject)
             .Include(x => x.FishStock)
+            .Include(x => x.SourceFishBatch)
             .Where(x => !x.IsDeleted);
     }
 
@@ -1940,6 +1928,21 @@ public class BudgetPlanningService : IBudgetPlanningService
             ? elapsedMonths
             : elapsedMonths + 1;
     }
+
+    private static void NormalizeActualBatchBaseline(BudgetPlanFishBatch batch)
+    {
+        if (batch.SourceType != BudgetPlanSourceType.Actual || batch.SourceFishBatch == null)
+        {
+            return;
+        }
+
+        batch.GrowthStartYear = batch.SourceFishBatch.StartDate.Year;
+        batch.GrowthStartMonth = batch.SourceFishBatch.StartDate.Month;
+        batch.InitialAverageGram = CeilingWholeGram(batch.InitialAverageGram);
+        batch.InitialBiomassKg = Round(batch.InitialLiveCount * batch.InitialAverageGram / 1000m);
+    }
+
+    private static decimal CeilingWholeGram(decimal value) => Math.Ceiling(value);
 
     private static BudgetCalibrationDefinition? FindCalibration(List<BudgetCalibrationDefinition> calibrations, decimal averageGram)
     {
