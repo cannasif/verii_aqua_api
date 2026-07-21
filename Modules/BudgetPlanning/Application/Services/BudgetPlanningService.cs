@@ -507,14 +507,23 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<List<BudgetPlanFishBatchDto>>.ErrorResult("En az bir balik partisi secilmelidir.", "En az bir balik partisi secilmelidir.", StatusCodes.Status400BadRequest);
         }
 
-        if (dto.GrowthStartMonth.HasValue && (dto.GrowthStartMonth < 1 || dto.GrowthStartMonth > 12))
+        if (dto.GrowthStartYear.HasValue != dto.GrowthStartMonth.HasValue ||
+            (dto.GrowthStartMonth.HasValue && (dto.GrowthStartMonth < 1 || dto.GrowthStartMonth > 12)) ||
+            (dto.GrowthStartYear.HasValue && dto.GrowthStartYear < 1900))
         {
-            return ApiResponse<List<BudgetPlanFishBatchDto>>.ErrorResult("Buyume baslangic ayi 1 ile 12 arasinda olmalidir.", "Buyume baslangic ayi 1 ile 12 arasinda olmalidir.", StatusCodes.Status400BadRequest);
+            return ApiResponse<List<BudgetPlanFishBatchDto>>.ErrorResult(
+                "Biyolojik buyume baslangic yil ve ayi birlikte ve gecerli girilmelidir.",
+                "Biyolojik buyume baslangic yil ve ayi birlikte ve gecerli girilmelidir.",
+                StatusCodes.Status400BadRequest);
         }
 
-        if (dto.GrowthStartYear.HasValue && dto.GrowthStartYear < 1900)
+        if (dto.GrowthStartYear.HasValue &&
+            MonthsBetween(dto.GrowthStartYear.Value, dto.GrowthStartMonth!.Value, plan.StartYear, plan.StartMonth) < 0)
         {
-            return ApiResponse<List<BudgetPlanFishBatchDto>>.ErrorResult("Buyume baslangic yili gecersizdir.", "Buyume baslangic yili gecersizdir.", StatusCodes.Status400BadRequest);
+            return ApiResponse<List<BudgetPlanFishBatchDto>>.ErrorResult(
+                "Biyolojik buyume baslangici butce baslangicindan ileri olamaz.",
+                "Biyolojik buyume baslangici butce baslangicindan ileri olamaz.",
+                StatusCodes.Status400BadRequest);
         }
 
         var available = (await GetAvailableFishBatchesAsync()).Data?
@@ -1335,11 +1344,6 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<List<BudgetPlanMonthlyProjectionDto>>.ErrorResult("Butceye en az bir balik satiri eklenmelidir.", "Butceye en az bir balik satiri eklenmelidir.", StatusCodes.Status400BadRequest);
         }
 
-        foreach (var batch in batches)
-        {
-            NormalizeActualBatchBaseline(batch);
-        }
-
         var periods = BuildPeriods(plan.StartYear, plan.StartMonth, plan.EndYear, plan.EndMonth);
         var sales = await _unitOfWork.Db.BudgetPlanSalesLines
             .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
@@ -1995,20 +1999,6 @@ public class BudgetPlanningService : IBudgetPlanningService
         return batch.SourceType == BudgetPlanSourceType.Actual && elapsedMonths > 0
             ? elapsedMonths
             : elapsedMonths + 1;
-    }
-
-    private static void NormalizeActualBatchBaseline(BudgetPlanFishBatch batch)
-    {
-        if (batch.SourceType != BudgetPlanSourceType.Actual || batch.SourceFishBatch == null)
-        {
-            return;
-        }
-
-        // GrowthStartYear/Month belongs to the budget scenario. It defaults to the
-        // source batch date during import, but must remain editable for scenarios
-        // that intentionally start from a different biological month.
-        batch.InitialAverageGram = CeilingWholeGram(batch.InitialAverageGram);
-        batch.InitialBiomassKg = Round(batch.InitialLiveCount * batch.InitialAverageGram / 1000m);
     }
 
     private static decimal CeilingWholeGram(decimal value) => Math.Ceiling(value);
