@@ -136,6 +136,12 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
         request.GrowthGram = 10m;
         using var duplicateResponse = await client.PostAsJsonAsync("/api/aqua/FishGrowth", request);
         Assert.Equal(HttpStatusCode.BadRequest, duplicateResponse.StatusCode);
+        var duplicateBody = await duplicateResponse.Content.ReadFromJsonAsync<ApiResponse<FishGrowthDto>>();
+        Assert.False(duplicateBody?.Success);
+        Assert.Equal(
+            "Bu kafes ve balık partisi için seçilen ayda büyütme kaydı zaten bulunmaktadır.",
+            duplicateBody!.Message);
+        Assert.Equal(duplicateBody.Message, duplicateBody.ExceptionMessage);
 
         using var verifyScope = _factory.Services.CreateScope();
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();

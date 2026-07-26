@@ -172,7 +172,7 @@ public class FishGrowthService : IFishGrowthService
         {
             await _unitOfWork.Rollback();
             return ApiResponse<FishGrowthDto>.ErrorResult(
-                _localizationService.GetLocalizedString("FishGrowthService.BusinessRuleError"),
+                ex.Message,
                 ex.Message,
                 StatusCodes.Status400BadRequest);
         }
