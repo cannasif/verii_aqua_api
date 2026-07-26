@@ -4,6 +4,7 @@ using aqua_api.Shared.Infrastructure.Persistence.Data;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using System.Data;
 using System.Globalization;
 using System.Linq.Expressions;
 using StockEntity = aqua_api.Modules.Stock.Domain.Entities.Stock;
@@ -15,7 +16,7 @@ namespace aqua_api.Modules.Integrations.Application.Services
     /// Read-oriented Netsis facade modeled after CRM's Netsis module.
     /// Existing Aqua ERP endpoints continue to work through an adapter layer.
     /// </summary>
-    public class NetsisReadService : INetsisReadService
+    public class NetsisReadService : INetsisReadService, IBudgetExchangeRateReadService
     {
         private readonly AquaDbContext _dbContext;
         private readonly ILogger<NetsisReadService> _logger;
@@ -460,6 +461,113 @@ namespace aqua_api.Modules.Integrations.Application.Services
                     _localizationService.GetLocalizedString("ErpService.InternalServerError"),
                     _localizationService.GetLocalizedString("ErpService.GetAllExchangeRateExceptionMessage", ex.Message),
                     StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        public async Task<ApiResponse<List<ErpBudgetExchangeRateDto>>> GetBudgetExchangeRatesAsync(
+            int startYear,
+            int startMonth,
+            int endYear,
+            int endMonth)
+        {
+            if (!IsValidPeriod(startYear, startMonth) ||
+                !IsValidPeriod(endYear, endMonth) ||
+                startYear * 12 + startMonth > endYear * 12 + endMonth)
+            {
+                return ApiResponse<List<ErpBudgetExchangeRateDto>>.ErrorResult(
+                    "Kur donemi hatali.",
+                    "Kur donemi hatali.",
+                    StatusCodes.Status400BadRequest);
+            }
+
+            var connection = _dbContext.Database.GetDbConnection();
+            var shouldCloseConnection = connection.State == ConnectionState.Closed;
+
+            try
+            {
+                if (shouldCloseConnection)
+                {
+                    await connection.OpenAsync();
+                }
+
+                await using var command = connection.CreateCommand();
+                command.CommandText =
+                    """
+                    SELECT
+                        KOD_ID,
+                        YIL_AY,
+                        TUTAR,
+                        AY,
+                        YIL,
+                        KAYIT_TARIHI
+                    FROM MAVIDEN..TB_PBI_DOVIZ
+                    WHERE
+                        (YIL > @StartYear OR (YIL = @StartYear AND TRY_CONVERT(int, AY) >= @StartMonth))
+                        AND
+                        (YIL < @EndYear OR (YIL = @EndYear AND TRY_CONVERT(int, AY) <= @EndMonth))
+                    ORDER BY YIL, TRY_CONVERT(int, AY), KOD_ID, KAYIT_TARIHI DESC;
+                    """;
+                AddParameter(command, "@StartYear", startYear);
+                AddParameter(command, "@StartMonth", startMonth);
+                AddParameter(command, "@EndYear", endYear);
+                AddParameter(command, "@EndMonth", endMonth);
+
+                var rows = new List<ErpBudgetExchangeRateDto>();
+                await using var reader = await command.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    if (reader.IsDBNull(0) ||
+                        reader.IsDBNull(2) ||
+                        reader.IsDBNull(3) ||
+                        reader.IsDBNull(4) ||
+                        !int.TryParse(reader.GetString(3), NumberStyles.Integer, CultureInfo.InvariantCulture, out var month))
+                    {
+                        continue;
+                    }
+
+                    var currencyTypeId = reader.GetInt32(0);
+                    var currencyCode = ResolveCurrencyCode(currencyTypeId);
+                    if (currencyCode == null || month is < 1 or > 12)
+                    {
+                        continue;
+                    }
+
+                    rows.Add(new ErpBudgetExchangeRateDto
+                    {
+                        CurrencyTypeId = currencyTypeId,
+                        CurrencyCode = currencyCode,
+                        YearMonth = reader.IsDBNull(1) ? null : reader.GetString(1),
+                        ExchangeRate = reader.GetDecimal(2),
+                        Month = month,
+                        Year = reader.GetInt32(4),
+                        RecordDate = reader.IsDBNull(5) ? null : reader.GetDateTime(5)
+                    });
+                }
+
+                return ApiResponse<List<ErpBudgetExchangeRateDto>>.SuccessResult(
+                    rows,
+                    "Butce kur kayitlari getirildi.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "MAVIDEN budget exchange rates could not be read for {StartYear}-{StartMonth} / {EndYear}-{EndMonth}.",
+                    startYear,
+                    startMonth,
+                    endYear,
+                    endMonth);
+                return ApiResponse<List<ErpBudgetExchangeRateDto>>.ErrorResult(
+                    "Butce kur kayitlari getirilemedi.",
+                    ex.Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+            finally
+            {
+                if (shouldCloseConnection && connection.State != ConnectionState.Closed)
+                {
+                    await connection.CloseAsync();
+                }
             }
         }
 
@@ -914,6 +1022,30 @@ namespace aqua_api.Modules.Integrations.Application.Services
                 Kod5 = stock.Kod5,
                 Kod5Adi = stock.Kod5Adi,
             };
+        }
+
+        private static bool IsValidPeriod(int year, int month)
+        {
+            return year is >= 2000 and <= 2100 && month is >= 1 and <= 12;
+        }
+
+        private static string? ResolveCurrencyCode(int currencyTypeId)
+        {
+            return currencyTypeId switch
+            {
+                1 => "USD",
+                2 => "EUR",
+                3 => "GBP",
+                _ => null
+            };
+        }
+
+        private static void AddParameter(global::System.Data.Common.DbCommand command, string name, object value)
+        {
+            var parameter = command.CreateParameter();
+            parameter.ParameterName = name;
+            parameter.Value = value;
+            command.Parameters.Add(parameter);
         }
 
         private static DepoDto MapWarehouseMirror(WarehouseEntity warehouse)

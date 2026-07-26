@@ -14,15 +14,18 @@ namespace aqua_api.Modules.Integrations.Api
     public class NetsisReadController : ControllerBase
     {
         private readonly INetsisReadService _netsisReadService;
+        private readonly IBudgetExchangeRateReadService _budgetExchangeRateReadService;
         private readonly IErpReceiptResyncService _erpReceiptResyncService;
         private readonly ILocalizationService _localizationService;
 
         public NetsisReadController(
             INetsisReadService netsisReadService,
+            IBudgetExchangeRateReadService budgetExchangeRateReadService,
             IErpReceiptResyncService erpReceiptResyncService,
             ILocalizationService localizationService)
         {
             _netsisReadService = netsisReadService;
+            _budgetExchangeRateReadService = budgetExchangeRateReadService;
             _erpReceiptResyncService = erpReceiptResyncService;
             _localizationService = localizationService;
         }
@@ -118,6 +121,17 @@ namespace aqua_api.Modules.Integrations.Api
         public async Task<ActionResult<ApiResponse<List<KurDto>>>> GetExchangeRate([FromQuery] DateTime tarih, [FromQuery] int fiyatTipi)
         {
             var result = await _netsisReadService.GetExchangeRatesAsync(tarih, fiyatTipi);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpGet("getBudgetExchangeRates")]
+        public async Task<ActionResult<ApiResponse<List<ErpBudgetExchangeRateDto>>>> GetBudgetExchangeRates(
+            [FromQuery] int startYear,
+            [FromQuery] int startMonth,
+            [FromQuery] int endYear,
+            [FromQuery] int endMonth)
+        {
+            var result = await _budgetExchangeRateReadService.GetBudgetExchangeRatesAsync(startYear, startMonth, endYear, endMonth);
             return StatusCode(result.StatusCode, result);
         }
 

@@ -6,6 +6,8 @@ using aqua_api.Modules.BudgetPlanning.Domain.Entities;
 using aqua_api.Modules.BudgetPlanning.Application.Dtos;
 using aqua_api.Modules.BudgetPlanning.Application.Services;
 using aqua_api.Modules.BudgetKpi.Application.Services;
+using aqua_api.Modules.Integrations.Application.Dtos;
+using aqua_api.Modules.Integrations.Application.Services;
 using aqua_api.Modules.Aqua.Domain.Enums;
 using aqua_api.Modules.Stock.Domain.Entities;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
@@ -21,6 +23,107 @@ namespace aqua_api.Tests;
 
 public class BudgetPlanningServiceIntegrationTests
 {
+    [Fact]
+    public async Task GenerateExchangeRates_UsesLatestErpRates_FallsBackAndPreservesManualOverrides()
+    {
+        var erpReader = new StubBudgetExchangeRateReadService(
+        [
+            new ErpBudgetExchangeRateDto
+            {
+                CurrencyTypeId = 2,
+                CurrencyCode = "EUR",
+                YearMonth = "2026-01",
+                Year = 2026,
+                Month = 1,
+                ExchangeRate = 40m,
+                RecordDate = new DateTime(2025, 12, 1)
+            },
+            new ErpBudgetExchangeRateDto
+            {
+                CurrencyTypeId = 2,
+                CurrencyCode = "EUR",
+                YearMonth = "2026-01",
+                Year = 2026,
+                Month = 1,
+                ExchangeRate = 42m,
+                RecordDate = new DateTime(2025, 12, 15)
+            },
+            new ErpBudgetExchangeRateDto
+            {
+                CurrencyTypeId = 2,
+                CurrencyCode = "EUR",
+                YearMonth = "2026-02",
+                Year = 2026,
+                Month = 2,
+                ExchangeRate = 43m,
+                RecordDate = new DateTime(2026, 1, 15)
+            },
+            new ErpBudgetExchangeRateDto
+            {
+                CurrencyTypeId = 1,
+                CurrencyCode = "USD",
+                YearMonth = "2026-01",
+                Year = 2026,
+                Month = 1,
+                ExchangeRate = 36m,
+                RecordDate = new DateTime(2025, 12, 15)
+            }
+        ]);
+        await using var fixture = await CreateFixtureAsync(erpReader);
+
+        var planResult = await fixture.Service.CreatePlanAsync(new CreateBudgetPlanDto
+        {
+            BudgetCode = "ERP-RATE-TEST",
+            BudgetName = "ERP Rate Test",
+            StartYear = 2026,
+            StartMonth = 1,
+            EndYear = 2026,
+            EndMonth = 2
+        });
+        var planId = planResult.Data!.Id;
+
+        var generateResult = await fixture.Service.GenerateExchangeRatesAsync(planId, new GenerateBudgetPlanExchangeRatesDto
+        {
+            CurrencyCodes = ["EUR", "USD", "TRY"],
+            DefaultExchangeRate = 99m,
+            SourceType = "Manual",
+            UseErpSource = true
+        });
+
+        Assert.True(generateResult.Success);
+        Assert.Equal(42m, FindRate(generateResult.Data!, 2026, 1, "EUR").ExchangeRate);
+        Assert.Equal("ERP", FindRate(generateResult.Data!, 2026, 1, "EUR").SourceType);
+        Assert.Contains("KOD_ID=2", FindRate(generateResult.Data!, 2026, 1, "EUR").SourceReference);
+        Assert.Equal(43m, FindRate(generateResult.Data!, 2026, 2, "EUR").ExchangeRate);
+        Assert.Equal(36m, FindRate(generateResult.Data!, 2026, 1, "USD").ExchangeRate);
+        Assert.Equal(99m, FindRate(generateResult.Data!, 2026, 2, "USD").ExchangeRate);
+        Assert.Equal(1m, FindRate(generateResult.Data!, 2026, 1, "TRY").ExchangeRate);
+
+        var manualResult = await fixture.Service.UpsertExchangeRateAsync(planId, new UpsertBudgetPlanExchangeRateDto
+        {
+            Year = 2026,
+            Month = 1,
+            CurrencyCode = "EUR",
+            RateType = "Budget",
+            ExchangeRate = 55m,
+            SourceType = "Manual",
+            IsManualOverride = true
+        });
+        Assert.True(manualResult.Success);
+
+        erpReader.Rows.Single(x => x.CurrencyCode == "EUR" && x.Month == 1 && x.ExchangeRate == 42m).ExchangeRate = 60m;
+        var regenerateResult = await fixture.Service.GenerateExchangeRatesAsync(planId, new GenerateBudgetPlanExchangeRatesDto
+        {
+            CurrencyCodes = ["EUR"],
+            DefaultExchangeRate = 99m,
+            UseErpSource = true
+        });
+
+        var preserved = FindRate(regenerateResult.Data!, 2026, 1, "EUR");
+        Assert.Equal(55m, preserved.ExchangeRate);
+        Assert.True(preserved.IsManualOverride);
+    }
+
     [Fact]
     public async Task AvailableFishBatches_SubtractsPostedShipmentsMissingFromLedger()
     {
@@ -1304,7 +1407,17 @@ public class BudgetPlanningServiceIntegrationTests
         });
     }
 
-    private static async Task<BudgetFixture> CreateFixtureAsync()
+    private static BudgetPlanExchangeRateDto FindRate(
+        IEnumerable<BudgetPlanExchangeRateDto> rows,
+        int year,
+        int month,
+        string currencyCode)
+    {
+        return rows.Single(x => x.Year == year && x.Month == month && x.CurrencyCode == currencyCode);
+    }
+
+    private static async Task<BudgetFixture> CreateFixtureAsync(
+        IBudgetExchangeRateReadService? exchangeRateReadService = null)
     {
         var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -1318,9 +1431,30 @@ public class BudgetPlanningServiceIntegrationTests
         return new BudgetFixture(
             connection,
             db,
-            new BudgetPlanningService(unitOfWork),
+            new BudgetPlanningService(unitOfWork, exchangeRateReadService),
             new BudgetAdjustmentRateDefinitionService(unitOfWork),
             new BudgetKpiService(db));
+    }
+
+    private sealed class StubBudgetExchangeRateReadService : IBudgetExchangeRateReadService
+    {
+        public StubBudgetExchangeRateReadService(List<ErpBudgetExchangeRateDto> rows)
+        {
+            Rows = rows;
+        }
+
+        public List<ErpBudgetExchangeRateDto> Rows { get; }
+
+        public Task<ApiResponse<List<ErpBudgetExchangeRateDto>>> GetBudgetExchangeRatesAsync(
+            int startYear,
+            int startMonth,
+            int endYear,
+            int endMonth)
+        {
+            return Task.FromResult(ApiResponse<List<ErpBudgetExchangeRateDto>>.SuccessResult(
+                Rows,
+                "ok"));
+        }
     }
 
     private sealed class BudgetFixture : IAsyncDisposable

@@ -10,11 +10,17 @@ namespace aqua_api.Modules.BudgetPlanning.Application.Services;
 
 public class BudgetPlanningService : IBudgetPlanningService
 {
+    private const string ErpExchangeRateSourceType = "ERP";
+    private const string ErpExchangeRateSourceName = "MAVIDEN..TB_PBI_DOVIZ";
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IBudgetExchangeRateReadService? _exchangeRateReadService;
 
-    public BudgetPlanningService(IUnitOfWork unitOfWork)
+    public BudgetPlanningService(
+        IUnitOfWork unitOfWork,
+        IBudgetExchangeRateReadService? exchangeRateReadService = null)
     {
         _unitOfWork = unitOfWork;
+        _exchangeRateReadService = exchangeRateReadService;
     }
 
     public async Task<ApiResponse<PagedResponse<BudgetPlanDto>>> GetPlansAsync(PagedRequest request)
@@ -1027,6 +1033,9 @@ public class BudgetPlanningService : IBudgetPlanningService
         var rateType = NormalizeRequired(dto.RateType, "Budget");
         var sourceType = NormalizeRequired(dto.SourceType, "Manual");
         var periods = BuildPeriods(plan.StartYear, plan.StartMonth, plan.EndYear, plan.EndMonth);
+        var erpRates = dto.UseErpSource
+            ? await LoadErpExchangeRateLookupAsync(plan)
+            : new Dictionary<string, ErpBudgetExchangeRateDto>(StringComparer.OrdinalIgnoreCase);
         var existingRows = await _unitOfWork.Db.BudgetPlanExchangeRates
             .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
             .ToListAsync();
@@ -1057,9 +1066,24 @@ public class BudgetPlanningService : IBudgetPlanningService
 
                 if (!entity.IsManualOverride)
                 {
-                    entity.ExchangeRate = dto.DefaultExchangeRate;
-                    entity.SourceType = sourceType;
-                    entity.SourceReference = NormalizeOptional(dto.SourceReference);
+                    var erpRate = ResolveErpExchangeRate(erpRates, period.Year, period.Month, currencyCode);
+                    if (currencyCode == "TRY")
+                    {
+                        entity.ExchangeRate = 1m;
+                        entity.SourceType = "System";
+                        entity.SourceReference = "TRY";
+                    }
+                    else if (erpRate != null)
+                    {
+                        ApplyErpExchangeRate(entity, erpRate);
+                    }
+                    else if (!string.Equals(entity.SourceType, ErpExchangeRateSourceType, StringComparison.OrdinalIgnoreCase) ||
+                             entity.ExchangeRate <= 0m)
+                    {
+                        entity.ExchangeRate = dto.DefaultExchangeRate;
+                        entity.SourceType = sourceType;
+                        entity.SourceReference = NormalizeOptional(dto.SourceReference);
+                    }
                 }
             }
         }
@@ -1417,6 +1441,15 @@ public class BudgetPlanningService : IBudgetPlanningService
         var mortalityRates = await _unitOfWork.Db.BudgetMortalityRateDefinitions
             .Where(x => !x.IsDeleted)
             .ToListAsync();
+        if (includeSalesAndOperations)
+        {
+            var requiredCurrencies = sales
+                .Select(x => NormalizeCurrencyCode(x.CurrencyCode, "EUR"))
+                .Append("EUR")
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            await SynchronizeErpExchangeRatesAsync(plan, requiredCurrencies);
+        }
         var exchangeRateLookup = await LoadAllExchangeRateLookupAsync(budgetPlanId);
 
         var definitionValidation = ValidateProjectionDefinitions(
@@ -2867,6 +2900,110 @@ public class BudgetPlanningService : IBudgetPlanningService
             "GBP" => "Ingiliz Sterlini",
             _ => currencyCode
         };
+    }
+
+    private async Task SynchronizeErpExchangeRatesAsync(BudgetPlan plan, IReadOnlyCollection<string> currencyCodes)
+    {
+        var erpRates = await LoadErpExchangeRateLookupAsync(plan);
+        if (erpRates.Count == 0)
+        {
+            return;
+        }
+
+        var normalizedCurrencies = currencyCodes
+            .Select(NormalizeCurrencyCode)
+            .Where(x => x is "USD" or "EUR" or "GBP")
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (normalizedCurrencies.Count == 0)
+        {
+            return;
+        }
+
+        var existingRows = await _unitOfWork.Db.BudgetPlanExchangeRates
+            .Where(x => x.BudgetPlanId == plan.Id && x.RateType == "Budget" && !x.IsDeleted)
+            .ToListAsync();
+        var hasChanges = false;
+
+        foreach (var erpRate in erpRates.Values.Where(x => normalizedCurrencies.Contains(x.CurrencyCode)))
+        {
+            var entity = existingRows.FirstOrDefault(x =>
+                x.Year == erpRate.Year &&
+                x.Month == erpRate.Month &&
+                x.CurrencyCode == erpRate.CurrencyCode);
+
+            if (entity?.IsManualOverride == true)
+            {
+                continue;
+            }
+
+            if (entity == null)
+            {
+                entity = new BudgetPlanExchangeRate
+                {
+                    BudgetPlanId = plan.Id,
+                    Year = erpRate.Year,
+                    Month = erpRate.Month,
+                    CurrencyCode = erpRate.CurrencyCode,
+                    RateType = "Budget"
+                };
+                existingRows.Add(entity);
+                await _unitOfWork.Repository<BudgetPlanExchangeRate>().AddAsync(entity);
+            }
+
+            ApplyErpExchangeRate(entity, erpRate);
+            hasChanges = true;
+        }
+
+        if (hasChanges)
+        {
+            await _unitOfWork.SaveChangesAsync();
+        }
+    }
+
+    private async Task<Dictionary<string, ErpBudgetExchangeRateDto>> LoadErpExchangeRateLookupAsync(BudgetPlan plan)
+    {
+        if (_exchangeRateReadService == null)
+        {
+            return new Dictionary<string, ErpBudgetExchangeRateDto>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        var response = await _exchangeRateReadService.GetBudgetExchangeRatesAsync(
+            plan.StartYear,
+            plan.StartMonth,
+            plan.EndYear,
+            plan.EndMonth);
+        if (!response.Success || response.Data == null)
+        {
+            return new Dictionary<string, ErpBudgetExchangeRateDto>(StringComparer.OrdinalIgnoreCase);
+        }
+
+        return response.Data
+            .Where(x => x.ExchangeRate > 0m && x.Month is >= 1 and <= 12)
+            .GroupBy(x => FishPriceExchangeRateKey(x.Year, x.Month, x.CurrencyCode), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(
+                x => x.Key,
+                x => x.OrderByDescending(row => row.RecordDate).First(),
+                StringComparer.OrdinalIgnoreCase);
+    }
+
+    private static ErpBudgetExchangeRateDto? ResolveErpExchangeRate(
+        IReadOnlyDictionary<string, ErpBudgetExchangeRateDto> exchangeRates,
+        int year,
+        int month,
+        string currencyCode)
+    {
+        return exchangeRates.TryGetValue(FishPriceExchangeRateKey(year, month, currencyCode), out var rate)
+            ? rate
+            : null;
+    }
+
+    private static void ApplyErpExchangeRate(BudgetPlanExchangeRate entity, ErpBudgetExchangeRateDto source)
+    {
+        entity.ExchangeRate = source.ExchangeRate;
+        entity.SourceType = ErpExchangeRateSourceType;
+        entity.SourceReference =
+            $"{ErpExchangeRateSourceName};KOD_ID={source.CurrencyTypeId};YIL_AY={source.YearMonth ?? $"{source.Year:D4}-{source.Month:D2}"}";
+        entity.IsManualOverride = false;
     }
 
     private async Task<Dictionary<BudgetPeriod, decimal>> LoadExchangeRateLookupAsync(long budgetPlanId, string currencyCode)

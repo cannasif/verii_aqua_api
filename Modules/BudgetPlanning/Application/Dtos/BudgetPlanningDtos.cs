@@ -219,6 +219,7 @@ public class GenerateBudgetPlanExchangeRatesDto
     public decimal DefaultExchangeRate { get; set; }
     public string SourceType { get; set; } = "Manual";
     public string? SourceReference { get; set; }
+    public bool UseErpSource { get; set; } = true;
 }
 
 public class UpsertBudgetPlanExchangeRateDto
