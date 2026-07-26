@@ -28,6 +28,7 @@ namespace aqua_api.Modules.Warehouse.Application.Services
                 var query = _unitOfWork.Repository<WarehouseEntity>()
                     .Query()
                     .Where(x => !x.IsDeleted)
+                    .ApplySearch(request.Search)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(WarehouseEntity.Id) : request.SortBy;

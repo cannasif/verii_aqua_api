@@ -55,6 +55,7 @@ namespace aqua_api.Modules.NetOperations.Application.Services
                 var query = _unitOfWork.NetOperationTypes
                     .Query()
                     .Where(x => !x.IsDeleted)
+                    .ApplySearch(request.Search)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(NetOperationType.Id) : request.SortBy;

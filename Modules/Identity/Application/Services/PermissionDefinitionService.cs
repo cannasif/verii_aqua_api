@@ -27,6 +27,7 @@ namespace aqua_api.Modules.Identity.Application.Services
                     .Include(x => x.CreatedByUser)
                     .Include(x => x.UpdatedByUser)
                     .Include(x => x.DeletedByUser)
+                    .ApplySearch(request.Search)
                     .ApplyFilters(request.Filters, request.FilterLogic)
                     .ApplySorting(request.SortBy ?? nameof(PermissionDefinition.Id), request.SortDirection);
 

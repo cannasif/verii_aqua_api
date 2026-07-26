@@ -38,7 +38,8 @@ namespace aqua_api.Modules.WindDirection.Application.Services
                 request ??= new PagedRequest();
                 request.Filters ??= new List<Filter>();
 
-                var query = BaseQuery().ApplyFilters(request.Filters, request.FilterLogic);
+                var query = BaseQuery().ApplySearch(request.Search)
+                    .ApplyFilters(request.Filters, request.FilterLogic);
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(WindDirectionMatchEntity.RecordDate) : request.SortBy;
                 query = query.ApplySorting(sortBy, request.SortDirection);
 

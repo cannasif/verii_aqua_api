@@ -55,6 +55,7 @@ namespace aqua_api.Modules.Cages.Application.Services
                 var query = _unitOfWork.Cages
                     .Query()
                     .Where(x => !x.IsDeleted)
+                    .ApplySearch(request.Search)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(Cage.Id) : request.SortBy;

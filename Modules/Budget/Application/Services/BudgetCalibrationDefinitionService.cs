@@ -44,6 +44,7 @@ namespace aqua_api.Modules.Budget.Application.Services
                 var query = _unitOfWork.Db.BudgetCalibrationDefinitions
                     .AsNoTracking()
                     .Where(x => !x.IsDeleted)
+                    .ApplySearch(request.Search)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(BudgetCalibrationDefinition.CalibrationCode) : request.SortBy;

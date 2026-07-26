@@ -5,11 +5,25 @@ using System.Reflection;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Microsoft.EntityFrameworkCore;
 
 namespace aqua_api.Shared.Common.Helpers
 {
     public static class QueryHelper
     {
+        public const string SearchCollation = "Latin1_General_100_CI_AS";
+
+        private static readonly MethodInfo CollateStringMethod = typeof(RelationalDbFunctionsExtensions)
+            .GetMethods(BindingFlags.Public | BindingFlags.Static)
+            .Single(method =>
+                method.Name == nameof(RelationalDbFunctionsExtensions.Collate)
+                && method.IsGenericMethodDefinition
+                && method.GetParameters().Length == 3)
+            .MakeGenericMethod(typeof(string));
+
+        private static readonly PropertyInfo EfFunctionsProperty = typeof(EF)
+            .GetProperty(nameof(EF.Functions), BindingFlags.Public | BindingFlags.Static)!;
+
         private static readonly char[] SearchSeparators = [' ', '\t', '\r', '\n'];
         private static readonly char[] SearchTermTokenSeparators =
         [
@@ -95,17 +109,72 @@ namespace aqua_api.Shared.Common.Helpers
             "Stock.StockCode",
             "Stock.StockName",
             "Stock.ErpStockCode",
+            "FishStock.StockCode",
+            "FishStock.StockName",
+            "FishStock.ErpStockCode",
+            "FeedStock.StockCode",
+            "FeedStock.StockName",
+            "FeedStock.ErpStockCode",
+            "FromStock.StockCode",
+            "FromStock.StockName",
+            "FromStock.ErpStockCode",
+            "ToStock.StockCode",
+            "ToStock.StockName",
+            "ToStock.ErpStockCode",
             "Project.ProjectCode",
             "Project.ProjectName",
+            "SourceProject.ProjectCode",
+            "SourceProject.ProjectName",
+            "TargetProject.ProjectCode",
+            "TargetProject.ProjectName",
             "FishBatch.BatchCode",
             "FishBatch.Project.ProjectCode",
             "FishBatch.Project.ProjectName",
             "FishBatch.FishStock.ErpStockCode",
             "FishBatch.FishStock.StockName",
+            "FromFishBatch.BatchCode",
+            "ToFishBatch.BatchCode",
             "ProjectCage.Cage.CageCode",
             "ProjectCage.Cage.CageName",
+            "ProjectCage.Project.ProjectCode",
+            "ProjectCage.Project.ProjectName",
+            "FromProjectCage.Cage.CageCode",
+            "FromProjectCage.Cage.CageName",
+            "FromProjectCage.Project.ProjectCode",
+            "FromProjectCage.Project.ProjectName",
+            "ToProjectCage.Cage.CageCode",
+            "ToProjectCage.Cage.CageName",
+            "ToProjectCage.Project.ProjectCode",
+            "ToProjectCage.Project.ProjectName",
+            "Cage.CageCode",
+            "Cage.CageName",
             "Warehouse.WarehouseCode",
-            "Warehouse.WarehouseName"
+            "Warehouse.WarehouseName",
+            "FromWarehouse.WarehouseCode",
+            "FromWarehouse.WarehouseName",
+            "ToWarehouse.WarehouseCode",
+            "ToWarehouse.WarehouseName",
+            "TargetWarehouse.WarehouseCode",
+            "TargetWarehouse.WarehouseName",
+            "OperationType.Code",
+            "OperationType.Name",
+            "WeatherType.Code",
+            "WeatherType.Name",
+            "WeatherSeverity.Code",
+            "WeatherSeverity.Name",
+            "CalibrationDefinition.CalibrationCode",
+            "CalibrationDefinition.CalibrationInfo",
+            "Feeding.FeedingNo",
+            "Shipment.ShipmentNo",
+            "Transfer.TransferNo",
+            "WarehouseTransfer.TransferNo",
+            "CageWarehouseTransfer.TransferNo",
+            "WarehouseCageTransfer.TransferNo",
+            "Weighing.WeighingNo",
+            "Mortality.MortalityNo",
+            "GoodsReceipt.ReceiptNo",
+            "StockConvert.ConvertNo",
+            "NetOperation.OperationNo"
         };
 
         public sealed record SearchTerm(string Raw, string Normalized);
@@ -157,9 +226,20 @@ namespace aqua_api.Shared.Common.Helpers
 
         public static IQueryable<T> ApplySearch<T>(this IQueryable<T> query, string? search, params string[] searchableColumns)
         {
-            if (string.IsNullOrWhiteSpace(search) || searchableColumns.Length == 0)
+            if (string.IsNullOrWhiteSpace(search))
             {
                 return query;
+            }
+
+            if (searchableColumns.Length == 0)
+            {
+                searchableColumns = CommonSearchableColumns
+                    .Concat(typeof(T)
+                        .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                        .Where(property => property.PropertyType == typeof(string))
+                        .Select(property => property.Name))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToArray();
             }
 
             var useEfSearch = IsEntityFrameworkQuery(query);
@@ -295,11 +375,16 @@ namespace aqua_api.Shared.Common.Helpers
         private static Expression BuildSqlServerSearchPredicate(Expression member, string rawTerm, string normalizedTerm)
         {
             var containsMethod = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) })!;
+            var collatedMember = Expression.Call(
+                CollateStringMethod,
+                Expression.Property(null, EfFunctionsProperty),
+                member,
+                Expression.Constant(SearchCollation));
 
             Expression? predicate = null;
             if (!string.IsNullOrWhiteSpace(rawTerm))
             {
-                predicate = Expression.Call(member, containsMethod, Expression.Constant(rawTerm.Trim()));
+                predicate = Expression.Call(collatedMember, containsMethod, Expression.Constant(rawTerm.Trim()));
             }
 
             return predicate ?? Expression.Constant(true);

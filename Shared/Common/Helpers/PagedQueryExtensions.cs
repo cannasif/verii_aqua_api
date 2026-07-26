@@ -29,7 +29,7 @@ namespace aqua_api.Shared.Common.Helpers
         public static async Task<PagedQueryResult<T>> ToPagedItemsAsync<T>(
             this IQueryable<T> query,
             PagedRequest request,
-            bool useSeekCountForSearch = true,
+            bool useSeekCountForSearch = false,
             int maxPageSize = DefaultMaxPageSize,
             CancellationToken cancellationToken = default)
         {
@@ -51,7 +51,7 @@ namespace aqua_api.Shared.Common.Helpers
             int pageNumber,
             int pageSize,
             bool hasSearch,
-            bool useSeekCountForSearch = true,
+            bool useSeekCountForSearch = false,
             int maxPageSize = DefaultMaxPageSize,
             CancellationToken cancellationToken = default)
         {

@@ -55,6 +55,7 @@ namespace aqua_api.Modules.ProjectMerges.Application.Services
 
                 var query = QueryProjectMerges()
                     .Where(x => !x.IsDeleted)
+                    .ApplySearch(request.Search)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(ProjectMerge.Id) : request.SortBy;

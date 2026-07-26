@@ -32,6 +32,7 @@ public class FishGrowthService : IFishGrowthService
                 .Include(x => x.Project)
                 .Include(x => x.ProjectCage).ThenInclude(x => x!.Cage)
                 .Include(x => x.FishBatch)
+                .ApplySearch(request.Search)
                 .ApplyFilters(request.Filters, request.FilterLogic);
 
             query = query.ApplySorting(

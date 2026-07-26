@@ -33,6 +33,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             .Include(x => x.FishBatches)
             .Include(x => x.MonthlyProjections)
             .Where(x => !x.IsDeleted)
+            .ApplySearch(request.Search)
             .ApplyFilters(request.Filters, request.FilterLogic);
 
         var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(BudgetPlan.Id) : request.SortBy;
@@ -1825,6 +1826,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             .Include(x => x.FishStock)
             .Include(x => x.CalibrationDefinition)
             .Where(x => !x.IsDeleted)
+            .ApplySearch(request.Search)
             .ApplyFilters(request.Filters, request.FilterLogic);
 
         var totalCount = await query.CountAsync();

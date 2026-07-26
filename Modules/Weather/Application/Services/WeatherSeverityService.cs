@@ -55,6 +55,7 @@ namespace aqua_api.Modules.Weather.Application.Services
                 var query = _unitOfWork.WeatherSeverities
                     .Query()
                     .Where(x => !x.IsDeleted)
+                    .ApplySearch(request.Search)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(WeatherSeverity.Id) : request.SortBy;

@@ -19,6 +19,7 @@ using aqua_api.Modules.Integrations.Application.Services;
 using aqua_api.Modules.Stock.Domain.Entities;
 using aqua_api.Modules.Warehouse.Domain.Entities;
 using aqua_api.Shared.Common.Dtos;
+using aqua_api.Shared.Common.Helpers;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 using Xunit;
 
@@ -77,6 +78,9 @@ public sealed class AquaHttpTestWebApplicationFactory : WebApplicationFactory<Pr
     public async Task InitializeAsync()
     {
         await _connection.OpenAsync();
+        _connection.CreateCollation(
+            QueryHelper.SearchCollation,
+            (left, right) => string.Compare(left, right, CultureInfo.InvariantCulture, CompareOptions.IgnoreCase));
 
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();

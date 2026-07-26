@@ -44,6 +44,7 @@ namespace aqua_api.Modules.CurrentDirection.Application.Services
                 var query = _unitOfWork.Db.CurrentDirections
                     .AsNoTracking()
                     .Where(x => !x.IsDeleted)
+                    .ApplySearch(request.Search)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(CurrentDirectionEntity.Name) : request.SortBy;

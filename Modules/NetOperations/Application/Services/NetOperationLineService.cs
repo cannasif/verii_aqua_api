@@ -71,6 +71,7 @@ namespace aqua_api.Modules.NetOperations.Application.Services
                     .Include(x => x.ProjectCage)
                         .ThenInclude(x => x!.Cage)
                     .Where(x => !x.IsDeleted)
+                    .ApplySearch(request.Search)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(NetOperationLine.Id) : request.SortBy;

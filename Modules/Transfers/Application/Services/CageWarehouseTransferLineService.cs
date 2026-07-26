@@ -63,6 +63,7 @@ namespace aqua_api.Modules.Transfers.Application.Services
                 var query = _unitOfWork.Repository<CageWarehouseTransferLine>()
                     .Query()
                     .Where(x => !x.IsDeleted)
+                    .ApplySearch(request.Search)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(CageWarehouseTransferLine.Id) : request.SortBy;

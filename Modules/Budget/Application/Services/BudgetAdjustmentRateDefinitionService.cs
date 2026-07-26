@@ -35,6 +35,7 @@ public class BudgetAdjustmentRateDefinitionService : IBudgetAdjustmentRateDefini
         request ??= new PagedRequest();
         request.Filters ??= new List<Filter>();
         var query = FeedMortalityQuery().AsNoTracking()
+            .ApplySearch(request.Search)
             .ApplyFilters(request.Filters, request.FilterLogic, FeedMortalityColumnMapping);
         query = query.ApplySorting(string.IsNullOrWhiteSpace(request.SortBy) ? "WaterTemperatureId" : request.SortBy, request.SortDirection, FeedMortalityColumnMapping);
         var totalCount = await query.CountAsync();
@@ -102,6 +103,7 @@ public class BudgetAdjustmentRateDefinitionService : IBudgetAdjustmentRateDefini
         request ??= new PagedRequest();
         request.Filters ??= new List<Filter>();
         var query = GrowthQualityQuery().AsNoTracking()
+            .ApplySearch(request.Search)
             .ApplyFilters(request.Filters, request.FilterLogic, GrowthQualityColumnMapping);
         query = query.ApplySorting(string.IsNullOrWhiteSpace(request.SortBy) ? "FishStockId" : request.SortBy, request.SortDirection, GrowthQualityColumnMapping);
         var totalCount = await query.CountAsync();

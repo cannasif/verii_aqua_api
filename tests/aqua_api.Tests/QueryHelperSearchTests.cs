@@ -1,8 +1,12 @@
 namespace aqua_api.Tests;
 
 using aqua_api.Modules.Stock.Domain.Entities;
+using aqua_api.Modules.FishBatches.Domain.Entities;
+using aqua_api.Modules.Projects.Domain.Entities;
 using aqua_api.Shared.Common.Dtos;
 using aqua_api.Shared.Common.Helpers;
+using aqua_api.Shared.Infrastructure.Persistence.Data;
+using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 public sealed class QueryHelperSearchTests
@@ -41,6 +45,66 @@ public sealed class QueryHelperSearchTests
         Assert.Collection(plainSearchResult, x => Assert.Equal("KORÇAY Özel Ürün", x.StockName));
         Assert.Collection(punctuatedSearchResult, x => Assert.Equal("KORÇAY Özel Ürün", x.StockName));
         Assert.Collection(turkishSearchResult, x => Assert.Equal("KORÇAY Özel Ürün", x.StockName));
+    }
+
+    [Fact]
+    public void ApplySearch_WithoutColumns_ShouldSearchEntityStringProperties()
+    {
+        var stocks = new List<Stock>
+        {
+            new() { Id = 1, ErpStockCode = "Y008", StockName = "8 Yem", IsDeleted = false },
+            new() { Id = 2, ErpStockCode = "L001", StockName = "Levrek", IsDeleted = false },
+        }.AsQueryable();
+
+        var result = stocks.ApplySearch("Y008").ToList();
+
+        Assert.Collection(result, x => Assert.Equal("8 Yem", x.StockName));
+    }
+
+    [Fact]
+    public void ApplySearch_WithoutColumns_ShouldSearchKnownNavigationProperties()
+    {
+        var batches = new List<FishBatch>
+        {
+            new()
+            {
+                Id = 1,
+                BatchCode = "BATCH-001",
+                Project = new Project { ProjectCode = "20240331ILKNAK", ProjectName = "15. PROJE" },
+                FishStock = new Stock { ErpStockCode = "L001", StockName = "Levrek" },
+            },
+            new()
+            {
+                Id = 2,
+                BatchCode = "BATCH-002",
+                Project = new Project { ProjectCode = "OTHER", ProjectName = "Başka Proje" },
+                FishStock = new Stock { ErpStockCode = "C001", StockName = "Çipura" },
+            },
+        }.AsQueryable();
+
+        var projectResult = batches.ApplySearch("ILKNAK").ToList();
+        var stockResult = batches.ApplySearch("Levrek").ToList();
+
+        Assert.Collection(projectResult, x => Assert.Equal("BATCH-001", x.BatchCode));
+        Assert.Collection(stockResult, x => Assert.Equal("BATCH-001", x.BatchCode));
+    }
+
+    [Fact]
+    public void ApplySearch_WithoutColumns_ShouldTranslateKnownNavigationPropertiesToSqlServer()
+    {
+        var options = new DbContextOptionsBuilder<AquaDbContext>()
+            .UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=SearchTranslationTest;Trusted_Connection=True;TrustServerCertificate=True;")
+            .Options;
+
+        using var db = new AquaDbContext(options);
+
+        var sql = db.FishBatches
+            .ApplySearch("ILKNAK")
+            .ToQueryString();
+
+        Assert.Contains("ProjectCode", sql, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("ErpStockCode", sql, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("COLLATE", sql, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

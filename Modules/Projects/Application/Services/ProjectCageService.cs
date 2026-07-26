@@ -59,6 +59,7 @@ namespace aqua_api.Modules.Projects.Application.Services
                     .Where(x => !x.IsDeleted)
                     .Include(x => x.Project)
                     .Include(x => x.Cage)
+                    .ApplySearch(request.Search)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(ProjectCage.Id) : request.SortBy;

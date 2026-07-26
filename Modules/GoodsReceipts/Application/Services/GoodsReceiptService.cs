@@ -62,6 +62,7 @@ namespace aqua_api.Modules.GoodsReceipts.Application.Services
                     .Query()
                     .Where(x => !x.IsDeleted)
                     .Include(x => x.Project)
+                    .ApplySearch(request.Search)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(GoodsReceipt.Id) : request.SortBy;

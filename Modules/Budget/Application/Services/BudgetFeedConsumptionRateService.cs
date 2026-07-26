@@ -54,6 +54,7 @@ namespace aqua_api.Modules.Budget.Application.Services
                 var query = BaseQuery()
                     .AsNoTracking()
                     .Where(x => !x.IsDeleted)
+                    .ApplySearch(request.Search)
                     .ApplyFilters(request.Filters, request.FilterLogic, ColumnMapping);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(BudgetFeedConsumptionRate.WaterTemperatureId) : request.SortBy;
@@ -88,6 +89,7 @@ namespace aqua_api.Modules.Budget.Application.Services
                 var query = _unitOfWork.Db.Stocks
                     .AsNoTracking()
                     .Where(x => !x.IsDeleted && x.GrupKodu != null && x.GrupKodu.ToUpper() == "YEM")
+                    .ApplySearch(request.Search)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? "ErpStockCode" : request.SortBy;
