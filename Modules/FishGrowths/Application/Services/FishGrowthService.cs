@@ -186,6 +186,121 @@ public class FishGrowthService : IFishGrowthService
         }
     }
 
+    public async Task<ApiResponse<FishGrowthDto?>> GetMonthlyAsync(
+        long projectCageId,
+        long fishBatchId,
+        int year,
+        int month)
+    {
+        if (projectCageId <= 0 || fishBatchId <= 0 || year is < 2000 or > 2100 || month is < 1 or > 12)
+        {
+            const string message = "Büyütme dönemi veya kafes/balık partisi bilgisi geçersiz.";
+            return ApiResponse<FishGrowthDto?>.ErrorResult(message, message, StatusCodes.Status400BadRequest);
+        }
+
+        var entity = await _unitOfWork.Db.FishGrowths
+            .AsNoTracking()
+            .Include(x => x.Project)
+            .Include(x => x.ProjectCage).ThenInclude(x => x!.Cage)
+            .Include(x => x.FishBatch)
+            .FirstOrDefaultAsync(x =>
+                x.ProjectCageId == projectCageId &&
+                x.FishBatchId == fishBatchId &&
+                x.GrowthYear == year &&
+                x.GrowthMonth == month);
+
+        return ApiResponse<FishGrowthDto?>.SuccessResult(
+            entity == null ? null : Map(entity),
+            entity == null ? "Büyütme kaydı bulunamadı." : "Büyütme kaydı getirildi.");
+    }
+
+    public async Task<ApiResponse<bool>> DeleteAsync(long id, long userId)
+    {
+        try
+        {
+            await _unitOfWork.BeginTransaction();
+
+            var growth = await _unitOfWork.Db.FishGrowths
+                .FirstOrDefaultAsync(x => x.Id == id)
+                ?? throw new KeyNotFoundException("Silinecek balık büyütme kaydı bulunamadı.");
+
+            var movement = await _unitOfWork.Db.BatchMovements
+                .FirstOrDefaultAsync(x =>
+                    x.ReferenceTable == ReferenceTable &&
+                    x.ReferenceId == growth.Id &&
+                    x.MovementType == BatchMovementType.FishGrowth)
+                ?? throw new InvalidOperationException(
+                    "Büyütmeye bağlı stok hareketi bulunamadığı için kayıt güvenli şekilde geri alınamadı.");
+
+            var hasLaterBalanceMovement = await _unitOfWork.Db.BatchMovements.AnyAsync(x =>
+                x.FishBatchId == growth.FishBatchId &&
+                x.ProjectCageId == growth.ProjectCageId &&
+                x.Id > movement.Id &&
+                (x.SignedCount != 0 || x.SignedBiomassGram != 0));
+            if (hasLaterBalanceMovement)
+            {
+                throw new InvalidOperationException(
+                    "Bu büyütmeden sonra satış, fire, transfer veya başka bir bakiye hareketi bulunmaktadır. Sonraki hareketler geri alınmadan büyütme silinemez.");
+            }
+
+            var balance = await _unitOfWork.Db.BatchCageBalances
+                .FirstOrDefaultAsync(x =>
+                    x.ProjectCageId == growth.ProjectCageId &&
+                    x.FishBatchId == growth.FishBatchId)
+                ?? throw new InvalidOperationException(
+                    "Büyütmeye ait aktif kafes bakiyesi bulunamadığı için kayıt geri alınamadı.");
+
+            var growthBiomassGram = movement.SignedBiomassGram;
+            if (growthBiomassGram <= 0m ||
+                balance.LiveCount != growth.FishCount ||
+                balance.BiomassGram < growthBiomassGram)
+            {
+                throw new InvalidOperationException(
+                    "Kafes bakiyesi büyütme kaydıyla uyuşmuyor. Veri kaybını önlemek için silme işlemi durduruldu.");
+            }
+
+            balance.BiomassGram -= growthBiomassGram;
+            balance.AverageGram = balance.LiveCount > 0
+                ? Math.Round(balance.BiomassGram / balance.LiveCount, 3, MidpointRounding.AwayFromZero)
+                : 0m;
+            balance.UpdatedBy = userId;
+            balance.UpdatedDate = DateTimeProvider.UtcNow;
+
+            growth.IsDeleted = true;
+            growth.DeletedBy = userId;
+            growth.DeletedDate = DateTimeProvider.UtcNow;
+
+            movement.IsDeleted = true;
+            movement.DeletedBy = userId;
+            movement.DeletedDate = DateTimeProvider.UtcNow;
+
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.Commit();
+
+            return ApiResponse<bool>.SuccessResult(
+                true,
+                "Balık büyütme kaydı geri alındı. Aynı ay için yeniden büyütme girebilirsiniz.");
+        }
+        catch (KeyNotFoundException ex)
+        {
+            await _unitOfWork.Rollback();
+            return ApiResponse<bool>.ErrorResult(ex.Message, ex.Message, StatusCodes.Status404NotFound);
+        }
+        catch (InvalidOperationException ex)
+        {
+            await _unitOfWork.Rollback();
+            return ApiResponse<bool>.ErrorResult(ex.Message, ex.Message, StatusCodes.Status400BadRequest);
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.Rollback();
+            return ApiResponse<bool>.ErrorResult(
+                "Balık büyütme kaydı geri alınamadı.",
+                ex.Message,
+                StatusCodes.Status500InternalServerError);
+        }
+    }
+
     private static FishGrowthDto Map(FishGrowth entity) => new()
     {
         Id = entity.Id,

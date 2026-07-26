@@ -23,10 +23,28 @@ public class FishGrowthController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    [HttpGet("monthly")]
+    public async Task<ActionResult<ApiResponse<FishGrowthDto?>>> GetMonthly(
+        [FromQuery] long projectCageId,
+        [FromQuery] long fishBatchId,
+        [FromQuery] int year,
+        [FromQuery] int month)
+    {
+        var result = await _service.GetMonthlyAsync(projectCageId, fishBatchId, year, month);
+        return StatusCode(result.StatusCode, result);
+    }
+
     [HttpPost]
     public async Task<ActionResult<ApiResponse<FishGrowthDto>>> Create([FromBody] CreateFishGrowthDto dto)
     {
         var result = await _service.CreateAsync(dto, GetUserId());
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpDelete("{id:long}")]
+    public async Task<ActionResult<ApiResponse<bool>>> Delete(long id)
+    {
+        var result = await _service.DeleteAsync(id, GetUserId());
         return StatusCode(result.StatusCode, result);
     }
 

@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using aqua_api.Modules.Aqua.Application.Services;
 using aqua_api.Modules.Aqua.Domain.Enums;
 using aqua_api.Modules.AquaReports.Application.Dtos;
 using aqua_api.Modules.FishGrowths.Application.Dtos;
@@ -142,6 +143,64 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
             "Bu kafes ve balık partisi için seçilen ayda büyütme kaydı zaten bulunmaktadır.",
             duplicateBody!.Message);
         Assert.Equal(duplicateBody.Message, duplicateBody.ExceptionMessage);
+
+        using var deleteResponse = await client.DeleteAsync($"/api/aqua/FishGrowth/{firstBody.Data.Id}");
+        Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
+        var deleteBody = await deleteResponse.Content.ReadFromJsonAsync<ApiResponse<bool>>();
+        Assert.True(deleteBody?.Success);
+        Assert.True(deleteBody!.Data);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var revertedBalance = await db.BatchCageBalances.SingleAsync(x =>
+                x.ProjectCageId == projectCageId && x.FishBatchId == fishBatchId);
+            Assert.Equal(720m, revertedBalance.AverageGram);
+            Assert.Equal(720_000m, revertedBalance.BiomassGram);
+            Assert.Empty(await db.FishGrowths.Where(x => x.Id == firstBody.Data.Id).ToListAsync());
+            Assert.Empty(await db.BatchMovements.Where(x =>
+                x.ReferenceTable == "RII_FISH_GROWTH" && x.ReferenceId == firstBody.Data.Id).ToListAsync());
+            Assert.True(await db.FishGrowths.IgnoreQueryFilters().AnyAsync(x =>
+                x.Id == firstBody.Data.Id && x.IsDeleted));
+            Assert.True(await db.BatchMovements.IgnoreQueryFilters().AnyAsync(x =>
+                x.ReferenceTable == "RII_FISH_GROWTH" && x.ReferenceId == firstBody.Data.Id && x.IsDeleted));
+        }
+
+        using var recreateResponse = await client.PostAsJsonAsync("/api/aqua/FishGrowth", request);
+        Assert.Equal(HttpStatusCode.OK, recreateResponse.StatusCode);
+        var recreateBody = await recreateResponse.Content.ReadFromJsonAsync<ApiResponse<FishGrowthDto>>();
+        Assert.True(recreateBody?.Success, recreateBody?.ExceptionMessage);
+        Assert.Equal(730m, recreateBody!.Data!.NewAverageGram);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var ledger = scope.ServiceProvider.GetRequiredService<IBalanceLedgerManager>();
+            await ledger.ApplyDelta(
+                projectId,
+                fishBatchId,
+                projectCageId,
+                0,
+                100m,
+                BatchMovementType.Adjustment,
+                new DateTime(2026, 7, 29),
+                "Later balance movement",
+                "TEST_LATER_MOVEMENT",
+                1,
+                projectCageId,
+                projectCageId,
+                null,
+                null,
+                730m,
+                730.1m,
+                1);
+            await db.SaveChangesAsync();
+        }
+
+        using var blockedDeleteResponse = await client.DeleteAsync($"/api/aqua/FishGrowth/{recreateBody.Data.Id}");
+        Assert.Equal(HttpStatusCode.BadRequest, blockedDeleteResponse.StatusCode);
+        var blockedDeleteBody = await blockedDeleteResponse.Content.ReadFromJsonAsync<ApiResponse<bool>>();
+        Assert.Contains("sonra satış, fire, transfer", blockedDeleteBody!.Message);
 
         using var verifyScope = _factory.Services.CreateScope();
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
