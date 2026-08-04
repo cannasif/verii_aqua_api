@@ -45,4 +45,8 @@
   <data name="ShipmentLineService.InternalServerError" xml:space="preserve">
     <value>Ein interner Serverfehler ist aufgetreten.</value>
   </data>
+  <data name="ShipmentLineService.FishCountMustBePositive" xml:space="preserve"><value>Die Versandmenge muss größer als null sein.</value></data>
+  <data name="ShipmentLineService.SourceNotFound" xml:space="preserve"><value>Die ausgewählte Projekt-, Käfig- oder Fischpartiezuordnung wurde nicht gefunden.</value></data>
+  <data name="ShipmentLineService.ExitWeightNotFound" xml:space="preserve"><value>Für das Versanddatum wurde kein gültiges Ausgangsgewicht gefunden. Prüfen Sie zuerst die Käfiggewichtsbewegungen.</value></data>
+  <data name="ShipmentLineService.PostedCannotBeChanged" xml:space="preserve"><value>Eine gebuchte Versandzeile kann nicht geändert werden. Ihr historisches Ausgangsgewicht muss erhalten bleiben.</value></data>
 </root>

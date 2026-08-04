@@ -17,6 +17,7 @@ public class FishGrowthDto
     public int FishCount { get; set; }
     public decimal PreviousAverageGram { get; set; }
     public decimal GrowthGram { get; set; }
+    public decimal GrowthRatePercent { get; set; }
     public decimal NewAverageGram { get; set; }
     public decimal PreviousBiomassGram { get; set; }
     public decimal NewBiomassGram { get; set; }
@@ -29,6 +30,8 @@ public class CreateFishGrowthDto
     public long ProjectCageId { get; set; }
     public long FishBatchId { get; set; }
     public DateTime GrowthDate { get; set; }
-    public decimal GrowthGram { get; set; }
+    // New clients send the resulting gram value. GrowthGram remains as a legacy fallback.
+    public decimal? NewAverageGram { get; set; }
+    public decimal? GrowthGram { get; set; }
     public string? Description { get; set; }
 }

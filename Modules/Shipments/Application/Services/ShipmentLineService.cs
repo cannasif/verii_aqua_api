@@ -151,6 +151,17 @@ namespace aqua_api.Modules.Shipments.Application.Services
         {
             try
             {
+                var shipment = await _unitOfWork.Shipments
+                    .Query()
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(x => x.Id == dto.ShipmentId && !x.IsDeleted)
+                    ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("ShipmentLineService.NotFound"));
+
+                EnsureDraft(shipment.Status);
+                await ApplyExitWeightSnapshotAsync(
+                    dto,
+                    shipment.ProjectId,
+                    shipment.ShipmentDate);
                 NormalizePricing(dto);
                 var entity = _mapper.Map<ShipmentLine>(dto);
                 await _unitOfWork.ShipmentLines.AddAsync(entity);
@@ -158,6 +169,10 @@ namespace aqua_api.Modules.Shipments.Application.Services
 
                 var result = _mapper.Map<ShipmentLineDto>(entity);
                 return ApiResponse<ShipmentLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("ShipmentLineService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResponse<ShipmentLineDto>.ErrorResult(ex.Message, ex.Message, StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {
@@ -231,8 +246,6 @@ namespace aqua_api.Modules.Shipments.Application.Services
                     FishBatchId = dto.FishBatchId,
                     FromProjectCageId = dto.FromProjectCageId,
                     FishCount = dto.FishCount,
-                    AverageGram = dto.AverageGram,
-                    BiomassGram = dto.BiomassGram,
                     CurrencyCode = dto.CurrencyCode,
                     ExchangeRate = dto.ExchangeRate,
                     UnitPrice = dto.UnitPrice,
@@ -241,6 +254,7 @@ namespace aqua_api.Modules.Shipments.Application.Services
                     LocalLineAmount = dto.LocalLineAmount,
                 };
 
+                await ApplyExitWeightSnapshotAsync(createDto, dto.ProjectId, dto.ShipmentDate);
                 NormalizePricing(createDto);
 
                 var entity = _mapper.Map<ShipmentLine>(createDto);
@@ -250,6 +264,11 @@ namespace aqua_api.Modules.Shipments.Application.Services
 
                 var result = _mapper.Map<ShipmentLineDto>(entity);
                 return ApiResponse<ShipmentLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("ShipmentLineService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                return ApiResponse<ShipmentLineDto>.ErrorResult(ex.Message, ex.Message, StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {
@@ -265,9 +284,10 @@ namespace aqua_api.Modules.Shipments.Application.Services
         {
             try
             {
-                NormalizePricing(dto);
                 var repo = _unitOfWork.ShipmentLines;
-                var entity = await repo.GetByIdForUpdateAsync(id);
+                var entity = await repo.Query(tracking: true)
+                    .Include(x => x.Shipment)
+                    .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
 
                 if (entity == null)
                 {
@@ -277,12 +297,22 @@ namespace aqua_api.Modules.Shipments.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                EnsureDraft(entity.Shipment?.Status ?? DocumentStatus.Cancelled);
+                await ApplyExitWeightSnapshotAsync(
+                    dto,
+                    entity.Shipment!.ProjectId,
+                    entity.Shipment.ShipmentDate);
+                NormalizePricing(dto);
                 _mapper.Map(dto, entity);
                 await repo.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
 
                 var result = _mapper.Map<ShipmentLineDto>(entity);
                 return ApiResponse<ShipmentLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("ShipmentLineService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResponse<ShipmentLineDto>.ErrorResult(ex.Message, ex.Message, StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {
@@ -298,6 +328,19 @@ namespace aqua_api.Modules.Shipments.Application.Services
             try
             {
                 var repo = _unitOfWork.ShipmentLines;
+                var entity = await repo.Query(tracking: true)
+                    .Include(x => x.Shipment)
+                    .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+
+                if (entity == null)
+                {
+                    return ApiResponse<bool>.ErrorResult(
+                        _localizationService.GetLocalizedString("ShipmentLineService.NotFound"),
+                        _localizationService.GetLocalizedString("ShipmentLineService.NotFound"),
+                        StatusCodes.Status404NotFound);
+                }
+
+                EnsureDraft(entity.Shipment?.Status ?? DocumentStatus.Cancelled);
                 var isDeleted = await repo.SoftDeleteAsync(id);
 
                 if (!isDeleted)
@@ -310,6 +353,10 @@ namespace aqua_api.Modules.Shipments.Application.Services
 
                 await _unitOfWork.SaveChangesAsync();
                 return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("ShipmentLineService.OperationSuccessful"));
+            }
+            catch (InvalidOperationException ex)
+            {
+                return ApiResponse<bool>.ErrorResult(ex.Message, ex.Message, StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {
@@ -357,6 +404,88 @@ namespace aqua_api.Modules.Shipments.Application.Services
             }
 
             return warehouseId;
+        }
+
+        private async Task ApplyExitWeightSnapshotAsync(
+            CreateShipmentLineDto dto,
+            long projectId,
+            DateTime shipmentDate)
+        {
+            if (dto.FishCount <= 0)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("ShipmentLineService.FishCountMustBePositive"));
+            }
+
+            var projectCageExists = await _unitOfWork.Db.ProjectCages
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == dto.FromProjectCageId && x.ProjectId == projectId && !x.IsDeleted);
+            var fishBatchExists = await _unitOfWork.Db.FishBatches
+                .AsNoTracking()
+                .AnyAsync(x => x.Id == dto.FishBatchId && x.ProjectId == projectId && !x.IsDeleted);
+
+            if (!projectCageExists || !fishBatchExists)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("ShipmentLineService.SourceNotFound"));
+            }
+
+            var endExclusive = shipmentDate.Date.AddDays(1);
+            var movements = await _unitOfWork.Db.BatchMovements
+                .AsNoTracking()
+                .Where(x =>
+                    !x.IsDeleted &&
+                    x.FishBatchId == dto.FishBatchId &&
+                    x.MovementDate < endExclusive &&
+                    (x.ProjectCageId == dto.FromProjectCageId ||
+                     x.FromProjectCageId == dto.FromProjectCageId ||
+                     x.ToProjectCageId == dto.FromProjectCageId))
+                .OrderByDescending(x => x.MovementDate)
+                .ThenByDescending(x => x.Id)
+                .Take(50)
+                .ToListAsync();
+
+            decimal? exitAverageGram = null;
+            foreach (var movement in movements)
+            {
+                if (movement.ToProjectCageId == dto.FromProjectCageId && movement.ToAverageGram > 0)
+                {
+                    exitAverageGram = movement.ToAverageGram;
+                }
+                else if (movement.FromProjectCageId == dto.FromProjectCageId && movement.FromAverageGram > 0)
+                {
+                    exitAverageGram = movement.FromAverageGram;
+                }
+                else if (movement.ProjectCageId == dto.FromProjectCageId)
+                {
+                    exitAverageGram = movement.ToAverageGram > 0
+                        ? movement.ToAverageGram
+                        : movement.FromAverageGram;
+                }
+
+                if (exitAverageGram > 0)
+                {
+                    break;
+                }
+            }
+
+            if (!exitAverageGram.HasValue || exitAverageGram.Value <= 0)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("ShipmentLineService.ExitWeightNotFound"));
+            }
+
+            dto.AverageGram = Math.Round(exitAverageGram.Value, 3, MidpointRounding.AwayFromZero);
+            dto.BiomassGram = BatchMath.CalculateBiomassGram(dto.FishCount, dto.AverageGram);
+        }
+
+        private void EnsureDraft(DocumentStatus status)
+        {
+            if (status != DocumentStatus.Draft)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("ShipmentLineService.PostedCannotBeChanged"));
+            }
         }
     }
 }

@@ -45,4 +45,8 @@
   <data name="ShipmentLineService.InternalServerError" xml:space="preserve">
     <value>حدث خطأ داخلي في الخادم.</value>
   </data>
+  <data name="ShipmentLineService.FishCountMustBePositive" xml:space="preserve"><value>يجب أن تكون كمية الشحن أكبر من صفر.</value></data>
+  <data name="ShipmentLineService.SourceNotFound" xml:space="preserve"><value>لم يتم العثور على مطابقة المشروع أو القفص أو دفعة الأسماك المحددة.</value></data>
+  <data name="ShipmentLineService.ExitWeightNotFound" xml:space="preserve"><value>لم يتم العثور على وزن خروج صالح لتاريخ الشحن. تحقق أولاً من حركات وزن القفص.</value></data>
+  <data name="ShipmentLineService.PostedCannotBeChanged" xml:space="preserve"><value>لا يمكن تعديل سطر شحن تم ترحيله. يجب الحفاظ على وزن الخروج التاريخي.</value></data>
 </root>

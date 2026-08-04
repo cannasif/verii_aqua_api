@@ -71,9 +71,6 @@ public class FishGrowthService : IFishGrowthService
         {
             await _unitOfWork.BeginTransaction();
 
-            if (dto.GrowthGram <= 0)
-                throw new InvalidOperationException(_localizationService.GetLocalizedString("FishGrowthService.GrowthMustBePositive"));
-
             var growthDate = dto.GrowthDate.Date;
             var projectCage = await _unitOfWork.Db.ProjectCages
                 .AsNoTracking()
@@ -107,7 +104,7 @@ public class FishGrowthService : IFishGrowthService
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("FishGrowthService.MonthlyGrowthAlreadyExists"));
 
             var previousAverageGram = balance.AverageGram;
-            var newAverageGram = BatchMath.CalculateIncrementedAverageGram(previousAverageGram, dto.GrowthGram);
+            var (growthGram, newAverageGram) = ResolveGrowthValues(dto, previousAverageGram);
             var previousBiomassGram = balance.BiomassGram;
             var newBiomassGram = BatchMath.CalculateBiomassGram(balance.LiveCount, newAverageGram);
             var growth = new FishGrowth
@@ -120,7 +117,7 @@ public class FishGrowthService : IFishGrowthService
                 GrowthMonth = (byte)growthDate.Month,
                 FishCount = balance.LiveCount,
                 PreviousAverageGram = previousAverageGram,
-                GrowthGram = dto.GrowthGram,
+                GrowthGram = growthGram,
                 NewAverageGram = newAverageGram,
                 PreviousBiomassGram = previousBiomassGram,
                 NewBiomassGram = newBiomassGram,
@@ -319,9 +316,42 @@ public class FishGrowthService : IFishGrowthService
         FishCount = entity.FishCount,
         PreviousAverageGram = entity.PreviousAverageGram,
         GrowthGram = entity.GrowthGram,
+        GrowthRatePercent = entity.PreviousAverageGram > 0
+            ? Math.Round(entity.GrowthGram / entity.PreviousAverageGram * 100m, 4, MidpointRounding.AwayFromZero)
+            : 0m,
         NewAverageGram = entity.NewAverageGram,
         PreviousBiomassGram = entity.PreviousBiomassGram,
         NewBiomassGram = entity.NewBiomassGram,
         Description = entity.Description
     };
+
+    private (decimal GrowthGram, decimal NewAverageGram) ResolveGrowthValues(
+        CreateFishGrowthDto dto,
+        decimal previousAverageGram)
+    {
+        if (dto.NewAverageGram.HasValue)
+        {
+            var targetAverageGram = Math.Round(dto.NewAverageGram.Value, 3, MidpointRounding.AwayFromZero);
+            if (targetAverageGram <= previousAverageGram)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("FishGrowthService.NewAverageMustExceedCurrent"));
+            }
+
+            return (
+                Math.Round(targetAverageGram - previousAverageGram, 3, MidpointRounding.AwayFromZero),
+                targetAverageGram);
+        }
+
+        if (!dto.GrowthGram.HasValue || dto.GrowthGram.Value <= 0)
+        {
+            throw new InvalidOperationException(
+                _localizationService.GetLocalizedString("FishGrowthService.GrowthMustBePositive"));
+        }
+
+        var legacyGrowthGram = Math.Round(dto.GrowthGram.Value, 3, MidpointRounding.AwayFromZero);
+        return (
+            legacyGrowthGram,
+            BatchMath.CalculateIncrementedAverageGram(previousAverageGram, legacyGrowthGram));
+    }
 }

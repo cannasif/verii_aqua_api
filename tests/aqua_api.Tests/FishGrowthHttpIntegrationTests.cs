@@ -7,6 +7,7 @@ using aqua_api.Modules.Aqua.Domain.Enums;
 using aqua_api.Modules.AquaReports.Application.Dtos;
 using aqua_api.Modules.FishGrowths.Application.Dtos;
 using aqua_api.Modules.KpiReport.Application.Dtos;
+using aqua_api.Modules.Shipments.Application.Dtos;
 using aqua_api.Shared.Common.Dtos;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 using Xunit;
@@ -89,7 +90,7 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
             ProjectCageId = projectCageId,
             FishBatchId = fishBatchId,
             GrowthDate = new DateTime(2026, 7, 15),
-            GrowthGram = 120m
+            NewAverageGram = 840m
         };
 
         using var firstResponse = await client.PostAsJsonAsync("/api/aqua/FishGrowth", request);
@@ -98,6 +99,7 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
         Assert.True(firstBody?.Success, firstBody?.ExceptionMessage);
         Assert.Equal(720m, firstBody!.Data!.PreviousAverageGram);
         Assert.Equal(120m, firstBody.Data.GrowthGram);
+        Assert.Equal(16.6667m, firstBody.Data.GrowthRatePercent);
         Assert.Equal(840m, firstBody.Data.NewAverageGram);
         Assert.Equal(1_000, firstBody.Data.FishCount);
 
@@ -134,7 +136,7 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
         Assert.Equal(0, projectGrowthDay.StockConvertCount);
 
         request.GrowthDate = new DateTime(2026, 7, 28);
-        request.GrowthGram = 10m;
+        request.NewAverageGram = 850m;
         using var duplicateResponse = await client.PostAsJsonAsync("/api/aqua/FishGrowth", request);
         Assert.Equal(HttpStatusCode.BadRequest, duplicateResponse.StatusCode);
         var duplicateBody = await duplicateResponse.Content.ReadFromJsonAsync<ApiResponse<FishGrowthDto>>();
@@ -166,6 +168,7 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
                 x.ReferenceTable == "RII_FISH_GROWTH" && x.ReferenceId == firstBody.Data.Id && x.IsDeleted));
         }
 
+        request.NewAverageGram = 730m;
         using var recreateResponse = await client.PostAsJsonAsync("/api/aqua/FishGrowth", request);
         Assert.Equal(HttpStatusCode.OK, recreateResponse.StatusCode);
         var recreateBody = await recreateResponse.Content.ReadFromJsonAsync<ApiResponse<FishGrowthDto>>();
@@ -205,5 +208,94 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
         using var verifyScope = _factory.Services.CreateScope();
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
         Assert.Equal(1, await verifyDb.FishGrowths.CountAsync(x => x.ProjectCageId == projectCageId && x.FishBatchId == fishBatchId));
+    }
+
+    [Fact]
+    public async Task Shipment_UsesExitWeightAtShipmentDate_AndIgnoresClientWeight()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        long projectId;
+        long projectCageId;
+        long fishBatchId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var ledger = scope.ServiceProvider.GetRequiredService<IBalanceLedgerManager>();
+            var stockId = await db.Stocks.Where(x => x.ErpStockCode == "PLAMUT-5G").Select(x => x.Id).SingleAsync();
+            var suffix = Guid.NewGuid().ToString("N")[..8];
+            var project = new Project
+            {
+                ProjectCode = $"SHIP-GROW-{suffix}",
+                ProjectName = "Shipment Weight Snapshot Project",
+                StartDate = new DateTime(2026, 1, 1),
+                Status = DocumentStatus.Posted
+            };
+            var cage = new Cage { CageCode = $"SC-{suffix}", CageName = "Shipment Snapshot Cage" };
+            db.Projects.Add(project);
+            db.Cages.Add(cage);
+            await db.SaveChangesAsync();
+
+            var projectCage = new ProjectCage { ProjectId = project.Id, CageId = cage.Id, AssignedDate = project.StartDate };
+            var batch = new FishBatch
+            {
+                ProjectId = project.Id,
+                FishStockId = stockId,
+                BatchCode = $"SB-{suffix}",
+                CurrentAverageGram = 720m,
+                StartDate = project.StartDate
+            };
+            db.ProjectCages.Add(projectCage);
+            db.FishBatches.Add(batch);
+            await db.SaveChangesAsync();
+
+            await ledger.ApplyDelta(
+                project.Id, batch.Id, projectCage.Id, 1_000, 720_000m,
+                BatchMovementType.Stocking, project.StartDate, "Opening stocking", "TEST_OPENING", 1,
+                null, projectCage.Id, stockId, stockId, 720m, 720m, 1);
+            await db.SaveChangesAsync();
+
+            projectId = project.Id;
+            projectCageId = projectCage.Id;
+            fishBatchId = batch.Id;
+        }
+
+        using var growthResponse = await client.PostAsJsonAsync("/api/aqua/FishGrowth", new CreateFishGrowthDto
+        {
+            ProjectId = projectId,
+            ProjectCageId = projectCageId,
+            FishBatchId = fishBatchId,
+            GrowthDate = new DateTime(2026, 2, 1),
+            NewAverageGram = 800m
+        });
+        Assert.Equal(HttpStatusCode.OK, growthResponse.StatusCode);
+
+        var januaryShipment = await PostShipment(new DateTime(2026, 1, 20));
+        Assert.Equal(720m, januaryShipment.AverageGram);
+        Assert.Equal(72_000m, januaryShipment.BiomassGram);
+
+        var februaryShipment = await PostShipment(new DateTime(2026, 2, 20));
+        Assert.Equal(800m, februaryShipment.AverageGram);
+        Assert.Equal(80_000m, februaryShipment.BiomassGram);
+
+        async Task<ShipmentLineDto> PostShipment(DateTime shipmentDate)
+        {
+            using var response = await client.PostAsJsonAsync("/api/aqua/ShipmentLine/auto-header", new CreateShipmentLineWithAutoHeaderDto
+            {
+                ProjectId = projectId,
+                ShipmentDate = shipmentDate,
+                FishBatchId = fishBatchId,
+                FromProjectCageId = projectCageId,
+                FishCount = 100,
+                AverageGram = 1m,
+                BiomassGram = 1m
+            });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<ShipmentLineDto>>();
+            Assert.True(body?.Success, body?.ExceptionMessage);
+            return body!.Data!;
+        }
     }
 }
