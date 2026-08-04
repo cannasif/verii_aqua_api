@@ -196,4 +196,18 @@
   <data name="ErpReceiptResync.NegativeWarehouseBalance" xml:space="preserve"><value>Il ripristino produrrebbe un saldo magazzino negativo.</value></data>
   <data name="ErpReceiptResync.Completed" xml:space="preserve"><value>I movimenti sono stati ripristinati e il documento ERP è stato rielaborato.</value></data>
   <data name="ErpReceiptResync.Failed" xml:space="preserve"><value>Impossibile risincronizzare il documento ERP. Tutte le modifiche sono state annullate.</value></data>
+  <data name="ErpMovementCancellation.NotFound" xml:space="preserve"><value>La riga del movimento ERP da annullare non è stata trovata.</value></data>
+  <data name="ErpMovementCancellation.AlreadyCancelled" xml:space="preserve"><value>La riga del movimento ERP selezionata è già stata annullata.</value></data>
+  <data name="ErpMovementCancellation.NotProcessed" xml:space="preserve"><value>È possibile annullare solo i movimenti ERP elaborati correttamente in Aqua.</value></data>
+  <data name="ErpMovementCancellation.PreviewLoaded" xml:space="preserve"><value>L'anteprima dell'impatto dell'annullamento è pronta.</value></data>
+  <data name="ErpMovementCancellation.ErpIntegratedDependency" xml:space="preserve"><value>Un'operazione successiva è stata inviata all'ERP. Stornare prima il relativo documento ERP.</value></data>
+  <data name="ErpMovementCancellation.NegativeCageBalance" xml:space="preserve"><value>L'annullamento produrrebbe un saldo gabbia negativo.</value></data>
+  <data name="ErpMovementCancellation.NegativeWarehouseBalance" xml:space="preserve"><value>L'annullamento produrrebbe un saldo magazzino negativo.</value></data>
+  <data name="ErpMovementCancellation.ReasonRequired" xml:space="preserve"><value>Il motivo dell'annullamento deve contenere almeno 10 caratteri.</value></data>
+  <data name="ErpMovementCancellation.ConfirmationMismatch" xml:space="preserve"><value>Il numero di conferma non corrisponde al movimento selezionato.</value></data>
+  <data name="ErpMovementCancellation.Blocked" xml:space="preserve"><value>Il movimento ERP non può essere annullato in sicurezza. Risolvere prima i blocchi.</value></data>
+  <data name="ErpMovementCancellation.Changed" xml:space="preserve"><value>Il movimento ERP è cambiato dopo l'anteprima. Aggiornare e riprovare.</value></data>
+  <data name="ErpMovementCancellation.Completed" xml:space="preserve"><value>La riga ERP è stata annullata ed è stato stornato solo il relativo impatto in Aqua.</value></data>
+  <data name="ErpMovementCancellation.Failed" xml:space="preserve"><value>Impossibile annullare la riga ERP. Tutte le modifiche sono state annullate.</value></data>
+  <data name="ErpMovementCancellation.CancelledSourceCannotBeProcessed" xml:space="preserve"><value>Un movimento sorgente ERP annullato non può essere rielaborato.</value></data>
 </root>

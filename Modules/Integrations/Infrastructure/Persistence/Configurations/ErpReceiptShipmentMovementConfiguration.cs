@@ -77,6 +77,18 @@ namespace aqua_api.Modules.Integrations.Infrastructure.Persistence.Configuration
                 .HasMaxLength(2000)
                 .IsRequired(false);
 
+            builder.Property(x => x.IsCancelled)
+                .IsRequired()
+                .HasDefaultValue(false);
+
+            builder.Property(x => x.CancelledAt)
+                .HasPrecision(3)
+                .IsRequired(false);
+
+            builder.Property(x => x.CancellationReason)
+                .HasMaxLength(500)
+                .IsRequired(false);
+
             builder.Property(x => x.IsMatched)
                 .IsRequired()
                 .HasDefaultValue(false);
@@ -148,6 +160,9 @@ namespace aqua_api.Modules.Integrations.Infrastructure.Persistence.Configuration
 
             builder.HasIndex(x => new { x.IsMatched, x.IsProcessed })
                 .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_PROCESS_STATE");
+
+            builder.HasIndex(x => new { x.IsCancelled, x.DocumentNo })
+                .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_CANCELLED_DOCUMENT");
 
             builder.HasIndex(x => new { x.GoodsReceiptId, x.GoodsReceiptLineId })
                 .HasDatabaseName("IX_RII_ERP_RECEIPT_SHIPMENT_MOVEMENT_GOODS_RECEIPT");

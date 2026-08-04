@@ -192,6 +192,294 @@ namespace aqua_api.Modules.Integrations.Application.Services
             }
         }
 
+        public async Task<ApiResponse<ErpMovementCancellationPreviewDto>> PreviewMovementCancellationAsync(long movementId)
+        {
+            var sourceRow = await _db.ErpReceiptShipmentMovements
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == movementId);
+            if (sourceRow == null)
+            {
+                return CancellationPreviewError("ErpMovementCancellation.NotFound", StatusCodes.Status404NotFound);
+            }
+
+            if (sourceRow.IsCancelled)
+            {
+                return CancellationPreviewError("ErpMovementCancellation.AlreadyCancelled", StatusCodes.Status409Conflict);
+            }
+
+            if (!sourceRow.IsProcessed || (!sourceRow.GoodsReceiptLineId.HasValue && !sourceRow.ShipmentLineId.HasValue))
+            {
+                return CancellationPreviewError("ErpMovementCancellation.NotProcessed", StatusCodes.Status409Conflict);
+            }
+
+            var ledgerMovements = await GetSourceLedgerMovementsAsync(sourceRow);
+            var preview = new ErpMovementCancellationPreviewDto
+            {
+                MovementId = sourceRow.Id,
+                DocumentNo = sourceRow.DocumentNo ?? string.Empty,
+                MovementDate = sourceRow.MovementDate,
+                InOutCode = sourceRow.InOutCode,
+                OperationType = sourceRow.OperationType,
+                ErpWarehouseCode = sourceRow.ErpWarehouseCode,
+                ErpStockCode = sourceRow.ErpStockCode,
+                Quantity = sourceRow.Quantity,
+                ProjectCode = sourceRow.ProjectId.HasValue
+                    ? await _db.Projects.AsNoTracking().Where(x => x.Id == sourceRow.ProjectId).Select(x => x.ProjectCode).FirstOrDefaultAsync()
+                    : null,
+                CageCode = sourceRow.CageId.HasValue
+                    ? await _db.Cages.AsNoTracking().Where(x => x.Id == sourceRow.CageId).Select(x => x.CageCode).FirstOrDefaultAsync()
+                    : null,
+                BatchCode = sourceRow.FishBatchId.HasValue
+                    ? await _db.FishBatches.AsNoTracking().Where(x => x.Id == sourceRow.FishBatchId).Select(x => x.BatchCode).FirstOrDefaultAsync()
+                    : null,
+                LedgerMovementCount = ledgerMovements.Count,
+                ReverseFishCount = ledgerMovements.Sum(x => x.SignedCount),
+                ReverseBiomassKg = ledgerMovements.Sum(x => x.SignedBiomassGram) / 1000m
+            };
+
+            await AddCancellationImpactsAsync(preview, sourceRow);
+            await AddBalanceBlockingReasonsAsync(preview, ledgerMovements);
+
+            if (preview.Impacts.Any(x => x.IsErpIntegrated))
+            {
+                preview.BlockingReasons.Add(_localizationService.GetLocalizedString("ErpMovementCancellation.ErpIntegratedDependency"));
+            }
+
+            preview.CanCancel = preview.BlockingReasons.Count == 0;
+            return ApiResponse<ErpMovementCancellationPreviewDto>.SuccessResult(
+                preview,
+                _localizationService.GetLocalizedString("ErpMovementCancellation.PreviewLoaded"));
+        }
+
+        public async Task<ApiResponse<ErpMovementCancellationResultDto>> CancelMovementAsync(
+            ErpMovementCancellationRequestDto request,
+            long userId)
+        {
+            var reason = request.Reason?.Trim();
+            if (request.MovementId <= 0 || string.IsNullOrWhiteSpace(reason) || reason.Length < 10)
+            {
+                return CancellationError("ErpMovementCancellation.ReasonRequired", StatusCodes.Status400BadRequest);
+            }
+
+            var previewResponse = await PreviewMovementCancellationAsync(request.MovementId);
+            if (!previewResponse.Success || previewResponse.Data == null)
+            {
+                return ApiResponse<ErpMovementCancellationResultDto>.ErrorResult(
+                    previewResponse.Message,
+                    previewResponse.ExceptionMessage,
+                    previewResponse.StatusCode);
+            }
+
+            var preview = previewResponse.Data;
+            if (!string.Equals(preview.DocumentNo, request.ConfirmationDocumentNo?.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                return CancellationError("ErpMovementCancellation.ConfirmationMismatch", StatusCodes.Status400BadRequest);
+            }
+
+            if (!preview.CanCancel)
+            {
+                return CancellationError("ErpMovementCancellation.Blocked", StatusCodes.Status409Conflict);
+            }
+
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync();
+                var sourceRow = await _db.ErpReceiptShipmentMovements
+                    .FirstOrDefaultAsync(x => x.Id == request.MovementId && !x.IsCancelled);
+                if (sourceRow == null || !sourceRow.IsProcessed)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpMovementCancellation.Changed"));
+                }
+
+                var ledgerMovements = await GetSourceLedgerMovementsAsync(sourceRow);
+                var reversedCount = await ReverseSourceLedgerMovementsAsync(sourceRow, ledgerMovements, userId);
+                await CancelGeneratedDocumentLineAsync(sourceRow, userId);
+
+                sourceRow.IsCancelled = true;
+                sourceRow.CancelledAt = DateTimeProvider.Now;
+                sourceRow.CancelledBy = userId;
+                sourceRow.CancellationReason = reason.Length > 500 ? reason[..500] : reason;
+                sourceRow.IsProcessed = false;
+                sourceRow.ProcessedAt = null;
+                sourceRow.ProcessError = null;
+                sourceRow.UpdatedBy = userId;
+                sourceRow.UpdatedDate = DateTimeProvider.Now;
+
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
+                return ApiResponse<ErpMovementCancellationResultDto>.SuccessResult(
+                    new ErpMovementCancellationResultDto
+                    {
+                        MovementId = sourceRow.Id,
+                        DocumentNo = sourceRow.DocumentNo ?? string.Empty,
+                        ReversedLedgerMovementCount = reversedCount
+                    },
+                    _localizationService.GetLocalizedString("ErpMovementCancellation.Completed"));
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync();
+                _db.ChangeTracker.Clear();
+                return ApiResponse<ErpMovementCancellationResultDto>.ErrorResult(
+                    _localizationService.GetLocalizedString("ErpMovementCancellation.Failed"),
+                    ex.GetBaseException().Message,
+                    StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        private async Task<List<BatchMovement>> GetSourceLedgerMovementsAsync(ErpReceiptShipmentMovement sourceRow)
+        {
+            var lineId = sourceRow.GoodsReceiptLineId ?? sourceRow.ShipmentLineId;
+            if (!lineId.HasValue) return new List<BatchMovement>();
+
+            var referenceTable = sourceRow.GoodsReceiptLineId.HasValue
+                ? "RII_GOODS_RECEIPT_LINE"
+                : "RII_SHIPMENT_LINE";
+            return await _db.BatchMovements
+                .Where(x => x.ReferenceTable == referenceTable && x.ReferenceId == lineId.Value)
+                .OrderBy(x => x.Id)
+                .ToListAsync();
+        }
+
+        private async Task AddCancellationImpactsAsync(
+            ErpMovementCancellationPreviewDto preview,
+            ErpReceiptShipmentMovement sourceRow)
+        {
+            if (!sourceRow.FishBatchId.HasValue) return;
+
+            var impactContainer = new ErpReceiptResyncPreviewDto();
+            var batchIds = new List<long> { sourceRow.FishBatchId.Value };
+            await AddFeedingImpactsAsync(impactContainer, batchIds);
+            await AddMortalityImpactsAsync(impactContainer, batchIds);
+            await AddTransferImpactsAsync(impactContainer, batchIds);
+            await AddShipmentImpactsAsync(impactContainer, batchIds);
+            await AddWeighingImpactsAsync(impactContainer, batchIds);
+            await AddStockConvertImpactsAsync(impactContainer, batchIds);
+
+            preview.Impacts = impactContainer.Impacts
+                .Where(x => x.OperationDate >= sourceRow.MovementDate)
+                .Where(x => !(sourceRow.ShipmentId.HasValue && x.OperationType == "Shipment" && x.HeaderId == sourceRow.ShipmentId.Value))
+                .OrderBy(x => x.OperationDate)
+                .ThenBy(x => x.OperationType)
+                .ToList();
+        }
+
+        private async Task AddBalanceBlockingReasonsAsync(
+            ErpMovementCancellationPreviewDto preview,
+            List<BatchMovement> ledgerMovements)
+        {
+            foreach (var group in ledgerMovements.Where(x => x.ProjectCageId.HasValue).GroupBy(x => new { x.FishBatchId, ProjectCageId = x.ProjectCageId!.Value }))
+            {
+                var balance = await _db.BatchCageBalances.AsNoTracking().FirstOrDefaultAsync(x =>
+                    x.FishBatchId == group.Key.FishBatchId && x.ProjectCageId == group.Key.ProjectCageId);
+                if (balance == null || balance.LiveCount - group.Sum(x => x.SignedCount) < 0 || balance.BiomassGram - group.Sum(x => x.SignedBiomassGram) < 0)
+                {
+                    preview.BlockingReasons.Add(_localizationService.GetLocalizedString("ErpMovementCancellation.NegativeCageBalance"));
+                    break;
+                }
+            }
+
+            foreach (var group in ledgerMovements.Where(x => x.WarehouseId.HasValue).GroupBy(x => new { x.FishBatchId, WarehouseId = x.WarehouseId!.Value }))
+            {
+                var balance = await _db.BatchWarehouseBalances.AsNoTracking().FirstOrDefaultAsync(x =>
+                    x.FishBatchId == group.Key.FishBatchId && x.WarehouseId == group.Key.WarehouseId);
+                if (balance == null || balance.LiveCount - group.Sum(x => x.SignedCount) < 0 || balance.BiomassGram - group.Sum(x => x.SignedBiomassGram) < 0)
+                {
+                    preview.BlockingReasons.Add(_localizationService.GetLocalizedString("ErpMovementCancellation.NegativeWarehouseBalance"));
+                    break;
+                }
+            }
+        }
+
+        private async Task<int> ReverseSourceLedgerMovementsAsync(
+            ErpReceiptShipmentMovement sourceRow,
+            List<BatchMovement> movements,
+            long userId)
+        {
+            foreach (var movement in movements)
+            {
+                if (movement.ProjectCageId.HasValue)
+                {
+                    var balance = await _db.BatchCageBalances.FirstOrDefaultAsync(x =>
+                        x.FishBatchId == movement.FishBatchId && x.ProjectCageId == movement.ProjectCageId.Value);
+                    if (balance == null)
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpMovementCancellation.NegativeCageBalance"));
+                    ApplyReverseBalance(balance, movement.SignedCount, movement.SignedBiomassGram, DateTimeProvider.Now);
+                }
+
+                if (movement.WarehouseId.HasValue)
+                {
+                    var balance = await _db.BatchWarehouseBalances.FirstOrDefaultAsync(x =>
+                        x.FishBatchId == movement.FishBatchId && x.WarehouseId == movement.WarehouseId.Value);
+                    if (balance == null)
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpMovementCancellation.NegativeWarehouseBalance"));
+                    ApplyReverseBalance(balance, movement.SignedCount, movement.SignedBiomassGram, DateTimeProvider.Now);
+                }
+
+                await _db.BatchMovements.AddAsync(new BatchMovement
+                {
+                    FishBatchId = movement.FishBatchId,
+                    ProjectCageId = movement.ProjectCageId,
+                    WarehouseId = movement.WarehouseId,
+                    FromProjectCageId = movement.ToProjectCageId,
+                    ToProjectCageId = movement.FromProjectCageId,
+                    FromWarehouseId = movement.ToWarehouseId,
+                    ToWarehouseId = movement.FromWarehouseId,
+                    FromStockId = movement.ToStockId,
+                    ToStockId = movement.FromStockId,
+                    FromAverageGram = movement.ToAverageGram,
+                    ToAverageGram = movement.FromAverageGram,
+                    MovementDate = DateTimeProvider.Now,
+                    MovementType = movement.MovementType,
+                    SignedCount = -movement.SignedCount,
+                    SignedBiomassGram = -movement.SignedBiomassGram,
+                    FeedGram = movement.FeedGram.HasValue ? -movement.FeedGram.Value : null,
+                    ActorUserId = userId,
+                    ReferenceTable = "RII_ERP_MOVEMENT_CANCELLATION",
+                    ReferenceId = sourceRow.Id,
+                    Note = $"ERP source movement cancellation | originalMovementId={movement.Id}",
+                    CreatedBy = userId
+                });
+            }
+
+            return movements.Count;
+        }
+
+        private async Task CancelGeneratedDocumentLineAsync(ErpReceiptShipmentMovement sourceRow, long userId)
+        {
+            if (sourceRow.GoodsReceiptLineId.HasValue)
+            {
+                var line = await _db.GoodsReceiptLines
+                    .Include(x => x.FishDistributions)
+                    .FirstOrDefaultAsync(x => x.Id == sourceRow.GoodsReceiptLineId.Value);
+                if (line != null)
+                {
+                    foreach (var distribution in line.FishDistributions.Where(x => !x.IsDeleted)) MarkDeleted(distribution, userId);
+                    MarkDeleted(line, userId);
+                    await _unitOfWork.SaveChangesAsync();
+
+                    var header = await _db.GoodsReceipts
+                        .FirstOrDefaultAsync(x => x.Id == line.GoodsReceiptId && !x.Lines.Any());
+                    if (header != null) MarkDeleted(header, userId);
+                }
+            }
+
+            if (sourceRow.ShipmentLineId.HasValue)
+            {
+                var line = await _db.ShipmentLines.FirstOrDefaultAsync(x => x.Id == sourceRow.ShipmentLineId.Value);
+                if (line != null)
+                {
+                    MarkDeleted(line, userId);
+                    await _unitOfWork.SaveChangesAsync();
+
+                    var header = await _db.Shipments
+                        .FirstOrDefaultAsync(x => x.Id == line.ShipmentId && !x.Lines.Any());
+                    if (header != null) MarkDeleted(header, userId);
+                }
+            }
+        }
+
         private List<(ErpReceiptShipmentMovement SourceRow, MalKabulVeSevkiyatDto ErpRow)> MatchCurrentRowsToSources(
             List<ErpReceiptShipmentMovement> sourceRows,
             List<MalKabulVeSevkiyatDto> currentErpRows)
@@ -430,6 +718,18 @@ namespace aqua_api.Modules.Integrations.Application.Services
         {
             var message = _localizationService.GetLocalizedString(key);
             return ApiResponse<ErpReceiptResyncResultDto>.ErrorResult(message, message, statusCode);
+        }
+
+        private ApiResponse<ErpMovementCancellationPreviewDto> CancellationPreviewError(string key, int statusCode)
+        {
+            var message = _localizationService.GetLocalizedString(key);
+            return ApiResponse<ErpMovementCancellationPreviewDto>.ErrorResult(message, message, statusCode);
+        }
+
+        private ApiResponse<ErpMovementCancellationResultDto> CancellationError(string key, int statusCode)
+        {
+            var message = _localizationService.GetLocalizedString(key);
+            return ApiResponse<ErpMovementCancellationResultDto>.ErrorResult(message, message, statusCode);
         }
 
         private async Task AddFeedingImpactsAsync(ErpReceiptResyncPreviewDto preview, List<long> fishBatchIds)

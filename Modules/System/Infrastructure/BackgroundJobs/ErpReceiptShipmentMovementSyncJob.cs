@@ -152,6 +152,16 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.InvalidMovementData"));
             }
 
+
+            var isCancelled = await _db.ErpReceiptShipmentMovements
+                .IgnoreQueryFilters()
+                .AsNoTracking()
+                .AnyAsync(x => x.SourceMovementKey == sourceMovementKey && x.IsCancelled);
+            if (isCancelled)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpMovementCancellation.CancelledSourceCannotBeProcessed"));
+            }
+
             var mirrorMovement = await UpsertMirrorMovementAsync(movement, sourceMovementKey);
             var outcome = await ApplyMovementAsync(movement, sourceMovementKey);
             await EnrichMirrorMovementAsync(mirrorMovement, movement, sourceMovementKey, outcome);
@@ -173,7 +183,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 .IgnoreQueryFilters()
                 .AsNoTracking()
                 .AnyAsync(x => !x.IsDeleted
-                    && x.IsProcessed
+                    && (x.IsProcessed || x.IsCancelled)
                     && (x.SourceMovementKey == sourceMovementKey
                         || (x.MovementDate == movement.Tarih
                             && x.DocumentNo == documentNo
@@ -1120,7 +1130,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 
                 if (cageAverageGram.GetValueOrDefault() > 0)
                 {
-                    return cageAverageGram.Value;
+                    return cageAverageGram.GetValueOrDefault();
                 }
             }
 
@@ -1143,7 +1153,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 
                 if (warehouseAverageGram.GetValueOrDefault() > 0)
                 {
-                    return warehouseAverageGram.Value;
+                    return warehouseAverageGram.GetValueOrDefault();
                 }
             }
 
@@ -1158,7 +1168,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 .Select(x => (decimal?)x.CurrentAverageGram)
                 .FirstOrDefaultAsync();
 
-            return projectAverageGram.GetValueOrDefault() > 0 ? projectAverageGram.Value : 1m;
+            return projectAverageGram.GetValueOrDefault() > 0 ? projectAverageGram.GetValueOrDefault() : 1m;
         }
 
         private async Task<decimal> ResolveAverageGramAsync(FishBatch fishBatch, ProjectCage? projectCage, WarehouseEntity? warehouse)

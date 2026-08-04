@@ -42,6 +42,11 @@ namespace aqua_api.Modules.Integrations.Domain.Entities
         public string? MatchError { get; set; }
         public string? ProcessError { get; set; }
 
+        public bool IsCancelled { get; set; }
+        public DateTime? CancelledAt { get; set; }
+        public long? CancelledBy { get; set; }
+        public string? CancellationReason { get; set; }
+
         public Project? Project { get; set; }
         public Cage? Cage { get; set; }
         public ProjectCage? ProjectCage { get; set; }

@@ -41,5 +41,9 @@ namespace aqua_api.Modules.Integrations.Application.Dtos
         public DateTime? ProcessedAt { get; set; }
         public string? MatchError { get; set; }
         public string? ProcessError { get; set; }
+        public bool IsCancelled { get; set; }
+        public DateTime? CancelledAt { get; set; }
+        public long? CancelledBy { get; set; }
+        public string? CancellationReason { get; set; }
     }
 }

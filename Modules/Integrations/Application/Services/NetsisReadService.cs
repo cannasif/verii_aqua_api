@@ -801,7 +801,11 @@ namespace aqua_api.Modules.Integrations.Application.Services
                         MatchedAt = x.MatchedAt,
                         ProcessedAt = x.ProcessedAt,
                         MatchError = x.MatchError,
-                        ProcessError = x.ProcessError
+                        ProcessError = x.ProcessError,
+                        IsCancelled = x.IsCancelled,
+                        CancelledAt = x.CancelledAt,
+                        CancelledBy = x.CancelledBy,
+                        CancellationReason = x.CancellationReason
                     })
                     .ToListAsync();
 
@@ -941,7 +945,11 @@ namespace aqua_api.Modules.Integrations.Application.Services
                     MatchedAt = x.MatchedAt,
                     ProcessedAt = x.ProcessedAt,
                     MatchError = x.MatchError,
-                    ProcessError = x.ProcessError
+                    ProcessError = x.ProcessError,
+                    IsCancelled = x.IsCancelled,
+                    CancelledAt = x.CancelledAt,
+                    CancelledBy = x.CancelledBy,
+                    CancellationReason = x.CancellationReason
                 });
         }
 
@@ -1157,6 +1165,7 @@ namespace aqua_api.Modules.Integrations.Application.Services
                 "batchcode" => ApplySort(query, x => x.BatchCode, sortDirection),
                 "ismatched" => ApplySort(query, x => x.IsMatched, sortDirection),
                 "isprocessed" => ApplySort(query, x => x.IsProcessed, sortDirection),
+                "iscancelled" => ApplySort(query, x => x.IsCancelled, sortDirection),
                 "processingattemptcount" => ApplySort(query, x => x.ProcessingAttemptCount, sortDirection),
                 "lastsyncedat" => ApplySort(query, x => x.LastSyncedAt, sortDirection),
                 "processerror" => ApplySort(query, x => x.ProcessError, sortDirection),

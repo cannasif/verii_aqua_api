@@ -216,4 +216,18 @@
   <data name="ErpReceiptResync.NegativeWarehouseBalance" xml:space="preserve"><value>Geri alma işlemi depo bakiyesini negatife düşüreceği için durduruldu.</value></data>
   <data name="ErpReceiptResync.Completed" xml:space="preserve"><value>ERP fişine bağlı hareketler geri alındı ve fiş güncel haliyle yeniden işlendi.</value></data>
   <data name="ErpReceiptResync.Failed" xml:space="preserve"><value>ERP fişi yeniden eşitlenemedi. Yapılan değişikliklerin tamamı geri alındı.</value></data>
+  <data name="ErpMovementCancellation.NotFound" xml:space="preserve"><value>İptal edilecek ERP hareket satırı bulunamadı.</value></data>
+  <data name="ErpMovementCancellation.AlreadyCancelled" xml:space="preserve"><value>Seçilen ERP hareket satırı daha önce iptal edilmiş.</value></data>
+  <data name="ErpMovementCancellation.NotProcessed" xml:space="preserve"><value>Yalnızca Aqua'ya başarıyla işlenmiş ERP hareketleri iptal edilebilir.</value></data>
+  <data name="ErpMovementCancellation.PreviewLoaded" xml:space="preserve"><value>ERP hareket iptali için etki analizi hazırlandı.</value></data>
+  <data name="ErpMovementCancellation.ErpIntegratedDependency" xml:space="preserve"><value>Bu hareketten sonra ERP'ye aktarılmış bir işlem var. Önce ilgili ERP belgesini ters kayıtla kapatın.</value></data>
+  <data name="ErpMovementCancellation.NegativeCageBalance" xml:space="preserve"><value>Bu satırın iptali kafes bakiyesini negatife düşüreceği için işlem engellendi.</value></data>
+  <data name="ErpMovementCancellation.NegativeWarehouseBalance" xml:space="preserve"><value>Bu satırın iptali depo bakiyesini negatife düşüreceği için işlem engellendi.</value></data>
+  <data name="ErpMovementCancellation.ReasonRequired" xml:space="preserve"><value>İptal nedeni en az 10 karakter olmalıdır.</value></data>
+  <data name="ErpMovementCancellation.ConfirmationMismatch" xml:space="preserve"><value>Onay için girilen fiş numarası seçilen hareketle eşleşmiyor.</value></data>
+  <data name="ErpMovementCancellation.Blocked" xml:space="preserve"><value>ERP hareketi güvenli biçimde iptal edilemiyor. Önizlemedeki engelleri giderin.</value></data>
+  <data name="ErpMovementCancellation.Changed" xml:space="preserve"><value>ERP hareketi önizlemeden sonra değişti. Önizlemeyi yenileyip tekrar deneyin.</value></data>
+  <data name="ErpMovementCancellation.Completed" xml:space="preserve"><value>ERP hareket satırı iptal edildi ve yalnızca bu satırın Aqua bakiye etkisi geri alındı.</value></data>
+  <data name="ErpMovementCancellation.Failed" xml:space="preserve"><value>ERP hareket satırı iptal edilemedi. Yapılan değişikliklerin tamamı geri alındı.</value></data>
+  <data name="ErpMovementCancellation.CancelledSourceCannotBeProcessed" xml:space="preserve"><value>İptal edilmiş ERP kaynak hareketi yeniden işlenemez.</value></data>
 </root>

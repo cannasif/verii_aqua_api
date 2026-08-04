@@ -209,6 +209,23 @@ namespace aqua_api.Modules.Integrations.Api
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpGet("receipt-shipment-movements/{movementId:long}/cancellation-preview")]
+        public async Task<ActionResult<ApiResponse<ErpMovementCancellationPreviewDto>>> PreviewMovementCancellation(long movementId)
+        {
+            var result = await _erpReceiptResyncService.PreviewMovementCancellationAsync(movementId);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost("receipt-shipment-movements/cancel")]
+        public async Task<ActionResult<ApiResponse<ErpMovementCancellationResultDto>>> CancelMovement(
+            [FromBody] ErpMovementCancellationRequestDto request)
+        {
+            var rawUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = long.TryParse(rawUserId, out var parsedUserId) ? parsedUserId : 1L;
+            var result = await _erpReceiptResyncService.CancelMovementAsync(request, userId);
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpGet("health-check")]
         [AllowAnonymous]
         public IActionResult HealthCheckPublic()

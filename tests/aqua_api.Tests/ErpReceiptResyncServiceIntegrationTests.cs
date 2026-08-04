@@ -275,6 +275,155 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
         Assert.Equal(5, await fixture.Db.BatchMovements.CountAsync(x => x.FishBatchId == seeded.FishBatchId));
     }
 
+    [Fact]
+    public async Task CancelMovement_ReversesOnlySelectedSource_AndPreventsSyncFromRecreatingIt()
+    {
+        var currentRows = new List<MalKabulVeSevkiyatDto>();
+        await using var fixture = await CreateFixtureAsync(currentRows, useRealSyncJob: true);
+        var seeded = await SeedReceiptGraphAsync(fixture.Db, erpIntegratedFeeding: false);
+        var source = await fixture.Db.ErpReceiptShipmentMovements.SingleAsync(x => x.DocumentNo == seeded.DocumentNo);
+        var receiptLine = await fixture.Db.GoodsReceiptLines.SingleAsync(x => x.ErpSourceMovementKey == source.SourceMovementKey);
+        var distribution = await fixture.Db.GoodsReceiptFishDistributions.SingleAsync(x => x.GoodsReceiptLineId == receiptLine.Id);
+        var balance = await fixture.Db.BatchCageBalances.SingleAsync(x => x.FishBatchId == seeded.FishBatchId);
+        var correctedLine = new GoodsReceiptLine
+        {
+            GoodsReceiptId = seeded.GoodsReceiptId,
+            ItemType = GoodsReceiptItemType.Fish,
+            StockId = receiptLine.StockId,
+            FishCount = 500,
+            FishAverageGram = 100,
+            FishTotalGram = 50_000,
+            FishBatchId = seeded.FishBatchId,
+            ErpSourceMovementKey = "ERP-GR-001-LINE-119"
+        };
+        fixture.Db.GoodsReceiptLines.Add(correctedLine);
+        await fixture.Db.SaveChangesAsync();
+        fixture.Db.AddRange(
+            new GoodsReceiptFishDistribution
+            {
+                GoodsReceiptLineId = correctedLine.Id,
+                ProjectCageId = distribution.ProjectCageId,
+                FishBatchId = seeded.FishBatchId,
+                FishCount = 500
+            },
+            new BatchMovement
+            {
+                FishBatchId = seeded.FishBatchId,
+                ProjectCageId = distribution.ProjectCageId,
+                ToProjectCageId = distribution.ProjectCageId,
+                ToStockId = receiptLine.StockId,
+                ToAverageGram = 100,
+                MovementDate = seeded.ReceiptDate,
+                MovementType = BatchMovementType.Stocking,
+                SignedCount = 500,
+                SignedBiomassGram = 50_000,
+                ReferenceTable = "RII_GOODS_RECEIPT_LINE",
+                ReferenceId = correctedLine.Id
+            },
+            new ErpReceiptShipmentMovement
+            {
+                SourceSystem = "Netsis",
+                SourceMovementKey = correctedLine.ErpSourceMovementKey,
+                MovementDate = seeded.ReceiptDate,
+                DocumentNo = seeded.DocumentNo,
+                ErpWarehouseCode = 119,
+                ErpProjectCode = source.ErpProjectCode,
+                ErpStockCode = source.ErpStockCode,
+                Quantity = 500,
+                MovementKind = "J",
+                InOutCode = "G",
+                OperationType = FishReceiptOperationType,
+                ProjectId = source.ProjectId,
+                ProjectCageId = source.ProjectCageId,
+                StockId = source.StockId,
+                FishBatchId = seeded.FishBatchId,
+                GoodsReceiptId = seeded.GoodsReceiptId,
+                GoodsReceiptLineId = correctedLine.Id,
+                IsMatched = true,
+                IsProcessed = true,
+                LastSyncedAt = seeded.ReceiptDate,
+                ProcessedAt = seeded.ReceiptDate
+            });
+        balance.LiveCount += 500;
+        balance.BiomassGram += 50_000;
+        await fixture.Db.SaveChangesAsync();
+        currentRows.Add(new MalKabulVeSevkiyatDto
+        {
+            Tarih = seeded.ReceiptDate,
+            FisNo = seeded.DocumentNo,
+            KafesKodu = 110,
+            ProjeKodu = "ERP-PRJ-001",
+            StokKodu = "FISH-001",
+            StokAdi = "Levrek",
+            Miktar = 1_000,
+            HareketTuru = "J",
+            GcKodu = "G",
+            GrupKodu = "BALIK",
+            IslemTuru = FishReceiptOperationType
+        });
+
+        var preview = await fixture.Service.PreviewMovementCancellationAsync(source.Id);
+
+        Assert.True(preview.Success, preview.ExceptionMessage);
+        Assert.NotNull(preview.Data);
+        Assert.True(preview.Data!.CanCancel);
+        Assert.Equal(1_000, preview.Data.ReverseFishCount);
+        Assert.Single(preview.Data.Impacts);
+
+        var response = await fixture.Service.CancelMovementAsync(new ErpMovementCancellationRequestDto
+        {
+            MovementId = source.Id,
+            ConfirmationDocumentNo = seeded.DocumentNo,
+            Reason = "ERP depo kodu düzeltildiği için eski satır iptal edildi."
+        }, 1);
+
+        Assert.True(response.Success, response.ExceptionMessage);
+        Assert.Equal(1, response.Data!.ReversedLedgerMovementCount);
+        var cancelledSource = await fixture.Db.ErpReceiptShipmentMovements.IgnoreQueryFilters().SingleAsync(x => x.Id == source.Id);
+        Assert.True(cancelledSource.IsCancelled);
+        Assert.False(cancelledSource.IsProcessed);
+        Assert.NotNull(cancelledSource.CancelledAt);
+        Assert.Equal(1, cancelledSource.CancelledBy);
+
+        var cancelledReceiptLine = await fixture.Db.GoodsReceiptLines.IgnoreQueryFilters().SingleAsync(x => x.ErpSourceMovementKey == source.SourceMovementKey);
+        Assert.True(cancelledReceiptLine.IsDeleted);
+        var preservedReceiptLine = await fixture.Db.GoodsReceiptLines.SingleAsync(x => x.ErpSourceMovementKey == correctedLine.ErpSourceMovementKey);
+        Assert.False(preservedReceiptLine.IsDeleted);
+        var preservedSource = await fixture.Db.ErpReceiptShipmentMovements.SingleAsync(x => x.SourceMovementKey == correctedLine.ErpSourceMovementKey);
+        Assert.True(preservedSource.IsProcessed);
+        Assert.False(preservedSource.IsCancelled);
+        balance = await fixture.Db.BatchCageBalances.SingleAsync(x => x.FishBatchId == seeded.FishBatchId);
+        Assert.Equal(500, balance.LiveCount);
+        Assert.Equal(50_000, balance.BiomassGram);
+        var ledger = await fixture.Db.BatchMovements.Where(x => x.FishBatchId == seeded.FishBatchId).ToListAsync();
+        Assert.Equal(4, ledger.Count);
+        Assert.Equal(500, ledger.Sum(x => x.SignedCount));
+        Assert.Equal(50_000, ledger.Sum(x => x.SignedBiomassGram));
+        Assert.False((await fixture.Db.Feedings.SingleAsync()).IsDeleted);
+
+        await fixture.SyncJob.ExecuteAsync();
+        Assert.Equal(1, await fixture.Db.ErpReceiptShipmentMovements.IgnoreQueryFilters().CountAsync(x => x.SourceMovementKey == source.SourceMovementKey));
+        Assert.Equal(4, await fixture.Db.BatchMovements.CountAsync(x => x.FishBatchId == seeded.FishBatchId));
+    }
+
+    [Fact]
+    public async Task PreviewMovementCancellation_Blocks_WhenSelectedSourceWouldCreateNegativeBalance()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var seeded = await SeedReceiptGraphAsync(fixture.Db, erpIntegratedFeeding: false, includeFeeding: false);
+        var source = await fixture.Db.ErpReceiptShipmentMovements.SingleAsync(x => x.DocumentNo == seeded.DocumentNo);
+        var balance = await fixture.Db.BatchCageBalances.SingleAsync(x => x.FishBatchId == seeded.FishBatchId);
+        balance.LiveCount = 900;
+        balance.BiomassGram = 90_000;
+        await fixture.Db.SaveChangesAsync();
+
+        var preview = await fixture.Service.PreviewMovementCancellationAsync(source.Id);
+
+        Assert.True(preview.Success, preview.ExceptionMessage);
+        Assert.False(preview.Data!.CanCancel);
+        Assert.NotEmpty(preview.Data.BlockingReasons);
+    }
+
     private static async Task<Fixture> CreateFixtureAsync(
         List<MalKabulVeSevkiyatDto>? currentRows = null,
         bool throwDuringSync = false,

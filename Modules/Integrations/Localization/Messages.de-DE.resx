@@ -196,4 +196,18 @@
   <data name="ErpReceiptResync.NegativeWarehouseBalance" xml:space="preserve"><value>Die Rücknahme würde einen negativen Lagerbestand erzeugen.</value></data>
   <data name="ErpReceiptResync.Completed" xml:space="preserve"><value>Die Bewegungen wurden zurückgenommen und der ERP-Beleg erneut verarbeitet.</value></data>
   <data name="ErpReceiptResync.Failed" xml:space="preserve"><value>Der ERP-Beleg konnte nicht erneut synchronisiert werden. Alle Änderungen wurden zurückgenommen.</value></data>
+  <data name="ErpMovementCancellation.NotFound" xml:space="preserve"><value>Die zu stornierende ERP-Bewegungszeile wurde nicht gefunden.</value></data>
+  <data name="ErpMovementCancellation.AlreadyCancelled" xml:space="preserve"><value>Die ausgewählte ERP-Bewegungszeile wurde bereits storniert.</value></data>
+  <data name="ErpMovementCancellation.NotProcessed" xml:space="preserve"><value>Nur erfolgreich in Aqua verarbeitete ERP-Bewegungen können storniert werden.</value></data>
+  <data name="ErpMovementCancellation.PreviewLoaded" xml:space="preserve"><value>Die Auswirkungsanalyse für die Stornierung ist bereit.</value></data>
+  <data name="ErpMovementCancellation.ErpIntegratedDependency" xml:space="preserve"><value>Eine nachfolgende Bewegung wurde an das ERP übertragen. Stornieren Sie zuerst diesen ERP-Beleg.</value></data>
+  <data name="ErpMovementCancellation.NegativeCageBalance" xml:space="preserve"><value>Die Stornierung würde einen negativen Käfigbestand erzeugen.</value></data>
+  <data name="ErpMovementCancellation.NegativeWarehouseBalance" xml:space="preserve"><value>Die Stornierung würde einen negativen Lagerbestand erzeugen.</value></data>
+  <data name="ErpMovementCancellation.ReasonRequired" xml:space="preserve"><value>Der Stornierungsgrund muss mindestens 10 Zeichen enthalten.</value></data>
+  <data name="ErpMovementCancellation.ConfirmationMismatch" xml:space="preserve"><value>Die Bestätigungsnummer stimmt nicht mit der ausgewählten Bewegung überein.</value></data>
+  <data name="ErpMovementCancellation.Blocked" xml:space="preserve"><value>Die ERP-Bewegung kann nicht sicher storniert werden. Beheben Sie zuerst die Sperrgründe.</value></data>
+  <data name="ErpMovementCancellation.Changed" xml:space="preserve"><value>Die ERP-Bewegung wurde nach der Vorschau geändert. Aktualisieren Sie die Vorschau.</value></data>
+  <data name="ErpMovementCancellation.Completed" xml:space="preserve"><value>Die ERP-Bewegungszeile wurde storniert und nur ihre Aqua-Bestandswirkung zurückgenommen.</value></data>
+  <data name="ErpMovementCancellation.Failed" xml:space="preserve"><value>Die ERP-Bewegungszeile konnte nicht storniert werden. Alle Änderungen wurden zurückgenommen.</value></data>
+  <data name="ErpMovementCancellation.CancelledSourceCannotBeProcessed" xml:space="preserve"><value>Eine stornierte ERP-Quellbewegung kann nicht erneut verarbeitet werden.</value></data>
 </root>

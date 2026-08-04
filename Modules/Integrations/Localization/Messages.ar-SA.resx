@@ -196,4 +196,18 @@
   <data name="ErpReceiptResync.NegativeWarehouseBalance" xml:space="preserve"><value>تم إيقاف التراجع لأنه سيؤدي إلى رصيد مستودع سالب.</value></data>
   <data name="ErpReceiptResync.Completed" xml:space="preserve"><value>تم التراجع عن الحركات وإعادة معالجة مستند ERP ببياناته الحالية.</value></data>
   <data name="ErpReceiptResync.Failed" xml:space="preserve"><value>تعذرت إعادة مزامنة مستند ERP وتم التراجع عن جميع التغييرات.</value></data>
+  <data name="ErpMovementCancellation.NotFound" xml:space="preserve"><value>لم يتم العثور على سطر حركة ERP المطلوب إلغاؤه.</value></data>
+  <data name="ErpMovementCancellation.AlreadyCancelled" xml:space="preserve"><value>تم إلغاء سطر حركة ERP المحدد مسبقاً.</value></data>
+  <data name="ErpMovementCancellation.NotProcessed" xml:space="preserve"><value>يمكن إلغاء حركات ERP التي تمت معالجتها بنجاح في Aqua فقط.</value></data>
+  <data name="ErpMovementCancellation.PreviewLoaded" xml:space="preserve"><value>معاينة تأثير إلغاء حركة ERP جاهزة.</value></data>
+  <data name="ErpMovementCancellation.ErpIntegratedDependency" xml:space="preserve"><value>تم إرسال عملية لاحقة إلى ERP. يجب عكس مستند ERP المرتبط أولاً.</value></data>
+  <data name="ErpMovementCancellation.NegativeCageBalance" xml:space="preserve"><value>تم منع الإلغاء لأنه سينتج رصيد قفص سالباً.</value></data>
+  <data name="ErpMovementCancellation.NegativeWarehouseBalance" xml:space="preserve"><value>تم منع الإلغاء لأنه سينتج رصيد مستودع سالباً.</value></data>
+  <data name="ErpMovementCancellation.ReasonRequired" xml:space="preserve"><value>يجب ألا يقل سبب الإلغاء عن 10 أحرف.</value></data>
+  <data name="ErpMovementCancellation.ConfirmationMismatch" xml:space="preserve"><value>رقم التأكيد لا يطابق الحركة المحددة.</value></data>
+  <data name="ErpMovementCancellation.Blocked" xml:space="preserve"><value>لا يمكن إلغاء حركة ERP بأمان. عالج أسباب المنع أولاً.</value></data>
+  <data name="ErpMovementCancellation.Changed" xml:space="preserve"><value>تغيرت حركة ERP بعد المعاينة. حدّث المعاينة وحاول مرة أخرى.</value></data>
+  <data name="ErpMovementCancellation.Completed" xml:space="preserve"><value>تم إلغاء سطر حركة ERP وعكس تأثيره على رصيد Aqua فقط.</value></data>
+  <data name="ErpMovementCancellation.Failed" xml:space="preserve"><value>تعذر إلغاء سطر حركة ERP وتم التراجع عن جميع التغييرات.</value></data>
+  <data name="ErpMovementCancellation.CancelledSourceCannotBeProcessed" xml:space="preserve"><value>لا يمكن إعادة معالجة حركة مصدر ERP ملغاة.</value></data>
 </root>

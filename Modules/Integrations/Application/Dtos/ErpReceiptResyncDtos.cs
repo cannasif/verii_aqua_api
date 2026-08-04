@@ -49,4 +49,39 @@ namespace aqua_api.Modules.Integrations.Application.Dtos
         public int ReversedLedgerMovementCount { get; set; }
         public int ReprocessedSourceMovementCount { get; set; }
     }
+
+    public class ErpMovementCancellationPreviewDto
+    {
+        public long MovementId { get; set; }
+        public string DocumentNo { get; set; } = string.Empty;
+        public DateTime MovementDate { get; set; }
+        public string InOutCode { get; set; } = string.Empty;
+        public string OperationType { get; set; } = string.Empty;
+        public short? ErpWarehouseCode { get; set; }
+        public string ErpStockCode { get; set; } = string.Empty;
+        public decimal Quantity { get; set; }
+        public string? ProjectCode { get; set; }
+        public string? CageCode { get; set; }
+        public string? BatchCode { get; set; }
+        public int LedgerMovementCount { get; set; }
+        public int ReverseFishCount { get; set; }
+        public decimal ReverseBiomassKg { get; set; }
+        public bool CanCancel { get; set; }
+        public List<string> BlockingReasons { get; set; } = new();
+        public List<ErpReceiptResyncImpactDto> Impacts { get; set; } = new();
+    }
+
+    public class ErpMovementCancellationRequestDto
+    {
+        public long MovementId { get; set; }
+        public string ConfirmationDocumentNo { get; set; } = string.Empty;
+        public string Reason { get; set; } = string.Empty;
+    }
+
+    public class ErpMovementCancellationResultDto
+    {
+        public long MovementId { get; set; }
+        public string DocumentNo { get; set; } = string.Empty;
+        public int ReversedLedgerMovementCount { get; set; }
+    }
 }

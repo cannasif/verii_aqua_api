@@ -208,4 +208,18 @@
   <data name="ErpReceiptResync.NegativeWarehouseBalance" xml:space="preserve"><value>Rollback was stopped because it would create a negative warehouse balance.</value></data>
   <data name="ErpReceiptResync.Completed" xml:space="preserve"><value>Related transactions were rolled back and the ERP document was reprocessed with its current data.</value></data>
   <data name="ErpReceiptResync.Failed" xml:space="preserve"><value>The ERP document could not be resynchronized. All changes were rolled back.</value></data>
+  <data name="ErpMovementCancellation.NotFound" xml:space="preserve"><value>The ERP movement row to cancel was not found.</value></data>
+  <data name="ErpMovementCancellation.AlreadyCancelled" xml:space="preserve"><value>The selected ERP movement row has already been cancelled.</value></data>
+  <data name="ErpMovementCancellation.NotProcessed" xml:space="preserve"><value>Only ERP movements successfully processed into Aqua can be cancelled.</value></data>
+  <data name="ErpMovementCancellation.PreviewLoaded" xml:space="preserve"><value>The ERP movement cancellation impact preview is ready.</value></data>
+  <data name="ErpMovementCancellation.ErpIntegratedDependency" xml:space="preserve"><value>A subsequent transaction was posted to ERP. Reverse that ERP document first.</value></data>
+  <data name="ErpMovementCancellation.NegativeCageBalance" xml:space="preserve"><value>Cancellation was blocked because it would create a negative cage balance.</value></data>
+  <data name="ErpMovementCancellation.NegativeWarehouseBalance" xml:space="preserve"><value>Cancellation was blocked because it would create a negative warehouse balance.</value></data>
+  <data name="ErpMovementCancellation.ReasonRequired" xml:space="preserve"><value>The cancellation reason must contain at least 10 characters.</value></data>
+  <data name="ErpMovementCancellation.ConfirmationMismatch" xml:space="preserve"><value>The confirmation document number does not match the selected movement.</value></data>
+  <data name="ErpMovementCancellation.Blocked" xml:space="preserve"><value>The ERP movement cannot be cancelled safely. Resolve the preview blockers first.</value></data>
+  <data name="ErpMovementCancellation.Changed" xml:space="preserve"><value>The ERP movement changed after preview. Refresh and try again.</value></data>
+  <data name="ErpMovementCancellation.Completed" xml:space="preserve"><value>The ERP movement row was cancelled and only its Aqua balance impact was reversed.</value></data>
+  <data name="ErpMovementCancellation.Failed" xml:space="preserve"><value>The ERP movement row could not be cancelled. All changes were rolled back.</value></data>
+  <data name="ErpMovementCancellation.CancelledSourceCannotBeProcessed" xml:space="preserve"><value>A cancelled ERP source movement cannot be processed again.</value></data>
 </root>
