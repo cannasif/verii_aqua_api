@@ -66,6 +66,7 @@ namespace aqua_api.Modules.Integrations.Application.Dtos
         public int LedgerMovementCount { get; set; }
         public int ReverseFishCount { get; set; }
         public decimal ReverseBiomassKg { get; set; }
+        public bool IsBalanceRepair { get; set; }
         public bool CanCancel { get; set; }
         public List<string> BlockingReasons { get; set; } = new();
         public List<ErpReceiptResyncImpactDto> Impacts { get; set; } = new();

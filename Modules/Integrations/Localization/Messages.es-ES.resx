@@ -199,6 +199,7 @@
   <data name="ErpMovementCancellation.NotFound" xml:space="preserve"><value>No se encontró la línea de movimiento ERP que se va a cancelar.</value></data>
   <data name="ErpMovementCancellation.AlreadyCancelled" xml:space="preserve"><value>La línea de movimiento ERP seleccionada ya fue cancelada.</value></data>
   <data name="ErpMovementCancellation.NotProcessed" xml:space="preserve"><value>Solo se pueden cancelar movimientos ERP procesados correctamente en Aqua.</value></data>
+  <data name="ErpMovementCancellation.SourceLedgerNotFound" xml:space="preserve"><value>No se encontró el movimiento de saldo creado por esta línea ERP. La cancelación no puede completarse hasta verificar el saldo.</value></data>
   <data name="ErpMovementCancellation.PreviewLoaded" xml:space="preserve"><value>La vista previa del impacto de la cancelación está lista.</value></data>
   <data name="ErpMovementCancellation.ErpIntegratedDependency" xml:space="preserve"><value>Una operación posterior se envió al ERP. Revierta primero ese documento ERP.</value></data>
   <data name="ErpMovementCancellation.NegativeCageBalance" xml:space="preserve"><value>La cancelación produciría un saldo negativo en la jaula.</value></data>

@@ -219,6 +219,7 @@
   <data name="ErpMovementCancellation.NotFound" xml:space="preserve"><value>İptal edilecek ERP hareket satırı bulunamadı.</value></data>
   <data name="ErpMovementCancellation.AlreadyCancelled" xml:space="preserve"><value>Seçilen ERP hareket satırı daha önce iptal edilmiş.</value></data>
   <data name="ErpMovementCancellation.NotProcessed" xml:space="preserve"><value>Yalnızca Aqua'ya başarıyla işlenmiş ERP hareketleri iptal edilebilir.</value></data>
+  <data name="ErpMovementCancellation.SourceLedgerNotFound" xml:space="preserve"><value>Bu ERP satırının oluşturduğu kaynak bakiye hareketi bulunamadı. Bakiye doğrulanmadan iptal tamamlanamaz.</value></data>
   <data name="ErpMovementCancellation.PreviewLoaded" xml:space="preserve"><value>ERP hareket iptali için etki analizi hazırlandı.</value></data>
   <data name="ErpMovementCancellation.ErpIntegratedDependency" xml:space="preserve"><value>Bu hareketten sonra ERP'ye aktarılmış bir işlem var. Önce ilgili ERP belgesini ters kayıtla kapatın.</value></data>
   <data name="ErpMovementCancellation.NegativeCageBalance" xml:space="preserve"><value>Bu satırın iptali kafes bakiyesini negatife düşüreceği için işlem engellendi.</value></data>

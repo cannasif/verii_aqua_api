@@ -199,6 +199,7 @@
   <data name="ErpMovementCancellation.NotFound" xml:space="preserve"><value>Die zu stornierende ERP-Bewegungszeile wurde nicht gefunden.</value></data>
   <data name="ErpMovementCancellation.AlreadyCancelled" xml:space="preserve"><value>Die ausgewählte ERP-Bewegungszeile wurde bereits storniert.</value></data>
   <data name="ErpMovementCancellation.NotProcessed" xml:space="preserve"><value>Nur erfolgreich in Aqua verarbeitete ERP-Bewegungen können storniert werden.</value></data>
+  <data name="ErpMovementCancellation.SourceLedgerNotFound" xml:space="preserve"><value>Die von dieser ERP-Zeile erzeugte Bestandsbewegung wurde nicht gefunden. Die Stornierung kann erst nach Bestandsprüfung abgeschlossen werden.</value></data>
   <data name="ErpMovementCancellation.PreviewLoaded" xml:space="preserve"><value>Die Auswirkungsanalyse für die Stornierung ist bereit.</value></data>
   <data name="ErpMovementCancellation.ErpIntegratedDependency" xml:space="preserve"><value>Eine nachfolgende Bewegung wurde an das ERP übertragen. Stornieren Sie zuerst diesen ERP-Beleg.</value></data>
   <data name="ErpMovementCancellation.NegativeCageBalance" xml:space="preserve"><value>Die Stornierung würde einen negativen Käfigbestand erzeugen.</value></data>

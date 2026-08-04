@@ -5,6 +5,7 @@ namespace aqua_api.Modules.Integrations.Application.Services
 {
     public class ErpReceiptResyncService : IErpReceiptResyncService
     {
+        private const string CancellationReferenceTable = "RII_ERP_MOVEMENT_CANCELLATION";
         private readonly AquaDbContext _db;
         private readonly IUnitOfWork _unitOfWork;
         private readonly INetsisReadService _netsisReadService;
@@ -202,12 +203,14 @@ namespace aqua_api.Modules.Integrations.Application.Services
                 return CancellationPreviewError("ErpMovementCancellation.NotFound", StatusCodes.Status404NotFound);
             }
 
-            if (sourceRow.IsCancelled)
+            var hasCancellationLedger = await HasCancellationLedgerAsync(sourceRow.Id);
+            if (sourceRow.IsCancelled && hasCancellationLedger)
             {
                 return CancellationPreviewError("ErpMovementCancellation.AlreadyCancelled", StatusCodes.Status409Conflict);
             }
 
-            if (!sourceRow.IsProcessed || (!sourceRow.GoodsReceiptLineId.HasValue && !sourceRow.ShipmentLineId.HasValue))
+            if (!sourceRow.IsCancelled &&
+                (!sourceRow.IsProcessed || (!sourceRow.GoodsReceiptLineId.HasValue && !sourceRow.ShipmentLineId.HasValue)))
             {
                 return CancellationPreviewError("ErpMovementCancellation.NotProcessed", StatusCodes.Status409Conflict);
             }
@@ -234,8 +237,14 @@ namespace aqua_api.Modules.Integrations.Application.Services
                     : null,
                 LedgerMovementCount = ledgerMovements.Count,
                 ReverseFishCount = ledgerMovements.Sum(x => x.SignedCount),
-                ReverseBiomassKg = ledgerMovements.Sum(x => x.SignedBiomassGram) / 1000m
+                ReverseBiomassKg = ledgerMovements.Sum(x => x.SignedBiomassGram) / 1000m,
+                IsBalanceRepair = sourceRow.IsCancelled
             };
+
+            if (ledgerMovements.Count == 0)
+            {
+                preview.BlockingReasons.Add(_localizationService.GetLocalizedString("ErpMovementCancellation.SourceLedgerNotFound"));
+            }
 
             await AddCancellationImpactsAsync(preview, sourceRow);
             await AddBalanceBlockingReasonsAsync(preview, ledgerMovements);
@@ -285,13 +294,19 @@ namespace aqua_api.Modules.Integrations.Application.Services
             {
                 await _unitOfWork.BeginTransactionAsync();
                 var sourceRow = await _db.ErpReceiptShipmentMovements
-                    .FirstOrDefaultAsync(x => x.Id == request.MovementId && !x.IsCancelled);
-                if (sourceRow == null || !sourceRow.IsProcessed)
+                    .IgnoreQueryFilters()
+                    .FirstOrDefaultAsync(x => x.Id == request.MovementId && !x.IsDeleted);
+                var hasCancellationLedger = sourceRow != null && await HasCancellationLedgerAsync(sourceRow.Id);
+                if (sourceRow == null || hasCancellationLedger || (!sourceRow.IsProcessed && !sourceRow.IsCancelled))
                 {
                     throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpMovementCancellation.Changed"));
                 }
 
                 var ledgerMovements = await GetSourceLedgerMovementsAsync(sourceRow);
+                if (ledgerMovements.Count == 0)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpMovementCancellation.SourceLedgerNotFound"));
+                }
                 var reversedCount = await ReverseSourceLedgerMovementsAsync(sourceRow, ledgerMovements, userId);
                 await CancelGeneratedDocumentLineAsync(sourceRow, userId);
 
@@ -331,16 +346,27 @@ namespace aqua_api.Modules.Integrations.Application.Services
         private async Task<List<BatchMovement>> GetSourceLedgerMovementsAsync(ErpReceiptShipmentMovement sourceRow)
         {
             var lineId = sourceRow.GoodsReceiptLineId ?? sourceRow.ShipmentLineId;
-            if (!lineId.HasValue) return new List<BatchMovement>();
+            if (lineId.HasValue)
+            {
+                var referenceTable = sourceRow.GoodsReceiptLineId.HasValue
+                    ? "RII_GOODS_RECEIPT_LINE"
+                    : "RII_SHIPMENT_LINE";
+                var lineMovements = await _db.BatchMovements
+                    .Where(x => x.ReferenceTable == referenceTable && x.ReferenceId == lineId.Value)
+                    .OrderBy(x => x.Id)
+                    .ToListAsync();
+                if (lineMovements.Count > 0) return lineMovements;
+            }
 
-            var referenceTable = sourceRow.GoodsReceiptLineId.HasValue
-                ? "RII_GOODS_RECEIPT_LINE"
-                : "RII_SHIPMENT_LINE";
-            return await _db.BatchMovements
-                .Where(x => x.ReferenceTable == referenceTable && x.ReferenceId == lineId.Value)
-                .OrderBy(x => x.Id)
-                .ToListAsync();
+            if (!sourceRow.BatchMovementId.HasValue) return new List<BatchMovement>();
+            var fallbackMovement = await _db.BatchMovements
+                .FirstOrDefaultAsync(x => x.Id == sourceRow.BatchMovementId.Value);
+            return fallbackMovement == null ? new List<BatchMovement>() : new List<BatchMovement> { fallbackMovement };
         }
+
+        private Task<bool> HasCancellationLedgerAsync(long sourceMovementId) =>
+            _db.BatchMovements.AsNoTracking().AnyAsync(x =>
+                x.ReferenceTable == CancellationReferenceTable && x.ReferenceId == sourceMovementId);
 
         private async Task AddCancellationImpactsAsync(
             ErpMovementCancellationPreviewDto preview,
@@ -405,7 +431,7 @@ namespace aqua_api.Modules.Integrations.Application.Services
                         x.FishBatchId == movement.FishBatchId && x.ProjectCageId == movement.ProjectCageId.Value);
                     if (balance == null)
                         throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpMovementCancellation.NegativeCageBalance"));
-                    ApplyReverseBalance(balance, movement.SignedCount, movement.SignedBiomassGram, DateTimeProvider.Now);
+                    ApplyReverseBalance(balance, movement.SignedCount, movement.SignedBiomassGram, balance.AsOfDate);
                 }
 
                 if (movement.WarehouseId.HasValue)
@@ -414,7 +440,7 @@ namespace aqua_api.Modules.Integrations.Application.Services
                         x.FishBatchId == movement.FishBatchId && x.WarehouseId == movement.WarehouseId.Value);
                     if (balance == null)
                         throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpMovementCancellation.NegativeWarehouseBalance"));
-                    ApplyReverseBalance(balance, movement.SignedCount, movement.SignedBiomassGram, DateTimeProvider.Now);
+                    ApplyReverseBalance(balance, movement.SignedCount, movement.SignedBiomassGram, balance.AsOfDate);
                 }
 
                 await _db.BatchMovements.AddAsync(new BatchMovement
@@ -430,13 +456,13 @@ namespace aqua_api.Modules.Integrations.Application.Services
                     ToStockId = movement.FromStockId,
                     FromAverageGram = movement.ToAverageGram,
                     ToAverageGram = movement.FromAverageGram,
-                    MovementDate = DateTimeProvider.Now,
+                    MovementDate = movement.MovementDate,
                     MovementType = movement.MovementType,
                     SignedCount = -movement.SignedCount,
                     SignedBiomassGram = -movement.SignedBiomassGram,
                     FeedGram = movement.FeedGram.HasValue ? -movement.FeedGram.Value : null,
                     ActorUserId = userId,
-                    ReferenceTable = "RII_ERP_MOVEMENT_CANCELLATION",
+                    ReferenceTable = CancellationReferenceTable,
                     ReferenceId = sourceRow.Id,
                     Note = $"ERP source movement cancellation | originalMovementId={movement.Id}",
                     CreatedBy = userId

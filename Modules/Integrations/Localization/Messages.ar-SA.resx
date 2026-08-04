@@ -199,6 +199,7 @@
   <data name="ErpMovementCancellation.NotFound" xml:space="preserve"><value>لم يتم العثور على سطر حركة ERP المطلوب إلغاؤه.</value></data>
   <data name="ErpMovementCancellation.AlreadyCancelled" xml:space="preserve"><value>تم إلغاء سطر حركة ERP المحدد مسبقاً.</value></data>
   <data name="ErpMovementCancellation.NotProcessed" xml:space="preserve"><value>يمكن إلغاء حركات ERP التي تمت معالجتها بنجاح في Aqua فقط.</value></data>
+  <data name="ErpMovementCancellation.SourceLedgerNotFound" xml:space="preserve"><value>لم يتم العثور على حركة الرصيد المصدر التي أنشأها سطر ERP هذا. لا يمكن إكمال الإلغاء قبل التحقق من الرصيد.</value></data>
   <data name="ErpMovementCancellation.PreviewLoaded" xml:space="preserve"><value>معاينة تأثير إلغاء حركة ERP جاهزة.</value></data>
   <data name="ErpMovementCancellation.ErpIntegratedDependency" xml:space="preserve"><value>تم إرسال عملية لاحقة إلى ERP. يجب عكس مستند ERP المرتبط أولاً.</value></data>
   <data name="ErpMovementCancellation.NegativeCageBalance" xml:space="preserve"><value>تم منع الإلغاء لأنه سينتج رصيد قفص سالباً.</value></data>

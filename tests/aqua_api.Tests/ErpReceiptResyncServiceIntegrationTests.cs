@@ -399,6 +399,8 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
         Assert.Equal(4, ledger.Count);
         Assert.Equal(500, ledger.Sum(x => x.SignedCount));
         Assert.Equal(50_000, ledger.Sum(x => x.SignedBiomassGram));
+        var cancellationMovement = Assert.Single(ledger, x => x.ReferenceTable == "RII_ERP_MOVEMENT_CANCELLATION");
+        Assert.Equal(seeded.ReceiptDate, cancellationMovement.MovementDate);
         Assert.False((await fixture.Db.Feedings.SingleAsync()).IsDeleted);
 
         await fixture.SyncJob.ExecuteAsync();
@@ -422,6 +424,86 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
         Assert.True(preview.Success, preview.ExceptionMessage);
         Assert.False(preview.Data!.CanCancel);
         Assert.NotEmpty(preview.Data.BlockingReasons);
+    }
+
+    [Fact]
+    public async Task PreviewMovementCancellation_Blocks_WhenSourceLedgerCannotBeFound()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var seeded = await SeedReceiptGraphAsync(fixture.Db, erpIntegratedFeeding: false, includeFeeding: false);
+        var source = await fixture.Db.ErpReceiptShipmentMovements.SingleAsync(x => x.DocumentNo == seeded.DocumentNo);
+        var ledger = await fixture.Db.BatchMovements.SingleAsync(x => x.FishBatchId == seeded.FishBatchId);
+        fixture.Db.BatchMovements.Remove(ledger);
+        await fixture.Db.SaveChangesAsync();
+
+        var preview = await fixture.Service.PreviewMovementCancellationAsync(source.Id);
+
+        Assert.True(preview.Success, preview.ExceptionMessage);
+        Assert.False(preview.Data!.CanCancel);
+        Assert.Equal(0, preview.Data.LedgerMovementCount);
+        Assert.NotEmpty(preview.Data.BlockingReasons);
+    }
+
+    [Fact]
+    public async Task CancelMovement_UsesBatchMovementFallback_ForLegacyMirrorRows()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var seeded = await SeedReceiptGraphAsync(fixture.Db, erpIntegratedFeeding: false, includeFeeding: false);
+        var source = await fixture.Db.ErpReceiptShipmentMovements.SingleAsync(x => x.DocumentNo == seeded.DocumentNo);
+        var ledger = await fixture.Db.BatchMovements.SingleAsync(x => x.FishBatchId == seeded.FishBatchId);
+        ledger.ReferenceTable = "LEGACY_REFERENCE";
+        source.BatchMovementId = ledger.Id;
+        await fixture.Db.SaveChangesAsync();
+
+        var response = await fixture.Service.CancelMovementAsync(new ErpMovementCancellationRequestDto
+        {
+            MovementId = source.Id,
+            ConfirmationDocumentNo = seeded.DocumentNo,
+            Reason = "Eski mirror kaydının bakiye etkisi güvenle geri alındı."
+        }, 1);
+
+        Assert.True(response.Success, response.ExceptionMessage);
+        Assert.Equal(1, response.Data!.ReversedLedgerMovementCount);
+        var balance = await fixture.Db.BatchCageBalances.SingleAsync(x => x.FishBatchId == seeded.FishBatchId);
+        Assert.Equal(0, balance.LiveCount);
+        Assert.Equal(0, balance.BiomassGram);
+    }
+
+    [Fact]
+    public async Task CancelMovement_RepairsPreviouslyCancelledRow_WhenBalanceWasNotReversed()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var seeded = await SeedReceiptGraphAsync(fixture.Db, erpIntegratedFeeding: false, includeFeeding: false);
+        var source = await fixture.Db.ErpReceiptShipmentMovements.SingleAsync(x => x.DocumentNo == seeded.DocumentNo);
+        source.IsCancelled = true;
+        source.IsProcessed = false;
+        source.CancelledAt = seeded.ReceiptDate.AddMonths(3);
+        source.CancellationReason = "Önceki sürüm bakiyeyi geri almadan iptal işaretledi.";
+        await fixture.Db.SaveChangesAsync();
+
+        var preview = await fixture.Service.PreviewMovementCancellationAsync(source.Id);
+        Assert.True(preview.Success, preview.ExceptionMessage);
+        Assert.True(preview.Data!.CanCancel);
+        Assert.True(preview.Data.IsBalanceRepair);
+
+        var response = await fixture.Service.CancelMovementAsync(new ErpMovementCancellationRequestDto
+        {
+            MovementId = source.Id,
+            ConfirmationDocumentNo = seeded.DocumentNo,
+            Reason = "Eksik kalan geçmiş tarihli bakiye ters kaydı tamamlandı."
+        }, 1);
+
+        Assert.True(response.Success, response.ExceptionMessage);
+        var balance = await fixture.Db.BatchCageBalances.SingleAsync(x => x.FishBatchId == seeded.FishBatchId);
+        Assert.Equal(0, balance.LiveCount);
+        Assert.Equal(0, balance.BiomassGram);
+        var reversal = await fixture.Db.BatchMovements.SingleAsync(x =>
+            x.ReferenceTable == "RII_ERP_MOVEMENT_CANCELLATION" && x.ReferenceId == source.Id);
+        Assert.Equal(seeded.ReceiptDate, reversal.MovementDate);
+
+        var duplicatePreview = await fixture.Service.PreviewMovementCancellationAsync(source.Id);
+        Assert.False(duplicatePreview.Success);
+        Assert.Equal(StatusCodes.Status409Conflict, duplicatePreview.StatusCode);
     }
 
     private static async Task<Fixture> CreateFixtureAsync(

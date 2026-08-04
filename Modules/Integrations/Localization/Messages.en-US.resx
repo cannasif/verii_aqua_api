@@ -211,6 +211,7 @@
   <data name="ErpMovementCancellation.NotFound" xml:space="preserve"><value>The ERP movement row to cancel was not found.</value></data>
   <data name="ErpMovementCancellation.AlreadyCancelled" xml:space="preserve"><value>The selected ERP movement row has already been cancelled.</value></data>
   <data name="ErpMovementCancellation.NotProcessed" xml:space="preserve"><value>Only ERP movements successfully processed into Aqua can be cancelled.</value></data>
+  <data name="ErpMovementCancellation.SourceLedgerNotFound" xml:space="preserve"><value>The source balance movement created by this ERP row was not found. Cancellation cannot complete until the balance is verified.</value></data>
   <data name="ErpMovementCancellation.PreviewLoaded" xml:space="preserve"><value>The ERP movement cancellation impact preview is ready.</value></data>
   <data name="ErpMovementCancellation.ErpIntegratedDependency" xml:space="preserve"><value>A subsequent transaction was posted to ERP. Reverse that ERP document first.</value></data>
   <data name="ErpMovementCancellation.NegativeCageBalance" xml:space="preserve"><value>Cancellation was blocked because it would create a negative cage balance.</value></data>

@@ -199,6 +199,7 @@
   <data name="ErpMovementCancellation.NotFound" xml:space="preserve"><value>La ligne de mouvement ERP à annuler est introuvable.</value></data>
   <data name="ErpMovementCancellation.AlreadyCancelled" xml:space="preserve"><value>La ligne de mouvement ERP sélectionnée a déjà été annulée.</value></data>
   <data name="ErpMovementCancellation.NotProcessed" xml:space="preserve"><value>Seuls les mouvements ERP traités avec succès dans Aqua peuvent être annulés.</value></data>
+  <data name="ErpMovementCancellation.SourceLedgerNotFound" xml:space="preserve"><value>Le mouvement de stock créé par cette ligne ERP est introuvable. L'annulation ne peut pas être terminée avant vérification du solde.</value></data>
   <data name="ErpMovementCancellation.PreviewLoaded" xml:space="preserve"><value>L'aperçu des impacts de l'annulation est prêt.</value></data>
   <data name="ErpMovementCancellation.ErpIntegratedDependency" xml:space="preserve"><value>Une opération ultérieure a été envoyée à l'ERP. Contrepassez d'abord ce document ERP.</value></data>
   <data name="ErpMovementCancellation.NegativeCageBalance" xml:space="preserve"><value>L'annulation créerait un solde de cage négatif.</value></data>

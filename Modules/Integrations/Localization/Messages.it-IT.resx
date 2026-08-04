@@ -199,6 +199,7 @@
   <data name="ErpMovementCancellation.NotFound" xml:space="preserve"><value>La riga del movimento ERP da annullare non è stata trovata.</value></data>
   <data name="ErpMovementCancellation.AlreadyCancelled" xml:space="preserve"><value>La riga del movimento ERP selezionata è già stata annullata.</value></data>
   <data name="ErpMovementCancellation.NotProcessed" xml:space="preserve"><value>È possibile annullare solo i movimenti ERP elaborati correttamente in Aqua.</value></data>
+  <data name="ErpMovementCancellation.SourceLedgerNotFound" xml:space="preserve"><value>Il movimento di saldo creato da questa riga ERP non è stato trovato. L'annullamento non può essere completato prima della verifica del saldo.</value></data>
   <data name="ErpMovementCancellation.PreviewLoaded" xml:space="preserve"><value>L'anteprima dell'impatto dell'annullamento è pronta.</value></data>
   <data name="ErpMovementCancellation.ErpIntegratedDependency" xml:space="preserve"><value>Un'operazione successiva è stata inviata all'ERP. Stornare prima il relativo documento ERP.</value></data>
   <data name="ErpMovementCancellation.NegativeCageBalance" xml:space="preserve"><value>L'annullamento produrrebbe un saldo gabbia negativo.</value></data>
