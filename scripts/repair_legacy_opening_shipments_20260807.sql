@@ -1,24 +1,45 @@
 /*
-    Repairs legacy opening-import shipments that were posted as documents but
-    were not applied to RII_BATCH_MOVEMENT / RII_BATCH_CAGE_BALANCE.
+    Repairs every safely reconstructable legacy opening-import shipment that
+    was posted as a document but was not applied to
+    RII_BATCH_MOVEMENT / RII_BATCH_CAGE_BALANCE.
 
     Safety:
       - @Apply = 0 previews every change and rolls back.
+      - @ProjectIdFilter = NULL scans every project. A project id can be supplied
+        for a targeted dry run.
+      - Only rows proven to originate from Opening Import are considered. Older
+        ordinary shipments may reference their header instead of their line and
+        must not be treated as missing.
+      - An application lock prevents two copies of this repair from overlapping;
+        transaction locks protect the selected operational rows.
       - The script aborts if the current balances do not match the active ledger.
       - Missing shipments are distributed over currently available cage balances.
         Active growth biomass is first reversed to its pre-growth value.
       - Later active growth records are recalculated with the same target gram.
       - Every repaired balance must match the active ledger before commit.
+      - Rows requiring a missing historical growth or stock movement are left
+        untouched and returned in the manual-review result set.
 */
 
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 
 DECLARE @Apply bit = 0; -- Set to 1 only after reviewing the dry-run result.
+DECLARE @ProjectIdFilter bigint = NULL; -- NULL repairs every safe project.
 DECLARE @Now datetime2(7) = SYSUTCDATETIME();
 
 BEGIN TRY
     BEGIN TRANSACTION;
+
+    DECLARE @ApplicationLockResult int;
+    EXEC @ApplicationLockResult = sys.sp_getapplock
+        @Resource = N'AQUA_LEGACY_OPENING_SHIPMENT_REPAIR',
+        @LockMode = N'Exclusive',
+        @LockOwner = N'Transaction',
+        @LockTimeout = 0;
+
+    IF @ApplicationLockResult < 0
+        THROW 51000, 'Another opening-shipment repair is already running.', 1;
 
     CREATE TABLE #TargetLine
     (
@@ -27,12 +48,42 @@ BEGIN TRY
     );
 
     INSERT INTO #TargetLine (ProjectId, ShipmentLineId)
-    VALUES
-        (172, 86),
-        (173, 87),
-        (174, 88),
-        (175, 89),
-        (176, 90);
+    SELECT
+        shipment.ProjectId,
+        line.Id
+    FROM RII_SHIPMENT_LINE line WITH (UPDLOCK, HOLDLOCK)
+    JOIN RII_SHIPMENT shipment WITH (UPDLOCK, HOLDLOCK)
+      ON shipment.Id = line.ShipmentId
+    JOIN RII_FISH_BATCH batch
+      ON batch.Id = line.FishBatchId
+    OUTER APPLY
+    (
+        SELECT
+            -SUM(CONVERT(bigint, movement.SignedCount)) FishCount,
+            -SUM(movement.SignedBiomassGram) BiomassGram
+        FROM RII_BATCH_MOVEMENT movement
+        WHERE movement.ReferenceId = line.Id
+          AND movement.ReferenceTable IN (N'RII_SHIPMENT_LINE', N'RII_ShipmentLine')
+          AND movement.MovementType = 6
+          AND movement.ProjectCageId IS NOT NULL
+          AND movement.IsDeleted = 0
+    ) represented
+    WHERE line.IsDeleted = 0
+      AND shipment.IsDeleted = 0
+      AND shipment.Status = 1
+      AND batch.IsDeleted = 0
+      AND batch.ProjectId = shipment.ProjectId
+      AND (@ProjectIdFilter IS NULL OR shipment.ProjectId = @ProjectIdFilter)
+      AND
+      (
+          line.ErpSourceMovementKey LIKE N'OPENING_IMPORT:%'
+          OR shipment.Note LIKE N'Opening import summary - %'
+      )
+      AND
+      (
+          CONVERT(bigint, line.FishCount) > ISNULL(represented.FishCount, 0)
+          OR line.BiomassGram > ISNULL(represented.BiomassGram, 0) + 0.001
+      );
 
     IF EXISTS
     (
@@ -50,7 +101,7 @@ BEGIN TRY
            OR shipment.ProjectId <> target.ProjectId
            OR batch.ProjectId <> target.ProjectId
     )
-        THROW 51000, 'Repair target validation failed. Project or shipment line changed.', 1;
+        THROW 51001, 'Repair target validation failed. Project or shipment line changed.', 1;
 
     CREATE TABLE #BeforeBalance
     (
@@ -64,8 +115,8 @@ BEGIN TRY
     INSERT INTO #BeforeBalance (FishBatchId, ProjectCageId, LiveCount, BiomassGram)
     SELECT balance.FishBatchId, balance.ProjectCageId, balance.LiveCount, balance.BiomassGram
     FROM RII_BATCH_CAGE_BALANCE balance WITH (UPDLOCK, HOLDLOCK)
-    JOIN RII_FISH_BATCH batch ON batch.Id = balance.FishBatchId
-    JOIN #TargetLine target ON target.ProjectId = batch.ProjectId
+    JOIN RII_SHIPMENT_LINE line ON line.FishBatchId = balance.FishBatchId
+    JOIN #TargetLine target ON target.ShipmentLineId = line.Id
     WHERE balance.IsDeleted = 0
     GROUP BY balance.FishBatchId, balance.ProjectCageId, balance.LiveCount, balance.BiomassGram;
 
@@ -86,7 +137,7 @@ BEGIN TRY
         WHERE CONVERT(bigint, balance.LiveCount) <> ledger.LedgerCount
            OR ABS(balance.BiomassGram - ledger.LedgerBiomassGram) > 0.001
     )
-        THROW 51001, 'Current cage balance does not match the active movement ledger.', 1;
+        THROW 51002, 'Current cage balance does not match the active movement ledger.', 1;
 
     CREATE TABLE #Missing
     (
@@ -110,7 +161,7 @@ BEGIN TRY
         MissingCount,
         MissingBiomassGram
     )
-    SELECT
+    SELECT DISTINCT
         target.ProjectId,
         line.FishBatchId,
         batch.FishStockId,
@@ -142,19 +193,18 @@ BEGIN TRY
         WHERE MissingCount < 0
            OR (MissingCount > 0 AND MissingBiomassGram < -0.001)
     )
-        THROW 51002, 'A target shipment is over-represented in the movement ledger.', 1;
+        THROW 51003, 'A target shipment is over-represented in the movement ledger.', 1;
 
     DELETE FROM #Missing
     WHERE MissingCount = 0 AND MissingBiomassGram <= 0.001;
 
-    IF EXISTS
+    CREATE TABLE #Skipped
     (
-        SELECT FishBatchId
-        FROM #Missing
-        GROUP BY FishBatchId
-        HAVING COUNT(*) > 1
-    )
-        THROW 51003, 'This repair version expects one missing opening shipment per fish batch.', 1;
+        ProjectId bigint NOT NULL,
+        FishBatchId bigint NOT NULL,
+        ShipmentLineId bigint NOT NULL PRIMARY KEY,
+        Reason nvarchar(500) NOT NULL
+    );
 
     CREATE TABLE #Weight
     (
@@ -238,22 +288,71 @@ BEGIN TRY
         SUM(weight.BaseBiomassGram) OVER (PARTITION BY weight.ShipmentLineId)
     FROM PositiveWeight weight;
 
-    IF EXISTS
+    ;WITH LineCapacity AS
     (
-        SELECT 1
+        SELECT
+            missing.ProjectId,
+            missing.FishBatchId,
+            missing.ShipmentLineId,
+            missing.MissingCount,
+            missing.MissingBiomassGram,
+            MAX(weight.TotalBaseCount) TotalBaseCount,
+            MAX(weight.TotalBaseBiomassGram) TotalBaseBiomassGram
         FROM #Missing missing
-        LEFT JOIN
-        (
-            SELECT ShipmentLineId, MAX(TotalBaseCount) TotalBaseCount,
-                   MAX(TotalBaseBiomassGram) TotalBaseBiomassGram
-            FROM #Weight
-            GROUP BY ShipmentLineId
-        ) weight ON weight.ShipmentLineId = missing.ShipmentLineId
-        WHERE weight.ShipmentLineId IS NULL
-           OR missing.MissingCount > weight.TotalBaseCount
-           OR missing.MissingBiomassGram > weight.TotalBaseBiomassGram + 0.001
+        LEFT JOIN #Weight weight ON weight.ShipmentLineId = missing.ShipmentLineId
+        GROUP BY
+            missing.ProjectId,
+            missing.FishBatchId,
+            missing.ShipmentLineId,
+            missing.MissingCount,
+            missing.MissingBiomassGram
+    ), UnsafeBatch AS
+    (
+        SELECT FishBatchId
+        FROM LineCapacity
+        GROUP BY FishBatchId
+        HAVING MAX(CASE WHEN TotalBaseCount IS NULL THEN 1 ELSE 0 END) = 1
+            OR SUM(CONVERT(bigint, MissingCount)) > MAX(TotalBaseCount)
+            OR SUM(MissingBiomassGram) > MAX(TotalBaseBiomassGram) + 0.001
     )
-        THROW 51004, 'Available cage stock cannot absorb the missing shipment.', 1;
+    INSERT INTO #Skipped (ProjectId, FishBatchId, ShipmentLineId, Reason)
+    SELECT
+        capacity.ProjectId,
+        capacity.FishBatchId,
+        capacity.ShipmentLineId,
+        CASE
+            WHEN capacity.TotalBaseCount IS NULL
+                THEN N'No positive cage balance exists for this fish batch.'
+            ELSE CONCAT(
+                N'The combined missing shipment exceeds reconstructable stock. Missing count=',
+                batchMissing.MissingCount,
+                N', available count=', capacity.TotalBaseCount,
+                N', missing biomass gram=', batchMissing.MissingBiomassGram,
+                N', available biomass gram=', capacity.TotalBaseBiomassGram,
+                N'. A missing historical growth or stock movement must be reviewed manually.')
+        END
+    FROM LineCapacity capacity
+    JOIN UnsafeBatch unsafe ON unsafe.FishBatchId = capacity.FishBatchId
+    CROSS APPLY
+    (
+        SELECT
+            SUM(CONVERT(bigint, other.MissingCount)) MissingCount,
+            SUM(other.MissingBiomassGram) MissingBiomassGram
+        FROM #Missing other
+        WHERE other.FishBatchId = capacity.FishBatchId
+    ) batchMissing;
+
+    DELETE weight
+    FROM #Weight weight
+    JOIN #Skipped skipped ON skipped.ShipmentLineId = weight.ShipmentLineId;
+
+    DELETE missing
+    FROM #Missing missing
+    JOIN #Skipped skipped ON skipped.ShipmentLineId = missing.ShipmentLineId;
+
+    DELETE target
+    FROM #TargetLine target
+    JOIN #Skipped skipped ON skipped.ShipmentLineId = target.ShipmentLineId;
 
     UPDATE missing
     SET RepairBiomassGram =
@@ -356,14 +455,23 @@ BEGIN TRY
     IF EXISTS
     (
         SELECT 1
-        FROM #Allocation allocation
+        FROM
+        (
+            SELECT
+                FishBatchId,
+                ProjectCageId,
+                SUM(CONVERT(bigint, AllocatedCount)) AllocatedCount,
+                SUM(AllocatedBiomassGram) AllocatedBiomassGram
+            FROM #Allocation
+            GROUP BY FishBatchId, ProjectCageId
+        ) allocation
         JOIN #BeforeBalance balance
           ON balance.FishBatchId = allocation.FishBatchId
          AND balance.ProjectCageId = allocation.ProjectCageId
         WHERE allocation.AllocatedCount > balance.LiveCount
            OR allocation.AllocatedBiomassGram > balance.BiomassGram + 0.001
     )
-        THROW 51006, 'Current cage balance cannot absorb its shipment allocation.', 1;
+        THROW 51006, 'Current cage balance cannot absorb the combined shipment allocation.', 1;
 
     IF EXISTS
     (
@@ -476,7 +584,7 @@ BEGIN TRY
     DECLARE allocation_cursor CURSOR LOCAL FAST_FORWARD FOR
         SELECT FishBatchId, ProjectCageId, AllocatedCount, AllocatedBiomassGram
         FROM #Allocation
-        ORDER BY FishBatchId, ProjectCageId;
+        ORDER BY FishBatchId, ProjectCageId, ShipmentDate, ShipmentLineId;
 
     OPEN allocation_cursor;
     FETCH NEXT FROM allocation_cursor
@@ -664,7 +772,7 @@ BEGIN TRY
     JOIN RII_CAGE cage ON cage.Id = projectCage.CageId
     ORDER BY target.ProjectId, allocation.ProjectCageId;
 
-    SELECT
+    SELECT DISTINCT
         target.ProjectId,
         project.ProjectCode,
         balance.CorrectedLiveCount,
@@ -672,7 +780,8 @@ BEGIN TRY
         movement.RepairMovementCount
     FROM #TargetLine target
     JOIN RII_PROJECT project ON project.Id = target.ProjectId
-    JOIN RII_FISH_BATCH batch ON batch.ProjectId = target.ProjectId AND batch.IsDeleted = 0
+    JOIN RII_SHIPMENT_LINE line ON line.Id = target.ShipmentLineId
+    JOIN RII_FISH_BATCH batch ON batch.Id = line.FishBatchId AND batch.IsDeleted = 0
     CROSS APPLY
     (
         SELECT
@@ -692,6 +801,19 @@ BEGIN TRY
           AND repairMovement.IsDeleted = 0
     ) movement
     ORDER BY target.ProjectId;
+
+    SELECT
+        skipped.ProjectId,
+        project.ProjectCode,
+        project.ProjectName,
+        skipped.FishBatchId,
+        batch.BatchCode,
+        skipped.ShipmentLineId,
+        skipped.Reason
+    FROM #Skipped skipped
+    JOIN RII_PROJECT project ON project.Id = skipped.ProjectId
+    JOIN RII_FISH_BATCH batch ON batch.Id = skipped.FishBatchId
+    ORDER BY skipped.ProjectId, skipped.ShipmentLineId;
 
     IF @Apply = 1
     BEGIN
