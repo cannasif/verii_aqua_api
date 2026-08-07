@@ -104,6 +104,10 @@ public class FishGrowthService : IFishGrowthService
             if (alreadyExists)
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("FishGrowthService.MonthlyGrowthAlreadyExists"));
 
+            await EnsureShipmentLedgersCompleteAsync(
+                dto.FishBatchId,
+                effectiveDate.AddMonths(1));
+
             var hasMovementAfterEffectiveDate = await HasDependentBalanceMovementAsync(
                 dto.FishBatchId,
                 dto.ProjectCageId,
@@ -214,6 +218,9 @@ public class FishGrowthService : IFishGrowthService
                     _localizationService.GetLocalizedString("FishGrowthService.NotFound"));
 
             var movement = await GetGrowthMovementAsync(growth.Id);
+            await EnsureShipmentLedgersCompleteAsync(
+                growth.FishBatchId,
+                GetEffectiveDate(growth.GrowthDate).AddMonths(1));
             await EnsureNoDependentBalanceMovementAsync(growth, movement.Id);
 
             var balance = await GetGrowthBalanceAsync(growth);
@@ -437,6 +444,60 @@ public class FishGrowthService : IFishGrowthService
             && (x.SignedCount != 0 || x.SignedBiomassGram != 0));
     }
 
+    private async Task EnsureShipmentLedgersCompleteAsync(
+        long fishBatchId,
+        DateTime periodEndExclusive)
+    {
+        var documentRows = await _unitOfWork.Db.ShipmentLines
+            .Where(x =>
+                x.FishBatchId == fishBatchId
+                && x.Shipment != null
+                && x.Shipment.Status == DocumentStatus.Posted
+                && x.Shipment.ShipmentDate < periodEndExclusive)
+            .Select(x => new
+            {
+                FishCount = (long)x.FishCount,
+                x.BiomassGram
+            })
+            .ToListAsync();
+        var documentTotals = new ShipmentLedgerTotals
+        {
+            FishCount = documentRows.Sum(x => x.FishCount),
+            BiomassGram = documentRows.Sum(x => x.BiomassGram)
+        };
+
+        if (documentTotals.FishCount == 0 && documentTotals.BiomassGram == 0m)
+        {
+            return;
+        }
+
+        var movementRows = await _unitOfWork.Db.BatchMovements
+            .Where(x =>
+                x.FishBatchId == fishBatchId
+                && x.ProjectCageId != null
+                && x.MovementType == BatchMovementType.Shipment
+                && x.MovementDate < periodEndExclusive
+                && (x.SignedCount != 0 || x.SignedBiomassGram != 0m))
+            .Select(x => new
+            {
+                x.SignedCount,
+                x.SignedBiomassGram
+            })
+            .ToListAsync();
+        var movementTotals = new ShipmentLedgerTotals
+        {
+            FishCount = Math.Max(0L, -movementRows.Sum(x => (long)x.SignedCount)),
+            BiomassGram = Math.Max(0m, -movementRows.Sum(x => x.SignedBiomassGram))
+        };
+
+        if (documentTotals.FishCount > movementTotals.FishCount
+            || documentTotals.BiomassGram > movementTotals.BiomassGram)
+        {
+            throw new InvalidOperationException(
+                _localizationService.GetLocalizedString("FishGrowthService.UnrepresentedShipmentExists"));
+        }
+    }
+
     private async Task<DateTime?> GetPreviousMovementDateAsync(FishGrowth growth, long growthMovementId)
     {
         var effectiveDate = GetEffectiveDate(growth.GrowthDate);
@@ -503,6 +564,12 @@ public class FishGrowthService : IFishGrowthService
             $"fromAvg={fromAverageGram:0.###}",
             $"toAvg={toAverageGram:0.###}"
         });
+    }
+
+    private sealed class ShipmentLedgerTotals
+    {
+        public long FishCount { get; init; }
+        public decimal BiomassGram { get; init; }
     }
 
     private static FishGrowthDto Map(FishGrowth entity) => new()

@@ -167,6 +167,7 @@ public class OpeningImportService : IOpeningImportService
                 await CreateSummaryDocumentsAsync(committedRows, projectsByCode, cagesByCode, result);
                 await _unitOfWork.SaveChangesAsync();
                 await ApplyOpeningMortalityLedgersAsync(committedRows, projectsByCode, cagesByCode);
+                await ApplyOpeningShipmentLedgersAsync(committedRows);
 
                 job.Status = OpeningImportJobStatus.Applied;
                 job.AppliedAt = DateTimeProvider.Now;
@@ -1321,6 +1322,113 @@ public class OpeningImportService : IOpeningImportService
             }
         }
 
+        private async Task ApplyOpeningShipmentLedgersAsync(List<OpeningImportRow> rows)
+        {
+            var openingImportJobIds = rows
+                .Where(x =>
+                    IsSheet(x.SheetName, "OpeningShipments") &&
+                    (x.Status == OpeningImportRowStatus.Valid ||
+                     x.Status == OpeningImportRowStatus.Warning ||
+                     x.Status == OpeningImportRowStatus.Applied))
+                .Select(x => x.OpeningImportJobId)
+                .Distinct()
+                .ToList();
+
+            if (openingImportJobIds.Count == 0)
+            {
+                return;
+            }
+
+            var shipmentLines = new List<ShipmentLine>();
+            foreach (var openingImportJobId in openingImportJobIds)
+            {
+                var sourceKeyPrefix = $"OPENING_IMPORT:{openingImportJobId}:";
+                shipmentLines.AddRange(await _unitOfWork.Db.ShipmentLines
+                    .Include(x => x.Shipment)
+                    .Include(x => x.FishBatch)
+                    .Where(x =>
+                        !x.IsDeleted &&
+                        x.ErpSourceMovementKey != null &&
+                        x.ErpSourceMovementKey.StartsWith(sourceKeyPrefix) &&
+                        x.Shipment != null &&
+                        !x.Shipment.IsDeleted &&
+                        x.Shipment.Status == DocumentStatus.Posted)
+                    .ToListAsync());
+            }
+
+            foreach (var line in shipmentLines
+                         .OrderBy(x => x.Shipment!.ShipmentDate)
+                         .ThenBy(x => x.Id))
+            {
+                var sourceLedgerExists = await _unitOfWork.Db.BatchMovements.AnyAsync(x =>
+                    !x.IsDeleted &&
+                    x.MovementType == BatchMovementType.Shipment &&
+                    x.ReferenceTable == "RII_SHIPMENT_LINE" &&
+                    x.ReferenceId == line.Id &&
+                    x.ProjectCageId == line.FromProjectCageId &&
+                    x.SignedCount < 0);
+
+                var shipment = line.Shipment!;
+                var fishStockId = line.FishBatch?.FishStockId;
+
+                if (!sourceLedgerExists)
+                {
+                    await _balanceLedgerManager.ApplyDelta(
+                        shipment.ProjectId,
+                        line.FishBatchId,
+                        line.FromProjectCageId,
+                        -line.FishCount,
+                        -line.BiomassGram,
+                        BatchMovementType.Shipment,
+                        shipment.ShipmentDate,
+                        "Opening import shipment",
+                        "RII_SHIPMENT_LINE",
+                        line.Id,
+                        line.FromProjectCageId,
+                        null,
+                        fishStockId,
+                        fishStockId,
+                        line.AverageGram,
+                        null);
+                }
+
+                if (shipment.TargetWarehouseId.HasValue)
+                {
+                    var warehouseLedgerExists = await _unitOfWork.Db.BatchMovements.AnyAsync(x =>
+                        !x.IsDeleted &&
+                        x.MovementType == BatchMovementType.Shipment &&
+                        x.ReferenceTable == "RII_SHIPMENT_LINE" &&
+                        x.ReferenceId == line.Id &&
+                        x.WarehouseId == shipment.TargetWarehouseId.Value &&
+                        x.SignedCount > 0);
+
+                    if (!warehouseLedgerExists)
+                    {
+                        await _balanceLedgerManager.ApplyWarehouseDelta(
+                            shipment.ProjectId,
+                            line.FishBatchId,
+                            shipment.TargetWarehouseId.Value,
+                            line.FishCount,
+                            line.BiomassGram,
+                            BatchMovementType.Shipment,
+                            shipment.ShipmentDate,
+                            "Opening import shipment to warehouse",
+                            "RII_SHIPMENT_LINE",
+                            line.Id,
+                            null,
+                            shipment.TargetWarehouseId,
+                            fishStockId,
+                            fishStockId,
+                            null,
+                            line.AverageGram);
+                    }
+                }
+
+                // Persist each line so repeated batch/warehouse combinations reuse the same balance.
+                await _unitOfWork.SaveChangesAsync();
+            }
+        }
+
         private List<OpeningImportRow> BuildDerivedOpeningRowsAsync(List<OpeningImportRow> rows)
         {
             var explicitRows = rows
@@ -1931,6 +2039,7 @@ public class OpeningImportService : IOpeningImportService
                     LocalUnitPrice = pricing.LocalUnitPrice,
                     LineAmount = pricing.LineAmount,
                     LocalLineAmount = pricing.LocalLineAmount,
+                    ErpSourceMovementKey = BuildOpeningShipmentSourceKey(row),
                 });
 
                 result.CreatedShipmentLines += 1;
@@ -1952,6 +2061,9 @@ public class OpeningImportService : IOpeningImportService
                 .OrderByDescending(x => x.AssignedDate)
                 .FirstOrDefaultAsync();
         }
+
+        private static string BuildOpeningShipmentSourceKey(OpeningImportRow row) =>
+            $"OPENING_IMPORT:{row.OpeningImportJobId}:{row.Id}";
 
         private async Task<Dictionary<string, FishBatch>> LoadExistingBatchesByKeyAsync(
             List<OpeningImportRow> rows,

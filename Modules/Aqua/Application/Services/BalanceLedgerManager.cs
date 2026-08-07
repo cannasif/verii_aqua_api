@@ -78,7 +78,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
             balance.AverageGram = nextCount > 0
                 ? Math.Round(nextBiomass / nextCount, 3, MidpointRounding.AwayFromZero)
                 : 0m;
-            balance.AsOfDate = movementDate;
+            balance.AsOfDate = balance.AsOfDate > movementDate ? balance.AsOfDate : movementDate;
 
             var noteParts = new List<string>
             {
@@ -181,7 +181,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
             balance.AverageGram = nextCount > 0
                 ? Math.Round(nextBiomass / nextCount, 3, MidpointRounding.AwayFromZero)
                 : 0m;
-            balance.AsOfDate = movementDate;
+            balance.AsOfDate = balance.AsOfDate > movementDate ? balance.AsOfDate : movementDate;
 
             var noteParts = new List<string>
             {

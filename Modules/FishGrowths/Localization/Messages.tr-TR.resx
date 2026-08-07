@@ -78,4 +78,7 @@
   <data name="FishGrowthService.DeleteFailed" xml:space="preserve">
     <value>Balık büyütme kaydı geri alınamadı.</value>
   </data>
+  <data name="FishGrowthService.UnrepresentedShipmentExists" xml:space="preserve">
+    <value>Bu balık partisi için stok hareketine uygulanmamış geçmiş satış/sevkiyat bulunmaktadır. Bakiye eşitlenmeden büyütme yapılamaz.</value>
+  </data>
 </root>

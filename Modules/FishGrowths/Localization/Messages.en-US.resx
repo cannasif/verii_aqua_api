@@ -78,4 +78,7 @@
   <data name="FishGrowthService.DeleteFailed" xml:space="preserve">
     <value>The fish growth record could not be reverted.</value>
   </data>
+  <data name="FishGrowthService.UnrepresentedShipmentExists" xml:space="preserve">
+    <value>A historical sale/shipment for this fish batch has not been applied to the stock ledger. Growth is blocked until the balance is reconciled.</value>
+  </data>
 </root>

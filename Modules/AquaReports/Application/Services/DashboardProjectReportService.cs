@@ -703,6 +703,23 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             var startDate = project.StartDate.Date;
             var endDate = DateTimeProvider.Now.Date;
             var allDates = EnumerateDates(startDate, endDate);
+            var postedShipmentLines = shipmentLines
+                .Where(x => postedShipmentIds.Contains(x.ShipmentId))
+                .ToList();
+            var projectShipmentFish = postedShipmentLines.Sum(x => (long)x.FishCount);
+            var projectShipmentBiomass = postedShipmentLines.Sum(x => x.BiomassGram);
+            var projectShipmentMovements = batchMovements
+                .Where(x => x.ProjectCageId.HasValue && x.MovementType == BatchMovementType.Shipment)
+                .ToList();
+            var representedProjectShipmentFish = Math.Max(
+                0L,
+                -projectShipmentMovements.Sum(x => (long)x.SignedCount));
+            var representedProjectShipmentBiomass = Math.Max(
+                0m,
+                -projectShipmentMovements.Sum(x => x.SignedBiomassGram));
+            var projectShipmentsFullyRepresented =
+                representedProjectShipmentFish >= projectShipmentFish &&
+                representedProjectShipmentBiomass >= projectShipmentBiomass;
 
             var cages = reportProjectCages.Select(projectCage =>
             {
@@ -794,8 +811,12 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                         x.MovementType == BatchMovementType.Shipment &&
                         x.SignedBiomassGram < 0)
                     .Sum(x => Math.Max(0m, -x.SignedBiomassGram));
-                var unrepresentedShipmentFish = Math.Max(0, totalShipmentFish - representedShipmentFish);
-                var unrepresentedShipmentBiomass = Math.Max(0m, totalShipmentBiomass - representedShipmentBiomass);
+                var unrepresentedShipmentFish = projectShipmentsFullyRepresented
+                    ? 0
+                    : Math.Max(0, totalShipmentFish - representedShipmentFish);
+                var unrepresentedShipmentBiomass = projectShipmentsFullyRepresented
+                    ? 0m
+                    : Math.Max(0m, totalShipmentBiomass - representedShipmentBiomass);
                 var currentFishFromBalance = currentCountByCage.GetValueOrDefault(cageId);
                 var currentBiomassFromBalance = currentBiomassByCage.GetValueOrDefault(cageId);
                 var fallbackCurrentFish = Math.Max(0, initialFish - totalDead);
