@@ -48,4 +48,34 @@
   <data name="FishGrowthService.GrowthMustPrecedeBalanceMovements" xml:space="preserve">
     <value>A sale, mortality, transfer, or another stock movement already exists for this month. Monthly growth must be entered before these movements.</value>
   </data>
+  <data name="FishGrowthService.NotFound" xml:space="preserve">
+    <value>The fish growth record was not found.</value>
+  </data>
+  <data name="FishGrowthService.MovementNotFound" xml:space="preserve">
+    <value>The operation could not be completed safely because the stock movement linked to this growth was not found.</value>
+  </data>
+  <data name="FishGrowthService.DependentMovementExists" xml:space="preserve">
+    <value>A sale, mortality, transfer, or another balance movement exists in or after this growth month. Revert the dependent movements first.</value>
+  </data>
+  <data name="FishGrowthService.BalanceNotFound" xml:space="preserve">
+    <value>The operation could not be completed because the active cage balance for this growth was not found.</value>
+  </data>
+  <data name="FishGrowthService.BalanceMismatch" xml:space="preserve">
+    <value>The cage balance does not match the growth record. The operation was stopped to prevent data loss.</value>
+  </data>
+  <data name="FishGrowthService.NewAverageMustExceedPrevious" xml:space="preserve">
+    <value>The new weight must be greater than the pre-growth weight. Use cancel to remove the growth completely.</value>
+  </data>
+  <data name="FishGrowthService.Updated" xml:space="preserve">
+    <value>The fish growth record and cage balance were updated.</value>
+  </data>
+  <data name="FishGrowthService.UpdateFailed" xml:space="preserve">
+    <value>The fish growth record could not be updated.</value>
+  </data>
+  <data name="FishGrowthService.Deleted" xml:space="preserve">
+    <value>The fish growth record was reverted. You can enter growth again for the same month.</value>
+  </data>
+  <data name="FishGrowthService.DeleteFailed" xml:space="preserve">
+    <value>The fish growth record could not be reverted.</value>
+  </data>
 </root>

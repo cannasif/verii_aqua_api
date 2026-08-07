@@ -104,16 +104,10 @@ public class FishGrowthService : IFishGrowthService
             if (alreadyExists)
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("FishGrowthService.MonthlyGrowthAlreadyExists"));
 
-            var hasMovementAfterEffectiveDate = await _unitOfWork.Db.BatchMovements.AnyAsync(x =>
-                !x.IsDeleted
-                && x.FishBatchId == dto.FishBatchId
-                && (x.ProjectCageId == dto.ProjectCageId
-                    || x.FromProjectCageId == dto.ProjectCageId
-                    || x.ToProjectCageId == dto.ProjectCageId)
-                && x.MovementDate >= effectiveDate
-                && x.MovementType != BatchMovementType.OpeningImport
-                && x.MovementType != BatchMovementType.Stocking
-                && (x.SignedCount != 0 || x.SignedBiomassGram != 0));
+            var hasMovementAfterEffectiveDate = await HasDependentBalanceMovementAsync(
+                dto.FishBatchId,
+                dto.ProjectCageId,
+                effectiveDate);
 
             if (hasMovementAfterEffectiveDate)
             {
@@ -202,6 +196,105 @@ public class FishGrowthService : IFishGrowthService
         }
     }
 
+    public async Task<ApiResponse<FishGrowthDto>> UpdateAsync(
+        long id,
+        UpdateFishGrowthDto dto,
+        long userId)
+    {
+        try
+        {
+            await _unitOfWork.BeginTransaction();
+
+            var growth = await _unitOfWork.Db.FishGrowths
+                .Include(x => x.Project)
+                .Include(x => x.ProjectCage).ThenInclude(x => x!.Cage)
+                .Include(x => x.FishBatch)
+                .FirstOrDefaultAsync(x => x.Id == id)
+                ?? throw new KeyNotFoundException(
+                    _localizationService.GetLocalizedString("FishGrowthService.NotFound"));
+
+            var movement = await GetGrowthMovementAsync(growth.Id);
+            await EnsureNoDependentBalanceMovementAsync(growth, movement.Id);
+
+            var balance = await GetGrowthBalanceAsync(growth);
+            EnsureBalanceMatchesGrowth(balance, growth, movement);
+
+            var targetAverageGram = Math.Round(dto.NewAverageGram, 3, MidpointRounding.AwayFromZero);
+            if (targetAverageGram <= growth.PreviousAverageGram)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("FishGrowthService.NewAverageMustExceedPrevious"));
+            }
+
+            var targetBiomassGram = BatchMath.CalculateBiomassGram(growth.FishCount, targetAverageGram);
+            var growthGram = Math.Round(
+                targetAverageGram - growth.PreviousAverageGram,
+                3,
+                MidpointRounding.AwayFromZero);
+            var now = DateTimeProvider.UtcNow;
+            var effectiveDate = GetEffectiveDate(growth.GrowthDate);
+
+            balance.AverageGram = targetAverageGram;
+            balance.BiomassGram = targetBiomassGram;
+            balance.AsOfDate = effectiveDate;
+            balance.UpdatedBy = userId;
+            balance.UpdatedDate = now;
+
+            growth.GrowthGram = growthGram;
+            growth.NewAverageGram = targetAverageGram;
+            growth.NewBiomassGram = targetBiomassGram;
+            growth.Description = NormalizeDescription(dto.Description);
+            growth.UpdatedBy = userId;
+            growth.UpdatedDate = now;
+
+            movement.MovementDate = effectiveDate;
+            movement.SignedCount = 0;
+            movement.SignedBiomassGram = targetBiomassGram - growth.PreviousBiomassGram;
+            movement.FromAverageGram = growth.PreviousAverageGram;
+            movement.ToAverageGram = targetAverageGram;
+            movement.ActorUserId = userId;
+            movement.Note = BuildMovementNote(
+                growth,
+                growth.FishBatch?.FishStockId,
+                growth.PreviousAverageGram,
+                targetAverageGram,
+                _localizationService.GetLocalizedString("FishGrowthService.Updated"));
+            movement.UpdatedBy = userId;
+            movement.UpdatedDate = now;
+
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.Commit();
+
+            return ApiResponse<FishGrowthDto>.SuccessResult(
+                Map(growth),
+                _localizationService.GetLocalizedString("FishGrowthService.Updated"));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            await _unitOfWork.Rollback();
+            return ApiResponse<FishGrowthDto>.ErrorResult(
+                ex.Message,
+                ex.Message,
+                StatusCodes.Status404NotFound);
+        }
+        catch (InvalidOperationException ex)
+        {
+            await _unitOfWork.Rollback();
+            return ApiResponse<FishGrowthDto>.ErrorResult(
+                ex.Message,
+                ex.Message,
+                StatusCodes.Status400BadRequest);
+        }
+        catch (Exception ex)
+        {
+            await _unitOfWork.Rollback();
+            return ApiResponse<FishGrowthDto>.ErrorResult(
+                _localizationService.GetLocalizedString("FishGrowthService.UpdateFailed"),
+                ex.Message,
+                StatusCodes.Status500InternalServerError);
+        }
+    }
+
     public async Task<ApiResponse<FishGrowthDto?>> GetMonthlyAsync(
         long projectCageId,
         long fishBatchId,
@@ -238,64 +331,37 @@ public class FishGrowthService : IFishGrowthService
 
             var growth = await _unitOfWork.Db.FishGrowths
                 .FirstOrDefaultAsync(x => x.Id == id)
-                ?? throw new KeyNotFoundException("Silinecek balık büyütme kaydı bulunamadı.");
+                ?? throw new KeyNotFoundException(
+                    _localizationService.GetLocalizedString("FishGrowthService.NotFound"));
 
-            var movement = await _unitOfWork.Db.BatchMovements
-                .FirstOrDefaultAsync(x =>
-                    x.ReferenceTable == ReferenceTable &&
-                    x.ReferenceId == growth.Id &&
-                    x.MovementType == BatchMovementType.FishGrowth)
-                ?? throw new InvalidOperationException(
-                    "Büyütmeye bağlı stok hareketi bulunamadığı için kayıt güvenli şekilde geri alınamadı.");
+            var movement = await GetGrowthMovementAsync(growth.Id);
+            await EnsureNoDependentBalanceMovementAsync(growth, movement.Id);
 
-            var hasLaterBalanceMovement = await _unitOfWork.Db.BatchMovements.AnyAsync(x =>
-                x.FishBatchId == growth.FishBatchId &&
-                x.ProjectCageId == growth.ProjectCageId &&
-                x.Id > movement.Id &&
-                (x.SignedCount != 0 || x.SignedBiomassGram != 0));
-            if (hasLaterBalanceMovement)
-            {
-                throw new InvalidOperationException(
-                    "Bu büyütmeden sonra satış, fire, transfer veya başka bir bakiye hareketi bulunmaktadır. Sonraki hareketler geri alınmadan büyütme silinemez.");
-            }
+            var balance = await GetGrowthBalanceAsync(growth);
+            EnsureBalanceMatchesGrowth(balance, growth, movement);
 
-            var balance = await _unitOfWork.Db.BatchCageBalances
-                .FirstOrDefaultAsync(x =>
-                    x.ProjectCageId == growth.ProjectCageId &&
-                    x.FishBatchId == growth.FishBatchId)
-                ?? throw new InvalidOperationException(
-                    "Büyütmeye ait aktif kafes bakiyesi bulunamadığı için kayıt geri alınamadı.");
-
-            var growthBiomassGram = movement.SignedBiomassGram;
-            if (growthBiomassGram <= 0m ||
-                balance.LiveCount != growth.FishCount ||
-                balance.BiomassGram < growthBiomassGram)
-            {
-                throw new InvalidOperationException(
-                    "Kafes bakiyesi büyütme kaydıyla uyuşmuyor. Veri kaybını önlemek için silme işlemi durduruldu.");
-            }
-
-            balance.BiomassGram -= growthBiomassGram;
-            balance.AverageGram = balance.LiveCount > 0
-                ? Math.Round(balance.BiomassGram / balance.LiveCount, 3, MidpointRounding.AwayFromZero)
-                : 0m;
+            var now = DateTimeProvider.UtcNow;
+            balance.BiomassGram = growth.PreviousBiomassGram;
+            balance.AverageGram = growth.PreviousAverageGram;
+            balance.AsOfDate = await GetPreviousMovementDateAsync(growth, movement.Id)
+                ?? GetEffectiveDate(growth.GrowthDate);
             balance.UpdatedBy = userId;
-            balance.UpdatedDate = DateTimeProvider.UtcNow;
+            balance.UpdatedDate = now;
 
             growth.IsDeleted = true;
             growth.DeletedBy = userId;
-            growth.DeletedDate = DateTimeProvider.UtcNow;
+            growth.DeletedDate = now;
 
             movement.IsDeleted = true;
             movement.DeletedBy = userId;
-            movement.DeletedDate = DateTimeProvider.UtcNow;
+            movement.DeletedDate = now;
 
             await _unitOfWork.SaveChangesAsync();
             await _unitOfWork.Commit();
 
             return ApiResponse<bool>.SuccessResult(
                 true,
-                "Balık büyütme kaydı geri alındı. Aynı ay için yeniden büyütme girebilirsiniz.");
+                _localizationService.GetLocalizedString("FishGrowthService.Deleted"));
         }
         catch (KeyNotFoundException ex)
         {
@@ -311,10 +377,132 @@ public class FishGrowthService : IFishGrowthService
         {
             await _unitOfWork.Rollback();
             return ApiResponse<bool>.ErrorResult(
-                "Balık büyütme kaydı geri alınamadı.",
+                _localizationService.GetLocalizedString("FishGrowthService.DeleteFailed"),
                 ex.Message,
                 StatusCodes.Status500InternalServerError);
         }
+    }
+
+    private async Task<BatchMovement> GetGrowthMovementAsync(long growthId)
+    {
+        return await _unitOfWork.Db.BatchMovements
+            .FirstOrDefaultAsync(x =>
+                x.ReferenceTable == ReferenceTable
+                && x.ReferenceId == growthId
+                && x.MovementType == BatchMovementType.FishGrowth)
+            ?? throw new InvalidOperationException(
+                _localizationService.GetLocalizedString("FishGrowthService.MovementNotFound"));
+    }
+
+    private async Task<BatchCageBalance> GetGrowthBalanceAsync(FishGrowth growth)
+    {
+        return await _unitOfWork.Db.BatchCageBalances
+            .FirstOrDefaultAsync(x =>
+                x.ProjectCageId == growth.ProjectCageId
+                && x.FishBatchId == growth.FishBatchId)
+            ?? throw new InvalidOperationException(
+                _localizationService.GetLocalizedString("FishGrowthService.BalanceNotFound"));
+    }
+
+    private async Task EnsureNoDependentBalanceMovementAsync(FishGrowth growth, long growthMovementId)
+    {
+        var hasDependentMovement = await HasDependentBalanceMovementAsync(
+            growth.FishBatchId,
+            growth.ProjectCageId,
+            GetEffectiveDate(growth.GrowthDate),
+            growthMovementId);
+
+        if (hasDependentMovement)
+        {
+            throw new InvalidOperationException(
+                _localizationService.GetLocalizedString("FishGrowthService.DependentMovementExists"));
+        }
+    }
+
+    private Task<bool> HasDependentBalanceMovementAsync(
+        long fishBatchId,
+        long projectCageId,
+        DateTime effectiveDate,
+        long? excludedMovementId = null)
+    {
+        return _unitOfWork.Db.BatchMovements.AnyAsync(x =>
+            (!excludedMovementId.HasValue || x.Id != excludedMovementId.Value)
+            && x.FishBatchId == fishBatchId
+            && (x.ProjectCageId == projectCageId
+                || x.FromProjectCageId == projectCageId
+                || x.ToProjectCageId == projectCageId)
+            && x.MovementDate >= effectiveDate
+            && x.MovementType != BatchMovementType.OpeningImport
+            && x.MovementType != BatchMovementType.Stocking
+            && (x.SignedCount != 0 || x.SignedBiomassGram != 0));
+    }
+
+    private async Task<DateTime?> GetPreviousMovementDateAsync(FishGrowth growth, long growthMovementId)
+    {
+        var effectiveDate = GetEffectiveDate(growth.GrowthDate);
+        return await _unitOfWork.Db.BatchMovements
+            .Where(x =>
+                x.Id != growthMovementId
+                && x.FishBatchId == growth.FishBatchId
+                && (x.ProjectCageId == growth.ProjectCageId
+                    || x.FromProjectCageId == growth.ProjectCageId
+                    || x.ToProjectCageId == growth.ProjectCageId)
+                && x.MovementDate <= effectiveDate)
+            .OrderByDescending(x => x.MovementDate)
+            .ThenByDescending(x => x.Id)
+            .Select(x => (DateTime?)x.MovementDate)
+            .FirstOrDefaultAsync();
+    }
+
+    private void EnsureBalanceMatchesGrowth(
+        BatchCageBalance balance,
+        FishGrowth growth,
+        BatchMovement movement)
+    {
+        var expectedGrowthBiomassGram = growth.NewBiomassGram - growth.PreviousBiomassGram;
+        var movementMatches = movement.SignedCount == 0
+            && AreEqual(movement.SignedBiomassGram, expectedGrowthBiomassGram)
+            && movement.FromAverageGram.HasValue
+            && AreEqual(movement.FromAverageGram.Value, growth.PreviousAverageGram)
+            && movement.ToAverageGram.HasValue
+            && AreEqual(movement.ToAverageGram.Value, growth.NewAverageGram);
+        var balanceMatches = balance.LiveCount == growth.FishCount
+            && AreEqual(balance.AverageGram, growth.NewAverageGram)
+            && AreEqual(balance.BiomassGram, growth.NewBiomassGram);
+
+        if (!movementMatches || !balanceMatches || expectedGrowthBiomassGram <= 0m)
+        {
+            throw new InvalidOperationException(
+                _localizationService.GetLocalizedString("FishGrowthService.BalanceMismatch"));
+        }
+    }
+
+    private static bool AreEqual(decimal left, decimal right) => left == right;
+
+    private static DateTime GetEffectiveDate(DateTime growthDate) =>
+        new(growthDate.Year, growthDate.Month, 1);
+
+    private static string? NormalizeDescription(string? description) =>
+        string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+
+    private static string BuildMovementNote(
+        FishGrowth growth,
+        long? fishStockId,
+        decimal fromAverageGram,
+        decimal toAverageGram,
+        string description)
+    {
+        return string.Join(" | ", new[]
+        {
+            description,
+            $"projectId={growth.ProjectId}",
+            $"fromCage={growth.ProjectCageId}",
+            $"toCage={growth.ProjectCageId}",
+            $"fromStock={fishStockId?.ToString() ?? "null"}",
+            $"toStock={fishStockId?.ToString() ?? "null"}",
+            $"fromAvg={fromAverageGram:0.###}",
+            $"toAvg={toAverageGram:0.###}"
+        });
     }
 
     private static FishGrowthDto Map(FishGrowth entity) => new()

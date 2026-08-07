@@ -41,6 +41,15 @@ public class FishGrowthController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    [HttpPut("{id:long}")]
+    public async Task<ActionResult<ApiResponse<FishGrowthDto>>> Update(
+        long id,
+        [FromBody] UpdateFishGrowthDto dto)
+    {
+        var result = await _service.UpdateAsync(id, dto, GetUserId());
+        return StatusCode(result.StatusCode, result);
+    }
+
     [HttpDelete("{id:long}")]
     public async Task<ActionResult<ApiResponse<bool>>> Delete(long id)
     {

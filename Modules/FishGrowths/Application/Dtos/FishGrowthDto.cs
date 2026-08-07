@@ -35,3 +35,9 @@ public class CreateFishGrowthDto
     public decimal? GrowthGram { get; set; }
     public string? Description { get; set; }
 }
+
+public class UpdateFishGrowthDto
+{
+    public decimal NewAverageGram { get; set; }
+    public string? Description { get; set; }
+}

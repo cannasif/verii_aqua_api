@@ -69,15 +69,25 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
             db.FishBatches.Add(batch);
             await db.SaveChangesAsync();
 
-            db.BatchCageBalances.Add(new BatchCageBalance
-            {
-                ProjectCageId = projectCage.Id,
-                FishBatchId = batch.Id,
-                LiveCount = 1_000,
-                AverageGram = 720m,
-                BiomassGram = 720_000m,
-                AsOfDate = project.StartDate
-            });
+            var ledger = scope.ServiceProvider.GetRequiredService<IBalanceLedgerManager>();
+            await ledger.ApplyDelta(
+                project.Id,
+                batch.Id,
+                projectCage.Id,
+                1_000,
+                720_000m,
+                BatchMovementType.Stocking,
+                project.StartDate,
+                "Opening stocking",
+                "TEST_OPENING",
+                1,
+                null,
+                projectCage.Id,
+                stockId,
+                stockId,
+                720m,
+                720m,
+                1);
             await db.SaveChangesAsync();
 
             projectId = project.Id;
@@ -136,6 +146,57 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
         Assert.NotEmpty(projectGrowthDay.FishGrowthDetails);
         Assert.Equal(0, projectGrowthDay.StockConvertCount);
 
+        using var updateResponse = await client.PutAsJsonAsync(
+            $"/api/aqua/FishGrowth/{firstBody.Data.Id}",
+            new UpdateFishGrowthDto
+            {
+                NewAverageGram = 800m,
+                Description = "Corrected monthly target"
+            });
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+        var updateBody = await updateResponse.Content.ReadFromJsonAsync<ApiResponse<FishGrowthDto>>();
+        Assert.True(updateBody?.Success, updateBody?.ExceptionMessage);
+        Assert.Equal(firstBody.Data.Id, updateBody!.Data!.Id);
+        Assert.Equal(720m, updateBody.Data.PreviousAverageGram);
+        Assert.Equal(80m, updateBody.Data.GrowthGram);
+        Assert.Equal(800m, updateBody.Data.NewAverageGram);
+        Assert.Equal(800_000m, updateBody.Data.NewBiomassGram);
+        Assert.Equal("Corrected monthly target", updateBody.Data.Description);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var balance = await db.BatchCageBalances.SingleAsync(x =>
+                x.ProjectCageId == projectCageId && x.FishBatchId == fishBatchId);
+            Assert.Equal(1_000, balance.LiveCount);
+            Assert.Equal(800m, balance.AverageGram);
+            Assert.Equal(800_000m, balance.BiomassGram);
+
+            var movement = await db.BatchMovements.SingleAsync(x =>
+                x.ReferenceTable == "RII_FISH_GROWTH" && x.ReferenceId == firstBody.Data.Id);
+            Assert.Equal(new DateTime(2026, 7, 1), movement.MovementDate);
+            Assert.Equal(720m, movement.FromAverageGram);
+            Assert.Equal(800m, movement.ToAverageGram);
+            Assert.Equal(80_000m, movement.SignedBiomassGram);
+            Assert.Contains("toAvg=800", movement.Note);
+        }
+
+        using var updatedDashboardResponse = await client.GetAsync($"/api/aqua/dashboard-project/detail/{projectId}");
+        Assert.Equal(HttpStatusCode.OK, updatedDashboardResponse.StatusCode);
+        var updatedDashboard = (await updatedDashboardResponse.Content
+            .ReadFromJsonAsync<ApiResponse<DashboardProjectDetailDto>>())!.Data!;
+        var updatedDashboardCage = Assert.Single(updatedDashboard.Cages);
+        Assert.Equal(800m, updatedDashboardCage.CurrentAverageGram);
+        Assert.Equal(800_000m, updatedDashboardCage.CurrentBiomassGram);
+
+        using var updatedProjectDetailResponse = await client.GetAsync($"/api/kpi-report/project-detail/{projectId}");
+        Assert.Equal(HttpStatusCode.OK, updatedProjectDetailResponse.StatusCode);
+        var updatedProjectDetail = (await updatedProjectDetailResponse.Content
+            .ReadFromJsonAsync<ApiResponse<ProjectDetailReportDto>>())!.Data!;
+        var updatedProjectDetailCage = Assert.Single(updatedProjectDetail.Cages);
+        Assert.Equal(800m, updatedProjectDetailCage.CurrentAverageGram);
+        Assert.Equal(800_000m, updatedProjectDetailCage.CurrentBiomassGram);
+
         request.GrowthDate = new DateTime(2026, 7, 28);
         request.NewAverageGram = 850m;
         using var duplicateResponse = await client.PostAsJsonAsync("/api/aqua/FishGrowth", request);
@@ -152,6 +213,13 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
         var deleteBody = await deleteResponse.Content.ReadFromJsonAsync<ApiResponse<bool>>();
         Assert.True(deleteBody?.Success);
         Assert.True(deleteBody!.Data);
+
+        using var monthlyAfterDeleteResponse = await client.GetAsync(
+            $"/api/aqua/FishGrowth/monthly?projectCageId={projectCageId}&fishBatchId={fishBatchId}&year=2026&month=7");
+        Assert.Equal(HttpStatusCode.OK, monthlyAfterDeleteResponse.StatusCode);
+        var monthlyAfterDelete = await monthlyAfterDeleteResponse.Content
+            .ReadFromJsonAsync<ApiResponse<FishGrowthDto?>>();
+        Assert.Null(monthlyAfterDelete!.Data);
 
         using (var scope = _factory.Services.CreateScope())
         {
@@ -176,39 +244,80 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
         Assert.True(recreateBody?.Success, recreateBody?.ExceptionMessage);
         Assert.Equal(730m, recreateBody!.Data!.NewAverageGram);
 
+        using var invalidUpdateResponse = await client.PutAsJsonAsync(
+            $"/api/aqua/FishGrowth/{recreateBody.Data.Id}",
+            new UpdateFishGrowthDto { NewAverageGram = 720m });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidUpdateResponse.StatusCode);
+        var invalidUpdateBody = await invalidUpdateResponse.Content
+            .ReadFromJsonAsync<ApiResponse<FishGrowthDto>>();
+        Assert.Contains("büyütme öncesi gramajdan büyük", invalidUpdateBody!.Message);
+
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
-            var ledger = scope.ServiceProvider.GetRequiredService<IBalanceLedgerManager>();
-            await ledger.ApplyDelta(
-                projectId,
-                fishBatchId,
-                projectCageId,
-                0,
-                100m,
-                BatchMovementType.Adjustment,
-                new DateTime(2026, 7, 29),
-                "Later balance movement",
-                "TEST_LATER_MOVEMENT",
-                1,
-                projectCageId,
-                projectCageId,
-                null,
-                null,
-                730m,
-                730.1m,
-                1);
+            var balance = await db.BatchCageBalances.SingleAsync(x =>
+                x.ProjectCageId == projectCageId && x.FishBatchId == fishBatchId);
+            balance.BiomassGram += 0.001m;
             await db.SaveChangesAsync();
         }
+
+        using var mismatchedBalanceUpdateResponse = await client.PutAsJsonAsync(
+            $"/api/aqua/FishGrowth/{recreateBody.Data.Id}",
+            new UpdateFishGrowthDto { NewAverageGram = 740m });
+        Assert.Equal(HttpStatusCode.BadRequest, mismatchedBalanceUpdateResponse.StatusCode);
+        var mismatchedBalanceUpdateBody = await mismatchedBalanceUpdateResponse.Content
+            .ReadFromJsonAsync<ApiResponse<FishGrowthDto>>();
+        Assert.Contains("Kafes bakiyesi büyütme kaydıyla uyuşmuyor", mismatchedBalanceUpdateBody!.Message);
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var balance = await db.BatchCageBalances.SingleAsync(x =>
+                x.ProjectCageId == projectCageId && x.FishBatchId == fishBatchId);
+            balance.BiomassGram = 730_000m;
+            await db.SaveChangesAsync();
+        }
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            db.BatchMovements.Add(new BatchMovement
+            {
+                FishBatchId = fishBatchId,
+                ProjectCageId = null,
+                FromProjectCageId = projectCageId,
+                ToProjectCageId = projectCageId,
+                MovementDate = new DateTime(2026, 7, 29),
+                MovementType = BatchMovementType.Transfer,
+                SignedCount = -1,
+                SignedBiomassGram = -730m,
+                ReferenceTable = "TEST_LATER_TRANSFER",
+                ReferenceId = 1,
+                Note = "Later transfer using FromProjectCageId"
+            });
+            await db.SaveChangesAsync();
+        }
+
+        using var blockedUpdateResponse = await client.PutAsJsonAsync(
+            $"/api/aqua/FishGrowth/{recreateBody.Data.Id}",
+            new UpdateFishGrowthDto { NewAverageGram = 740m });
+        Assert.Equal(HttpStatusCode.BadRequest, blockedUpdateResponse.StatusCode);
+        var blockedUpdateBody = await blockedUpdateResponse.Content
+            .ReadFromJsonAsync<ApiResponse<FishGrowthDto>>();
+        Assert.Contains("satış, fire, transfer", blockedUpdateBody!.Message);
 
         using var blockedDeleteResponse = await client.DeleteAsync($"/api/aqua/FishGrowth/{recreateBody.Data.Id}");
         Assert.Equal(HttpStatusCode.BadRequest, blockedDeleteResponse.StatusCode);
         var blockedDeleteBody = await blockedDeleteResponse.Content.ReadFromJsonAsync<ApiResponse<bool>>();
-        Assert.Contains("sonra satış, fire, transfer", blockedDeleteBody!.Message);
+        Assert.Contains("satış, fire, transfer", blockedDeleteBody!.Message);
 
         using var verifyScope = _factory.Services.CreateScope();
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
         Assert.Equal(1, await verifyDb.FishGrowths.CountAsync(x => x.ProjectCageId == projectCageId && x.FishBatchId == fishBatchId));
+        var finalBalance = await verifyDb.BatchCageBalances.SingleAsync(x =>
+            x.ProjectCageId == projectCageId && x.FishBatchId == fishBatchId);
+        Assert.Equal(730m, finalBalance.AverageGram);
+        Assert.Equal(730_000m, finalBalance.BiomassGram);
     }
 
     [Fact]
