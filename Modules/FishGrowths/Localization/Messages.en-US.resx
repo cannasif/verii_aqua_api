@@ -45,4 +45,7 @@
   <data name="FishGrowthService.NewAverageMustExceedCurrent" xml:space="preserve">
     <value>The new weight must be greater than the current cage weight.</value>
   </data>
+  <data name="FishGrowthService.GrowthMustPrecedeBalanceMovements" xml:space="preserve">
+    <value>A sale, mortality, transfer, or another stock movement already exists for this month. Monthly growth must be entered before these movements.</value>
+  </data>
 </root>

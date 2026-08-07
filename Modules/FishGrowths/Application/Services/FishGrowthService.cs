@@ -72,6 +72,7 @@ public class FishGrowthService : IFishGrowthService
             await _unitOfWork.BeginTransaction();
 
             var growthDate = dto.GrowthDate.Date;
+            var effectiveDate = new DateTime(growthDate.Year, growthDate.Month, 1);
             var projectCage = await _unitOfWork.Db.ProjectCages
                 .AsNoTracking()
                 .Include(x => x.Cage)
@@ -102,6 +103,23 @@ public class FishGrowthService : IFishGrowthService
 
             if (alreadyExists)
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("FishGrowthService.MonthlyGrowthAlreadyExists"));
+
+            var hasMovementAfterEffectiveDate = await _unitOfWork.Db.BatchMovements.AnyAsync(x =>
+                !x.IsDeleted
+                && x.FishBatchId == dto.FishBatchId
+                && (x.ProjectCageId == dto.ProjectCageId
+                    || x.FromProjectCageId == dto.ProjectCageId
+                    || x.ToProjectCageId == dto.ProjectCageId)
+                && x.MovementDate >= effectiveDate
+                && x.MovementType != BatchMovementType.OpeningImport
+                && x.MovementType != BatchMovementType.Stocking
+                && (x.SignedCount != 0 || x.SignedBiomassGram != 0));
+
+            if (hasMovementAfterEffectiveDate)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("FishGrowthService.GrowthMustPrecedeBalanceMovements"));
+            }
 
             var previousAverageGram = balance.AverageGram;
             var (growthGram, newAverageGram) = ResolveGrowthValues(dto, previousAverageGram);
@@ -136,7 +154,7 @@ public class FishGrowthService : IFishGrowthService
                 0,
                 newBiomassGram - previousBiomassGram,
                 BatchMovementType.FishGrowth,
-                growthDate,
+                effectiveDate,
                 _localizationService.GetLocalizedString("FishGrowthService.Created"),
                 ReferenceTable,
                 growth.Id,
