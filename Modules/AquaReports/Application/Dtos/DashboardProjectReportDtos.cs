@@ -37,6 +37,7 @@ namespace aqua_api.Modules.AquaReports.Application.Dtos
     {
         public long ProjectCageId { get; set; }
         public string CageLabel { get; set; } = string.Empty;
+        public decimal CurrentAverageGram { get; set; }
         public decimal MeasurementAverageGram { get; set; }
         public int InitialFishCount { get; set; }
         public decimal InitialBiomassGram { get; set; }

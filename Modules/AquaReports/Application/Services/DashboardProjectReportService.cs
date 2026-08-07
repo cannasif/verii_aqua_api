@@ -926,6 +926,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             {
                 ProjectCageId = cage.ProjectCageId,
                 CageLabel = cage.CageLabel,
+                CurrentAverageGram = cage.CurrentAverageGram,
                 MeasurementAverageGram = cage.CurrentAverageGram,
                 InitialFishCount = cage.InitialFishCount,
                 InitialBiomassGram = RoundGram(cage.InitialBiomassGram),

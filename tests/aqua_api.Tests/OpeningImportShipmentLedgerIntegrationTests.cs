@@ -135,6 +135,11 @@ public sealed class OpeningImportShipmentLedgerIntegrationTests
         Assert.Equal(90m, dashboardCage.CurrentAverageGram);
         Assert.Equal(54_000m, dashboardCage.CurrentBiomassGram);
 
+        var summaries = await dashboardService.GetProjectSummariesAsync([project.Id]);
+        Assert.True(summaries.Success, $"{summaries.Message} | {summaries.ExceptionMessage}");
+        var summaryCage = Assert.Single(Assert.Single(summaries.Data!.Projects).Cages);
+        Assert.Equal(90m, summaryCage.CurrentAverageGram);
+
         var devirService = verifyScope.ServiceProvider.GetRequiredService<IDevirFcrReportService>();
         var devir = await devirService.GetReportAsync(new DevirFcrReportRequestDto
         {
