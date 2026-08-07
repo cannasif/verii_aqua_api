@@ -17,12 +17,23 @@
         Active growth biomass is first reversed to its pre-growth value.
       - Later active growth records are recalculated with the same target gram.
       - Every repaired balance must match the active ledger before commit.
+      - The fish-batch current gram is synchronized to the weighted active cage
+        and warehouse balance so consumers cannot read a stale opening gram.
       - Rows requiring a missing historical growth or stock movement are left
         untouched and returned in the manual-review result set.
 */
 
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
+
+DROP TABLE IF EXISTS #BatchAverageChange;
+DROP TABLE IF EXISTS #Allocation;
+DROP TABLE IF EXISTS #Weight;
+DROP TABLE IF EXISTS #Skipped;
+DROP TABLE IF EXISTS #Missing;
+DROP TABLE IF EXISTS #BeforeBalance;
+DROP TABLE IF EXISTS #TargetLine;
+DROP TABLE IF EXISTS #ScopeBatch;
 
 DECLARE @Apply bit = 0; -- Set to 1 only after reviewing the dry-run result.
 DECLARE @ProjectIdFilter bigint = NULL; -- NULL repairs every safe project.
@@ -40,6 +51,32 @@ BEGIN TRY
 
     IF @ApplicationLockResult < 0
         THROW 51000, 'Another opening-shipment repair is already running.', 1;
+
+    CREATE TABLE #ScopeBatch
+    (
+        ProjectId bigint NOT NULL,
+        FishBatchId bigint NOT NULL PRIMARY KEY
+    );
+
+    INSERT INTO #ScopeBatch (ProjectId, FishBatchId)
+    SELECT shipment.ProjectId, line.FishBatchId
+    FROM RII_SHIPMENT_LINE line WITH (UPDLOCK, HOLDLOCK)
+    JOIN RII_SHIPMENT shipment WITH (UPDLOCK, HOLDLOCK)
+      ON shipment.Id = line.ShipmentId
+    JOIN RII_FISH_BATCH batch
+      ON batch.Id = line.FishBatchId
+    WHERE line.IsDeleted = 0
+      AND shipment.IsDeleted = 0
+      AND shipment.Status = 1
+      AND batch.IsDeleted = 0
+      AND batch.ProjectId = shipment.ProjectId
+      AND (@ProjectIdFilter IS NULL OR shipment.ProjectId = @ProjectIdFilter)
+      AND
+      (
+          line.ErpSourceMovementKey LIKE N'OPENING_IMPORT:%'
+          OR shipment.Note LIKE N'Opening import summary - %'
+      )
+    GROUP BY shipment.ProjectId, line.FishBatchId;
 
     CREATE TABLE #TargetLine
     (
@@ -758,6 +795,79 @@ BEGIN TRY
     )
         THROW 51012, 'Post-repair project fish count reconciliation failed.', 1;
 
+    CREATE TABLE #BatchAverageChange
+    (
+        ProjectId bigint NOT NULL,
+        FishBatchId bigint NOT NULL PRIMARY KEY,
+        PreviousAverageGram decimal(18, 3) NOT NULL,
+        CorrectedAverageGram decimal(18, 3) NOT NULL,
+        TotalLiveCount bigint NOT NULL,
+        TotalBiomassGram decimal(38, 6) NOT NULL
+    );
+
+    ;WITH ActiveBalance AS
+    (
+        SELECT
+            balance.FishBatchId,
+            CONVERT(bigint, balance.LiveCount) LiveCount,
+            CONVERT(decimal(38, 6), balance.BiomassGram) BiomassGram
+        FROM RII_BATCH_CAGE_BALANCE balance
+        JOIN #ScopeBatch scope ON scope.FishBatchId = balance.FishBatchId
+        WHERE balance.IsDeleted = 0
+
+        UNION ALL
+
+        SELECT
+            balance.FishBatchId,
+            CONVERT(bigint, balance.LiveCount),
+            CONVERT(decimal(38, 6), balance.BiomassGram)
+        FROM RII_BATCH_WAREHOUSE_BALANCE balance
+        JOIN #ScopeBatch scope ON scope.FishBatchId = balance.FishBatchId
+        WHERE balance.IsDeleted = 0
+    ), BatchTotal AS
+    (
+        SELECT
+            FishBatchId,
+            SUM(LiveCount) TotalLiveCount,
+            SUM(BiomassGram) TotalBiomassGram
+        FROM ActiveBalance
+        GROUP BY FishBatchId
+    )
+    INSERT INTO #BatchAverageChange
+    (
+        ProjectId,
+        FishBatchId,
+        PreviousAverageGram,
+        CorrectedAverageGram,
+        TotalLiveCount,
+        TotalBiomassGram
+    )
+    SELECT
+        scope.ProjectId,
+        batch.Id,
+        batch.CurrentAverageGram,
+        corrected.CorrectedAverageGram,
+        total.TotalLiveCount,
+        total.TotalBiomassGram
+    FROM #ScopeBatch scope
+    JOIN RII_FISH_BATCH batch WITH (UPDLOCK, HOLDLOCK)
+      ON batch.Id = scope.FishBatchId
+    JOIN BatchTotal total ON total.FishBatchId = batch.Id
+    CROSS APPLY
+    (
+        SELECT CONVERT(decimal(18, 3),
+            ROUND(total.TotalBiomassGram / total.TotalLiveCount, 3)) CorrectedAverageGram
+    ) corrected
+    WHERE total.TotalLiveCount > 0
+      AND total.TotalBiomassGram >= 0
+      AND ABS(batch.CurrentAverageGram - corrected.CorrectedAverageGram) > 0.0005;
+
+    UPDATE batch
+    SET CurrentAverageGram = change.CorrectedAverageGram,
+        UpdatedDate = @Now
+    FROM RII_FISH_BATCH batch
+    JOIN #BatchAverageChange change ON change.FishBatchId = batch.Id;
+
     SELECT
         target.ProjectId,
         project.ProjectCode,
@@ -814,6 +924,20 @@ BEGIN TRY
     JOIN RII_PROJECT project ON project.Id = skipped.ProjectId
     JOIN RII_FISH_BATCH batch ON batch.Id = skipped.FishBatchId
     ORDER BY skipped.ProjectId, skipped.ShipmentLineId;
+
+    SELECT
+        change.ProjectId,
+        project.ProjectCode,
+        change.FishBatchId,
+        batch.BatchCode,
+        change.PreviousAverageGram,
+        change.CorrectedAverageGram,
+        change.TotalLiveCount,
+        change.TotalBiomassGram / 1000.0 AS TotalBiomassKg
+    FROM #BatchAverageChange change
+    JOIN RII_PROJECT project ON project.Id = change.ProjectId
+    JOIN RII_FISH_BATCH batch ON batch.Id = change.FishBatchId
+    ORDER BY change.ProjectId, change.FishBatchId;
 
     IF @Apply = 1
     BEGIN
