@@ -278,14 +278,14 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 ? new List<StockEntity>()
                 : await _unitOfWork.Db.Stocks
                     .AsNoTracking()
-                    .Where(x => stockIds.Contains(x.Id))
+                    .Where(x => !x.IsDeleted && stockIds.Contains(x.Id))
                     .ToListAsync();
 
             var warehouses = targetWarehouseIds.Count == 0
                 ? new List<WarehouseEntity>()
                 : await _unitOfWork.Db.Warehouses
                     .AsNoTracking()
-                    .Where(x => targetWarehouseIds.Contains(x.Id))
+                    .Where(x => !x.IsDeleted && targetWarehouseIds.Contains(x.Id))
                     .ToListAsync();
 
             return projects
