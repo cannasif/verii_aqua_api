@@ -64,7 +64,7 @@ namespace aqua_api.Modules.Stock.Application.Services
                     .Include(s => s.CreatedByUser)
                     .Include(s => s.UpdatedByUser)
                     .Include(s => s.DeletedByUser)
-                    .ApplySearch(request.Search, SearchableColumns)
+                    .ApplySearch(request, SearchableColumns)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = request.SortBy ?? nameof(StockEntity.Id);
@@ -114,7 +114,7 @@ namespace aqua_api.Modules.Stock.Application.Services
                     .Include(s => s.CreatedByUser)
                     .Include(s => s.UpdatedByUser)
                     .Include(s => s.DeletedByUser)
-                    .ApplySearch(request.Search, SearchableColumns)
+                    .ApplySearch(request, SearchableColumns)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = request.SortBy ?? nameof(StockEntity.Id);

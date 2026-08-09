@@ -47,7 +47,7 @@ namespace aqua_api.Modules.SeaWaterTemperature.Application.Services
                 request.Filters ??= new List<Filter>();
 
                 var query = BaseQuery()
-                    .ApplySearch(request.Search)
+                    .ApplySearch(request)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(SeaWaterTemperatureEntity.RecordDate) : request.SortBy;

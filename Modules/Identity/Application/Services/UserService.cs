@@ -91,7 +91,7 @@ namespace aqua_api.Modules.Identity.Application.Services
                     .Include(u => u.CreatedByUser)
                     .Include(u => u.UpdatedByUser)
                     .Include(u => u.DeletedByUser)
-                    .ApplySearch(request.Search, UserSearchableColumns);
+                    .ApplySearch(request, UserSearchableColumns);
 
                 var fullNameFilters = request.Filters
                     .Where(f => string.Equals(f.Column, "fullName", StringComparison.OrdinalIgnoreCase)

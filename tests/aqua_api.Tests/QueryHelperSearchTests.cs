@@ -3,6 +3,7 @@ namespace aqua_api.Tests;
 using aqua_api.Modules.Stock.Domain.Entities;
 using aqua_api.Modules.FishBatches.Domain.Entities;
 using aqua_api.Modules.Projects.Domain.Entities;
+using aqua_api.Modules.Integrations.Application.Dtos;
 using aqua_api.Shared.Common.Dtos;
 using aqua_api.Shared.Common.Helpers;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
@@ -87,6 +88,105 @@ public sealed class QueryHelperSearchTests
 
         Assert.Collection(projectResult, x => Assert.Equal("BATCH-001", x.BatchCode));
         Assert.Collection(stockResult, x => Assert.Equal("BATCH-001", x.BatchCode));
+    }
+
+    [Fact]
+    public void ApplySearch_WithSelectedFields_ShouldRestrictSearchScope()
+    {
+        var projects = new List<Project>
+        {
+            new() { Id = 1, ProjectCode = "MATCH-CODE", ProjectName = "First" },
+            new() { Id = 2, ProjectCode = "OTHER", ProjectName = "MATCH-CODE" },
+        }.AsQueryable();
+
+        var request = new PagedRequest
+        {
+            Search = "MATCH-CODE",
+            SearchFields = [nameof(Project.ProjectCode)]
+        };
+
+        var result = projects.ApplySearch(request).ToList();
+
+        Assert.Collection(result, project => Assert.Equal(1, project.Id));
+    }
+
+    [Fact]
+    public void ApplySearch_WithSelectedRecordId_ShouldUseExactNumericMatch()
+    {
+        var projects = new List<Project>
+        {
+            new() { Id = 12, ProjectCode = "P-12", ProjectName = "First" },
+            new() { Id = 120, ProjectCode = "P-120", ProjectName = "Second" },
+        }.AsQueryable();
+
+        var request = new PagedRequest
+        {
+            Search = "12",
+            SearchFields = [nameof(Project.Id)]
+        };
+
+        var result = projects.ApplySearch(request).ToList();
+
+        Assert.Collection(result, project => Assert.Equal(12, project.Id));
+    }
+
+    [Fact]
+    public void ApplySearch_WithSelectedNavigationAlias_ShouldResolveKnownPath()
+    {
+        var batches = new List<FishBatch>
+        {
+            new() { Id = 1, BatchCode = "BATCH-001", Project = new Project { ProjectCode = "ILKNAK" } },
+            new() { Id = 2, BatchCode = "BATCH-002", Project = new Project { ProjectCode = "OTHER" } },
+        }.AsQueryable();
+
+        var request = new PagedRequest
+        {
+            Search = "ILKNAK",
+            SearchFields = [nameof(Project.ProjectCode)]
+        };
+
+        var result = batches.ApplySearch(request).ToList();
+
+        Assert.Collection(result, batch => Assert.Equal("BATCH-001", batch.BatchCode));
+    }
+
+    [Fact]
+    public void SelectedSearchAndAdvancedFilters_ShouldTranslateOnMirrorProjection()
+    {
+        var options = new DbContextOptionsBuilder<AquaDbContext>()
+            .UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=MirrorSearchTranslationTest;Trusted_Connection=True;TrustServerCertificate=True;")
+            .Options;
+
+        using var db = new AquaDbContext(options);
+        var request = new PagedRequest
+        {
+            Search = "YEM2026",
+            SearchFields = [nameof(ErpReceiptShipmentMovementDto.DocumentNo)],
+            Filters =
+            [
+                new Filter
+                {
+                    Column = nameof(ErpReceiptShipmentMovementDto.IsProcessed),
+                    Operator = "eq",
+                    Value = "true"
+                }
+            ]
+        };
+
+        var sql = db.ErpReceiptShipmentMovements
+            .Select(movement => new ErpReceiptShipmentMovementDto
+            {
+                Id = movement.Id,
+                DocumentNo = movement.DocumentNo,
+                IsProcessed = movement.IsProcessed
+            })
+            .ApplySearch(request)
+            .ApplyFilters(request.Filters, request.FilterLogic)
+            .ToQueryString();
+
+        Assert.Contains("DocumentNo", sql, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("IsProcessed", sql, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("YEM2026", sql, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

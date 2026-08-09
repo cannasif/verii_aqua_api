@@ -113,7 +113,7 @@ namespace aqua_api.Modules.Identity.Application.Services
                     .Include(u => u.CreatedByUser)
                     .Include(u => u.UpdatedByUser)
                     .Include(u => u.DeletedByUser)
-                    .ApplySearch(request.Search)
+                    .ApplySearch(request)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = request.SortBy ?? nameof(UserDetail.Id);

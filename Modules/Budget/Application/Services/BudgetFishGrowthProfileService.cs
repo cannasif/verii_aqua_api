@@ -27,7 +27,7 @@ namespace aqua_api.Modules.Budget.Application.Services
                     .Include(x => x.Stock)
                     .Include(x => x.Lines)
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request.Search)
+                    .ApplySearch(request)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(BudgetFishGrowthProfile.Id) : request.SortBy;

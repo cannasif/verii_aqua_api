@@ -44,7 +44,7 @@ namespace aqua_api.Modules.WindDirection.Application.Services
                 var query = _unitOfWork.Db.WindDirections
                     .AsNoTracking()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request.Search)
+                    .ApplySearch(request)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(WindDirectionEntity.Name) : request.SortBy;

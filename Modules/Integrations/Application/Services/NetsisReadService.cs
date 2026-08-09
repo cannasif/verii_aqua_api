@@ -18,6 +18,65 @@ namespace aqua_api.Modules.Integrations.Application.Services
     /// </summary>
     public class NetsisReadService : INetsisReadService, IBudgetExchangeRateReadService
     {
+        private static readonly IReadOnlyDictionary<string, string> CustomerGridColumns =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                [nameof(CariDto.SubeKodu)] = nameof(RII_FN_CARI.SUBE_KODU),
+                [nameof(CariDto.IsletmeKodu)] = nameof(RII_FN_CARI.ISLETME_KODU),
+                [nameof(CariDto.CariKod)] = nameof(RII_FN_CARI.CARI_KOD),
+                [nameof(CariDto.CariIsim)] = nameof(RII_FN_CARI.CARI_ISIM),
+                [nameof(CariDto.CariTel)] = nameof(RII_FN_CARI.CARI_TEL),
+                [nameof(CariDto.CariIl)] = nameof(RII_FN_CARI.CARI_IL),
+                [nameof(CariDto.CariAdres)] = nameof(RII_FN_CARI.CARI_ADRES),
+                [nameof(CariDto.CariIlce)] = nameof(RII_FN_CARI.CARI_ILCE),
+                [nameof(CariDto.UlkeKodu)] = nameof(RII_FN_CARI.ULKE_KODU),
+                [nameof(CariDto.Email)] = nameof(RII_FN_CARI.EMAIL),
+                [nameof(CariDto.Web)] = nameof(RII_FN_CARI.WEB),
+                [nameof(CariDto.VergiNumarasi)] = nameof(RII_FN_CARI.VERGI_NUMARASI),
+                [nameof(CariDto.VergiDairesi)] = nameof(RII_FN_CARI.VERGI_DAIRESI),
+                [nameof(CariDto.TcknNumber)] = nameof(RII_FN_CARI.TCKIMLIKNO),
+            };
+
+        private static readonly IReadOnlyDictionary<string, string> StockGridColumns =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                [nameof(StokFunctionDto.SubeKodu)] = nameof(StockEntity.BranchCode),
+                [nameof(StokFunctionDto.StokKodu)] = nameof(StockEntity.ErpStockCode),
+                [nameof(StokFunctionDto.StokAdi)] = nameof(StockEntity.StockName),
+                [nameof(StokFunctionDto.OlcuBr1)] = nameof(StockEntity.Unit),
+                [nameof(StokFunctionDto.UreticiKodu)] = nameof(StockEntity.UreticiKodu),
+                [nameof(StokFunctionDto.GrupKodu)] = nameof(StockEntity.GrupKodu),
+                [nameof(StokFunctionDto.GrupIsim)] = nameof(StockEntity.GrupAdi),
+                [nameof(StokFunctionDto.Kod1)] = nameof(StockEntity.Kod1),
+                [nameof(StokFunctionDto.Kod1Adi)] = nameof(StockEntity.Kod1Adi),
+                [nameof(StokFunctionDto.Kod2)] = nameof(StockEntity.Kod2),
+                [nameof(StokFunctionDto.Kod2Adi)] = nameof(StockEntity.Kod2Adi),
+                [nameof(StokFunctionDto.Kod3)] = nameof(StockEntity.Kod3),
+                [nameof(StokFunctionDto.Kod3Adi)] = nameof(StockEntity.Kod3Adi),
+                [nameof(StokFunctionDto.Kod4)] = nameof(StockEntity.Kod4),
+                [nameof(StokFunctionDto.Kod4Adi)] = nameof(StockEntity.Kod4Adi),
+                [nameof(StokFunctionDto.Kod5)] = nameof(StockEntity.Kod5),
+                [nameof(StokFunctionDto.Kod5Adi)] = nameof(StockEntity.Kod5Adi),
+            };
+
+        private static readonly IReadOnlyDictionary<string, string> WarehouseGridColumns =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                [nameof(DepoDto.DepoKodu)] = nameof(WarehouseEntity.ErpWarehouseCode),
+                [nameof(DepoDto.DepoIsmi)] = nameof(WarehouseEntity.WarehouseName),
+                [nameof(DepoDto.CariKodu)] = nameof(WarehouseEntity.CustomerCode),
+                [nameof(DepoDto.SubeKodu)] = nameof(WarehouseEntity.BranchCode),
+                [nameof(DepoDto.DepoKilitLe)] = nameof(WarehouseEntity.IsLocked),
+                [nameof(DepoDto.Eksibakiye)] = nameof(WarehouseEntity.AllowNegativeBalance),
+            };
+
+        private static readonly IReadOnlyDictionary<string, string> BranchGridColumns =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                [nameof(BranchDto.SubeKodu)] = nameof(RII_FN_BRANCHES.SUBE_KODU),
+                [nameof(BranchDto.Unvan)] = nameof(RII_FN_BRANCHES.UNVAN),
+            };
+
         private readonly AquaDbContext _dbContext;
         private readonly ILogger<NetsisReadService> _logger;
         private readonly ILocalizationService _localizationService;
@@ -91,9 +150,22 @@ namespace aqua_api.Modules.Integrations.Application.Services
             string? sortBy,
             string? sortDirection)
         {
+            return await GetWarehousesPagedAsync(new PagedRequest
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                Search = search,
+                SortBy = sortBy,
+                SortDirection = sortDirection
+            });
+        }
+
+        public async Task<ApiResponse<PagedResponse<DepoDto>>> GetWarehousesPagedAsync(PagedRequest request)
+        {
             try
             {
-                var paging = NormalizePaging(pageNumber, pageSize);
+                request ??= new PagedRequest();
+                var paging = NormalizePaging(request.PageNumber, request.PageSize);
                 var branchCode = ResolvePositiveBranchCode();
                 var query = _dbContext.Warehouses.AsNoTracking();
 
@@ -102,21 +174,11 @@ namespace aqua_api.Modules.Integrations.Application.Services
                     query = query.Where(x => x.BranchCode == branchCode.Value);
                 }
 
-                var normalizedSearch = NormalizeSearch(search);
-                if (!string.IsNullOrWhiteSpace(normalizedSearch))
-                {
-                    var pattern = BuildLikePattern(normalizedSearch);
-                    short? warehouseCode = short.TryParse(normalizedSearch, out var parsedWarehouseCode) ? parsedWarehouseCode : null;
-                    int? searchedBranchCode = int.TryParse(normalizedSearch, out var parsedBranchCode) ? parsedBranchCode : null;
+                query = query
+                    .ApplySearch(MapSearchFields(request, WarehouseGridColumns), WarehouseGridColumns.Values.ToArray())
+                    .ApplyFilters(request.Filters, request.FilterLogic, WarehouseGridColumns);
 
-                    query = query.Where(x =>
-                        (warehouseCode.HasValue && x.ErpWarehouseCode == warehouseCode.Value)
-                        || EF.Functions.Like(x.WarehouseName, pattern)
-                        || (x.CustomerCode != null && EF.Functions.Like(x.CustomerCode, pattern))
-                        || (searchedBranchCode.HasValue && x.BranchCode == searchedBranchCode.Value));
-                }
-
-                query = ApplyWarehouseSort(query, sortBy, sortDirection);
+                query = ApplyWarehouseSort(query, request.SortBy, request.SortDirection);
 
                 var totalCount = await query.CountAsync();
                 var rows = await query
@@ -171,9 +233,22 @@ namespace aqua_api.Modules.Integrations.Application.Services
             string? sortBy,
             string? sortDirection)
         {
+            return await GetCustomersPagedAsync(new PagedRequest
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                Search = search,
+                SortBy = sortBy,
+                SortDirection = sortDirection
+            });
+        }
+
+        public async Task<ApiResponse<PagedResponse<CariDto>>> GetCustomersPagedAsync(PagedRequest request)
+        {
             try
             {
-                var paging = NormalizePaging(pageNumber, pageSize);
+                request ??= new PagedRequest();
+                var paging = NormalizePaging(request.PageNumber, request.PageSize);
                 var branchFromContext = _httpContextAccessor.HttpContext?.Items["BranchCode"] as string;
                 var branchCode = string.IsNullOrWhiteSpace(branchFromContext) ? null : branchFromContext;
 
@@ -184,21 +259,11 @@ namespace aqua_api.Modules.Integrations.Application.Services
                         string.IsNullOrWhiteSpace(branchCode) ? DBNull.Value : branchCode)
                     .AsNoTracking();
 
-                var normalizedSearch = NormalizeSearch(search);
-                if (!string.IsNullOrWhiteSpace(normalizedSearch))
-                {
-                    var pattern = BuildLikePattern(normalizedSearch);
-                    query = query.Where(x =>
-                        EF.Functions.Like(x.CARI_KOD, pattern)
-                        || (x.CARI_ISIM != null && EF.Functions.Like(x.CARI_ISIM, pattern))
-                        || (x.CARI_TEL != null && EF.Functions.Like(x.CARI_TEL, pattern))
-                        || (x.CARI_IL != null && EF.Functions.Like(x.CARI_IL, pattern))
-                        || (x.CARI_ILCE != null && EF.Functions.Like(x.CARI_ILCE, pattern))
-                        || (x.EMAIL != null && EF.Functions.Like(x.EMAIL, pattern))
-                        || (x.VERGI_NUMARASI != null && EF.Functions.Like(x.VERGI_NUMARASI, pattern)));
-                }
+                query = query
+                    .ApplySearch(MapSearchFields(request, CustomerGridColumns), CustomerGridColumns.Values.ToArray())
+                    .ApplyFilters(request.Filters, request.FilterLogic, CustomerGridColumns);
 
-                query = ApplyCustomerSort(query, sortBy, sortDirection);
+                query = ApplyCustomerSort(query, request.SortBy, request.SortDirection);
 
                 var totalCount = await query.CountAsync();
                 var rows = await query
@@ -292,9 +357,22 @@ namespace aqua_api.Modules.Integrations.Application.Services
             string? sortBy,
             string? sortDirection)
         {
+            return await GetStocksPagedAsync(new PagedRequest
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                Search = search,
+                SortBy = sortBy,
+                SortDirection = sortDirection
+            });
+        }
+
+        public async Task<ApiResponse<PagedResponse<StokFunctionDto>>> GetStocksPagedAsync(PagedRequest request)
+        {
             try
             {
-                var paging = NormalizePaging(pageNumber, pageSize);
+                request ??= new PagedRequest();
+                var paging = NormalizePaging(request.PageNumber, request.PageSize);
                 var branchCode = ResolvePositiveBranchCode();
                 var query = _dbContext.Stocks.AsNoTracking();
 
@@ -303,20 +381,11 @@ namespace aqua_api.Modules.Integrations.Application.Services
                     query = query.Where(x => x.BranchCode == branchCode.Value);
                 }
 
-                var normalizedSearch = NormalizeSearch(search);
-                if (!string.IsNullOrWhiteSpace(normalizedSearch))
-                {
-                    var pattern = BuildLikePattern(normalizedSearch);
-                    query = query.Where(x =>
-                        EF.Functions.Like(x.ErpStockCode, pattern)
-                        || EF.Functions.Like(x.StockName, pattern)
-                        || (x.GrupKodu != null && EF.Functions.Like(x.GrupKodu, pattern))
-                        || (x.GrupAdi != null && EF.Functions.Like(x.GrupAdi, pattern))
-                        || (x.Unit != null && EF.Functions.Like(x.Unit, pattern))
-                        || (x.UreticiKodu != null && EF.Functions.Like(x.UreticiKodu, pattern)));
-                }
+                query = query
+                    .ApplySearch(MapSearchFields(request, StockGridColumns), StockGridColumns.Values.ToArray())
+                    .ApplyFilters(request.Filters, request.FilterLogic, StockGridColumns);
 
-                query = ApplyStockSort(query, sortBy, sortDirection);
+                query = ApplyStockSort(query, request.SortBy, request.SortDirection);
 
                 var totalCount = await query.CountAsync();
                 var rows = await query
@@ -401,27 +470,34 @@ namespace aqua_api.Modules.Integrations.Application.Services
             string? sortBy,
             string? sortDirection)
         {
+            return await GetBranchesPagedAsync(new PagedRequest
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                Search = search,
+                SortBy = sortBy,
+                SortDirection = sortDirection
+            });
+        }
+
+        public async Task<ApiResponse<PagedResponse<BranchDto>>> GetBranchesPagedAsync(PagedRequest request)
+        {
             try
             {
-                var paging = NormalizePaging(pageNumber, pageSize);
-                int? branchNo = int.TryParse(search, out var parsedCode) ? parsedCode : null;
+                request ??= new PagedRequest();
+                var paging = NormalizePaging(request.PageNumber, request.PageSize);
 
                 var query = _dbContext.Set<RII_FN_BRANCHES>()
                     .FromSqlRaw(
                         "SELECT * FROM dbo.RII_FN_BRANCHES({0})",
-                        branchNo.HasValue ? branchNo.Value : DBNull.Value)
+                        DBNull.Value)
                     .AsNoTracking();
 
-                var normalizedSearch = NormalizeSearch(search);
-                if (!string.IsNullOrWhiteSpace(normalizedSearch))
-                {
-                    var pattern = BuildLikePattern(normalizedSearch);
-                    query = query.Where(x =>
-                        EF.Functions.Like(x.SUBE_KODU.ToString(), pattern)
-                        || (x.UNVAN != null && EF.Functions.Like(x.UNVAN, pattern)));
-                }
+                query = query
+                    .ApplySearch(MapSearchFields(request, BranchGridColumns), BranchGridColumns.Values.ToArray())
+                    .ApplyFilters(request.Filters, request.FilterLogic, BranchGridColumns);
 
-                query = ApplyBranchSort(query, sortBy, sortDirection);
+                query = ApplyBranchSort(query, request.SortBy, request.SortDirection);
 
                 var totalCount = await query.CountAsync();
                 var rows = await query
@@ -829,40 +905,28 @@ namespace aqua_api.Modules.Integrations.Application.Services
             string? sortBy,
             string? sortDirection)
         {
+            return await GetReceiptShipmentMovementMirrorPagedAsync(new PagedRequest
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                Search = search,
+                SortBy = sortBy,
+                SortDirection = sortDirection
+            });
+        }
+
+        public async Task<ApiResponse<PagedResponse<ErpReceiptShipmentMovementDto>>> GetReceiptShipmentMovementMirrorPagedAsync(
+            PagedRequest request)
+        {
             try
             {
-                var paging = NormalizePaging(pageNumber, pageSize);
-                var query = BuildReceiptShipmentMovementMirrorQuery();
+                request ??= new PagedRequest();
+                var paging = NormalizePaging(request.PageNumber, request.PageSize);
+                var query = BuildReceiptShipmentMovementMirrorQuery()
+                    .ApplySearch(request)
+                    .ApplyFilters(request.Filters, request.FilterLogic);
 
-                var normalizedSearch = NormalizeSearch(search);
-                if (!string.IsNullOrWhiteSpace(normalizedSearch))
-                {
-                    var pattern = BuildLikePattern(normalizedSearch);
-                    short? warehouseCode = short.TryParse(normalizedSearch, out var parsedWarehouseCode)
-                        ? parsedWarehouseCode
-                        : null;
-                    query = query.Where(x =>
-                        EF.Functions.Like(x.DocumentNo ?? string.Empty, pattern)
-                        || (warehouseCode.HasValue && x.ErpWarehouseCode == warehouseCode.Value)
-                        || EF.Functions.Like(x.ErpProjectCode ?? string.Empty, pattern)
-                        || EF.Functions.Like(x.ErpStockCode, pattern)
-                        || EF.Functions.Like(x.ErpStockName ?? string.Empty, pattern)
-                        || EF.Functions.Like(x.MovementKind, pattern)
-                        || EF.Functions.Like(x.InOutCode, pattern)
-                        || EF.Functions.Like(x.StockGroupCode ?? string.Empty, pattern)
-                        || EF.Functions.Like(x.OperationType, pattern)
-                        || EF.Functions.Like(x.ProjectCode ?? string.Empty, pattern)
-                        || EF.Functions.Like(x.ProjectName ?? string.Empty, pattern)
-                        || EF.Functions.Like(x.CageCode ?? string.Empty, pattern)
-                        || EF.Functions.Like(x.CageName ?? string.Empty, pattern)
-                        || EF.Functions.Like(x.StockCode ?? string.Empty, pattern)
-                        || EF.Functions.Like(x.StockName ?? string.Empty, pattern)
-                        || EF.Functions.Like(x.BatchCode ?? string.Empty, pattern)
-                        || EF.Functions.Like(x.MatchError ?? string.Empty, pattern)
-                        || EF.Functions.Like(x.ProcessError ?? string.Empty, pattern));
-                }
-
-                query = ApplyReceiptShipmentMovementMirrorSort(query, sortBy, sortDirection);
+                query = ApplyReceiptShipmentMovementMirrorSort(query, request.SortBy, request.SortDirection);
 
                 var totalCount = await query.CountAsync();
                 var rows = await query
@@ -984,6 +1048,24 @@ namespace aqua_api.Modules.Integrations.Application.Services
         private static string BuildLikePattern(string search)
         {
             return $"%{search.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]")}%";
+        }
+
+        private static PagedRequest MapSearchFields(
+            PagedRequest request,
+            IReadOnlyDictionary<string, string> columnMapping)
+        {
+            var mappedFields = (request.SearchFields ?? new List<string>())
+                .Select(field => columnMapping.TryGetValue(field, out var mapped) ? mapped : null)
+                .Where(field => !string.IsNullOrWhiteSpace(field))
+                .Cast<string>()
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return new PagedRequest
+            {
+                Search = request.Search,
+                SearchFields = mappedFields,
+            };
         }
 
         private int? ResolvePositiveBranchCode()

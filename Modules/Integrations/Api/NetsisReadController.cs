@@ -39,13 +39,9 @@ namespace aqua_api.Modules.Integrations.Api
 
         [HttpGet("getAllCustomers/paged")]
         public async Task<ActionResult<ApiResponse<PagedResponse<CariDto>>>> GetCustomersPaged(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20,
-            [FromQuery] string? search = null,
-            [FromQuery] string? sortBy = null,
-            [FromQuery] string? sortDirection = null)
+            [FromQuery] PagedRequest request)
         {
-            var paged = await _netsisReadService.GetCustomersPagedAsync(pageNumber, pageSize, search, sortBy, sortDirection);
+            var paged = await _netsisReadService.GetCustomersPagedAsync(request);
             return StatusCode(paged.StatusCode, paged);
         }
 
@@ -59,13 +55,9 @@ namespace aqua_api.Modules.Integrations.Api
 
         [HttpGet("getAllProducts/paged")]
         public async Task<ActionResult<ApiResponse<PagedResponse<StokFunctionDto>>>> GetStocksPaged(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20,
-            [FromQuery] string? search = null,
-            [FromQuery] string? sortBy = null,
-            [FromQuery] string? sortDirection = null)
+            [FromQuery] PagedRequest request)
         {
-            var paged = await _netsisReadService.GetStocksPagedAsync(pageNumber, pageSize, search, sortBy, sortDirection);
+            var paged = await _netsisReadService.GetStocksPagedAsync(request);
             return StatusCode(paged.StatusCode, paged);
         }
 
@@ -79,13 +71,9 @@ namespace aqua_api.Modules.Integrations.Api
 
         [HttpGet("getAllWarehouses/paged")]
         public async Task<ActionResult<ApiResponse<PagedResponse<DepoDto>>>> GetWarehousesPaged(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20,
-            [FromQuery] string? search = null,
-            [FromQuery] string? sortBy = null,
-            [FromQuery] string? sortDirection = null)
+            [FromQuery] PagedRequest request)
         {
-            var paged = await _netsisReadService.GetWarehousesPagedAsync(pageNumber, pageSize, search, sortBy, sortDirection);
+            var paged = await _netsisReadService.GetWarehousesPagedAsync(request);
             return StatusCode(paged.StatusCode, paged);
         }
 
@@ -107,13 +95,9 @@ namespace aqua_api.Modules.Integrations.Api
 
         [HttpGet("getBranches/paged")]
         public async Task<ActionResult<ApiResponse<PagedResponse<BranchDto>>>> GetBranchesPaged(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20,
-            [FromQuery] string? search = null,
-            [FromQuery] string? sortBy = null,
-            [FromQuery] string? sortDirection = null)
+            [FromQuery] PagedRequest request)
         {
-            var paged = await _netsisReadService.GetBranchesPagedAsync(pageNumber, pageSize, search, sortBy, sortDirection);
+            var paged = await _netsisReadService.GetBranchesPagedAsync(request);
             return StatusCode(paged.StatusCode, paged);
         }
 
@@ -179,13 +163,9 @@ namespace aqua_api.Modules.Integrations.Api
 
         [HttpGet("getReceiptShipmentMovementMirror/paged")]
         public async Task<ActionResult<ApiResponse<PagedResponse<ErpReceiptShipmentMovementDto>>>> GetReceiptShipmentMovementMirrorPaged(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20,
-            [FromQuery] string? search = null,
-            [FromQuery] string? sortBy = null,
-            [FromQuery] string? sortDirection = null)
+            [FromQuery] PagedRequest request)
         {
-            var paged = await _netsisReadService.GetReceiptShipmentMovementMirrorPagedAsync(pageNumber, pageSize, search, sortBy, sortDirection);
+            var paged = await _netsisReadService.GetReceiptShipmentMovementMirrorPagedAsync(request);
             return StatusCode(paged.StatusCode, paged);
         }
 

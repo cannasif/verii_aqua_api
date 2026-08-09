@@ -86,7 +86,7 @@ namespace aqua_api.Modules.Shipments.Application.Services
                 var query = _unitOfWork.ShipmentLines
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request.Search)
+                    .ApplySearch(request)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(ShipmentLine.Id) : request.SortBy;

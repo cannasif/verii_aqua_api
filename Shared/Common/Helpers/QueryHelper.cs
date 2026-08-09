@@ -260,17 +260,30 @@ namespace aqua_api.Shared.Common.Helpers
                 foreach (var column in searchableColumns)
                 {
                     var resolved = ResolvePropertyPath(parameter, typeof(T), column);
-                    if (resolved == null || resolved.Value.property.PropertyType != typeof(string))
+                    if (resolved == null)
                     {
                         continue;
                     }
 
-                    var member = resolved.Value.expression;
-                    var notNull = Expression.NotEqual(member, Expression.Constant(null, typeof(string)));
-                    var columnPredicate = useEfSearch
-                        ? BuildSqlServerSearchPredicate(member, term.Raw, term.Normalized)
-                        : BuildInMemorySearchPredicate(member, term.Normalized);
-                    var currentPredicate = Expression.AndAlso(notNull, columnPredicate);
+                    var (member, property) = resolved.Value;
+                    Expression? currentPredicate;
+                    if (property.PropertyType == typeof(string))
+                    {
+                        var notNull = Expression.NotEqual(member, Expression.Constant(null, typeof(string)));
+                        var columnPredicate = useEfSearch
+                            ? BuildSqlServerSearchPredicate(member, term.Raw, term.Normalized)
+                            : BuildInMemorySearchPredicate(member, term.Normalized);
+                        currentPredicate = Expression.AndAlso(notNull, columnPredicate);
+                    }
+                    else
+                    {
+                        currentPredicate = BuildScalarSearchPredicate(member, property.PropertyType, term.Raw);
+                    }
+
+                    if (currentPredicate == null)
+                    {
+                        continue;
+                    }
 
                     termPredicate = termPredicate == null
                         ? currentPredicate
@@ -294,6 +307,49 @@ namespace aqua_api.Shared.Common.Helpers
 
             var lambda = Expression.Lambda<Func<T, bool>>(searchPredicate, parameter);
             return query.Where(lambda);
+        }
+
+        public static IQueryable<T> ApplySearch<T>(
+            this IQueryable<T> query,
+            PagedRequest request,
+            params string[] defaultSearchableColumns)
+        {
+            if (request == null || request.SearchFields == null || request.SearchFields.Count == 0)
+            {
+                return query.ApplySearch(request?.Search, defaultSearchableColumns);
+            }
+
+            var parameter = Expression.Parameter(typeof(T), "x");
+            var candidateColumns = (defaultSearchableColumns.Length > 0
+                    ? defaultSearchableColumns
+                    : CommonSearchableColumns
+                        .Concat(typeof(T)
+                            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                            .Where(property => IsGeneralSearchScalar(property.PropertyType))
+                            .Select(property => property.Name)))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            var selectedColumns = request.SearchFields
+                .SelectMany(requestedField => candidateColumns.Where(candidate =>
+                    string.Equals(candidate, requestedField, StringComparison.OrdinalIgnoreCase) ||
+                    candidate.EndsWith($".{requestedField}", StringComparison.OrdinalIgnoreCase)))
+                .Where(column =>
+                {
+                    var resolved = ResolvePropertyPath(parameter, typeof(T), column);
+                    return resolved != null && IsGeneralSearchScalar(resolved.Value.property.PropertyType);
+                })
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            if (selectedColumns.Length == 0)
+            {
+                return string.IsNullOrWhiteSpace(request.Search)
+                    ? query
+                    : query.Where(_ => false);
+            }
+
+            return query.ApplySearch(request.Search, selectedColumns);
         }
 
         public static string NormalizeSearchText(string? value)
@@ -388,6 +444,64 @@ namespace aqua_api.Shared.Common.Helpers
             }
 
             return predicate ?? Expression.Constant(true);
+        }
+
+        private static bool IsGeneralSearchScalar(Type propertyType)
+        {
+            var type = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+            return type == typeof(string) ||
+                   type == typeof(Guid) ||
+                   type == typeof(bool) ||
+                   type.IsEnum ||
+                   type == typeof(byte) ||
+                   type == typeof(short) ||
+                   type == typeof(int) ||
+                   type == typeof(long) ||
+                   type == typeof(float) ||
+                   type == typeof(double) ||
+                   type == typeof(decimal);
+        }
+
+        private static Expression? BuildScalarSearchPredicate(Expression member, Type propertyType, string rawTerm)
+        {
+            var targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+            object? parsedValue;
+
+            if (targetType == typeof(Guid))
+            {
+                if (!Guid.TryParse(rawTerm, out var guid)) return null;
+                parsedValue = guid;
+            }
+            else if (targetType == typeof(bool))
+            {
+                if (!bool.TryParse(rawTerm, out var boolean)) return null;
+                parsedValue = boolean;
+            }
+            else if (targetType.IsEnum)
+            {
+                if (!Enum.TryParse(targetType, rawTerm, true, out parsedValue)) return null;
+            }
+            else
+            {
+                try
+                {
+                    parsedValue = Convert.ChangeType(rawTerm, targetType, CultureInfo.InvariantCulture);
+                }
+                catch (Exception exception) when (exception is FormatException or InvalidCastException or OverflowException)
+                {
+                    return null;
+                }
+            }
+
+            var constant = Expression.Constant(parsedValue, targetType);
+            if (Nullable.GetUnderlyingType(propertyType) == null)
+            {
+                return Expression.Equal(member, constant);
+            }
+
+            var hasValue = Expression.Property(member, "HasValue");
+            var value = Expression.Property(member, "Value");
+            return Expression.AndAlso(hasValue, Expression.Equal(value, constant));
         }
 
         private static Expression BuildStringFilterPredicate(Expression member, string rawValue, string normalizedValue, string operatorLower, bool useEfSearch)
@@ -534,6 +648,27 @@ namespace aqua_api.Shared.Common.Helpers
                         };
                     }
                 }
+                else if (property.PropertyType == typeof(short) || property.PropertyType == typeof(short?))
+                {
+                    if (short.TryParse(filter.Value, out short val))
+                    {
+                        var constant = Expression.Constant(val, typeof(short));
+                        var comparableLeft = property.PropertyType == typeof(short?)
+                            ? Expression.Property(left, "Value")
+                            : left;
+                        var comparison = operatorLower switch
+                        {
+                            ">" or "gt" => Expression.GreaterThan(comparableLeft, constant),
+                            ">=" or "gte" => Expression.GreaterThanOrEqual(comparableLeft, constant),
+                            "<" or "lt" => Expression.LessThan(comparableLeft, constant),
+                            "<=" or "lte" => Expression.LessThanOrEqual(comparableLeft, constant),
+                            _ => Expression.Equal(comparableLeft, constant)
+                        };
+                        exp = property.PropertyType == typeof(short?)
+                            ? Expression.AndAlso(Expression.Property(left, "HasValue"), comparison)
+                            : comparison;
+                    }
+                }
                 else if (property.PropertyType == typeof(long) || property.PropertyType == typeof(long?))
                 {
                     if (long.TryParse(filter.Value, out long val))
@@ -667,7 +802,7 @@ namespace aqua_api.Shared.Common.Helpers
         {
             if (request == null) return query;
 
-            query = query.ApplySearch(request.Search);
+            query = query.ApplySearch(request);
             query = query.ApplyFilters(request.Filters, request.FilterLogic, columnMapping);
             query = query.ApplySorting(request.SortBy, request.SortDirection, columnMapping);
             query = query.ApplyPagination(request.PageNumber, request.PageSize);

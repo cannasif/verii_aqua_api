@@ -73,7 +73,7 @@ namespace aqua_api.Modules.BatchBalances.Application.Services
                 var query = _unitOfWork.BatchWarehouseBalances
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request.Search, SearchableColumns)
+                    .ApplySearch(request, SearchableColumns)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(BatchWarehouseBalance.Id) : request.SortBy;

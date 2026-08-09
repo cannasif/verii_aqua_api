@@ -31,6 +31,7 @@ namespace aqua_api.Shared.Host.WebApi.ModelBinding
             request.PageNumber = ParseInt(query, new[] { "pageNumber", "PageNumber" }, 1);
             request.PageSize = ParseInt(query, new[] { "pageSize", "PageSize" }, 20);
             request.Search = ParseString(query, new[] { "search", "Search" });
+            request.SearchFields = ParseStringList(query, new[] { "searchFields", "SearchFields" });
             request.SortBy = ParseString(query, new[] { "sortBy", "SortBy" }) ?? "Id";
             request.SortDirection = ParseString(query, new[] { "sortDirection", "SortDirection" }) ?? "desc";
             request.Filters = ParseJsonFilters(query) ?? ParseIndexedFilters(query) ?? new List<Filter>();
@@ -115,6 +116,12 @@ namespace aqua_api.Shared.Host.WebApi.ModelBinding
             request.PageNumber = request.PageNumber <= 0 ? 1 : request.PageNumber;
             request.PageSize = request.PageSize <= 0 ? 20 : request.PageSize;
             request.Search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
+            request.SearchFields = (request.SearchFields ?? new List<string>())
+                .Where(field => !string.IsNullOrWhiteSpace(field))
+                .Select(field => field.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Take(64)
+                .ToList();
             request.SortBy = string.IsNullOrWhiteSpace(request.SortBy) ? "Id" : request.SortBy.Trim();
             request.SortDirection = string.IsNullOrWhiteSpace(request.SortDirection) ? "desc" : request.SortDirection.Trim();
             request.FilterLogic = string.Equals(request.FilterLogic, "or", StringComparison.OrdinalIgnoreCase) ? "or" : "and";
@@ -179,6 +186,28 @@ namespace aqua_api.Shared.Host.WebApi.ModelBinding
             }
 
             return null;
+        }
+
+        private static List<string> ParseStringList(
+            Microsoft.AspNetCore.Http.IQueryCollection query,
+            IEnumerable<string> keys)
+        {
+            foreach (var key in keys)
+            {
+                if (!query.TryGetValue(key, out var values) || StringValues.IsNullOrEmpty(values))
+                {
+                    continue;
+                }
+
+                return values
+                    .SelectMany(value => (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .Select(value => value.Trim())
+                    .Where(value => value.Length > 0)
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+            }
+
+            return new List<string>();
         }
 
         private static List<Filter>? ParseJsonFilters(Microsoft.AspNetCore.Http.IQueryCollection query)

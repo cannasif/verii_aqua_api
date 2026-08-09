@@ -17,6 +17,7 @@ namespace aqua_api.Shared.Common.Dtos
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 20;
         public string? Search { get; set; }
+        public List<string> SearchFields { get; set; } = new();
         public string? SortBy { get; set; } = "Id";
         public string? SortDirection { get; set; } = "desc";
         public List<Filter>? Filters { get; set; } = new();

@@ -22,7 +22,7 @@ public class NetInventoryMovementService : INetInventoryMovementService
             request.Filters ??= new List<Filter>();
 
             var query = BuildQuery()
-                .ApplySearch(request.Search)
+                .ApplySearch(request)
                 .ApplyFilters(request.Filters, request.FilterLogic);
 
             var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(NetInventoryMovement.MovementDate) : request.SortBy;

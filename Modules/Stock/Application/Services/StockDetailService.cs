@@ -51,7 +51,7 @@ namespace aqua_api.Modules.Stock.Application.Services
                     .Include(sd => sd.CreatedByUser)
                     .Include(sd => sd.UpdatedByUser)
                     .Include(sd => sd.DeletedByUser)
-                    .ApplySearch(request.Search, SearchableColumns)
+                    .ApplySearch(request, SearchableColumns)
                     .ApplyFilters(request.Filters, request.FilterLogic, columnMapping);
 
                 var sortBy = request.SortBy ?? nameof(StockDetail.Id);

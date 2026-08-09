@@ -55,7 +55,7 @@ namespace aqua_api.Modules.Projects.Application.Services
                 var query = _unitOfWork.Projects
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request.Search)
+                    .ApplySearch(request)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(Project.Id) : request.SortBy;

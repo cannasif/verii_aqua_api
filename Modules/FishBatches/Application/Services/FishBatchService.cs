@@ -55,7 +55,7 @@ namespace aqua_api.Modules.FishBatches.Application.Services
                 var query = _unitOfWork.FishBatches
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request.Search)
+                    .ApplySearch(request)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(FishBatch.Id) : request.SortBy;

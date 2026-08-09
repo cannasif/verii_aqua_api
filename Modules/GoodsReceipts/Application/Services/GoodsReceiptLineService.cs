@@ -80,7 +80,7 @@ namespace aqua_api.Modules.GoodsReceipts.Application.Services
                     .Include(x => x.Stock)
                     .Include(x => x.FishBatch)
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request.Search)
+                    .ApplySearch(request)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(GoodsReceiptLine.Id) : request.SortBy;

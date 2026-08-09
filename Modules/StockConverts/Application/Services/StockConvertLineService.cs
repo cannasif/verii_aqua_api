@@ -81,7 +81,7 @@ namespace aqua_api.Modules.StockConverts.Application.Services
                     .Include(x => x.ToProjectCage)
                         .ThenInclude(x => x!.Cage)
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request.Search)
+                    .ApplySearch(request)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(StockConvertLine.Id) : request.SortBy;

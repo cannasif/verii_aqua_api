@@ -38,7 +38,7 @@ namespace aqua_api.Modules.CurrentDirection.Application.Services
                 request ??= new PagedRequest();
                 request.Filters ??= new List<Filter>();
 
-                var query = BaseQuery().ApplySearch(request.Search)
+                var query = BaseQuery().ApplySearch(request)
                     .ApplyFilters(request.Filters, request.FilterLogic);
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(CurrentDirectionMatchEntity.RecordDate) : request.SortBy;
                 query = query.ApplySorting(sortBy, request.SortDirection);

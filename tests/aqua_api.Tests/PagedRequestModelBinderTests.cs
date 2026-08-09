@@ -22,6 +22,7 @@ public class PagedRequestModelBinderTests
           "pageNumber": 1,
           "pageSize": 50,
           "search": "BATCH-001",
+          "searchFields": ["BatchCode", "ProjectCode"],
           "sortBy": "Id",
           "sortDirection": "asc",
           "filterLogic": "or",
@@ -36,6 +37,7 @@ public class PagedRequestModelBinderTests
         Assert.Equal(1, request.PageNumber);
         Assert.Equal(50, request.PageSize);
         Assert.Equal("BATCH-001", request.Search);
+        Assert.Equal(new[] { "BatchCode", "ProjectCode" }, request.SearchFields);
         Assert.Equal("Id", request.SortBy);
         Assert.Equal("asc", request.SortDirection);
         Assert.Equal("or", request.FilterLogic);
@@ -51,7 +53,7 @@ public class PagedRequestModelBinderTests
         var binder = new PagedRequestModelBinder();
         var httpContext = new DefaultHttpContext();
         httpContext.Request.Method = HttpMethods.Get;
-        httpContext.Request.QueryString = new QueryString("?pageNumber=2&pageSize=75&search=YEM&filterLogic=or&filters=%5B%7B%22column%22%3A%22GrupKodu%22%2C%22operator%22%3A%22eq%22%2C%22value%22%3A%22YEM%22%7D%5D");
+        httpContext.Request.QueryString = new QueryString("?pageNumber=2&pageSize=75&search=YEM&searchFields=ErpStockCode&searchFields=StockName&filterLogic=or&filters=%5B%7B%22column%22%3A%22GrupKodu%22%2C%22operator%22%3A%22eq%22%2C%22value%22%3A%22YEM%22%7D%5D");
 
         var bindingContext = CreateBindingContext(httpContext);
 
@@ -61,6 +63,7 @@ public class PagedRequestModelBinderTests
         Assert.Equal(2, request.PageNumber);
         Assert.Equal(75, request.PageSize);
         Assert.Equal("YEM", request.Search);
+        Assert.Equal(new[] { "ErpStockCode", "StockName" }, request.SearchFields);
         Assert.Equal("or", request.FilterLogic);
         Assert.NotNull(request.Filters);
         var filter = Assert.Single(request.Filters);
@@ -75,6 +78,23 @@ public class PagedRequestModelBinderTests
 
         Assert.Equal(1, request.PageNumber);
         Assert.Equal(20, request.PageSize);
+    }
+
+    [Fact]
+    public async Task BindModelAsync_ShouldKeepAllAllowlistedGridSearchFields()
+    {
+        var fields = Enumerable.Range(1, 25).Select(index => $"Field{index}").ToArray();
+        var query = string.Join("&", fields.Select(field => $"searchFields={field}"));
+        var binder = new PagedRequestModelBinder();
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Method = HttpMethods.Get;
+        httpContext.Request.QueryString = new QueryString($"?{query}");
+
+        var bindingContext = CreateBindingContext(httpContext);
+        await binder.BindModelAsync(bindingContext);
+
+        var request = Assert.IsType<PagedRequest>(bindingContext.Result.Model);
+        Assert.Equal(fields, request.SearchFields);
     }
 
     [Fact]
@@ -95,6 +115,22 @@ public class PagedRequestModelBinderTests
         Assert.Equal("Korçay", request.Search);
         Assert.NotNull(request.Filters);
         Assert.Empty(request.Filters);
+    }
+
+    [Fact]
+    public async Task BindModelAsync_ShouldNormalizeNullSearchFieldsToEmptyList()
+    {
+        const string json = """
+        {
+          "search": "BATCH-001",
+          "searchFields": null
+        }
+        """;
+
+        var request = await BindAsync(HttpMethods.Post, json);
+
+        Assert.NotNull(request.SearchFields);
+        Assert.Empty(request.SearchFields);
     }
 
     private static async Task<PagedRequest> BindAsync(string method, string? json = null)

@@ -63,7 +63,7 @@ namespace aqua_api.Modules.DailyWeathers.Application.Services
                     .Include(x => x.Project)
                     .Include(x => x.WeatherType)
                     .Include(x => x.WeatherSeverity)
-                    .ApplySearch(request.Search)
+                    .ApplySearch(request)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(DailyWeather.Id) : request.SortBy;
