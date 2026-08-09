@@ -34,6 +34,17 @@ public class FishGrowthController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    [HttpGet("timeline")]
+    public async Task<ActionResult<ApiResponse<FishGrowthTimelineDto>>> GetTimeline(
+        [FromQuery] long projectCageId,
+        [FromQuery] long fishBatchId,
+        [FromQuery] int throughYear,
+        [FromQuery] int throughMonth)
+    {
+        var result = await _service.GetTimelineAsync(projectCageId, fishBatchId, throughYear, throughMonth);
+        return StatusCode(result.StatusCode, result);
+    }
+
     [HttpPost]
     public async Task<ActionResult<ApiResponse<FishGrowthDto>>> Create([FromBody] CreateFishGrowthDto dto)
     {

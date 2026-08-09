@@ -25,6 +25,144 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
     }
 
     [Fact]
+    public async Task Timeline_ShowsRecordedAndCarriedForwardMonths_FromCageEntry()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        long projectId;
+        long projectCageId;
+        long fishBatchId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var stockId = await db.Stocks
+                .Where(x => x.ErpStockCode == "PLAMUT-5G")
+                .Select(x => x.Id)
+                .SingleAsync();
+            var suffix = Guid.NewGuid().ToString("N")[..8];
+            var project = new Project
+            {
+                ProjectCode = $"GROW-TL-{suffix}",
+                ProjectName = "Fish Growth Timeline Project",
+                StartDate = new DateTime(2026, 1, 1),
+                Status = DocumentStatus.Posted
+            };
+            var cage = new Cage { CageCode = $"GTL-{suffix}", CageName = "Timeline Cage" };
+            db.Projects.Add(project);
+            db.Cages.Add(cage);
+            await db.SaveChangesAsync();
+
+            var projectCage = new ProjectCage
+            {
+                ProjectId = project.Id,
+                CageId = cage.Id,
+                AssignedDate = project.StartDate
+            };
+            var batch = new FishBatch
+            {
+                ProjectId = project.Id,
+                FishStockId = stockId,
+                BatchCode = $"GTL-B-{suffix}",
+                CurrentAverageGram = 100m,
+                StartDate = project.StartDate
+            };
+            db.ProjectCages.Add(projectCage);
+            db.FishBatches.Add(batch);
+            await db.SaveChangesAsync();
+
+            var ledger = scope.ServiceProvider.GetRequiredService<IBalanceLedgerManager>();
+            await ledger.ApplyDelta(
+                project.Id,
+                batch.Id,
+                projectCage.Id,
+                1_000,
+                100_000m,
+                BatchMovementType.Stocking,
+                project.StartDate,
+                "Timeline opening",
+                "TEST_TIMELINE_OPENING",
+                1,
+                null,
+                projectCage.Id,
+                stockId,
+                stockId,
+                100m,
+                100m,
+                1);
+            await db.SaveChangesAsync();
+
+            projectId = project.Id;
+            projectCageId = projectCage.Id;
+            fishBatchId = batch.Id;
+        }
+
+        using var createResponse = await client.PostAsJsonAsync("/api/aqua/FishGrowth", new CreateFishGrowthDto
+        {
+            ProjectId = projectId,
+            ProjectCageId = projectCageId,
+            FishBatchId = fishBatchId,
+            GrowthDate = new DateTime(2026, 2, 18),
+            NewAverageGram = 200m
+        });
+        Assert.Equal(HttpStatusCode.OK, createResponse.StatusCode);
+        var created = await createResponse.Content.ReadFromJsonAsync<ApiResponse<FishGrowthDto>>();
+        Assert.True(created?.Success, created?.ExceptionMessage);
+
+        using var timelineResponse = await client.GetAsync(
+            $"/api/aqua/FishGrowth/timeline?projectCageId={projectCageId}&fishBatchId={fishBatchId}&throughYear=2026&throughMonth=3");
+        Assert.Equal(HttpStatusCode.OK, timelineResponse.StatusCode);
+        var timelineBody = await timelineResponse.Content.ReadFromJsonAsync<ApiResponse<FishGrowthTimelineDto>>();
+        Assert.True(timelineBody?.Success, timelineBody?.ExceptionMessage);
+        var timeline = timelineBody!.Data!;
+
+        Assert.Equal(new DateTime(2026, 1, 1), timeline.StartPeriod);
+        Assert.Equal(new DateTime(2026, 3, 1), timeline.EndPeriod);
+        Assert.Equal(100m, timeline.InitialAverageGram);
+        Assert.Equal(200m, timeline.LatestAverageGram);
+        Assert.Equal(1, timeline.RecordedMonthCount);
+        Assert.Equal(1, timeline.CarriedForwardMonthCount);
+        Assert.False(timeline.HasContinuityIssue);
+
+        var january = Assert.Single(timeline.Months, x => x.Period == new DateTime(2026, 1, 1));
+        Assert.Equal("Baseline", january.Status);
+        Assert.Equal(100m, january.EndAverageGram);
+        Assert.Equal(1_000, january.FishCount);
+
+        var february = Assert.Single(timeline.Months, x => x.Period == new DateTime(2026, 2, 1));
+        Assert.Equal("Recorded", february.Status);
+        Assert.Equal(100m, february.PreviousAverageGram);
+        Assert.Equal(100m, february.GrowthGram);
+        Assert.Equal(200m, february.EndAverageGram);
+        Assert.Equal(1_000, february.FishCount);
+
+        var march = Assert.Single(timeline.Months, x => x.Period == new DateTime(2026, 3, 1));
+        Assert.Equal("CarriedForward", march.Status);
+        Assert.Equal(0m, march.GrowthGram);
+        Assert.Equal(200m, march.EndAverageGram);
+        Assert.Equal(1_000, march.FishCount);
+        Assert.Equal(new DateTime(2026, 2, 1), march.CarriedFromPeriod);
+
+        using var deleteResponse = await client.DeleteAsync($"/api/aqua/FishGrowth/{created!.Data!.Id}");
+        Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
+
+        using var timelineAfterDeleteResponse = await client.GetAsync(
+            $"/api/aqua/FishGrowth/timeline?projectCageId={projectCageId}&fishBatchId={fishBatchId}&throughYear=2026&throughMonth=3");
+        var timelineAfterDelete = (await timelineAfterDeleteResponse.Content
+            .ReadFromJsonAsync<ApiResponse<FishGrowthTimelineDto>>())!.Data!;
+        Assert.Equal(0, timelineAfterDelete.RecordedMonthCount);
+        Assert.Equal(100m, timelineAfterDelete.LatestAverageGram);
+
+        using var monthlyAfterDeleteResponse = await client.GetAsync(
+            $"/api/aqua/FishGrowth/monthly?projectCageId={projectCageId}&fishBatchId={fishBatchId}&year=2026&month=2");
+        var monthlyAfterDelete = await monthlyAfterDeleteResponse.Content
+            .ReadFromJsonAsync<ApiResponse<FishGrowthDto?>>();
+        Assert.True(monthlyAfterDelete?.Success, monthlyAfterDelete?.ExceptionMessage);
+        Assert.Null(monthlyAfterDelete!.Data);
+    }
+
+    [Fact]
     public async Task Create_GrowsCurrentCageBatch_AndRejectsSecondGrowthInSameMonth()
     {
         var client = _factory.CreateClient();

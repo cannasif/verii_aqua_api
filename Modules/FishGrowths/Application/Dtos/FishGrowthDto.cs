@@ -41,3 +41,37 @@ public class UpdateFishGrowthDto
     public decimal NewAverageGram { get; set; }
     public string? Description { get; set; }
 }
+
+public class FishGrowthTimelineDto
+{
+    public long ProjectCageId { get; set; }
+    public long FishBatchId { get; set; }
+    public DateTime StartPeriod { get; set; }
+    public DateTime EndPeriod { get; set; }
+    public decimal InitialAverageGram { get; set; }
+    public decimal LatestAverageGram { get; set; }
+    public int RecordedMonthCount { get; set; }
+    public int CarriedForwardMonthCount { get; set; }
+    public bool HasContinuityIssue { get; set; }
+    public bool WasTruncated { get; set; }
+    public List<FishGrowthTimelineMonthDto> Months { get; set; } = new();
+}
+
+public class FishGrowthTimelineMonthDto
+{
+    public DateTime Period { get; set; }
+    public int Year { get; set; }
+    public byte Month { get; set; }
+    public string Status { get; set; } = string.Empty;
+    public long? GrowthId { get; set; }
+    public decimal PreviousAverageGram { get; set; }
+    public decimal ExpectedPreviousAverageGram { get; set; }
+    public decimal GrowthGram { get; set; }
+    public decimal EndAverageGram { get; set; }
+    public decimal GrowthRatePercent { get; set; }
+    public int? FishCount { get; set; }
+    public DateTime? CarriedFromPeriod { get; set; }
+    public bool HasContinuityIssue { get; set; }
+    public bool IsSelectedPeriod { get; set; }
+    public string? Description { get; set; }
+}

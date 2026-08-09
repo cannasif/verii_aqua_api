@@ -5,6 +5,7 @@ namespace aqua_api.Modules.FishGrowths.Application.Services;
 public class FishGrowthService : IFishGrowthService
 {
     private const string ReferenceTable = "RII_FISH_GROWTH";
+    private const int TimelineMonthLimit = 120;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IBalanceLedgerManager _balanceLedgerManager;
     private readonly ILocalizationService _localizationService;
@@ -320,6 +321,7 @@ public class FishGrowthService : IFishGrowthService
             .Include(x => x.ProjectCage).ThenInclude(x => x!.Cage)
             .Include(x => x.FishBatch)
             .FirstOrDefaultAsync(x =>
+                !x.IsDeleted &&
                 x.ProjectCageId == projectCageId &&
                 x.FishBatchId == fishBatchId &&
                 x.GrowthYear == year &&
@@ -328,6 +330,197 @@ public class FishGrowthService : IFishGrowthService
         return ApiResponse<FishGrowthDto?>.SuccessResult(
             entity == null ? null : Map(entity),
             entity == null ? "Büyütme kaydı bulunamadı." : "Büyütme kaydı getirildi.");
+    }
+
+    public async Task<ApiResponse<FishGrowthTimelineDto>> GetTimelineAsync(
+        long projectCageId,
+        long fishBatchId,
+        int throughYear,
+        int throughMonth)
+    {
+        if (projectCageId <= 0 || fishBatchId <= 0 || throughYear is < 2000 or > 2100 || throughMonth is < 1 or > 12)
+        {
+            const string message = "Büyütme zaman çizelgesi dönemi veya kafes/balık partisi bilgisi geçersiz.";
+            return ApiResponse<FishGrowthTimelineDto>.ErrorResult(message, message, StatusCodes.Status400BadRequest);
+        }
+
+        var selectedPeriod = new DateTime(throughYear, throughMonth, 1);
+        var periodEndExclusive = selectedPeriod.AddMonths(1);
+        var projectCage = await _unitOfWork.Db.ProjectCages
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted && x.Id == projectCageId)
+            .Select(x => new { x.Id, x.ProjectId, x.AssignedDate })
+            .FirstOrDefaultAsync();
+        var fishBatch = projectCage == null
+            ? null
+            : await _unitOfWork.Db.FishBatches
+                .AsNoTracking()
+                .Where(x => !x.IsDeleted && x.Id == fishBatchId && x.ProjectId == projectCage.ProjectId)
+                .Select(x => new { x.Id, x.StartDate, x.CurrentAverageGram })
+                .FirstOrDefaultAsync();
+
+        if (projectCage == null || fishBatch == null)
+        {
+            const string message = "Kafes veya balık partisi bulunamadı.";
+            return ApiResponse<FishGrowthTimelineDto>.ErrorResult(message, message, StatusCodes.Status404NotFound);
+        }
+
+        var growths = await _unitOfWork.Db.FishGrowths
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted
+                && x.ProjectCageId == projectCageId
+                && x.FishBatchId == fishBatchId
+                && x.GrowthDate < periodEndExclusive)
+            .OrderBy(x => x.GrowthYear)
+            .ThenBy(x => x.GrowthMonth)
+            .ThenBy(x => x.Id)
+            .ToListAsync();
+
+        var cageMovements = await _unitOfWork.Db.BatchMovements
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted
+                && x.FishBatchId == fishBatchId
+                && x.MovementDate < periodEndExclusive
+                && x.ProjectCageId == projectCageId
+                && x.SignedCount != 0)
+            .OrderBy(x => x.MovementDate)
+            .ThenBy(x => x.Id)
+            .Select(x => new
+            {
+                x.MovementDate,
+                x.SignedCount,
+                AverageGram = x.ToAverageGram ?? x.FromAverageGram
+            })
+            .ToListAsync();
+        var entryMovement = cageMovements.FirstOrDefault(x => x.SignedCount > 0);
+
+        var balanceSnapshot = await _unitOfWork.Db.BatchCageBalances
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted && x.ProjectCageId == projectCageId && x.FishBatchId == fishBatchId)
+            .Select(x => new { x.AverageGram, x.LiveCount })
+            .FirstOrDefaultAsync();
+
+        var naturalStartDate = entryMovement?.MovementDate.Date
+            ?? (projectCage.AssignedDate.Date >= fishBatch.StartDate.Date
+                ? projectCage.AssignedDate.Date
+                : fishBatch.StartDate.Date);
+        var naturalStartPeriod = GetEffectiveDate(naturalStartDate);
+        var earliestGrowthPeriod = growths.Count == 0
+            ? (DateTime?)null
+            : new DateTime(growths[0].GrowthYear, growths[0].GrowthMonth, 1);
+        if (earliestGrowthPeriod.HasValue && earliestGrowthPeriod.Value < naturalStartPeriod)
+        {
+            naturalStartPeriod = earliestGrowthPeriod.Value;
+        }
+
+        if (naturalStartPeriod > selectedPeriod)
+        {
+            naturalStartPeriod = selectedPeriod;
+        }
+
+        var earliestAllowedPeriod = selectedPeriod.AddMonths(-(TimelineMonthLimit - 1));
+        var wasTruncated = naturalStartPeriod < earliestAllowedPeriod;
+        var startPeriod = wasTruncated ? earliestAllowedPeriod : naturalStartPeriod;
+        var lastGrowthBeforeStart = growths
+            .LastOrDefault(x => new DateTime(x.GrowthYear, x.GrowthMonth, 1) < startPeriod);
+        growths = growths
+            .Where(x => new DateTime(x.GrowthYear, x.GrowthMonth, 1) >= startPeriod)
+            .ToList();
+
+        var firstGrowth = growths.FirstOrDefault();
+        var initialAverageGram = lastGrowthBeforeStart?.NewAverageGram
+            ?? entryMovement?.AverageGram
+            ?? firstGrowth?.PreviousAverageGram
+            ?? balanceSnapshot?.AverageGram
+            ?? fishBatch.CurrentAverageGram;
+        initialAverageGram = Math.Round(Math.Max(0m, initialAverageGram), 3, MidpointRounding.AwayFromZero);
+
+        var growthByPeriod = growths
+            .GroupBy(x => new DateTime(x.GrowthYear, x.GrowthMonth, 1))
+            .ToDictionary(x => x.Key, x => x.OrderByDescending(growth => growth.Id).First());
+        var currentPeriod = GetEffectiveDate(DateTimeProvider.Now);
+        var runningAverageGram = initialAverageGram;
+        var countDeltaByPeriod = cageMovements
+            .GroupBy(x => GetEffectiveDate(x.MovementDate))
+            .ToDictionary(x => x.Key, x => x.Sum(movement => movement.SignedCount));
+        var hasCountLedger = cageMovements.Count > 0;
+        var runningFishCount = hasCountLedger
+            ? cageMovements.Where(x => x.MovementDate < startPeriod).Sum(x => x.SignedCount)
+            : balanceSnapshot?.LiveCount ?? 0;
+        var lastSourcePeriod = lastGrowthBeforeStart == null
+            ? startPeriod
+            : new DateTime(lastGrowthBeforeStart.GrowthYear, lastGrowthBeforeStart.GrowthMonth, 1);
+        var rows = new List<FishGrowthTimelineMonthDto>();
+
+        for (var period = startPeriod; period <= selectedPeriod; period = period.AddMonths(1))
+        {
+            runningFishCount += countDeltaByPeriod.GetValueOrDefault(period);
+            if (growthByPeriod.TryGetValue(period, out var growth))
+            {
+                var expectedPreviousAverageGram = runningAverageGram;
+                var hasContinuityIssue = Math.Abs(growth.PreviousAverageGram - expectedPreviousAverageGram) > 0.001m;
+                rows.Add(new FishGrowthTimelineMonthDto
+                {
+                    Period = period,
+                    Year = period.Year,
+                    Month = (byte)period.Month,
+                    Status = "Recorded",
+                    GrowthId = growth.Id,
+                    PreviousAverageGram = growth.PreviousAverageGram,
+                    ExpectedPreviousAverageGram = expectedPreviousAverageGram,
+                    GrowthGram = growth.GrowthGram,
+                    EndAverageGram = growth.NewAverageGram,
+                    GrowthRatePercent = growth.PreviousAverageGram > 0m
+                        ? Math.Round(growth.GrowthGram / growth.PreviousAverageGram * 100m, 4, MidpointRounding.AwayFromZero)
+                        : 0m,
+                    FishCount = Math.Max(0, runningFishCount),
+                    HasContinuityIssue = hasContinuityIssue,
+                    IsSelectedPeriod = period == selectedPeriod,
+                    Description = growth.Description
+                });
+                runningAverageGram = growth.NewAverageGram;
+                lastSourcePeriod = period;
+                continue;
+            }
+
+            var status = period == startPeriod
+                ? "Baseline"
+                : period >= currentPeriod
+                    ? "Pending"
+                    : "CarriedForward";
+            rows.Add(new FishGrowthTimelineMonthDto
+            {
+                Period = period,
+                Year = period.Year,
+                Month = (byte)period.Month,
+                Status = status,
+                PreviousAverageGram = runningAverageGram,
+                ExpectedPreviousAverageGram = runningAverageGram,
+                EndAverageGram = runningAverageGram,
+                FishCount = Math.Max(0, runningFishCount),
+                CarriedFromPeriod = period == startPeriod ? null : lastSourcePeriod,
+                IsSelectedPeriod = period == selectedPeriod
+            });
+        }
+
+        var response = new FishGrowthTimelineDto
+        {
+            ProjectCageId = projectCageId,
+            FishBatchId = fishBatchId,
+            StartPeriod = startPeriod,
+            EndPeriod = selectedPeriod,
+            InitialAverageGram = initialAverageGram,
+            LatestAverageGram = runningAverageGram,
+            RecordedMonthCount = rows.Count(x => x.Status == "Recorded"),
+            CarriedForwardMonthCount = rows.Count(x => x.Status == "CarriedForward"),
+            HasContinuityIssue = rows.Any(x => x.HasContinuityIssue),
+            WasTruncated = wasTruncated,
+            Months = rows
+        };
+
+        return ApiResponse<FishGrowthTimelineDto>.SuccessResult(
+            response,
+            _localizationService.GetLocalizedString("FishGrowthService.Listed"));
     }
 
     public async Task<ApiResponse<bool>> DeleteAsync(long id, long userId)
