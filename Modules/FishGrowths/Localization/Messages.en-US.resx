@@ -45,17 +45,11 @@
   <data name="FishGrowthService.NewAverageMustExceedCurrent" xml:space="preserve">
     <value>The new weight must be greater than the current cage weight.</value>
   </data>
-  <data name="FishGrowthService.GrowthMustPrecedeBalanceMovements" xml:space="preserve">
-    <value>A sale, mortality, transfer, or another stock movement already exists for this month. Monthly growth must be entered before these movements.</value>
-  </data>
   <data name="FishGrowthService.NotFound" xml:space="preserve">
     <value>The fish growth record was not found.</value>
   </data>
   <data name="FishGrowthService.MovementNotFound" xml:space="preserve">
     <value>The operation could not be completed safely because the stock movement linked to this growth was not found.</value>
-  </data>
-  <data name="FishGrowthService.DependentMovementExists" xml:space="preserve">
-    <value>A sale, mortality, transfer, or another balance movement exists in or after this growth month. Revert the dependent movements first.</value>
   </data>
   <data name="FishGrowthService.BalanceNotFound" xml:space="preserve">
     <value>The operation could not be completed because the active cage balance for this growth was not found.</value>

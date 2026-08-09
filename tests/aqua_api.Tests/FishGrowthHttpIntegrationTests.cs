@@ -436,26 +436,28 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
             await db.SaveChangesAsync();
         }
 
-        using var blockedUpdateResponse = await client.PutAsJsonAsync(
+        using var allowedUpdateResponse = await client.PutAsJsonAsync(
             $"/api/aqua/FishGrowth/{recreateBody.Data.Id}",
             new UpdateFishGrowthDto { NewAverageGram = 740m });
-        Assert.Equal(HttpStatusCode.BadRequest, blockedUpdateResponse.StatusCode);
-        var blockedUpdateBody = await blockedUpdateResponse.Content
+        Assert.Equal(HttpStatusCode.OK, allowedUpdateResponse.StatusCode);
+        var allowedUpdateBody = await allowedUpdateResponse.Content
             .ReadFromJsonAsync<ApiResponse<FishGrowthDto>>();
-        Assert.Contains("satış, fire, transfer", blockedUpdateBody!.Message);
+        Assert.True(allowedUpdateBody?.Success, allowedUpdateBody?.ExceptionMessage);
+        Assert.Equal(740m, allowedUpdateBody!.Data!.NewAverageGram);
 
-        using var blockedDeleteResponse = await client.DeleteAsync($"/api/aqua/FishGrowth/{recreateBody.Data.Id}");
-        Assert.Equal(HttpStatusCode.BadRequest, blockedDeleteResponse.StatusCode);
-        var blockedDeleteBody = await blockedDeleteResponse.Content.ReadFromJsonAsync<ApiResponse<bool>>();
-        Assert.Contains("satış, fire, transfer", blockedDeleteBody!.Message);
+        using var allowedDeleteResponse = await client.DeleteAsync($"/api/aqua/FishGrowth/{recreateBody.Data.Id}");
+        Assert.Equal(HttpStatusCode.OK, allowedDeleteResponse.StatusCode);
+        var allowedDeleteBody = await allowedDeleteResponse.Content.ReadFromJsonAsync<ApiResponse<bool>>();
+        Assert.True(allowedDeleteBody?.Success, allowedDeleteBody?.ExceptionMessage);
+        Assert.True(allowedDeleteBody!.Data);
 
         using var verifyScope = _factory.Services.CreateScope();
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
-        Assert.Equal(1, await verifyDb.FishGrowths.CountAsync(x => x.ProjectCageId == projectCageId && x.FishBatchId == fishBatchId));
+        Assert.Equal(0, await verifyDb.FishGrowths.CountAsync(x => x.ProjectCageId == projectCageId && x.FishBatchId == fishBatchId));
         var finalBalance = await verifyDb.BatchCageBalances.SingleAsync(x =>
             x.ProjectCageId == projectCageId && x.FishBatchId == fishBatchId);
-        Assert.Equal(730m, finalBalance.AverageGram);
-        Assert.Equal(730_000m, finalBalance.BiomassGram);
+        Assert.Equal(720m, finalBalance.AverageGram);
+        Assert.Equal(720_000m, finalBalance.BiomassGram);
     }
 
     [Fact]
@@ -824,24 +826,27 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
             GrowthDate = new DateTime(2026, 1, 25),
             NewAverageGram = 800m
         });
-        Assert.Equal(HttpStatusCode.BadRequest, lateJanuaryGrowthResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, lateJanuaryGrowthResponse.StatusCode);
         var lateJanuaryGrowthBody = await lateJanuaryGrowthResponse.Content.ReadFromJsonAsync<ApiResponse<FishGrowthDto>>();
-        Assert.Contains("büyütme", lateJanuaryGrowthBody!.Message, StringComparison.OrdinalIgnoreCase);
-        Assert.Contains("satış", lateJanuaryGrowthBody.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.True(lateJanuaryGrowthBody?.Success, lateJanuaryGrowthBody?.ExceptionMessage);
+        Assert.Equal(800m, lateJanuaryGrowthBody!.Data!.NewAverageGram);
+        Assert.Equal(900, lateJanuaryGrowthBody.Data.FishCount);
 
-        using var growthResponse = await client.PostAsJsonAsync("/api/aqua/FishGrowth", new CreateFishGrowthDto
+        // February growth is dated on the 1st, after the January shipment movement date,
+        // so later February shipments snapshot this growth weight.
+        using var februaryGrowthResponse = await client.PostAsJsonAsync("/api/aqua/FishGrowth", new CreateFishGrowthDto
         {
             ProjectId = projectId,
             ProjectCageId = projectCageId,
             FishBatchId = fishBatchId,
             GrowthDate = new DateTime(2026, 2, 20),
-            NewAverageGram = 800m
+            NewAverageGram = 850m
         });
-        Assert.Equal(HttpStatusCode.OK, growthResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, februaryGrowthResponse.StatusCode);
 
         var februaryShipment = await PostShipment(new DateTime(2026, 2, 5));
-        Assert.Equal(800m, februaryShipment.AverageGram);
-        Assert.Equal(80_000m, februaryShipment.BiomassGram);
+        Assert.Equal(850m, februaryShipment.AverageGram);
+        Assert.Equal(85_000m, februaryShipment.BiomassGram);
 
         async Task<ShipmentLineDto> PostShipment(DateTime shipmentDate)
         {

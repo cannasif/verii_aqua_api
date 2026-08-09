@@ -109,17 +109,6 @@ public class FishGrowthService : IFishGrowthService
                 dto.FishBatchId,
                 effectiveDate.AddMonths(1));
 
-            var hasMovementAfterEffectiveDate = await HasDependentBalanceMovementAsync(
-                dto.FishBatchId,
-                dto.ProjectCageId,
-                effectiveDate);
-
-            if (hasMovementAfterEffectiveDate)
-            {
-                throw new InvalidOperationException(
-                    _localizationService.GetLocalizedString("FishGrowthService.GrowthMustPrecedeBalanceMovements"));
-            }
-
             var previousAverageGram = balance.AverageGram;
             var (growthGram, newAverageGram) = ResolveGrowthValues(dto, previousAverageGram);
             var previousBiomassGram = balance.BiomassGram;
@@ -222,7 +211,6 @@ public class FishGrowthService : IFishGrowthService
             await EnsureShipmentLedgersCompleteAsync(
                 growth.FishBatchId,
                 GetEffectiveDate(growth.GrowthDate).AddMonths(1));
-            await EnsureNoDependentBalanceMovementAsync(growth, movement.Id);
 
             var balance = await GetGrowthBalanceAsync(growth);
             EnsureBalanceMatchesGrowth(balance, growth, movement);
@@ -535,7 +523,6 @@ public class FishGrowthService : IFishGrowthService
                     _localizationService.GetLocalizedString("FishGrowthService.NotFound"));
 
             var movement = await GetGrowthMovementAsync(growth.Id);
-            await EnsureNoDependentBalanceMovementAsync(growth, movement.Id);
 
             var balance = await GetGrowthBalanceAsync(growth);
             EnsureBalanceMatchesGrowth(balance, growth, movement);
@@ -602,39 +589,6 @@ public class FishGrowthService : IFishGrowthService
                 && x.FishBatchId == growth.FishBatchId)
             ?? throw new InvalidOperationException(
                 _localizationService.GetLocalizedString("FishGrowthService.BalanceNotFound"));
-    }
-
-    private async Task EnsureNoDependentBalanceMovementAsync(FishGrowth growth, long growthMovementId)
-    {
-        var hasDependentMovement = await HasDependentBalanceMovementAsync(
-            growth.FishBatchId,
-            growth.ProjectCageId,
-            GetEffectiveDate(growth.GrowthDate),
-            growthMovementId);
-
-        if (hasDependentMovement)
-        {
-            throw new InvalidOperationException(
-                _localizationService.GetLocalizedString("FishGrowthService.DependentMovementExists"));
-        }
-    }
-
-    private Task<bool> HasDependentBalanceMovementAsync(
-        long fishBatchId,
-        long projectCageId,
-        DateTime effectiveDate,
-        long? excludedMovementId = null)
-    {
-        return _unitOfWork.Db.BatchMovements.AnyAsync(x =>
-            (!excludedMovementId.HasValue || x.Id != excludedMovementId.Value)
-            && x.FishBatchId == fishBatchId
-            && (x.ProjectCageId == projectCageId
-                || x.FromProjectCageId == projectCageId
-                || x.ToProjectCageId == projectCageId)
-            && x.MovementDate >= effectiveDate
-            && x.MovementType != BatchMovementType.OpeningImport
-            && x.MovementType != BatchMovementType.Stocking
-            && (x.SignedCount != 0 || x.SignedBiomassGram != 0));
     }
 
     private async Task EnsureShipmentLedgersCompleteAsync(

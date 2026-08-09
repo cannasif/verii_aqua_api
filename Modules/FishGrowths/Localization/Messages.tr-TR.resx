@@ -45,17 +45,11 @@
   <data name="FishGrowthService.NewAverageMustExceedCurrent" xml:space="preserve">
     <value>Yeni gramaj, kafesteki mevcut gramajdan büyük olmalıdır.</value>
   </data>
-  <data name="FishGrowthService.GrowthMustPrecedeBalanceMovements" xml:space="preserve">
-    <value>Bu ay için satış, fire, transfer veya başka bir stok hareketi zaten bulunmaktadır. Aylık büyütme bu hareketlerden önce girilmelidir.</value>
-  </data>
   <data name="FishGrowthService.NotFound" xml:space="preserve">
     <value>Balık büyütme kaydı bulunamadı.</value>
   </data>
   <data name="FishGrowthService.MovementNotFound" xml:space="preserve">
     <value>Büyütmeye bağlı stok hareketi bulunamadığı için işlem güvenli şekilde tamamlanamadı.</value>
-  </data>
-  <data name="FishGrowthService.DependentMovementExists" xml:space="preserve">
-    <value>Bu büyütmenin ait olduğu ayda veya sonrasında satış, fire, transfer ya da başka bir bakiye hareketi bulunmaktadır. Önce bağlı hareketleri geri almalısınız.</value>
   </data>
   <data name="FishGrowthService.BalanceNotFound" xml:space="preserve">
     <value>Büyütmeye ait aktif kafes bakiyesi bulunamadığı için işlem tamamlanamadı.</value>
