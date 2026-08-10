@@ -375,9 +375,22 @@ public class OpeningImportService : IOpeningImportService
                     .Where(x => x.ProjectId.HasValue && projectIds.Contains(x.ProjectId.Value))
                     .Select(x => x.Id)
                     .ToListAsync();
+                var goodsReceiptLineIds = await _unitOfWork.Db.GoodsReceiptLines
+                    .IgnoreQueryFilters()
+                    .Where(x => goodsReceiptIds.Contains(x.GoodsReceiptId) ||
+                                (x.FishBatchId.HasValue && fishBatchIds.Contains(x.FishBatchId.Value)))
+                    .Select(x => x.Id)
+                    .ToListAsync();
                 var feedingIds = await _unitOfWork.Db.Feedings.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToListAsync();
                 var mortalityIds = await _unitOfWork.Db.Mortalities.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToListAsync();
                 var shipmentIds = await _unitOfWork.Db.Shipments.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToListAsync();
+                var shipmentLineIds = await _unitOfWork.Db.ShipmentLines
+                    .IgnoreQueryFilters()
+                    .Where(x => shipmentIds.Contains(x.ShipmentId) ||
+                                projectCageIds.Contains(x.FromProjectCageId) ||
+                                fishBatchIds.Contains(x.FishBatchId))
+                    .Select(x => x.Id)
+                    .ToListAsync();
                 var transferIds = await _unitOfWork.Db.Transfers.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToListAsync();
                 var warehouseTransferIds = await _unitOfWork.Db.WarehouseTransfers.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToListAsync();
                 var cageWarehouseTransferIds = await _unitOfWork.Db.CageWarehouseTransfers.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToListAsync();
@@ -402,6 +415,11 @@ public class OpeningImportService : IOpeningImportService
                         (x.FishBatchId.HasValue && fishBatchIds.Contains(x.FishBatchId.Value)))
                     .Select(x => x.Id)
                     .ToListAsync();
+                var projectMergeIds = await _unitOfWork.Db.ProjectMerges
+                    .IgnoreQueryFilters()
+                    .Where(x => projectIds.Contains(x.TargetProjectId))
+                    .Select(x => x.Id)
+                    .ToListAsync();
 
                 var batchMovementIds = await _unitOfWork.Db.BatchMovements
                     .IgnoreQueryFilters()
@@ -420,16 +438,35 @@ public class OpeningImportService : IOpeningImportService
                         (x.ProjectCageId.HasValue && projectCageIds.Contains(x.ProjectCageId.Value)) ||
                         (x.FishBatchId.HasValue && fishBatchIds.Contains(x.FishBatchId.Value)) ||
                         (x.GoodsReceiptId.HasValue && goodsReceiptIds.Contains(x.GoodsReceiptId.Value)) ||
+                        (x.GoodsReceiptLineId.HasValue && goodsReceiptLineIds.Contains(x.GoodsReceiptLineId.Value)) ||
                         (x.ShipmentId.HasValue && shipmentIds.Contains(x.ShipmentId.Value)) ||
+                        (x.ShipmentLineId.HasValue && shipmentLineIds.Contains(x.ShipmentLineId.Value)) ||
                         (x.BatchMovementId.HasValue && batchMovementIds.Contains(x.BatchMovementId.Value))));
 
-                if (deletedErpMirrorRows > 0)
+                var budgetProjectsToDetach = await _unitOfWork.Db.BudgetPlanProjects
+                    .IgnoreQueryFilters()
+                    .Where(x => x.SourceProjectId.HasValue && projectIds.Contains(x.SourceProjectId.Value))
+                    .ToListAsync();
+                foreach (var budgetProject in budgetProjectsToDetach)
+                {
+                    budgetProject.SourceProjectId = null;
+                }
+
+                var budgetFishBatchesToDetach = await _unitOfWork.Db.BudgetPlanFishBatches
+                    .IgnoreQueryFilters()
+                    .Where(x => x.SourceFishBatchId.HasValue && fishBatchIds.Contains(x.SourceFishBatchId.Value))
+                    .ToListAsync();
+                foreach (var budgetFishBatch in budgetFishBatchesToDetach)
+                {
+                    budgetFishBatch.SourceFishBatchId = null;
+                }
+
+                if (deletedErpMirrorRows > 0 || budgetProjectsToDetach.Count > 0 || budgetFishBatchesToDetach.Count > 0)
                 {
                     result.DeletedOperationalRecords += deletedErpMirrorRows;
 
-                    // SQL Server cannot delete a ledger movement while an ERP mirror FK still
-                    // references it. Persist dependents first; the surrounding transaction still
-                    // rolls this phase back if any later reset step fails.
+                    // Persist hard-delete blockers first. Budget snapshots keep their copied data
+                    // with nullable source links, and the transaction rolls back every phase together.
                     await _unitOfWork.SaveChangesAsync();
                 }
 
@@ -451,6 +488,7 @@ public class OpeningImportService : IOpeningImportService
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.StockConvertLines.IgnoreQueryFilters().Where(x => stockConvertIds.Contains(x.StockConvertId) || projectCageIds.Contains(x.FromProjectCageId) || projectCageIds.Contains(x.ToProjectCageId) || fishBatchIds.Contains(x.FromFishBatchId) || fishBatchIds.Contains(x.ToFishBatchId)));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.NetOperationLines.IgnoreQueryFilters().Where(x => netOperationIds.Contains(x.NetOperationId) || projectCageIds.Contains(x.ProjectCageId) || (x.FishBatchId.HasValue && fishBatchIds.Contains(x.FishBatchId.Value))));
 
+                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.FishGrowths.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId) || projectCageIds.Contains(x.ProjectCageId) || fishBatchIds.Contains(x.FishBatchId)));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.BatchMovements.IgnoreQueryFilters().Where(x =>
                     batchMovementIds.Contains(x.Id)));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.BatchCageBalances.IgnoreQueryFilters().Where(x => projectCageIds.Contains(x.ProjectCageId) || fishBatchIds.Contains(x.FishBatchId)));
@@ -463,10 +501,17 @@ public class OpeningImportService : IOpeningImportService
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.WelfareAssessments.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId) || (x.ProjectCageId.HasValue && projectCageIds.Contains(x.ProjectCageId.Value)) || (x.FishBatchId.HasValue && fishBatchIds.Contains(x.FishBatchId.Value))));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.ComplianceAudits.IgnoreQueryFilters().Where(x => complianceAuditIds.Contains(x.Id)));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.DailyWeathers.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId)));
+                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.SeaWaterTemperatures.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId) || projectCageIds.Contains(x.ProjectCageId)));
+                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.CurrentDirectionMatches.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId) || projectCageIds.Contains(x.ProjectCageId)));
+                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.WindDirectionMatches.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId) || projectCageIds.Contains(x.ProjectCageId)));
+                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.NetInventoryMovements.IgnoreQueryFilters().Where(x =>
+                    (x.ProjectId.HasValue && projectIds.Contains(x.ProjectId.Value)) ||
+                    (x.SourceProjectCageId.HasValue && projectCageIds.Contains(x.SourceProjectCageId.Value)) ||
+                    (x.TargetProjectCageId.HasValue && projectCageIds.Contains(x.TargetProjectCageId.Value))));
 
-                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.ProjectMergeCages.IgnoreQueryFilters().Where(x => projectIds.Contains(x.SourceProjectId) || projectCageIds.Contains(x.ProjectCageId) || cageIds.Contains(x.CageId)));
-                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.ProjectMergeSources.IgnoreQueryFilters().Where(x => projectIds.Contains(x.SourceProjectId)));
-                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.ProjectMerges.IgnoreQueryFilters().Where(x => projectIds.Contains(x.TargetProjectId)));
+                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.ProjectMergeCages.IgnoreQueryFilters().Where(x => projectMergeIds.Contains(x.ProjectMergeId) || projectIds.Contains(x.SourceProjectId) || projectCageIds.Contains(x.ProjectCageId) || cageIds.Contains(x.CageId)));
+                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.ProjectMergeSources.IgnoreQueryFilters().Where(x => projectMergeIds.Contains(x.ProjectMergeId) || projectIds.Contains(x.SourceProjectId)));
+                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.ProjectMerges.IgnoreQueryFilters().Where(x => projectMergeIds.Contains(x.Id)));
 
                 result.DeletedGoodsReceipts = await RemoveRangeAsync(_unitOfWork.Db.GoodsReceipts.IgnoreQueryFilters().Where(x => goodsReceiptIds.Contains(x.Id)));
                 result.DeletedFeedings = await RemoveRangeAsync(_unitOfWork.Db.Feedings.IgnoreQueryFilters().Where(x => feedingIds.Contains(x.Id)));

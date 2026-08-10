@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using aqua_api.Modules.Aqua.Application.Services;
 using aqua_api.Modules.Aqua.Domain.Enums;
+using aqua_api.Modules.FishGrowths.Domain.Entities;
 using aqua_api.Modules.Integrations.Domain.Entities;
 using aqua_api.Shared.Common.Dtos;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
@@ -709,6 +710,63 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
         Assert.False(await verifyDb.Projects.IgnoreQueryFilters().AnyAsync(x => x.ProjectCode == "PRJ-RESET-ERP"));
         Assert.False(await verifyDb.ErpReceiptShipmentMovements.IgnoreQueryFilters().AnyAsync(x => x.BatchMovementId == batchMovementId));
+    }
+
+    [Fact]
+    public async Task OpeningImport_ResetExistingDataClearsFishGrowthBeforeDeletingBatch()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(
+            client,
+            "/api/aqua/OpeningImport/preview",
+            BuildOpeningGoodsReceiptRequest("PRJ-RESET-GROWTH", "OPEN-RESET-GROWTH", string.Empty, secondReceiptDate: string.Empty));
+
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+
+        var commit = await PostAsync<OpeningImportCommitResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data!.JobId}/commit", new { });
+        Assert.True(commit.Success, $"{commit.Message} | {commit.ExceptionMessage}");
+
+        long fishGrowthId;
+        using (var setupScope = _factory.Services.CreateScope())
+        {
+            var setupDb = setupScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var projectId = await setupDb.Projects.Where(x => x.ProjectCode == "PRJ-RESET-GROWTH").Select(x => x.Id).SingleAsync();
+            var fishBatchId = await setupDb.FishBatches.Where(x => x.ProjectId == projectId).Select(x => x.Id).SingleAsync();
+            var balance = await setupDb.BatchCageBalances
+                .Where(x => x.FishBatchId == fishBatchId)
+                .OrderBy(x => x.ProjectCageId)
+                .FirstAsync();
+
+            var fishGrowth = new FishGrowth
+            {
+                ProjectId = projectId,
+                ProjectCageId = balance.ProjectCageId,
+                FishBatchId = fishBatchId,
+                GrowthDate = new DateTime(2026, 5, 1),
+                GrowthYear = 2026,
+                GrowthMonth = 5,
+                FishCount = balance.LiveCount,
+                PreviousAverageGram = balance.AverageGram,
+                GrowthGram = 1m,
+                NewAverageGram = balance.AverageGram + 1m,
+                PreviousBiomassGram = balance.BiomassGram,
+                NewBiomassGram = balance.LiveCount * (balance.AverageGram + 1m),
+            };
+            setupDb.FishGrowths.Add(fishGrowth);
+            await setupDb.SaveChangesAsync();
+            fishGrowthId = fishGrowth.Id;
+        }
+
+        var reset = await PostAsync<OpeningImportResetExistingDataResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data.JobId}/reset-existing-data", new { });
+        Assert.True(reset.Success, $"{reset.Message} | {reset.ExceptionMessage}");
+        Assert.Equal(1, reset.Data!.DeletedProjects);
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        Assert.False(await verifyDb.FishGrowths.IgnoreQueryFilters().AnyAsync(x => x.Id == fishGrowthId));
+        Assert.False(await verifyDb.Projects.IgnoreQueryFilters().AnyAsync(x => x.ProjectCode == "PRJ-RESET-GROWTH"));
     }
 
     [Fact]
