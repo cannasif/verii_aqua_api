@@ -196,20 +196,22 @@ namespace aqua_api.Modules.NetOperations.Application.Services
 
                 await _unitOfWork.NetOperationLines.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
-                await _unitOfWork.CommitTransactionAsync();
 
                 if (netOperation.Status == DocumentStatus.Draft)
                 {
                     var userId = entity.CreatedBy ?? netOperation.CreatedBy ?? 1L;
-                    var postResult = await _netOperationService.Post(netOperation.Id, userId);
+                    var postResult = await _netOperationService.PostWithinCurrentTransaction(netOperation.Id, userId);
                     if (!postResult.Success)
                     {
+                        await _unitOfWork.RollbackTransactionAsync();
                         return ApiResponse<NetOperationLineDto>.ErrorResult(
                             postResult.Message,
                             postResult.ExceptionMessage,
                             postResult.StatusCode);
                     }
                 }
+
+                await _unitOfWork.CommitTransactionAsync();
 
                 var result = _mapper.Map<NetOperationLineDto>(entity);
                 return ApiResponse<NetOperationLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("NetOperationLineService.OperationSuccessful"));

@@ -9,18 +9,21 @@ namespace aqua_api.Modules.Transfers.Application.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IBalanceLedgerManager _balanceLedgerManager;
+        private readonly IWarehouseTransferService _transferService;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
 
         public WarehouseTransferLineService(
             IUnitOfWork unitOfWork,
             IBalanceLedgerManager balanceLedgerManager,
+            IWarehouseTransferService transferService,
             IMapper mapper,
             ILocalizationService localizationService,
             IErpService erpService)
         {
             _unitOfWork = unitOfWork;
             _balanceLedgerManager = balanceLedgerManager;
+            _transferService = transferService;
             _mapper = mapper;
             _localizationService = localizationService;
         }
@@ -121,7 +124,21 @@ namespace aqua_api.Modules.Transfers.Application.Services
             }
         }
 
-        public async Task<ApiResponse<WarehouseTransferLineDto>> CreateWithAutoHeaderAsync(CreateWarehouseTransferLineWithAutoHeaderDto dto)
+        public Task<ApiResponse<WarehouseTransferLineDto>> CreateWithAutoHeaderAsync(CreateWarehouseTransferLineWithAutoHeaderDto dto)
+        {
+            return CreateWithAutoHeaderInternalAsync(dto, postUserId: null);
+        }
+
+        public Task<ApiResponse<WarehouseTransferLineDto>> CreateWithAutoHeaderAndPostAsync(
+            CreateWarehouseTransferLineWithAutoHeaderDto dto,
+            long userId)
+        {
+            return CreateWithAutoHeaderInternalAsync(dto, userId);
+        }
+
+        private async Task<ApiResponse<WarehouseTransferLineDto>> CreateWithAutoHeaderInternalAsync(
+            CreateWarehouseTransferLineWithAutoHeaderDto dto,
+            long? postUserId)
         {
             try
             {
@@ -172,6 +189,20 @@ namespace aqua_api.Modules.Transfers.Application.Services
 
                 await _unitOfWork.Repository<WarehouseTransferLine>().AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
+
+                if (postUserId.HasValue)
+                {
+                    var postResult = await _transferService.PostWithinCurrentTransaction(header.Id, postUserId.Value);
+                    if (!postResult.Success)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return ApiResponse<WarehouseTransferLineDto>.ErrorResult(
+                            postResult.Message,
+                            postResult.ExceptionMessage,
+                            postResult.StatusCode);
+                    }
+                }
+
                 await _unitOfWork.CommitTransactionAsync();
 
                 return ApiResponse<WarehouseTransferLineDto>.SuccessResult(

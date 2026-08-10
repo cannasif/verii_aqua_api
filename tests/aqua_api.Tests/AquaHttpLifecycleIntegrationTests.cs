@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using aqua_api.Modules.Aqua.Application.Services;
 using aqua_api.Modules.Aqua.Domain.Enums;
+using aqua_api.Modules.FishGrowths.Application.Dtos;
 using aqua_api.Modules.FishGrowths.Domain.Entities;
 using aqua_api.Modules.Integrations.Domain.Entities;
 using aqua_api.Shared.Common.Dtos;
@@ -767,6 +768,182 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
         Assert.False(await verifyDb.FishGrowths.IgnoreQueryFilters().AnyAsync(x => x.Id == fishGrowthId));
         Assert.False(await verifyDb.Projects.IgnoreQueryFilters().AnyAsync(x => x.ProjectCode == "PRJ-RESET-GROWTH"));
+    }
+
+    [Fact]
+    public async Task OpeningImport_ResetExistingDataClearsPostedLifecycleAndAllowsCleanReimport()
+    {
+        const string projectCode = "PRJ-RESET-LIFECYCLE";
+        const string receiptNo = "OPEN-RESET-LIFECYCLE";
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+        var request = BuildOpeningGoodsReceiptRequest(projectCode, receiptNo, receiptNo);
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(client, "/api/aqua/OpeningImport/preview", request);
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+        var firstJobId = preview.Data!.JobId;
+
+        var commit = await PostAsync<OpeningImportCommitResultDto>(client, $"/api/aqua/OpeningImport/{firstJobId}/commit", new { });
+        Assert.True(commit.Success, $"{commit.Message} | {commit.ExceptionMessage}");
+        Assert.Equal(1, commit.Data!.CreatedProjects);
+        Assert.Equal(2, commit.Data.CreatedCages);
+        Assert.Equal(1, commit.Data.CreatedFishBatches);
+        Assert.Equal(2, commit.Data.AppliedCageRows);
+
+        long projectId;
+        long fishBatchId;
+        long firstProjectCageId;
+        long secondProjectCageId;
+        long feedStockId;
+        long warehouseId;
+        List<long> firstProjectCageIds;
+        using (var setupScope = _factory.Services.CreateScope())
+        {
+            var db = setupScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            projectId = await db.Projects.Where(x => x.ProjectCode == projectCode).Select(x => x.Id).SingleAsync();
+            fishBatchId = await db.FishBatches.Where(x => x.ProjectId == projectId).Select(x => x.Id).SingleAsync();
+            firstProjectCageIds = await db.ProjectCages
+                .Where(x => x.ProjectId == projectId)
+                .OrderBy(x => x.Id)
+                .Select(x => x.Id)
+                .ToListAsync();
+            Assert.Equal(2, firstProjectCageIds.Count);
+            firstProjectCageId = firstProjectCageIds[0];
+            secondProjectCageId = firstProjectCageIds[1];
+            feedStockId = await db.Stocks.Where(x => x.ErpStockCode == "YEM-STD").Select(x => x.Id).SingleAsync();
+            warehouseId = await db.Warehouses.Select(x => x.Id).SingleAsync();
+        }
+
+        var growth = await PostAsync<FishGrowthDto>(client, "/api/aqua/FishGrowth", new CreateFishGrowthDto
+        {
+            ProjectId = projectId,
+            ProjectCageId = firstProjectCageId,
+            FishBatchId = fishBatchId,
+            GrowthDate = new DateTime(2026, 5, 1),
+            NewAverageGram = 10m,
+        });
+        Assert.True(growth.Success, $"{growth.Message} | {growth.ExceptionMessage}");
+
+        var feeding = await PostAsync<FeedingLineDto>(client, "/api/aqua/FeedingLine/auto-header", new CreateFeedingLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            ProjectCageId = firstProjectCageId,
+            FishBatchId = fishBatchId,
+            FeedingDate = new DateTime(2026, 5, 2),
+            FeedingSlot = FeedingSlot.Morning,
+            SourceType = FeedingSourceType.Manual,
+            StockId = feedStockId,
+            QtyUnit = 2m,
+            GramPerUnit = 1000m,
+            TotalGram = 2000m,
+        });
+        Assert.True(feeding.Success, $"{feeding.Message} | {feeding.ExceptionMessage}");
+
+        var mortality = await PostAsync<MortalityLineDto>(client, "/api/aqua/MortalityLine/auto-header", new CreateMortalityLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            ProjectCageId = secondProjectCageId,
+            FishBatchId = fishBatchId,
+            MortalityDate = new DateTime(2026, 5, 3),
+            DeadCount = 10,
+        });
+        Assert.True(mortality.Success, $"{mortality.Message} | {mortality.ExceptionMessage}");
+
+        var shipment = await PostAsync<ShipmentLineDto>(client, "/api/aqua/ShipmentLine/auto-header-and-post", new CreateShipmentLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            ShipmentDate = new DateTime(2026, 5, 4),
+            TargetWarehouseId = warehouseId,
+            FishBatchId = fishBatchId,
+            FromProjectCageId = firstProjectCageId,
+            FishCount = 100,
+            AverageGram = 1m,
+            BiomassGram = 100m,
+            CurrencyCode = "TRY",
+            ExchangeRate = 1m,
+            UnitPrice = 50m,
+        });
+        Assert.True(shipment.Success, $"{shipment.Message} | {shipment.ExceptionMessage}");
+
+        var report = await PostAsync<DevirFcrReportDto>(client, "/api/kpi-report/devir-fcr", new DevirFcrReportRequestDto
+        {
+            ProjectIds = [projectId],
+            FromDate = new DateTime(2026, 4, 1),
+            ToDate = new DateTime(2026, 5, 31),
+        });
+        Assert.True(report.Success, $"{report.Message} | {report.ExceptionMessage}");
+        var reportRow = Assert.Single(report.Data!.Rows);
+        Assert.Equal(1100, reportRow.OpeningFishCount);
+        Assert.Equal(100, reportRow.ShipmentFishCount);
+        Assert.Equal(10, reportRow.MortalityFishCount);
+        Assert.Equal(990, reportRow.EndingFishCount);
+        Assert.Equal(0, reportRow.OpeningFishCount - reportRow.ShipmentFishCount - reportRow.MortalityFishCount - reportRow.EndingFishCount);
+
+        var reset = await PostAsync<OpeningImportResetExistingDataResultDto>(client, $"/api/aqua/OpeningImport/{firstJobId}/reset-existing-data", new { });
+        Assert.True(reset.Success, $"{reset.Message} | {reset.ExceptionMessage}");
+        Assert.Equal(1, reset.Data!.DeletedProjects);
+        Assert.Equal(2, reset.Data.DeletedCages);
+        Assert.Equal(1, reset.Data.DeletedFishBatches);
+        Assert.Equal(1, reset.Data.DeletedFeedings);
+        Assert.Equal(1, reset.Data.DeletedMortalities);
+        Assert.Equal(1, reset.Data.DeletedShipments);
+
+        using (var resetScope = _factory.Services.CreateScope())
+        {
+            var db = resetScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            Assert.False(await db.Projects.IgnoreQueryFilters().AnyAsync(x => x.Id == projectId));
+            Assert.False(await db.ProjectCages.IgnoreQueryFilters().AnyAsync(x => firstProjectCageIds.Contains(x.Id)));
+            Assert.False(await db.FishBatches.IgnoreQueryFilters().AnyAsync(x => x.Id == fishBatchId));
+            Assert.False(await db.FishGrowths.IgnoreQueryFilters().AnyAsync(x => x.FishBatchId == fishBatchId));
+            Assert.False(await db.BatchMovements.IgnoreQueryFilters().AnyAsync(x => x.FishBatchId == fishBatchId));
+            Assert.False(await db.BatchCageBalances.IgnoreQueryFilters().AnyAsync(x => x.FishBatchId == fishBatchId));
+            Assert.False(await db.BatchWarehouseBalances.IgnoreQueryFilters().AnyAsync(x => x.FishBatchId == fishBatchId));
+            Assert.False(await db.FeedingLines.IgnoreQueryFilters().AnyAsync(x => x.Id == feeding.Data!.Id));
+            Assert.False(await db.MortalityLines.IgnoreQueryFilters().AnyAsync(x => x.FishBatchId == fishBatchId));
+            Assert.False(await db.ShipmentLines.IgnoreQueryFilters().AnyAsync(x => x.FishBatchId == fishBatchId));
+        }
+
+        var secondPreview = await PostAsync<OpeningImportPreviewResponseDto>(client, "/api/aqua/OpeningImport/preview", request);
+        Assert.True(secondPreview.Success, $"{secondPreview.Message} | {secondPreview.ExceptionMessage}");
+        var secondJobId = secondPreview.Data!.JobId;
+        var secondCommit = await PostAsync<OpeningImportCommitResultDto>(client, $"/api/aqua/OpeningImport/{secondJobId}/commit", new { });
+        Assert.True(secondCommit.Success, $"{secondCommit.Message} | {secondCommit.ExceptionMessage}");
+
+        long freshProjectId;
+        using (var freshScope = _factory.Services.CreateScope())
+        {
+            var db = freshScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            freshProjectId = await db.Projects.Where(x => x.ProjectCode == projectCode).Select(x => x.Id).SingleAsync();
+            var freshBatchId = await db.FishBatches.Where(x => x.ProjectId == freshProjectId).Select(x => x.Id).SingleAsync();
+            var freshBalances = await db.BatchCageBalances
+                .Where(x => x.FishBatchId == freshBatchId)
+                .ToListAsync();
+            Assert.NotEqual(projectId, freshProjectId);
+            Assert.NotEqual(fishBatchId, freshBatchId);
+            Assert.Equal(1100, freshBalances.Sum(x => x.LiveCount));
+            Assert.Equal(5500m, freshBalances.Sum(x => x.BiomassGram));
+            Assert.False(await db.FishGrowths.AnyAsync(x => x.FishBatchId == freshBatchId));
+            Assert.False(await db.Feedings.AnyAsync(x => x.ProjectId == freshProjectId));
+            Assert.False(await db.MortalityLines.AnyAsync(x => x.FishBatchId == freshBatchId));
+            Assert.False(await db.ShipmentLines.AnyAsync(x => x.FishBatchId == freshBatchId));
+        }
+
+        var freshReport = await PostAsync<DevirFcrReportDto>(client, "/api/kpi-report/devir-fcr", new DevirFcrReportRequestDto
+        {
+            ProjectIds = [freshProjectId],
+            FromDate = new DateTime(2026, 4, 1),
+            ToDate = new DateTime(2026, 5, 31),
+        });
+        Assert.True(freshReport.Success, $"{freshReport.Message} | {freshReport.ExceptionMessage}");
+        var freshRow = Assert.Single(freshReport.Data!.Rows);
+        Assert.Equal(1100, freshRow.OpeningFishCount);
+        Assert.Equal(0, freshRow.ShipmentFishCount);
+        Assert.Equal(0, freshRow.MortalityFishCount);
+        Assert.Equal(1100, freshRow.EndingFishCount);
+
+        var finalReset = await PostAsync<OpeningImportResetExistingDataResultDto>(client, $"/api/aqua/OpeningImport/{secondJobId}/reset-existing-data", new { });
+        Assert.True(finalReset.Success, $"{finalReset.Message} | {finalReset.ExceptionMessage}");
+        Assert.Equal(1, finalReset.Data!.DeletedProjects);
     }
 
     [Fact]

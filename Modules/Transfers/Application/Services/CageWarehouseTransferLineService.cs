@@ -9,17 +9,20 @@ namespace aqua_api.Modules.Transfers.Application.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IBalanceLedgerManager _balanceLedgerManager;
+        private readonly ICageWarehouseTransferService _transferService;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
 
         public CageWarehouseTransferLineService(
             IUnitOfWork unitOfWork,
             IBalanceLedgerManager balanceLedgerManager,
+            ICageWarehouseTransferService transferService,
             IMapper mapper,
             ILocalizationService localizationService)
         {
             _unitOfWork = unitOfWork;
             _balanceLedgerManager = balanceLedgerManager;
+            _transferService = transferService;
             _mapper = mapper;
             _localizationService = localizationService;
         }
@@ -120,7 +123,21 @@ namespace aqua_api.Modules.Transfers.Application.Services
             }
         }
 
-        public async Task<ApiResponse<CageWarehouseTransferLineDto>> CreateWithAutoHeaderAsync(CreateCageWarehouseTransferLineWithAutoHeaderDto dto)
+        public Task<ApiResponse<CageWarehouseTransferLineDto>> CreateWithAutoHeaderAsync(CreateCageWarehouseTransferLineWithAutoHeaderDto dto)
+        {
+            return CreateWithAutoHeaderInternalAsync(dto, postUserId: null);
+        }
+
+        public Task<ApiResponse<CageWarehouseTransferLineDto>> CreateWithAutoHeaderAndPostAsync(
+            CreateCageWarehouseTransferLineWithAutoHeaderDto dto,
+            long userId)
+        {
+            return CreateWithAutoHeaderInternalAsync(dto, userId);
+        }
+
+        private async Task<ApiResponse<CageWarehouseTransferLineDto>> CreateWithAutoHeaderInternalAsync(
+            CreateCageWarehouseTransferLineWithAutoHeaderDto dto,
+            long? postUserId)
         {
             try
             {
@@ -171,6 +188,20 @@ namespace aqua_api.Modules.Transfers.Application.Services
 
                 await _unitOfWork.Repository<CageWarehouseTransferLine>().AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
+
+                if (postUserId.HasValue)
+                {
+                    var postResult = await _transferService.PostWithinCurrentTransaction(header.Id, postUserId.Value);
+                    if (!postResult.Success)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return ApiResponse<CageWarehouseTransferLineDto>.ErrorResult(
+                            postResult.Message,
+                            postResult.ExceptionMessage,
+                            postResult.StatusCode);
+                    }
+                }
+
                 await _unitOfWork.CommitTransactionAsync();
 
                 return ApiResponse<CageWarehouseTransferLineDto>.SuccessResult(

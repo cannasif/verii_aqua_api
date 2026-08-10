@@ -266,21 +266,23 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 }
 
                 await _unitOfWork.SaveChangesAsync();
-                await _unitOfWork.CommitTransactionAsync();
 
                 if (!mortality.IsERPIntegrated &&
                     (mortality.Status == DocumentStatus.Draft || mortality.Status == DocumentStatus.Posted))
                 {
                     var userId = entity.CreatedBy ?? mortality.CreatedBy ?? 1L;
-                    var postResult = await _mortalityService.PostAquaAndQueueErpAsync(mortality.Id, userId);
+                    var postResult = await _mortalityService.PostAquaAndQueueErpWithinCurrentTransactionAsync(mortality.Id, userId);
                     if (!postResult.Success)
                     {
+                        await _unitOfWork.RollbackTransactionAsync();
                         return ApiResponse<MortalityLineDto>.ErrorResult(
                             postResult.Message,
                             postResult.ExceptionMessage,
                             postResult.StatusCode);
                     }
                 }
+
+                await _unitOfWork.CommitTransactionAsync();
 
                 var result = _mapper.Map<MortalityLineDto>(entity);
                 return ApiResponse<MortalityLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("MortalityLineService.OperationSuccessful"));
@@ -299,6 +301,8 @@ namespace aqua_api.Modules.Mortalities.Application.Services
         {
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
+
                 var entity = await _unitOfWork.MortalityLines
                     .Query(tracking: true)
                     .Include(x => x.Mortality)
@@ -306,6 +310,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
 
                 if (entity == null)
                 {
+                    await _unitOfWork.RollbackTransactionAsync();
                     return ApiResponse<MortalityLineDto>.ErrorResult(
                         _localizationService.GetLocalizedString("MortalityLineService.NotFound"),
                         _localizationService.GetLocalizedString("MortalityLineService.NotFound"),
@@ -323,9 +328,10 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     (entity.Mortality.Status == DocumentStatus.Draft || entity.Mortality.Status == DocumentStatus.Posted))
                 {
                     var userId = entity.UpdatedBy ?? entity.CreatedBy ?? entity.Mortality.UpdatedBy ?? entity.Mortality.CreatedBy ?? 1L;
-                    var postResult = await _mortalityService.PostAquaAndQueueErpAsync(entity.Mortality.Id, userId);
+                    var postResult = await _mortalityService.PostAquaAndQueueErpWithinCurrentTransactionAsync(entity.Mortality.Id, userId);
                     if (!postResult.Success)
                     {
+                        await _unitOfWork.RollbackTransactionAsync();
                         return ApiResponse<MortalityLineDto>.ErrorResult(
                             postResult.Message,
                             postResult.ExceptionMessage,
@@ -333,11 +339,14 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     }
                 }
 
+                await _unitOfWork.CommitTransactionAsync();
+
                 var result = _mapper.Map<MortalityLineDto>(entity);
                 return ApiResponse<MortalityLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("MortalityLineService.OperationSuccessful"));
             }
             catch (InvalidOperationException ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 return ApiResponse<MortalityLineDto>.ErrorResult(
                     ex.Message,
                     ex.Message,
@@ -345,6 +354,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             }
             catch (Exception ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 return ApiResponse<MortalityLineDto>.ErrorResult(
                     _localizationService.GetLocalizedString("MortalityLineService.InternalServerError"),
                     ex.Message,
@@ -356,6 +366,8 @@ namespace aqua_api.Modules.Mortalities.Application.Services
         {
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
+
                 var repo = _unitOfWork.MortalityLines;
                 var entity = await _unitOfWork.MortalityLines
                     .Query(tracking: true)
@@ -364,6 +376,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
 
                 if (entity == null)
                 {
+                    await _unitOfWork.RollbackTransactionAsync();
                     return ApiResponse<bool>.ErrorResult(
                         _localizationService.GetLocalizedString("MortalityLineService.NotFound"),
                         _localizationService.GetLocalizedString("MortalityLineService.NotFound"),
@@ -376,6 +389,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
 
                 if (!isDeleted)
                 {
+                    await _unitOfWork.RollbackTransactionAsync();
                     return ApiResponse<bool>.ErrorResult(
                         _localizationService.GetLocalizedString("MortalityLineService.NotFound"),
                         _localizationService.GetLocalizedString("MortalityLineService.NotFound"),
@@ -389,9 +403,10 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     (entity.Mortality.Status == DocumentStatus.Draft || entity.Mortality.Status == DocumentStatus.Posted))
                 {
                     var userId = entity.UpdatedBy ?? entity.CreatedBy ?? entity.Mortality.UpdatedBy ?? entity.Mortality.CreatedBy ?? 1L;
-                    var postResult = await _mortalityService.PostAquaAndQueueErpAsync(entity.Mortality.Id, userId);
+                    var postResult = await _mortalityService.PostAquaAndQueueErpWithinCurrentTransactionAsync(entity.Mortality.Id, userId);
                     if (!postResult.Success)
                     {
+                        await _unitOfWork.RollbackTransactionAsync();
                         return ApiResponse<bool>.ErrorResult(
                             postResult.Message,
                             postResult.ExceptionMessage,
@@ -399,10 +414,13 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     }
                 }
 
+                await _unitOfWork.CommitTransactionAsync();
+
                 return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("MortalityLineService.OperationSuccessful"));
             }
             catch (InvalidOperationException ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 return ApiResponse<bool>.ErrorResult(
                     ex.Message,
                     ex.Message,
@@ -410,6 +428,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             }
             catch (Exception ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("MortalityLineService.InternalServerError"),
                     ex.Message,

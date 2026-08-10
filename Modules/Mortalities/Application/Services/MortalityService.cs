@@ -301,7 +301,20 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             }
         }
 
-        public async Task<ApiResponse<bool>> PostAquaAndQueueErpAsync(long mortalityId, long userId)
+        public Task<ApiResponse<bool>> PostAquaAndQueueErpAsync(long mortalityId, long userId)
+        {
+            return PostAquaAndQueueErpInternalAsync(mortalityId, userId, manageTransaction: true);
+        }
+
+        public Task<ApiResponse<bool>> PostAquaAndQueueErpWithinCurrentTransactionAsync(long mortalityId, long userId)
+        {
+            return PostAquaAndQueueErpInternalAsync(mortalityId, userId, manageTransaction: false);
+        }
+
+        private async Task<ApiResponse<bool>> PostAquaAndQueueErpInternalAsync(
+            long mortalityId,
+            long userId,
+            bool manageTransaction)
         {
             try
             {
@@ -322,7 +335,10 @@ namespace aqua_api.Modules.Mortalities.Application.Services
 
                 var ledgerDeltas = await BuildMortalityLedgerDeltasAsync(mortality);
 
-                await _unitOfWork.BeginTransaction();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.BeginTransaction();
+                }
 
                 foreach (var ledgerDelta in ledgerDeltas)
                 {
@@ -359,7 +375,10 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                 trackedMortality.UpdatedDate = DateTimeProvider.UtcNow;
 
                 await _unitOfWork.SaveChanges();
-                await _unitOfWork.Commit();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.Commit();
+                }
 
                 return ApiResponse<bool>.SuccessResult(
                     true,
@@ -367,7 +386,10 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             }
             catch (InvalidOperationException ex)
             {
-                await _unitOfWork.Rollback();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.Rollback();
+                }
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("MortalityService.BusinessRuleError"),
                     ex.Message,
@@ -375,7 +397,10 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             }
             catch (Exception ex)
             {
-                await _unitOfWork.Rollback();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.Rollback();
+                }
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("MortalityService.InternalServerError"),
                     ex.Message,

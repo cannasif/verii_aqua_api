@@ -10,6 +10,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
         Task<ApiResponse<bool>> SoftDeleteAsync(long id);
         Task<ApiResponse<bool>> Post(long mortalityId, long userId);
         Task<ApiResponse<bool>> PostAquaAndQueueErpAsync(long mortalityId, long userId);
+        Task<ApiResponse<bool>> PostAquaAndQueueErpWithinCurrentTransactionAsync(long mortalityId, long userId);
         Task<int> ProcessPendingErpIntegrationsAsync(DateTime operationDate, long userId);
     }
 }

@@ -9,5 +9,6 @@ namespace aqua_api.Modules.StockConverts.Application.Services
         Task<ApiResponse<StockConvertDto>> UpdateAsync(long id, UpdateStockConvertDto dto);
         Task<ApiResponse<bool>> SoftDeleteAsync(long id);
         Task<ApiResponse<bool>> Post(long stockConvertId, long userId);
+        Task<ApiResponse<bool>> PostWithinCurrentTransaction(long stockConvertId, long userId);
     }
 }

@@ -179,11 +179,24 @@ namespace aqua_api.Modules.NetOperations.Application.Services
             }
         }
 
-        public async Task<ApiResponse<bool>> Post(long netOperationId, long userId)
+        public Task<ApiResponse<bool>> Post(long netOperationId, long userId)
+        {
+            return PostInternal(netOperationId, userId, manageTransaction: true);
+        }
+
+        public Task<ApiResponse<bool>> PostWithinCurrentTransaction(long netOperationId, long userId)
+        {
+            return PostInternal(netOperationId, userId, manageTransaction: false);
+        }
+
+        private async Task<ApiResponse<bool>> PostInternal(long netOperationId, long userId, bool manageTransaction)
         {
             try
             {
-                await _unitOfWork.BeginTransaction();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.BeginTransaction();
+                }
 
                 var operation = await _netOperationRepository.GetForPost(netOperationId)
                     ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("NetOperationService.NetOperationNotFound"));
@@ -234,7 +247,10 @@ namespace aqua_api.Modules.NetOperations.Application.Services
                 operation.UpdatedDate = DateTimeProvider.UtcNow;
 
                 await _unitOfWork.SaveChanges();
-                await _unitOfWork.Commit();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.Commit();
+                }
 
                 return ApiResponse<bool>.SuccessResult(
                     true,
@@ -242,7 +258,10 @@ namespace aqua_api.Modules.NetOperations.Application.Services
             }
             catch (InvalidOperationException ex)
             {
-                await _unitOfWork.Rollback();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.Rollback();
+                }
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("NetOperationService.BusinessRuleError"),
                     ex.Message,
@@ -250,7 +269,10 @@ namespace aqua_api.Modules.NetOperations.Application.Services
             }
             catch (Exception ex)
             {
-                await _unitOfWork.Rollback();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.Rollback();
+                }
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("NetOperationService.InternalServerError"),
                     ex.Message,

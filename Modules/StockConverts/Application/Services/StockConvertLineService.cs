@@ -243,20 +243,22 @@ namespace aqua_api.Modules.StockConverts.Application.Services
 
                 await _unitOfWork.StockConvertLines.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
-                await _unitOfWork.CommitTransactionAsync();
 
                 if (stockConvert.Status == DocumentStatus.Draft)
                 {
                     var userId = entity.CreatedBy ?? stockConvert.CreatedBy ?? 1L;
-                    var postResult = await _stockConvertService.Post(stockConvert.Id, userId);
+                    var postResult = await _stockConvertService.PostWithinCurrentTransaction(stockConvert.Id, userId);
                     if (!postResult.Success)
                     {
+                        await _unitOfWork.RollbackTransactionAsync();
                         return ApiResponse<StockConvertLineDto>.ErrorResult(
                             postResult.Message,
                             postResult.ExceptionMessage,
                             postResult.StatusCode);
                     }
                 }
+
+                await _unitOfWork.CommitTransactionAsync();
 
                 var result = _mapper.Map<StockConvertLineDto>(entity);
                 return ApiResponse<StockConvertLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("StockConvertLineService.OperationSuccessful"));

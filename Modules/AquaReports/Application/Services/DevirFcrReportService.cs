@@ -196,12 +196,27 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             var movementList = movements.ToList();
             var openingMovements = ResolveOpeningMovements(movementList, projectFromDate, toDate);
             var openingSnapshot = BatchReportMassCalculator.CalculateSnapshot(openingMovements);
+            var openingShipmentMirrorSnapshot = CalculateShipmentWarehouseMirrorSnapshot(openingMovements);
             var endingSnapshot = BatchReportMassCalculator.CalculateSnapshot(
                 movementList.Where(x => x.MovementDate.Date <= toDate));
-            var openingFishCount = openingSnapshot.LiveCount;
-            var endingFishCount = endingSnapshot.LiveCount;
-            var openingBiomassGram = openingSnapshot.BiomassGram;
-            var endingBiomassGram = endingSnapshot.BiomassGram;
+            var endingShipmentMirrorSnapshot = CalculateShipmentWarehouseMirrorSnapshot(
+                movementList.Where(x => x.MovementDate.Date <= toDate));
+
+            // Posted shipments create both a cage exit and, when a target warehouse exists,
+            // a warehouse inventory mirror. That mirror is useful for traceability, but the
+            // sold fish must not remain in Devir/FCR opening or ending live stock.
+            var openingFishCount = Math.Max(
+                0,
+                openingSnapshot.LiveCount - openingShipmentMirrorSnapshot.LiveCount);
+            var endingFishCount = Math.Max(
+                0,
+                endingSnapshot.LiveCount - endingShipmentMirrorSnapshot.LiveCount);
+            var openingBiomassGram = Math.Max(
+                0m,
+                openingSnapshot.BiomassGram - openingShipmentMirrorSnapshot.BiomassGram);
+            var endingBiomassGram = Math.Max(
+                0m,
+                endingSnapshot.BiomassGram - endingShipmentMirrorSnapshot.BiomassGram);
 
             var shipmentList = shipmentLines.ToList();
             var mortalityList = mortalityLines.ToList();
@@ -336,6 +351,15 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     x.SignedCount > 0 &&
                     x.MovementType is BatchMovementType.OpeningImport or BatchMovementType.Stocking)
                 .ToList();
+        }
+
+        private static BatchReportMassSnapshot CalculateShipmentWarehouseMirrorSnapshot(
+            IEnumerable<BatchMovement> movements)
+        {
+            return BatchReportMassCalculator.CalculateSnapshot(movements.Where(x =>
+                x.MovementType == BatchMovementType.Shipment &&
+                x.SignedCount > 0 &&
+                x.WarehouseId.HasValue));
         }
 
         private static DateTime ResolveProjectLifecycleStart(Project project, IEnumerable<BatchMovement> movements)

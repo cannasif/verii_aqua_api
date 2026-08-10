@@ -243,11 +243,24 @@ namespace aqua_api.Modules.Transfers.Application.Services
             }
         }
 
-        public async Task<ApiResponse<bool>> Post(long warehouseCageTransferId, long userId)
+        public Task<ApiResponse<bool>> Post(long warehouseCageTransferId, long userId)
+        {
+            return PostInternal(warehouseCageTransferId, userId, manageTransaction: true);
+        }
+
+        public Task<ApiResponse<bool>> PostWithinCurrentTransaction(long warehouseCageTransferId, long userId)
+        {
+            return PostInternal(warehouseCageTransferId, userId, manageTransaction: false);
+        }
+
+        private async Task<ApiResponse<bool>> PostInternal(long warehouseCageTransferId, long userId, bool manageTransaction)
         {
             try
             {
-                await _unitOfWork.BeginTransaction();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.BeginTransaction();
+                }
 
                 var transfer = await _unitOfWork.Repository<WarehouseCageTransfer>()
                     .Query(tracking: true)
@@ -325,7 +338,10 @@ namespace aqua_api.Modules.Transfers.Application.Services
                 transfer.UpdatedDate = DateTimeProvider.UtcNow;
 
                 await _unitOfWork.SaveChanges();
-                await _unitOfWork.Commit();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.Commit();
+                }
 
                 return ApiResponse<bool>.SuccessResult(
                     true,
@@ -333,7 +349,10 @@ namespace aqua_api.Modules.Transfers.Application.Services
             }
             catch (InvalidOperationException ex)
             {
-                await _unitOfWork.Rollback();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.Rollback();
+                }
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("WarehouseCageTransferService.BusinessRuleError"),
                     ex.Message,
@@ -341,7 +360,10 @@ namespace aqua_api.Modules.Transfers.Application.Services
             }
             catch (Exception ex)
             {
-                await _unitOfWork.Rollback();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.Rollback();
+                }
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("WarehouseCageTransferService.InternalServerError"),
                     ex.Message,

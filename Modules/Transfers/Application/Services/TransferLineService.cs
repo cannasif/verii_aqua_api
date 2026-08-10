@@ -320,20 +320,22 @@ namespace aqua_api.Modules.Transfers.Application.Services
 
                 await _unitOfWork.TransferLines.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
-                await _unitOfWork.CommitTransactionAsync();
 
                 if (transfer.Status == DocumentStatus.Draft)
                 {
                     var userId = entity.CreatedBy ?? transfer.CreatedBy ?? 1L;
-                    var postResult = await _transferService.Post(transfer.Id, userId);
+                    var postResult = await _transferService.PostWithinCurrentTransaction(transfer.Id, userId);
                     if (!postResult.Success)
                     {
+                        await _unitOfWork.RollbackTransactionAsync();
                         return ApiResponse<TransferLineDto>.ErrorResult(
                             postResult.Message,
                             postResult.ExceptionMessage,
                             postResult.StatusCode);
                     }
                 }
+
+                await _unitOfWork.CommitTransactionAsync();
 
                 var result = _mapper.Map<TransferLineDto>(entity);
                 return ApiResponse<TransferLineDto>.SuccessResult(result, _localizationService.GetLocalizedString("TransferLineService.OperationSuccessful"));

@@ -8,5 +8,6 @@ namespace aqua_api.Modules.Transfers.Application.Services
         Task<ApiResponse<WarehouseTransferDto>> UpdateAsync(long id, UpdateWarehouseTransferDto dto);
         Task<ApiResponse<bool>> SoftDeleteAsync(long id);
         Task<ApiResponse<bool>> Post(long warehouseTransferId, long userId);
+        Task<ApiResponse<bool>> PostWithinCurrentTransaction(long warehouseTransferId, long userId);
     }
 }

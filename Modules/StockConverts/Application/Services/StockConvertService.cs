@@ -180,11 +180,24 @@ namespace aqua_api.Modules.StockConverts.Application.Services
             }
         }
 
-        public async Task<ApiResponse<bool>> Post(long stockConvertId, long userId)
+        public Task<ApiResponse<bool>> Post(long stockConvertId, long userId)
+        {
+            return PostInternal(stockConvertId, userId, manageTransaction: true);
+        }
+
+        public Task<ApiResponse<bool>> PostWithinCurrentTransaction(long stockConvertId, long userId)
+        {
+            return PostInternal(stockConvertId, userId, manageTransaction: false);
+        }
+
+        private async Task<ApiResponse<bool>> PostInternal(long stockConvertId, long userId, bool manageTransaction)
         {
             try
             {
-                await _unitOfWork.BeginTransaction();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.BeginTransaction();
+                }
 
                 var convert = await _stockConvertRepository.GetForPost(stockConvertId)
                     ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("StockConvertService.StockConvertNotFound"));
@@ -270,7 +283,10 @@ namespace aqua_api.Modules.StockConverts.Application.Services
                 convert.UpdatedDate = DateTimeProvider.UtcNow;
 
                 await _unitOfWork.SaveChanges();
-                await _unitOfWork.Commit();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.Commit();
+                }
 
                 return ApiResponse<bool>.SuccessResult(
                     true,
@@ -278,7 +294,10 @@ namespace aqua_api.Modules.StockConverts.Application.Services
             }
             catch (InvalidOperationException ex)
             {
-                await _unitOfWork.Rollback();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.Rollback();
+                }
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("StockConvertService.BusinessRuleError"),
                     ex.Message,
@@ -286,7 +305,10 @@ namespace aqua_api.Modules.StockConverts.Application.Services
             }
             catch (Exception ex)
             {
-                await _unitOfWork.Rollback();
+                if (manageTransaction)
+                {
+                    await _unitOfWork.Rollback();
+                }
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("StockConvertService.InternalServerError"),
                     ex.Message,

@@ -869,7 +869,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
 
             var warehouseFishCount = batchWarehouseBalances.Sum(x => x.LiveCount);
             var warehouseBiomassGram = RoundGram(batchWarehouseBalances.Sum(x =>
-                BatchReportMassCalculator.CalculateBiomassGram(x.LiveCount, x.AverageGram)));
+                BatchReportMassCalculator.ResolveBalanceBiomassGram(x.LiveCount, x.AverageGram, x.BiomassGram)));
             var cageFishCount = cages.Sum(x => x.CurrentFishCount);
             var cageBiomassGram = cages.Sum(x => x.CurrentBiomassGram);
 

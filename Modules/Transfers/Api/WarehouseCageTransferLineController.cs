@@ -44,6 +44,13 @@ namespace aqua_api.Modules.Transfers.Api
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpPost("auto-header-and-post")]
+        public async Task<ActionResult<ApiResponse<WarehouseCageTransferLineDto>>> CreateWithAutoHeaderAndPost([FromBody] CreateWarehouseCageTransferLineWithAutoHeaderDto dto)
+        {
+            var result = await _service.CreateWithAutoHeaderAndPostAsync(dto, GetUserId() ?? 1L);
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpPut("{id:long}")]
         public async Task<ActionResult<ApiResponse<WarehouseCageTransferLineDto>>> Update(long id, [FromBody] UpdateWarehouseCageTransferLineDto dto)
         {

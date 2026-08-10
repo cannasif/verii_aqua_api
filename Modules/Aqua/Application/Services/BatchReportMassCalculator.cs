@@ -59,6 +59,25 @@ namespace aqua_api.Modules.Aqua.Application.Services
             return Round(fishCount * averageGram);
         }
 
+        public static decimal ResolveBalanceBiomassGram(
+            int liveCount,
+            decimal averageGram,
+            decimal storedBiomassGram)
+        {
+            var calculatedBiomassGram = CalculateBiomassGram(liveCount, averageGram);
+            if (liveCount <= 0 || storedBiomassGram <= 0m)
+            {
+                return calculatedBiomassGram;
+            }
+
+            // AverageGram is persisted with three decimals. Preserve the exact stored
+            // mixed-stock mass when the difference is explainable by that rounding.
+            var roundingToleranceGram = Math.Max(0.001m, liveCount * 0.001m);
+            return Math.Abs(storedBiomassGram - calculatedBiomassGram) <= roundingToleranceGram
+                ? Round(storedBiomassGram)
+                : calculatedBiomassGram;
+        }
+
         public static IReadOnlyDictionary<long, decimal> CalculateMovementBiomassDeltas(
             IEnumerable<BatchMovement> movements)
         {

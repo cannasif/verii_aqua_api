@@ -6,6 +6,7 @@ namespace aqua_api.Modules.Transfers.Application.Services
         Task<ApiResponse<PagedResponse<WarehouseCageTransferLineDto>>> GetAllAsync(PagedRequest request);
         Task<ApiResponse<WarehouseCageTransferLineDto>> CreateAsync(CreateWarehouseCageTransferLineDto dto);
         Task<ApiResponse<WarehouseCageTransferLineDto>> CreateWithAutoHeaderAsync(CreateWarehouseCageTransferLineWithAutoHeaderDto dto);
+        Task<ApiResponse<WarehouseCageTransferLineDto>> CreateWithAutoHeaderAndPostAsync(CreateWarehouseCageTransferLineWithAutoHeaderDto dto, long userId);
         Task<ApiResponse<WarehouseCageTransferLineDto>> UpdateAsync(long id, UpdateWarehouseCageTransferLineDto dto);
         Task<ApiResponse<bool>> SoftDeleteAsync(long id, long? userId = null);
     }

@@ -116,7 +116,7 @@ public class KpiReportService : IKpiReportService
                     x => new
                     {
                         Fish = x.Sum(y => y.LiveCount),
-                        BiomassGram = x.Sum(y => BatchReportMassCalculator.CalculateBiomassGram(y.LiveCount, y.AverageGram))
+                        BiomassGram = x.Sum(y => BatchReportMassCalculator.ResolveBalanceBiomassGram(y.LiveCount, y.AverageGram, y.BiomassGram))
                     });
 
             var warehouseBalances = await _unitOfWork.Db.BatchWarehouseBalances
@@ -133,7 +133,7 @@ public class KpiReportService : IKpiReportService
                     x => new
                     {
                         Fish = x.Sum(y => y.LiveCount),
-                        BiomassGram = x.Sum(y => BatchReportMassCalculator.CalculateBiomassGram(y.LiveCount, y.AverageGram))
+                        BiomassGram = x.Sum(y => BatchReportMassCalculator.ResolveBalanceBiomassGram(y.LiveCount, y.AverageGram, y.BiomassGram))
                     });
 
             var feedRecords = await (
@@ -164,8 +164,10 @@ public class KpiReportService : IKpiReportService
                     var warehouseTotals = warehouseTotalsByProject.GetValueOrDefault(project.Id);
                     var cageFish = Math.Max(0, cageTotals?.Fish ?? 0);
                     var warehouseFish = Math.Max(0, warehouseTotals?.Fish ?? 0);
-                    var cageBiomassKg = Round(Math.Max(0m, cageTotals?.BiomassGram ?? 0m) / 1000m);
-                    var warehouseBiomassKg = Round(Math.Max(0m, warehouseTotals?.BiomassGram ?? 0m) / 1000m);
+                    var cageBiomassGram = Math.Max(0m, cageTotals?.BiomassGram ?? 0m);
+                    var warehouseBiomassGram = Math.Max(0m, warehouseTotals?.BiomassGram ?? 0m);
+                    var cageBiomassKg = Round(cageBiomassGram / 1000m);
+                    var warehouseBiomassKg = Round(warehouseBiomassGram / 1000m);
 
                     return new ProjectFeedFishSummaryRowDto
                     {
@@ -177,7 +179,7 @@ public class KpiReportService : IKpiReportService
                         TotalFish = cageFish + warehouseFish,
                         CageBiomassKg = cageBiomassKg,
                         WarehouseBiomassKg = warehouseBiomassKg,
-                        TotalBiomassKg = Round(cageBiomassKg + warehouseBiomassKg),
+                        TotalBiomassKg = Round((cageBiomassGram + warehouseBiomassGram) / 1000m),
                         TotalFeedKg = Round(Math.Max(0m, feedGramByProject.GetValueOrDefault(project.Id)) / 1000m),
                         ActiveCageCount = activeCageCountByProject.GetValueOrDefault(project.Id)
                     };
@@ -192,10 +194,12 @@ public class KpiReportService : IKpiReportService
                     CageFish = rows.Sum(x => x.CageFish),
                     WarehouseFish = rows.Sum(x => x.WarehouseFish),
                     TotalFish = rows.Sum(x => x.TotalFish),
-                    CageBiomassKg = Round(rows.Sum(x => x.CageBiomassKg)),
-                    WarehouseBiomassKg = Round(rows.Sum(x => x.WarehouseBiomassKg)),
-                    TotalBiomassKg = Round(rows.Sum(x => x.TotalBiomassKg)),
-                    TotalFeedKg = Round(rows.Sum(x => x.TotalFeedKg)),
+                    CageBiomassKg = Round(cageTotalsByProject.Values.Sum(x => Math.Max(0m, x.BiomassGram)) / 1000m),
+                    WarehouseBiomassKg = Round(warehouseTotalsByProject.Values.Sum(x => Math.Max(0m, x.BiomassGram)) / 1000m),
+                    TotalBiomassKg = Round((
+                        cageTotalsByProject.Values.Sum(x => Math.Max(0m, x.BiomassGram)) +
+                        warehouseTotalsByProject.Values.Sum(x => Math.Max(0m, x.BiomassGram))) / 1000m),
+                    TotalFeedKg = Round(feedGramByProject.Values.Sum() / 1000m),
                     ActiveCageCount = rows.Sum(x => x.ActiveCageCount)
                 }
             };
@@ -743,7 +747,7 @@ public class KpiReportService : IKpiReportService
                     x => new
                     {
                         LiveCount = x.Sum(y => y.LiveCount),
-                        BiomassGram = x.Sum(y => BatchReportMassCalculator.CalculateBiomassGram(y.LiveCount, y.AverageGram))
+                        BiomassGram = x.Sum(y => BatchReportMassCalculator.ResolveBalanceBiomassGram(y.LiveCount, y.AverageGram, y.BiomassGram))
                     });
 
             var feedings = await _unitOfWork.Db.Feedings
@@ -802,10 +806,14 @@ public class KpiReportService : IKpiReportService
             var stockedFish = rows.Sum(x => x.StockedFish);
             var liveFish = rows.Sum(x => x.LiveFish);
             var deadFish = rows.Sum(x => x.DeadFish);
-            var currentBiomassKg = Round(rows.Sum(x => x.CurrentBiomassKg));
+            var currentBiomassGram = reportProjectCages.Sum(x =>
+                Math.Max(0m, latestBalanceByCage.GetValueOrDefault(x.Id)?.BiomassGram ?? 0m));
+            var currentBiomassKg = Round(currentBiomassGram / 1000m);
             var warehouseFish = latestWarehouseBalances.Sum(x => x.LiveCount);
-            var warehouseBiomassKg = Round(latestWarehouseBalances.Sum(x =>
-                BatchReportMassCalculator.CalculateBiomassGram(x.LiveCount, x.AverageGram)) / 1000m);
+            var warehouseBiomassGram = latestWarehouseBalances.Sum(x => Math.Max(
+                0m,
+                BatchReportMassCalculator.ResolveBalanceBiomassGram(x.LiveCount, x.AverageGram, x.BiomassGram)));
+            var warehouseBiomassKg = Round(warehouseBiomassGram / 1000m);
             var totalFeedKg = Round(rows.Sum(x => x.TotalFeedKg));
             var biomassGainKg = Round(rows.Sum(x => x.BiomassGainKg));
             var totalCapacityGram = reportProjectCages.Sum(x => x.Cage?.CapacityGram ?? 0m);
@@ -830,7 +838,7 @@ public class KpiReportService : IKpiReportService
                 CurrentAverageGram = currentAverageGram,
                 CurrentBiomassKg = currentBiomassKg,
                 WarehouseBiomassKg = warehouseBiomassKg,
-                TotalSystemBiomassKg = Round(currentBiomassKg + warehouseBiomassKg),
+                TotalSystemBiomassKg = Round((currentBiomassGram + warehouseBiomassGram) / 1000m),
                 TotalFeedKg = totalFeedKg,
                 BiomassGainKg = biomassGainKg,
                 SurvivalPct = SafePercent(liveFish, stockedFish),
@@ -1513,7 +1521,7 @@ public class KpiReportService : IKpiReportService
                 x => new
                 {
                     LiveCount = x.Sum(y => y.LiveCount),
-                    BiomassGram = x.Sum(y => BatchReportMassCalculator.CalculateBiomassGram(y.LiveCount, y.AverageGram))
+                    BiomassGram = x.Sum(y => BatchReportMassCalculator.ResolveBalanceBiomassGram(y.LiveCount, y.AverageGram, y.BiomassGram))
                 });
 
         var feedByCageDate = new Dictionary<long, Dictionary<string, decimal>>();
@@ -1829,7 +1837,7 @@ public class KpiReportService : IKpiReportService
 
         var warehouseFishCount = latestWarehouseBalances.Sum(x => x.LiveCount);
         var warehouseBiomassGram = Round(latestWarehouseBalances.Sum(x =>
-            BatchReportMassCalculator.CalculateBiomassGram(x.LiveCount, x.AverageGram)));
+            BatchReportMassCalculator.ResolveBalanceBiomassGram(x.LiveCount, x.AverageGram, x.BiomassGram)));
         var activeWarehouseCount = latestWarehouseBalances
             .Where(x => x.LiveCount > 0)
             .Select(x => x.WarehouseId)
