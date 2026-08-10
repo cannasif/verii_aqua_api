@@ -49,4 +49,5 @@
   <data name="ShipmentLineService.SourceNotFound" xml:space="preserve"><value>لم يتم العثور على مطابقة المشروع أو القفص أو دفعة الأسماك المحددة.</value></data>
   <data name="ShipmentLineService.ExitWeightNotFound" xml:space="preserve"><value>لم يتم العثور على وزن خروج صالح لتاريخ الشحن. تحقق أولاً من حركات وزن القفص.</value></data>
   <data name="ShipmentLineService.PostedCannotBeChanged" xml:space="preserve"><value>لا يمكن تعديل سطر شحن تم ترحيله. يجب الحفاظ على وزن الخروج التاريخي.</value></data>
+  <data name="ShipmentLineService.ErpIntegratedCannotBeChanged" xml:space="preserve"><value>لا يمكن حذف أو تعديل سطر شحن مُرحّل إلى نظام ERP. يجب عكس مستند ERP أولاً.</value></data>
 </root>

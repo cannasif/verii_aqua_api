@@ -49,4 +49,5 @@
   <data name="ShipmentLineService.SourceNotFound" xml:space="preserve"><value>Die ausgewählte Projekt-, Käfig- oder Fischpartiezuordnung wurde nicht gefunden.</value></data>
   <data name="ShipmentLineService.ExitWeightNotFound" xml:space="preserve"><value>Für das Versanddatum wurde kein gültiges Ausgangsgewicht gefunden. Prüfen Sie zuerst die Käfiggewichtsbewegungen.</value></data>
   <data name="ShipmentLineService.PostedCannotBeChanged" xml:space="preserve"><value>Eine gebuchte Versandzeile kann nicht geändert werden. Ihr historisches Ausgangsgewicht muss erhalten bleiben.</value></data>
+  <data name="ShipmentLineService.ErpIntegratedCannotBeChanged" xml:space="preserve"><value>Eine an ERP übertragene Versandzeile kann nicht gelöscht oder geändert werden. Stornieren Sie zuerst den ERP-Beleg.</value></data>
 </root>

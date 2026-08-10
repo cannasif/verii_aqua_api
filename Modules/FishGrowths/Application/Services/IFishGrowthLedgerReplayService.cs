@@ -24,4 +24,10 @@ public interface IFishGrowthLedgerReplayService
         long projectCageId,
         DateTime fromDate,
         long? userId);
+
+    Task RebuildWarehouseAndBatchAsync(
+        long projectId,
+        long fishBatchId,
+        long warehouseId,
+        long? userId);
 }

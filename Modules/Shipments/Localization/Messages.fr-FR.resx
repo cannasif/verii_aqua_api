@@ -49,4 +49,5 @@
   <data name="ShipmentLineService.SourceNotFound" xml:space="preserve"><value>La correspondance projet, cage ou lot de poissons sélectionnée est introuvable.</value></data>
   <data name="ShipmentLineService.ExitWeightNotFound" xml:space="preserve"><value>Aucun poids de sortie valide n'a été trouvé à la date d'expédition. Vérifiez d'abord les mouvements de poids de la cage.</value></data>
   <data name="ShipmentLineService.PostedCannotBeChanged" xml:space="preserve"><value>Une ligne d'expédition comptabilisée ne peut pas être modifiée. Son poids de sortie historique doit être conservé.</value></data>
+  <data name="ShipmentLineService.ErpIntegratedCannotBeChanged" xml:space="preserve"><value>Une ligne d'expédition intégrée à l'ERP ne peut pas être supprimée ni modifiée. Annulez d'abord le document ERP.</value></data>
 </root>

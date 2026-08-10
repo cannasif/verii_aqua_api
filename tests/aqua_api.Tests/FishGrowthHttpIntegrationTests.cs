@@ -164,6 +164,263 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
     }
 
     [Fact]
+    public async Task PostedShipmentLine_Delete_ReplaysLaterOperationsAndKeepsErpIntegratedLineLocked()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        long projectId;
+        long projectCageId;
+        long fishBatchId;
+        long warehouseId;
+
+        using (var scope = _factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var stockId = await db.Stocks
+                .Where(x => x.ErpStockCode == "PLAMUT-5G")
+                .Select(x => x.Id)
+                .SingleAsync();
+            warehouseId = await db.Warehouses
+                .Where(x => !x.IsDeleted)
+                .OrderBy(x => x.Id)
+                .Select(x => x.Id)
+                .FirstAsync();
+            var suffix = Guid.NewGuid().ToString("N")[..8];
+            var project = new Project
+            {
+                ProjectCode = $"SHIP-DEL-{suffix}",
+                ProjectName = "Posted Shipment Delete Project",
+                StartDate = new DateTime(2026, 1, 1),
+                Status = DocumentStatus.Posted
+            };
+            var cage = new Cage { CageCode = $"SD-{suffix}", CageName = "Shipment Delete Cage" };
+            db.Projects.Add(project);
+            db.Cages.Add(cage);
+            await db.SaveChangesAsync();
+
+            var projectCage = new ProjectCage
+            {
+                ProjectId = project.Id,
+                CageId = cage.Id,
+                AssignedDate = project.StartDate
+            };
+            var batch = new FishBatch
+            {
+                ProjectId = project.Id,
+                FishStockId = stockId,
+                BatchCode = $"SD-B-{suffix}",
+                CurrentAverageGram = 100m,
+                StartDate = project.StartDate
+            };
+            db.ProjectCages.Add(projectCage);
+            db.FishBatches.Add(batch);
+            await db.SaveChangesAsync();
+
+            var ledger = scope.ServiceProvider.GetRequiredService<IBalanceLedgerManager>();
+            await ledger.ApplyDelta(
+                project.Id,
+                batch.Id,
+                projectCage.Id,
+                1_000,
+                100_000m,
+                BatchMovementType.Stocking,
+                project.StartDate,
+                "Shipment delete opening",
+                "TEST_SHIPMENT_DELETE_OPENING",
+                1,
+                null,
+                projectCage.Id,
+                stockId,
+                stockId,
+                100m,
+                100m,
+                1);
+            await db.SaveChangesAsync();
+
+            projectId = project.Id;
+            projectCageId = projectCage.Id;
+            fishBatchId = batch.Id;
+        }
+
+        await PostGrowth(new DateTime(2026, 2, 1), 200m);
+
+        ShipmentLineDto deletedShipmentLine;
+        using (var shipmentResponse = await client.PostAsJsonAsync("/api/aqua/ShipmentLine/auto-header-and-post", new CreateShipmentLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            ShipmentDate = new DateTime(2026, 2, 15),
+            FishBatchId = fishBatchId,
+            FromProjectCageId = projectCageId,
+            TargetWarehouseId = warehouseId,
+            FishCount = 100,
+            CurrencyCode = "TRY",
+            ExchangeRate = 1m,
+            UnitPrice = 10m
+        }))
+        {
+            Assert.Equal(HttpStatusCode.OK, shipmentResponse.StatusCode);
+            var shipmentBody = await shipmentResponse.Content.ReadFromJsonAsync<ApiResponse<ShipmentLineDto>>();
+            Assert.True(shipmentBody?.Success, shipmentBody?.ExceptionMessage);
+            deletedShipmentLine = shipmentBody!.Data!;
+        }
+        Assert.Equal(200m, deletedShipmentLine.AverageGram);
+        Assert.Equal(20_000m, deletedShipmentLine.BiomassGram);
+        Assert.Equal(10m, deletedShipmentLine.UnitPrice);
+        Assert.Equal(200m, deletedShipmentLine.LineAmount);
+
+        using (var postedScope = _factory.Services.CreateScope())
+        {
+            var db = postedScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var shipment = await db.Shipments.SingleAsync(x => x.Id == deletedShipmentLine.ShipmentId);
+            var cageBalance = await db.BatchCageBalances.SingleAsync(x =>
+                !x.IsDeleted && x.FishBatchId == fishBatchId && x.ProjectCageId == projectCageId);
+            var warehouseBalance = await db.BatchWarehouseBalances.SingleAsync(x =>
+                !x.IsDeleted && x.ProjectId == projectId && x.FishBatchId == fishBatchId && x.WarehouseId == warehouseId);
+
+            Assert.Equal(DocumentStatus.Posted, shipment.Status);
+            Assert.Equal(900, cageBalance.LiveCount);
+            Assert.Equal(200m, cageBalance.AverageGram);
+            Assert.Equal(180_000m, cageBalance.BiomassGram);
+            Assert.Equal(100, warehouseBalance.LiveCount);
+            Assert.Equal(200m, warehouseBalance.AverageGram);
+            Assert.Equal(20_000m, warehouseBalance.BiomassGram);
+        }
+
+        using (var mortalityResponse = await client.PostAsJsonAsync("/api/aqua/MortalityLine/auto-header", new CreateMortalityLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            MortalityDate = new DateTime(2026, 2, 20),
+            FishBatchId = fishBatchId,
+            ProjectCageId = projectCageId,
+            DeadCount = 10
+        }))
+        {
+            Assert.Equal(HttpStatusCode.OK, mortalityResponse.StatusCode);
+        }
+
+        await PostGrowth(new DateTime(2026, 3, 1), 300m);
+
+        using (var deleteResponse = await client.DeleteAsync($"/api/aqua/ShipmentLine/{deletedShipmentLine.Id}"))
+        {
+            Assert.Equal(HttpStatusCode.OK, deleteResponse.StatusCode);
+            var deleteBody = await deleteResponse.Content.ReadFromJsonAsync<ApiResponse<bool>>();
+            Assert.True(deleteBody?.Success, deleteBody?.ExceptionMessage);
+        }
+
+        using (var verifyScope = _factory.Services.CreateScope())
+        {
+            var db = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var cageBalance = await db.BatchCageBalances.SingleAsync(x =>
+                !x.IsDeleted && x.FishBatchId == fishBatchId && x.ProjectCageId == projectCageId);
+            var warehouseBalance = await db.BatchWarehouseBalances.SingleAsync(x =>
+                !x.IsDeleted && x.ProjectId == projectId && x.FishBatchId == fishBatchId && x.WarehouseId == warehouseId);
+            var marchGrowth = await db.FishGrowths.SingleAsync(x =>
+                !x.IsDeleted && x.FishBatchId == fishBatchId && x.GrowthYear == 2026 && x.GrowthMonth == 3);
+
+            Assert.Equal(990, cageBalance.LiveCount);
+            Assert.Equal(300m, cageBalance.AverageGram);
+            Assert.Equal(297_000m, cageBalance.BiomassGram);
+            Assert.Equal(0, warehouseBalance.LiveCount);
+            Assert.Equal(0m, warehouseBalance.BiomassGram);
+            Assert.Equal(200m, marchGrowth.PreviousAverageGram);
+            Assert.Equal(300m, marchGrowth.NewAverageGram);
+            Assert.True(await db.ShipmentLines.IgnoreQueryFilters().AnyAsync(x => x.Id == deletedShipmentLine.Id && x.IsDeleted));
+            Assert.False(await db.BatchMovements.AnyAsync(x =>
+                !x.IsDeleted
+                && x.MovementType == BatchMovementType.Shipment
+                && x.ReferenceTable == "RII_SHIPMENT_LINE"
+                && x.ReferenceId == deletedShipmentLine.Id));
+        }
+
+        using (var timelineResponse = await client.GetAsync(
+                   $"/api/aqua/FishGrowth/timeline?projectCageId={projectCageId}&fishBatchId={fishBatchId}&throughYear=2026&throughMonth=3"))
+        {
+            Assert.Equal(HttpStatusCode.OK, timelineResponse.StatusCode);
+            var timeline = (await timelineResponse.Content.ReadFromJsonAsync<ApiResponse<FishGrowthTimelineDto>>())!.Data!;
+            Assert.False(timeline.HasContinuityIssue);
+            Assert.Equal(300m, timeline.LatestAverageGram);
+        }
+
+        using (var reportResponse = await client.PostAsJsonAsync("/api/kpi-report/monthly-shipments", new MonthlyOperationalReportRequestDto
+        {
+            FromDate = new DateTime(2026, 2, 1),
+            ToDate = new DateTime(2026, 3, 31),
+            ProjectIds = [projectId],
+            ProjectCageIds = [projectCageId]
+        }))
+        {
+            Assert.Equal(HttpStatusCode.OK, reportResponse.StatusCode);
+            var report = (await reportResponse.Content.ReadFromJsonAsync<ApiResponse<MonthlyOperationalReportDto>>())!.Data!;
+            Assert.Equal(0, report.TotalCount);
+            Assert.Equal(0m, report.TotalKg);
+        }
+
+        using (var dashboardResponse = await client.GetAsync($"/api/aqua/dashboard-project/detail/{projectId}"))
+        {
+            Assert.Equal(HttpStatusCode.OK, dashboardResponse.StatusCode);
+            var dashboard = (await dashboardResponse.Content.ReadFromJsonAsync<ApiResponse<DashboardProjectDetailDto>>())!.Data!;
+            var dashboardCage = Assert.Single(dashboard.Cages);
+            Assert.Equal(990, dashboardCage.CurrentFishCount);
+            Assert.Equal(300m, dashboardCage.CurrentAverageGram);
+            Assert.Equal(297_000m, dashboardCage.CurrentBiomassGram);
+        }
+
+        ShipmentLineDto erpLockedLine;
+        using (var shipmentResponse = await client.PostAsJsonAsync("/api/aqua/ShipmentLine/auto-header", new CreateShipmentLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            ShipmentDate = new DateTime(2026, 3, 10),
+            FishBatchId = fishBatchId,
+            FromProjectCageId = projectCageId,
+            FishCount = 10
+        }))
+        {
+            var shipmentBody = await shipmentResponse.Content.ReadFromJsonAsync<ApiResponse<ShipmentLineDto>>();
+            Assert.True(shipmentBody?.Success, shipmentBody?.ExceptionMessage);
+            erpLockedLine = shipmentBody!.Data!;
+        }
+        using (var postResponse = await client.PostAsync($"/api/aqua/posting/shipment/{erpLockedLine.ShipmentId}", null))
+        {
+            Assert.Equal(HttpStatusCode.OK, postResponse.StatusCode);
+        }
+        using (var erpScope = _factory.Services.CreateScope())
+        {
+            var db = erpScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var shipment = await db.Shipments.SingleAsync(x => x.Id == erpLockedLine.ShipmentId);
+            shipment.IsERPIntegrated = true;
+            await db.SaveChangesAsync();
+        }
+        using (var blockedDeleteResponse = await client.DeleteAsync($"/api/aqua/ShipmentLine/{erpLockedLine.Id}"))
+        {
+            Assert.Equal(HttpStatusCode.BadRequest, blockedDeleteResponse.StatusCode);
+            var blockedDelete = await blockedDeleteResponse.Content.ReadFromJsonAsync<ApiResponse<bool>>();
+            Assert.False(blockedDelete?.Success);
+            Assert.Contains("ERP", blockedDelete!.ExceptionMessage, StringComparison.OrdinalIgnoreCase);
+        }
+
+        using var finalScope = _factory.Services.CreateScope();
+        var finalDb = finalScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        Assert.True(await finalDb.ShipmentLines.AnyAsync(x => x.Id == erpLockedLine.Id && !x.IsDeleted));
+
+        async Task<FishGrowthDto> PostGrowth(DateTime growthDate, decimal targetGram)
+        {
+            using var response = await client.PostAsJsonAsync("/api/aqua/FishGrowth", new CreateFishGrowthDto
+            {
+                ProjectId = projectId,
+                ProjectCageId = projectCageId,
+                FishBatchId = fishBatchId,
+                GrowthDate = growthDate,
+                NewAverageGram = targetGram
+            });
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            var body = await response.Content.ReadFromJsonAsync<ApiResponse<FishGrowthDto>>();
+            Assert.True(body?.Success, body?.ExceptionMessage);
+            return body!.Data!;
+        }
+    }
+
+    [Fact]
     public async Task Timeline_UsesCountAndBiomassLedger_ForOperationalAverageChanges()
     {
         var client = _factory.CreateClient();

@@ -49,4 +49,5 @@
   <data name="ShipmentLineService.SourceNotFound" xml:space="preserve"><value>La corrispondenza selezionata tra progetto, gabbia o lotto di pesci non è stata trovata.</value></data>
   <data name="ShipmentLineService.ExitWeightNotFound" xml:space="preserve"><value>Non è stato trovato un peso di uscita valido per la data di spedizione. Verificare prima i movimenti di peso della gabbia.</value></data>
   <data name="ShipmentLineService.PostedCannotBeChanged" xml:space="preserve"><value>Una riga di spedizione contabilizzata non può essere modificata. Il peso di uscita storico deve essere conservato.</value></data>
+  <data name="ShipmentLineService.ErpIntegratedCannotBeChanged" xml:space="preserve"><value>Una riga di spedizione integrata con ERP non può essere eliminata o modificata. Stornare prima il documento ERP.</value></data>
 </root>

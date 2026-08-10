@@ -265,6 +265,22 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         await _unitOfWork.SaveChangesAsync();
     }
 
+    public async Task RebuildWarehouseAndBatchAsync(
+        long projectId,
+        long fishBatchId,
+        long warehouseId,
+        long? userId)
+    {
+        await RebuildWarehouseBalanceAsync(
+            projectId,
+            fishBatchId,
+            warehouseId,
+            userId);
+        await _unitOfWork.SaveChangesAsync();
+        await UpdateFishBatchAverageAsync(fishBatchId, userId);
+        await _unitOfWork.SaveChangesAsync();
+    }
+
     private async Task SynchronizeShipmentMovementsAsync(
         FishBatch fishBatch,
         long projectCageId,

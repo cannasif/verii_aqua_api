@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace aqua_api.Modules.Shipments.Api
 {
@@ -43,6 +44,13 @@ namespace aqua_api.Modules.Shipments.Api
             return StatusCode(result.StatusCode, result);
         }
 
+        [HttpPost("auto-header-and-post")]
+        public async Task<ActionResult<ApiResponse<ShipmentLineDto>>> CreateWithAutoHeaderAndPost([FromBody] CreateShipmentLineWithAutoHeaderDto dto)
+        {
+            var result = await _service.CreateWithAutoHeaderAndPostAsync(dto, GetUserId());
+            return StatusCode(result.StatusCode, result);
+        }
+
         [HttpPut("{id:long}")]
         public async Task<ActionResult<ApiResponse<ShipmentLineDto>>> Update(long id, [FromBody] UpdateShipmentLineDto dto)
         {
@@ -55,6 +63,12 @@ namespace aqua_api.Modules.Shipments.Api
         {
             var result = await _service.SoftDeleteAsync(id);
             return StatusCode(result.StatusCode, result);
+        }
+
+        private long GetUserId()
+        {
+            var raw = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            return long.TryParse(raw, out var userId) ? userId : 1L;
         }
     }
 }

@@ -11,6 +11,7 @@ using aqua_api.Modules.AquaSettings.Domain.Entities;
 using aqua_api.Modules.Cages.Application.Dtos;
 using aqua_api.Modules.Cages.Application.Services;
 using aqua_api.Modules.Cages.DependencyInjection;
+using aqua_api.Modules.FishGrowths.DependencyInjection;
 using aqua_api.Modules.Identity.Domain.Entities;
 using aqua_api.Modules.Integrations.Application.Dtos;
 using aqua_api.Modules.Integrations.Application.Services;
@@ -53,6 +54,7 @@ public class AquaSeededLifecycleIntegrationTests
         services.AddFeedingsModule();
         services.AddGoodsReceiptsModule();
         services.AddMortalitiesModule();
+        services.AddFishGrowthsModule();
         services.AddNetOperationsModule();
         services.AddStockConvertsModule();
         services.AddTransfersModule();

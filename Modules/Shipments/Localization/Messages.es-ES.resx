@@ -49,4 +49,5 @@
   <data name="ShipmentLineService.SourceNotFound" xml:space="preserve"><value>No se encontró la relación seleccionada de proyecto, jaula o lote de peces.</value></data>
   <data name="ShipmentLineService.ExitWeightNotFound" xml:space="preserve"><value>No se encontró un peso de salida válido para la fecha de envío. Revise primero los movimientos de peso de la jaula.</value></data>
   <data name="ShipmentLineService.PostedCannotBeChanged" xml:space="preserve"><value>Una línea de envío contabilizada no puede modificarse. Debe conservarse su peso de salida histórico.</value></data>
+  <data name="ShipmentLineService.ErpIntegratedCannotBeChanged" xml:space="preserve"><value>Una línea de envío integrada con ERP no se puede eliminar ni modificar. Revierta primero el documento ERP.</value></data>
 </root>

@@ -10,18 +10,24 @@ namespace aqua_api.Modules.Shipments.Application.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IBalanceLedgerManager _balanceLedgerManager;
+        private readonly IFishGrowthLedgerReplayService _ledgerReplayService;
+        private readonly IShipmentService _shipmentService;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
 
         public ShipmentLineService(
             IUnitOfWork unitOfWork,
             IBalanceLedgerManager balanceLedgerManager,
+            IFishGrowthLedgerReplayService ledgerReplayService,
+            IShipmentService shipmentService,
             IMapper mapper,
             ILocalizationService localizationService,
             IErpService erpService)
         {
             _unitOfWork = unitOfWork;
             _balanceLedgerManager = balanceLedgerManager;
+            _ledgerReplayService = ledgerReplayService;
+            _shipmentService = shipmentService;
             _mapper = mapper;
             _localizationService = localizationService;
         }
@@ -186,7 +192,21 @@ namespace aqua_api.Modules.Shipments.Application.Services
             }
         }
 
-        public async Task<ApiResponse<ShipmentLineDto>> CreateWithAutoHeaderAsync(CreateShipmentLineWithAutoHeaderDto dto)
+        public Task<ApiResponse<ShipmentLineDto>> CreateWithAutoHeaderAsync(CreateShipmentLineWithAutoHeaderDto dto)
+        {
+            return CreateWithAutoHeaderInternalAsync(dto, postUserId: null);
+        }
+
+        public Task<ApiResponse<ShipmentLineDto>> CreateWithAutoHeaderAndPostAsync(
+            CreateShipmentLineWithAutoHeaderDto dto,
+            long userId)
+        {
+            return CreateWithAutoHeaderInternalAsync(dto, userId);
+        }
+
+        private async Task<ApiResponse<ShipmentLineDto>> CreateWithAutoHeaderInternalAsync(
+            CreateShipmentLineWithAutoHeaderDto dto,
+            long? postUserId)
         {
             try
             {
@@ -263,6 +283,20 @@ namespace aqua_api.Modules.Shipments.Application.Services
                 var entity = _mapper.Map<ShipmentLine>(createDto);
                 await _unitOfWork.ShipmentLines.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
+
+                if (postUserId.HasValue)
+                {
+                    var postResult = await _shipmentService.PostWithinCurrentTransaction(shipment.Id, postUserId.Value);
+                    if (!postResult.Success)
+                    {
+                        await _unitOfWork.RollbackTransactionAsync();
+                        return ApiResponse<ShipmentLineDto>.ErrorResult(
+                            postResult.Message,
+                            postResult.ExceptionMessage,
+                            postResult.StatusCode);
+                    }
+                }
+
                 await _unitOfWork.CommitTransactionAsync();
 
                 var result = _mapper.Map<ShipmentLineDto>(entity);
@@ -330,6 +364,8 @@ namespace aqua_api.Modules.Shipments.Application.Services
         {
             try
             {
+                await _unitOfWork.BeginTransactionAsync();
+
                 var repo = _unitOfWork.ShipmentLines;
                 var entity = await repo.Query(tracking: true)
                     .Include(x => x.Shipment)
@@ -337,36 +373,159 @@ namespace aqua_api.Modules.Shipments.Application.Services
 
                 if (entity == null)
                 {
+                    await _unitOfWork.RollbackTransactionAsync();
                     return ApiResponse<bool>.ErrorResult(
                         _localizationService.GetLocalizedString("ShipmentLineService.NotFound"),
                         _localizationService.GetLocalizedString("ShipmentLineService.NotFound"),
                         StatusCodes.Status404NotFound);
                 }
 
-                EnsureDraft(entity.Shipment?.Status ?? DocumentStatus.Cancelled);
+                var shipment = entity.Shipment
+                    ?? throw new InvalidOperationException(
+                        _localizationService.GetLocalizedString("ShipmentLineService.NotFound"));
+                EnsureCanDelete(entity, shipment);
+
+                var isPosted = shipment.Status == DocumentStatus.Posted;
+                var userId = entity.UpdatedBy
+                    ?? entity.CreatedBy
+                    ?? shipment.UpdatedBy
+                    ?? shipment.CreatedBy
+                    ?? 1L;
+                if (isPosted)
+                {
+                    await _ledgerReplayService.PrepareAsync(
+                        shipment.ProjectId,
+                        entity.FishBatchId,
+                        entity.FromProjectCageId,
+                        userId);
+                }
+
                 var isDeleted = await repo.SoftDeleteAsync(id);
 
                 if (!isDeleted)
                 {
+                    await _unitOfWork.RollbackTransactionAsync();
                     return ApiResponse<bool>.ErrorResult(
                         _localizationService.GetLocalizedString("ShipmentLineService.NotFound"),
                         _localizationService.GetLocalizedString("ShipmentLineService.NotFound"),
                         StatusCodes.Status404NotFound);
                 }
 
+                if (isPosted)
+                {
+                    var now = DateTimeProvider.UtcNow;
+                    var movements = await _unitOfWork.Db.BatchMovements
+                        .Where(x =>
+                            !x.IsDeleted
+                            && x.FishBatchId == entity.FishBatchId
+                            && x.MovementType == BatchMovementType.Shipment
+                            && x.ReferenceTable == "RII_SHIPMENT_LINE"
+                            && x.ReferenceId == entity.Id)
+                        .ToListAsync();
+                    foreach (var movement in movements)
+                    {
+                        movement.IsDeleted = true;
+                        movement.DeletedBy = userId;
+                        movement.DeletedDate = now;
+                    }
+                }
+
                 await _unitOfWork.SaveChangesAsync();
+
+                if (isPosted)
+                {
+                    await _ledgerReplayService.ReplayAsync(
+                        shipment.ProjectId,
+                        entity.FishBatchId,
+                        entity.FromProjectCageId,
+                        shipment.ShipmentDate,
+                        userId);
+
+                    if (shipment.TargetWarehouseId.HasValue)
+                    {
+                        await _ledgerReplayService.RebuildWarehouseAndBatchAsync(
+                            shipment.ProjectId,
+                            entity.FishBatchId,
+                            shipment.TargetWarehouseId.Value,
+                            userId);
+                    }
+
+                    await ReopenSourceIfBalanceRestoredAsync(
+                        shipment.ProjectId,
+                        entity.FishBatchId,
+                        entity.FromProjectCageId,
+                        userId);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                await _unitOfWork.CommitTransactionAsync();
                 return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("ShipmentLineService.OperationSuccessful"));
             }
             catch (InvalidOperationException ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 return ApiResponse<bool>.ErrorResult(ex.Message, ex.Message, StatusCodes.Status400BadRequest);
             }
             catch (Exception ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("ShipmentLineService.InternalServerError"),
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        private void EnsureCanDelete(ShipmentLine line, Shipment shipment)
+        {
+            if (shipment.IsERPIntegrated || !string.IsNullOrWhiteSpace(line.ErpSourceMovementKey))
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("ShipmentLineService.ErpIntegratedCannotBeChanged"));
+            }
+
+            if (shipment.Status is not (DocumentStatus.Draft or DocumentStatus.Posted))
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("ShipmentLineService.PostedCannotBeChanged"));
+            }
+        }
+
+        private async Task ReopenSourceIfBalanceRestoredAsync(
+            long projectId,
+            long fishBatchId,
+            long projectCageId,
+            long userId)
+        {
+            var hasLiveBalance = await _unitOfWork.Db.BatchCageBalances
+                .AnyAsync(x =>
+                    !x.IsDeleted
+                    && x.FishBatchId == fishBatchId
+                    && x.ProjectCageId == projectCageId
+                    && x.LiveCount > 0);
+            if (!hasLiveBalance)
+            {
+                return;
+            }
+
+            var now = DateTimeProvider.UtcNow;
+            var projectCage = await _unitOfWork.Db.ProjectCages
+                .FirstOrDefaultAsync(x => x.Id == projectCageId && !x.IsDeleted);
+            if (projectCage?.ReleasedDate != null)
+            {
+                projectCage.ReleasedDate = null;
+                projectCage.UpdatedBy = userId;
+                projectCage.UpdatedDate = now;
+            }
+
+            var project = await _unitOfWork.Db.Projects
+                .FirstOrDefaultAsync(x => x.Id == projectId && !x.IsDeleted);
+            if (project?.Status == DocumentStatus.Cancelled)
+            {
+                project.Status = DocumentStatus.Posted;
+                project.EndDate = null;
+                project.UpdatedBy = userId;
+                project.UpdatedDate = now;
             }
         }
 

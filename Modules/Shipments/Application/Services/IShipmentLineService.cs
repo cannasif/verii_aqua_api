@@ -7,6 +7,7 @@ namespace aqua_api.Modules.Shipments.Application.Services
         Task<ApiResponse<PagedResponse<ShipmentLineDto>>> GetAllAsync(PagedRequest request);
         Task<ApiResponse<ShipmentLineDto>> CreateAsync(CreateShipmentLineDto dto);
         Task<ApiResponse<ShipmentLineDto>> CreateWithAutoHeaderAsync(CreateShipmentLineWithAutoHeaderDto dto);
+        Task<ApiResponse<ShipmentLineDto>> CreateWithAutoHeaderAndPostAsync(CreateShipmentLineWithAutoHeaderDto dto, long userId);
         Task<ApiResponse<ShipmentLineDto>> UpdateAsync(long id, UpdateShipmentLineDto dto);
         Task<ApiResponse<bool>> SoftDeleteAsync(long id);
     }
