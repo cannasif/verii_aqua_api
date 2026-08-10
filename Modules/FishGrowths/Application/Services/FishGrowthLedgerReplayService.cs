@@ -26,7 +26,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         long projectId,
         long fishBatchId,
         long projectCageId,
-        long userId)
+        long? userId)
     {
         var fishBatch = await _unitOfWork.Db.FishBatches
             .AsNoTracking()
@@ -139,7 +139,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         long fishBatchId,
         long projectCageId,
         DateTime fromDate,
-        long userId)
+        long? userId)
     {
         var movements = await _unitOfWork.Db.BatchMovements
             .Where(x =>
@@ -268,7 +268,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
     private async Task SynchronizeShipmentMovementsAsync(
         FishBatch fishBatch,
         long projectCageId,
-        long userId,
+        long? userId,
         LedgerSynchronizationResult synchronization)
     {
         var lines = await _unitOfWork.Db.ShipmentLines
@@ -399,7 +399,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
     private async Task SynchronizeMortalityMovementsAsync(
         FishBatch fishBatch,
         long projectCageId,
-        long userId,
+        long? userId,
         LedgerSynchronizationResult synchronization)
     {
         var documentGroups = await _unitOfWork.Db.MortalityLines
@@ -500,7 +500,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
     private async Task SynchronizeFeedingMovementsAsync(
         long fishBatchId,
         long projectCageId,
-        long userId)
+        long? userId)
     {
         var distributions = await _unitOfWork.Db.FeedingDistributions
             .Include(x => x.FeedingLine)
@@ -710,7 +710,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         long? warehouseId,
         int signedCount,
         decimal signedBiomassGram,
-        long userId)
+        long? userId)
     {
         var isCageExit = projectCageId.HasValue;
         return new BatchMovement
@@ -745,7 +745,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         long? warehouseId,
         int expectedSignedCount,
         decimal expectedSignedBiomassGram,
-        long userId,
+        long? userId,
         LedgerSynchronizationResult synchronization)
     {
         var now = DateTimeProvider.UtcNow;
@@ -822,7 +822,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         IReadOnlyDictionary<long, FishGrowth> growthById,
         ref long fishCount,
         ref decimal biomassGram,
-        long userId)
+        long? userId)
     {
         if (movement.ReferenceTable != FishGrowthReferenceTable
             || !growthById.TryGetValue(movement.ReferenceId, out var growth))
@@ -872,7 +872,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         BatchMovement movement,
         ref long fishCount,
         ref decimal biomassGram,
-        long userId)
+        long? userId)
     {
         EnsureLiveState(fishCount, biomassGram);
         var averageGram = CalculateAverageGram(fishCount, biomassGram);
@@ -895,7 +895,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         BatchMovement movement,
         ref long fishCount,
         ref decimal biomassGram,
-        long userId)
+        long? userId)
     {
         if (fishCount <= 0 || movement.ToAverageGram is not > 0m)
         {
@@ -921,7 +921,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
     private async Task UpdateShipmentSnapshotAsync(
         BatchMovement movement,
         decimal sourceAverageGram,
-        long userId,
+        long? userId,
         ISet<long> touchedWarehouseIds)
     {
         if (movement.SignedCount >= 0)
@@ -995,7 +995,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         long fishCount,
         decimal biomassGram,
         IReadOnlyCollection<BatchMovement> movements,
-        long userId)
+        long? userId)
     {
         EnsureNonNegativeState(fishCount, biomassGram);
         var balance = await _unitOfWork.Db.BatchCageBalances
@@ -1030,7 +1030,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
     private async Task RebuildCageBalanceFromLedgerAsync(
         long fishBatchId,
         long projectCageId,
-        long userId)
+        long? userId)
     {
         var movements = await _unitOfWork.Db.BatchMovements
             .AsNoTracking()
@@ -1052,7 +1052,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         long projectId,
         long fishBatchId,
         long warehouseId,
-        long userId)
+        long? userId)
     {
         var movements = await _unitOfWork.Db.BatchMovements
             .AsNoTracking()
@@ -1096,7 +1096,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         balance.UpdatedDate = DateTimeProvider.UtcNow;
     }
 
-    private async Task UpdateFishBatchAverageAsync(long fishBatchId, long userId)
+    private async Task UpdateFishBatchAverageAsync(long fishBatchId, long? userId)
     {
         var cageBalances = await _unitOfWork.Db.BatchCageBalances
             .Where(x => !x.IsDeleted && x.FishBatchId == fishBatchId)

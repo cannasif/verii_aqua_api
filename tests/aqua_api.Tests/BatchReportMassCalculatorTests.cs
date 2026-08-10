@@ -49,6 +49,39 @@ public sealed class BatchReportMassCalculatorTests
         Assert.Equal(200m, snapshot.AverageGram);
     }
 
+    [Fact]
+    public void Snapshot_UsesExactBiomassDelta_WhenErpCorrectsCountAndGramTogether()
+    {
+        var opening = Movement(
+            1,
+            new DateTime(2026, 1, 1),
+            BatchMovementType.Stocking,
+            100,
+            1_400m,
+            null,
+            14m);
+        var legacyCorrection = Movement(
+            2,
+            new DateTime(2026, 1, 1),
+            BatchMovementType.Stocking,
+            20,
+            520m,
+            null,
+            16m);
+        legacyCorrection.Note = "ERP fish receipt delta | projectId=1";
+
+        var movements = new[] { opening, legacyCorrection };
+        var snapshot = BatchReportMassCalculator.CalculateSnapshot(movements);
+        var deltas = BatchReportMassCalculator.CalculateMovementBiomassDeltas(movements);
+
+        Assert.Equal(120, snapshot.LiveCount);
+        Assert.Equal(16m, snapshot.AverageGram);
+        Assert.Equal(1_920m, snapshot.BiomassGram);
+        Assert.Equal(1_400m, deltas[1]);
+        Assert.Equal(520m, deltas[2]);
+        Assert.Equal(520m, BatchReportMassCalculator.CalculateSignedBiomassGram(legacyCorrection));
+    }
+
     private static BatchMovement Movement(
         long id,
         DateTime date,

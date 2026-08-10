@@ -59,7 +59,8 @@ namespace aqua_api.Modules.Integrations.Application.Mappings
                 .ForMember(dest => dest.ProjeKod, opt => opt.MapFrom(src => src.PROJE_KODU))
                 .ForMember(dest => dest.ProjeAciklama, opt => opt.MapFrom(src => src.PROJE_ACIKLAMA));
 
-            CreateMap<RII_FN_MAL_KABUL_VE_SEVKIYAT, MalKabulVeSevkiyatDto>();
+            CreateMap<RII_FN_MAL_KABUL_VE_SEVKIYAT, MalKabulVeSevkiyatDto>()
+                .ForMember(dest => dest.BirimGram, opt => opt.Ignore());
 
             // Kur mappings
             CreateMap<RII_FN_KUR, KurDto>()

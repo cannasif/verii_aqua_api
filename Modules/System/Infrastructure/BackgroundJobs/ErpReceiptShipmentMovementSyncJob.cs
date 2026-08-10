@@ -25,6 +25,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
         private readonly AquaDbContext _db;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IBalanceLedgerManager _balanceLedgerManager;
+        private readonly IFishGrowthLedgerReplayService _ledgerReplayService;
         private readonly ILocalizationService _localizationService;
         private readonly ILogger<ErpReceiptShipmentMovementSyncJob> _logger;
 
@@ -33,6 +34,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             AquaDbContext db,
             IUnitOfWork unitOfWork,
             IBalanceLedgerManager balanceLedgerManager,
+            IFishGrowthLedgerReplayService ledgerReplayService,
             ILocalizationService localizationService,
             ILogger<ErpReceiptShipmentMovementSyncJob> logger)
         {
@@ -40,6 +42,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             _db = db;
             _unitOfWork = unitOfWork;
             _balanceLedgerManager = balanceLedgerManager;
+            _ledgerReplayService = ledgerReplayService;
             _localizationService = localizationService;
             _logger = logger;
         }
@@ -144,28 +147,51 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 
         public async Task ProcessMovementInCurrentTransactionAsync(MalKabulVeSevkiyatDto movement, string? sourceMovementKeyOverride = null)
         {
-            var sourceMovementKey = string.IsNullOrWhiteSpace(sourceMovementKeyOverride)
-                ? BuildSourceMovementKey(movement)
-                : sourceMovementKeyOverride.Trim();
-            if (string.IsNullOrWhiteSpace(movement.StokKodu) || movement.Tarih == default || (movement.Miktar ?? 0) <= 0)
+            var ownsTransaction = _db.Database.CurrentTransaction == null;
+            if (ownsTransaction)
             {
-                throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.InvalidMovementData"));
+                await _unitOfWork.BeginTransactionAsync();
             }
 
-
-            var isCancelled = await _db.ErpReceiptShipmentMovements
-                .IgnoreQueryFilters()
-                .AsNoTracking()
-                .AnyAsync(x => x.SourceMovementKey == sourceMovementKey && x.IsCancelled);
-            if (isCancelled)
+            try
             {
-                throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpMovementCancellation.CancelledSourceCannotBeProcessed"));
-            }
+                var sourceMovementKey = string.IsNullOrWhiteSpace(sourceMovementKeyOverride)
+                    ? BuildSourceMovementKey(movement)
+                    : sourceMovementKeyOverride.Trim();
+                if (string.IsNullOrWhiteSpace(movement.StokKodu) || movement.Tarih == default || (movement.Miktar ?? 0) <= 0)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpReceiptShipmentMovementSyncJob.InvalidMovementData"));
+                }
 
-            var mirrorMovement = await UpsertMirrorMovementAsync(movement, sourceMovementKey);
-            var outcome = await ApplyMovementAsync(movement, sourceMovementKey);
-            await EnrichMirrorMovementAsync(mirrorMovement, movement, sourceMovementKey, outcome);
-            await _unitOfWork.SaveChangesAsync();
+                var isCancelled = await _db.ErpReceiptShipmentMovements
+                    .IgnoreQueryFilters()
+                    .AsNoTracking()
+                    .AnyAsync(x => x.SourceMovementKey == sourceMovementKey && x.IsCancelled);
+                if (isCancelled)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("ErpMovementCancellation.CancelledSourceCannotBeProcessed"));
+                }
+
+                var mirrorMovement = await UpsertMirrorMovementAsync(movement, sourceMovementKey);
+                var outcome = await ApplyMovementAsync(movement, sourceMovementKey);
+                await EnrichMirrorMovementAsync(mirrorMovement, movement, sourceMovementKey, outcome);
+                await _unitOfWork.SaveChangesAsync();
+
+                if (ownsTransaction)
+                {
+                    await _unitOfWork.CommitTransactionAsync();
+                }
+            }
+            catch
+            {
+                if (ownsTransaction)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    _db.ChangeTracker.Clear();
+                }
+
+                throw;
+            }
         }
 
         private async Task<bool> IsSourceMovementAlreadyProcessedAsync(
@@ -179,10 +205,10 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             var inOutCode = Shorten(Clean(movement.GcKodu), 1);
             var operationType = Shorten(Clean(movement.IslemTuru), 50);
 
-            return await _db.ErpReceiptShipmentMovements
+            var existingMirror = await _db.ErpReceiptShipmentMovements
                 .IgnoreQueryFilters()
                 .AsNoTracking()
-                .AnyAsync(x => !x.IsDeleted
+                .FirstOrDefaultAsync(x => !x.IsDeleted
                     && (x.IsProcessed || x.IsCancelled)
                     && (x.SourceMovementKey == sourceMovementKey
                         || (x.MovementDate == movement.Tarih
@@ -193,6 +219,51 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                             && x.MovementKind == movementKind
                             && x.InOutCode == inOutCode
                             && x.OperationType == operationType)));
+
+            if (existingMirror == null)
+            {
+                return false;
+            }
+
+            if (existingMirror.IsCancelled)
+            {
+                return true;
+            }
+
+            if (IsGoodsReceipt(movement))
+            {
+                if (!existingMirror.GoodsReceiptLineId.HasValue)
+                {
+                    return false;
+                }
+
+                var receiptLineAverageGram = await _db.GoodsReceiptLines
+                    .AsNoTracking()
+                    .Where(x => !x.IsDeleted && x.Id == existingMirror.GoodsReceiptLineId.Value)
+                    .Select(x => (decimal?)x.FishAverageGram)
+                    .FirstOrDefaultAsync();
+                if (!receiptLineAverageGram.HasValue)
+                {
+                    return false;
+                }
+
+                if (movement.BirimGram.GetValueOrDefault() > 0m
+                    && Math.Abs(receiptLineAverageGram.Value - movement.BirimGram!.Value) >= 0.0005m)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+
+            if (IsShipment(movement))
+            {
+                return existingMirror.ShipmentLineId.HasValue
+                    && await _db.ShipmentLines.AsNoTracking().AnyAsync(x =>
+                        !x.IsDeleted && x.Id == existingMirror.ShipmentLineId.Value);
+            }
+
+            return true;
         }
 
         private async Task<ApplyOutcome> ApplyMovementAsync(MalKabulVeSevkiyatDto movement, string sourceMovementKey)
@@ -463,11 +534,15 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 
             var fishCount = ResolveCount(movement);
             var fishBatch = await ResolveOrCreateFishBatchAsync(project, stock, receipt, movement, projectCage, warehouse);
-            var averageGram = await ResolveAverageGramAsync(fishBatch, projectCage, warehouse);
-            var biomassGram = Math.Round(fishCount * averageGram, 3, MidpointRounding.AwayFromZero);
             var existingLine = await _db.GoodsReceiptLines
                 .Include(x => x.FishDistributions)
                 .FirstOrDefaultAsync(x => !x.IsDeleted && x.ErpSourceMovementKey == sourceMovementKey);
+            var averageGram = movement.BirimGram.GetValueOrDefault() > 0m
+                ? movement.BirimGram.GetValueOrDefault()
+                : existingLine?.FishAverageGram is > 0m
+                    ? existingLine.FishAverageGram.GetValueOrDefault()
+                    : await ResolveAverageGramAsync(fishBatch, projectCage, warehouse, null);
+            var biomassGram = Math.Round(fishCount * averageGram, 3, MidpointRounding.AwayFromZero);
 
             if (existingLine == null)
             {
@@ -518,6 +593,8 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                         stock.Id,
                         null,
                         averageGram);
+
+                    await SynchronizeFishBatchCurrentAverageGramAsync(fishBatch);
                 }
                 else if (warehouse != null)
                 {
@@ -538,6 +615,8 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                         stock.Id,
                         null,
                         averageGram);
+
+                    await SynchronizeFishBatchCurrentAverageGramAsync(fishBatch);
                 }
 
                 return ApplyOutcome.Created;
@@ -545,6 +624,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
 
             var oldCount = existingLine.FishCount ?? 0;
             var oldBiomass = existingLine.FishTotalGram ?? 0;
+            var oldAverageGram = existingLine.FishAverageGram.GetValueOrDefault();
             var deltaCount = fishCount - oldCount;
             var deltaBiomass = biomassGram - oldBiomass;
             var activeDistributions = existingLine.FishDistributions.Where(x => !x.IsDeleted).ToList();
@@ -631,6 +711,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 existingDistribution.FishBatchId = fishBatch.Id;
                 existingDistribution.FishCount = fishCount;
                 existingDistribution.UpdatedDate = DateTimeProvider.Now;
+                await SynchronizeFishBatchCurrentAverageGramAsync(fishBatch);
                 return ApplyOutcome.Updated;
             }
 
@@ -676,8 +757,16 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                         projectCage.Id,
                         null,
                         stock.Id,
-                        null,
+                        oldAverageGram > 0m ? oldAverageGram : null,
                         averageGram);
+
+                    await _unitOfWork.SaveChangesAsync();
+                    await _ledgerReplayService.ReplayAsync(
+                        project.Id,
+                        fishBatch.Id,
+                        projectCage.Id,
+                        movement.Tarih,
+                        existingLine.UpdatedBy ?? existingLine.CreatedBy);
                 }
                 else if (warehouse != null)
                 {
@@ -696,8 +785,10 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                         warehouse.Id,
                         null,
                         stock.Id,
-                        null,
+                        oldAverageGram > 0m ? oldAverageGram : null,
                         averageGram);
+
+                    await SynchronizeFishBatchCurrentAverageGramAsync(fishBatch);
                 }
 
                 return ApplyOutcome.Updated;
@@ -729,7 +820,24 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                     stock.Id));
             }
 
-            var averageGram = activeBalance.AverageGram > 0 ? activeBalance.AverageGram : activeBalance.FishBatch?.CurrentAverageGram ?? 0;
+            var existingLine = await _db.ShipmentLines
+                .FirstOrDefaultAsync(x => !x.IsDeleted && x.ErpSourceMovementKey == sourceMovementKey);
+            var sourceSnapshot = await _balanceLedgerManager.GetCageMassSnapshotAsync(
+                activeBalance.FishBatchId,
+                projectCage.Id,
+                movement.Tarih,
+                BatchMovementType.Shipment);
+            var sourceCount = sourceSnapshot.LiveCount + (existingLine?.FishCount ?? 0);
+            var sourceBiomassGram = sourceSnapshot.BiomassGram + (existingLine?.BiomassGram ?? 0m);
+            if (sourceCount <= 0 || sourceBiomassGram <= 0m)
+            {
+                throw new InvalidOperationException(_localizationService.GetLocalizedString(
+                    "ErpReceiptShipmentMovementSyncJob.ShipmentLiveBalanceNotFound",
+                    projectCage.Id,
+                    stock.Id));
+            }
+
+            var averageGram = Math.Round(sourceBiomassGram / sourceCount, 3, MidpointRounding.AwayFromZero);
             var biomassGram = Math.Round(fishCount * averageGram, 3, MidpointRounding.AwayFromZero);
             var shipmentNo = BuildDocumentNo("ERP-SH", movement);
             var now = DateTimeProvider.Now;
@@ -758,9 +866,6 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 shipment.ProjectId = project.Id;
                 shipment.UpdatedDate = now;
             }
-
-            var existingLine = await _db.ShipmentLines
-                .FirstOrDefaultAsync(x => !x.IsDeleted && x.ErpSourceMovementKey == sourceMovementKey);
 
             if (existingLine == null)
             {
@@ -799,6 +904,14 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                     averageGram,
                     null);
 
+                await _unitOfWork.SaveChangesAsync();
+                await _ledgerReplayService.ReplayAsync(
+                    project.Id,
+                    activeBalance.FishBatchId,
+                    projectCage.Id,
+                    movement.Tarih,
+                    line.UpdatedBy ?? line.CreatedBy);
+
                 return ApplyOutcome.Created;
             }
 
@@ -831,6 +944,14 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                     null,
                     averageGram,
                     null);
+
+                await _unitOfWork.SaveChangesAsync();
+                await _ledgerReplayService.ReplayAsync(
+                    project.Id,
+                    activeBalance.FishBatchId,
+                    projectCage.Id,
+                    movement.Tarih,
+                    existingLine.UpdatedBy ?? existingLine.CreatedBy);
 
                 return ApplyOutcome.Updated;
             }
@@ -1088,7 +1209,12 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 return existingBatch;
             }
 
-            var initialAverageGram = await ResolveInitialAverageGramAsync(project.Id, stock.Id, projectCage, warehouse);
+            var initialAverageGram = await ResolveInitialAverageGramAsync(
+                project.Id,
+                stock.Id,
+                projectCage,
+                warehouse,
+                movement.BirimGram);
             var batch = new FishBatch
             {
                 ProjectId = project.Id,
@@ -1109,8 +1235,14 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             long projectId,
             long stockId,
             ProjectCage? projectCage,
-            WarehouseEntity? warehouse)
+            WarehouseEntity? warehouse,
+            decimal? erpAverageGram)
         {
+            if (erpAverageGram.GetValueOrDefault() > 0)
+            {
+                return erpAverageGram.GetValueOrDefault();
+            }
+
             if (projectCage != null)
             {
                 var cageAverageGram = await _db.BatchCageBalances
@@ -1171,11 +1303,15 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
             return projectAverageGram.GetValueOrDefault() > 0 ? projectAverageGram.GetValueOrDefault() : 1m;
         }
 
-        private async Task<decimal> ResolveAverageGramAsync(FishBatch fishBatch, ProjectCage? projectCage, WarehouseEntity? warehouse)
+        private async Task<decimal> ResolveAverageGramAsync(
+            FishBatch fishBatch,
+            ProjectCage? projectCage,
+            WarehouseEntity? warehouse,
+            decimal? erpAverageGram)
         {
-            if (fishBatch.CurrentAverageGram > 0)
+            if (erpAverageGram.GetValueOrDefault() > 0)
             {
-                return fishBatch.CurrentAverageGram;
+                return erpAverageGram.GetValueOrDefault();
             }
 
             if (projectCage != null)
@@ -1206,7 +1342,7 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                 }
             }
 
-            return 0;
+            return fishBatch.CurrentAverageGram > 0 ? fishBatch.CurrentAverageGram : 0;
         }
 
         private async Task<BatchCageBalance?> ResolveShipmentBalanceAsync(long projectCageId, long stockId)
@@ -1222,6 +1358,37 @@ namespace aqua_api.Modules.System.Infrastructure.BackgroundJobs
                     x.FishBatch.FishStockId == stockId)
                 .OrderByDescending(x => x.AsOfDate)
                 .FirstOrDefaultAsync();
+        }
+
+        private async Task SynchronizeFishBatchCurrentAverageGramAsync(FishBatch fishBatch)
+        {
+            var cageBalances = await _db.BatchCageBalances
+                .Where(x => !x.IsDeleted && x.FishBatchId == fishBatch.Id && x.LiveCount > 0)
+                .ToListAsync();
+            cageBalances.AddRange(_db.BatchCageBalances.Local.Where(x =>
+                !x.IsDeleted &&
+                x.FishBatchId == fishBatch.Id &&
+                x.LiveCount > 0 &&
+                !cageBalances.Contains(x)));
+
+            var warehouseBalances = await _db.BatchWarehouseBalances
+                .Where(x => !x.IsDeleted && x.FishBatchId == fishBatch.Id && x.LiveCount > 0)
+                .ToListAsync();
+            warehouseBalances.AddRange(_db.BatchWarehouseBalances.Local.Where(x =>
+                !x.IsDeleted &&
+                x.FishBatchId == fishBatch.Id &&
+                x.LiveCount > 0 &&
+                !warehouseBalances.Contains(x)));
+
+            var totalCount = cageBalances.Sum(x => x.LiveCount) + warehouseBalances.Sum(x => x.LiveCount);
+            if (totalCount <= 0)
+            {
+                fishBatch.CurrentAverageGram = 0;
+                return;
+            }
+
+            var totalBiomassGram = cageBalances.Sum(x => x.BiomassGram) + warehouseBalances.Sum(x => x.BiomassGram);
+            fishBatch.CurrentAverageGram = Math.Round(totalBiomassGram / totalCount, 3, MidpointRounding.AwayFromZero);
         }
 
         private async Task LogRecordFailureAsync(string key, Exception ex)

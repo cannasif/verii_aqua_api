@@ -34,6 +34,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 return 0m;
             }
 
+            if (IsMixedStockingCorrection(movement))
+            {
+                return Round(movement.SignedBiomassGram);
+            }
+
             var averageGram = ResolveMovementAverageGram(movement);
             if (averageGram > 0m)
             {
@@ -151,9 +156,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     return;
                 }
 
-                biomassGram += movementAverageGram > 0m
-                    ? movement.SignedCount * movementAverageGram
-                    : movement.SignedBiomassGram;
+                biomassGram += IsMixedStockingCorrection(movement)
+                    ? movement.SignedBiomassGram
+                    : movementAverageGram > 0m
+                        ? movement.SignedCount * movementAverageGram
+                        : movement.SignedBiomassGram;
                 liveCount = nextCount;
                 biomassGram = liveCount == 0 ? 0m : Math.Max(0m, biomassGram);
                 return;
@@ -170,6 +177,15 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 movement.SignedBiomassGram != 0m)
             {
                 // Legacy average-changing movements may only contain a biomass delta.
+                biomassGram = Math.Max(0m, biomassGram + movement.SignedBiomassGram);
+                return;
+            }
+
+            if (movement.SignedBiomassGram != 0m
+                && movement.MovementType is BatchMovementType.Stocking
+                    or BatchMovementType.OpeningImport
+                    or BatchMovementType.Adjustment)
+            {
                 biomassGram = Math.Max(0m, biomassGram + movement.SignedBiomassGram);
             }
         }
@@ -196,6 +212,10 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
         private static decimal Round(decimal value) =>
             Math.Round(value, 3, MidpointRounding.AwayFromZero);
+
+        private static bool IsMixedStockingCorrection(BatchMovement movement) =>
+            movement.MovementType == BatchMovementType.Stocking
+            && movement.Note?.StartsWith("ERP fish receipt delta", StringComparison.OrdinalIgnoreCase) == true;
 
         private readonly record struct MovementLocationKey(
             long FishBatchId,

@@ -525,6 +525,7 @@ public sealed class ErpReceiptResyncServiceIntegrationTests
                 db,
                 unitOfWork,
                 new aqua_api.Modules.Aqua.Application.Services.BalanceLedgerManager(unitOfWork, localization),
+                new aqua_api.Modules.FishGrowths.Application.Services.FishGrowthLedgerReplayService(unitOfWork, localization),
                 localization,
                 NullLogger<ErpReceiptShipmentMovementSyncJob>.Instance)
             : new FakeSyncJob(throwDuringSync);

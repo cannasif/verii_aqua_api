@@ -9,6 +9,7 @@ namespace aqua_api.Modules.Integrations.Application.Dtos
         public string StokKodu { get; set; } = string.Empty;
         public string? StokAdi { get; set; }
         public decimal? Miktar { get; set; }
+        public decimal? BirimGram { get; set; }
         public string HareketTuru { get; set; } = string.Empty;
         public string GcKodu { get; set; } = string.Empty;
         public string? GrupKodu { get; set; }

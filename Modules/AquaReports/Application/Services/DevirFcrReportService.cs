@@ -312,7 +312,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             }
 
             return date == fromDate &&
-                   movement.SignedCount > 0 &&
+                   (movement.SignedCount != 0 || movement.SignedBiomassGram != 0m) &&
                    movement.MovementType is BatchMovementType.OpeningImport or BatchMovementType.Stocking;
         }
 

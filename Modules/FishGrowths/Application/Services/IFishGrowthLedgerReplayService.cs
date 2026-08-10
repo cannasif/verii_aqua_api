@@ -11,7 +11,7 @@ public interface IFishGrowthLedgerReplayService
         long projectId,
         long fishBatchId,
         long projectCageId,
-        long userId);
+        long? userId);
 
     Task<FishGrowthLedgerState> GetStateBeforeAsync(
         long fishBatchId,
@@ -23,5 +23,5 @@ public interface IFishGrowthLedgerReplayService
         long fishBatchId,
         long projectCageId,
         DateTime fromDate,
-        long userId);
+        long? userId);
 }
