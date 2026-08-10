@@ -136,7 +136,7 @@ public class KpiReportService : IKpiReportService
                         BiomassGram = x.Sum(y => BatchReportMassCalculator.CalculateBiomassGram(y.LiveCount, y.AverageGram))
                     });
 
-            var feedGramByProject = await (
+            var feedRecords = await (
                 from distribution in _unitOfWork.Db.FeedingDistributions.AsNoTracking()
                 join line in _unitOfWork.Db.FeedingLines.AsNoTracking()
                     on distribution.FeedingLineId equals line.Id
@@ -147,13 +147,15 @@ public class KpiReportService : IKpiReportService
                     && !feeding.IsDeleted
                     && feeding.Status == DocumentStatus.Posted
                     && projectIds.Contains(feeding.ProjectId)
-                group distribution by feeding.ProjectId into grouped
                 select new
                 {
-                    ProjectId = grouped.Key,
-                    FeedGram = grouped.Sum(x => x.FeedGram)
+                    feeding.ProjectId,
+                    distribution.FeedGram
                 })
-                .ToDictionaryAsync(x => x.ProjectId, x => x.FeedGram);
+                .ToListAsync();
+            var feedGramByProject = feedRecords
+                .GroupBy(x => x.ProjectId)
+                .ToDictionary(x => x.Key, x => x.Sum(y => y.FeedGram));
 
             var rows = projects
                 .Select(project =>
