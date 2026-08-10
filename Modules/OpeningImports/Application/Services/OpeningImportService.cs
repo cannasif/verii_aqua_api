@@ -384,6 +384,11 @@ public class OpeningImportService : IOpeningImportService
                     .Select(x => x.Id)
                     .ToListAsync();
                 var feedingIds = await _unitOfWork.Db.Feedings.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToListAsync();
+                var feedingLineIds = await _unitOfWork.Db.FeedingLines
+                    .IgnoreQueryFilters()
+                    .Where(x => feedingIds.Contains(x.FeedingId))
+                    .Select(x => x.Id)
+                    .ToListAsync();
                 var mortalityIds = await _unitOfWork.Db.Mortalities.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToListAsync();
                 var shipmentIds = await _unitOfWork.Db.Shipments.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToListAsync();
                 var shipmentLineIds = await _unitOfWork.Db.ShipmentLines
@@ -401,12 +406,21 @@ public class OpeningImportService : IOpeningImportService
                 var stockConvertIds = await _unitOfWork.Db.StockConverts.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToListAsync();
                 var netOperationIds = await _unitOfWork.Db.NetOperations.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId)).Select(x => x.Id).ToListAsync();
 
-                var fishLabSampleIds = await _unitOfWork.Db.FishLabSamples
+                var fishHealthEventIds = await _unitOfWork.Db.FishHealthEvents
                     .IgnoreQueryFilters()
                     .Where(x =>
                         projectIds.Contains(x.ProjectId) ||
                         (x.ProjectCageId.HasValue && projectCageIds.Contains(x.ProjectCageId.Value)) ||
                         (x.FishBatchId.HasValue && fishBatchIds.Contains(x.FishBatchId.Value)))
+                    .Select(x => x.Id)
+                    .ToListAsync();
+                var fishLabSampleIds = await _unitOfWork.Db.FishLabSamples
+                    .IgnoreQueryFilters()
+                    .Where(x =>
+                        projectIds.Contains(x.ProjectId) ||
+                        (x.ProjectCageId.HasValue && projectCageIds.Contains(x.ProjectCageId.Value)) ||
+                        (x.FishBatchId.HasValue && fishBatchIds.Contains(x.FishBatchId.Value)) ||
+                        (x.FishHealthEventId.HasValue && fishHealthEventIds.Contains(x.FishHealthEventId.Value)))
                     .Select(x => x.Id)
                     .ToListAsync();
                 var complianceAuditIds = await _unitOfWork.Db.ComplianceAudits
@@ -463,20 +477,32 @@ public class OpeningImportService : IOpeningImportService
                     budgetFishBatch.SourceFishBatchId = null;
                 }
 
-                if (deletedErpMirrorRows > 0 || budgetProjectsToDetach.Count > 0 || budgetFishBatchesToDetach.Count > 0)
+                var batchesToDetach = await _unitOfWork.Db.FishBatches
+                    .IgnoreQueryFilters()
+                    .Where(x => fishBatchIds.Contains(x.Id))
+                    .ToListAsync();
+                foreach (var batch in batchesToDetach)
+                {
+                    batch.SourceGoodsReceiptLineId = null;
+                }
+
+                if (deletedErpMirrorRows > 0 ||
+                    budgetProjectsToDetach.Count > 0 ||
+                    budgetFishBatchesToDetach.Count > 0 ||
+                    batchesToDetach.Count > 0)
                 {
                     result.DeletedOperationalRecords += deletedErpMirrorRows;
 
-                    // Persist hard-delete blockers first. Budget snapshots keep their copied data
-                    // with nullable source links, and the transaction rolls back every phase together.
+                    // Break nullable source links before hard-deleting their referenced rows.
+                    // The surrounding transaction rolls every phase back if a later delete fails.
                     await _unitOfWork.SaveChangesAsync();
                 }
 
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.FishLabResults.IgnoreQueryFilters().Where(x => fishLabSampleIds.Contains(x.FishLabSampleId)));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.ComplianceCorrectiveActions.IgnoreQueryFilters().Where(x => complianceAuditIds.Contains(x.ComplianceAuditId)));
 
-                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.GoodsReceiptFishDistributions.IgnoreQueryFilters().Where(x => projectCageIds.Contains(x.ProjectCageId) || fishBatchIds.Contains(x.FishBatchId)));
-                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.FeedingDistributions.IgnoreQueryFilters().Where(x => projectCageIds.Contains(x.ProjectCageId) || fishBatchIds.Contains(x.FishBatchId)));
+                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.GoodsReceiptFishDistributions.IgnoreQueryFilters().Where(x => goodsReceiptLineIds.Contains(x.GoodsReceiptLineId) || projectCageIds.Contains(x.ProjectCageId) || fishBatchIds.Contains(x.FishBatchId)));
+                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.FeedingDistributions.IgnoreQueryFilters().Where(x => feedingLineIds.Contains(x.FeedingLineId) || projectCageIds.Contains(x.ProjectCageId) || fishBatchIds.Contains(x.FishBatchId)));
 
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.MortalityLines.IgnoreQueryFilters().Where(x => mortalityIds.Contains(x.MortalityId) || projectCageIds.Contains(x.ProjectCageId) || fishBatchIds.Contains(x.FishBatchId)));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.FeedingLines.IgnoreQueryFilters().Where(x => feedingIds.Contains(x.FeedingId)));
@@ -497,9 +523,9 @@ public class OpeningImportService : IOpeningImportService
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.BatchWarehouseBalances.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId) || fishBatchIds.Contains(x.FishBatchId)));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.ProjectCageDailyKpiSnapshots.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId) || projectCageIds.Contains(x.ProjectCageId) || fishBatchIds.Contains(x.FishBatchId)));
 
-                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.FishHealthEvents.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId) || (x.ProjectCageId.HasValue && projectCageIds.Contains(x.ProjectCageId.Value)) || (x.FishBatchId.HasValue && fishBatchIds.Contains(x.FishBatchId.Value))));
-                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.FishTreatments.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId) || (x.ProjectCageId.HasValue && projectCageIds.Contains(x.ProjectCageId.Value)) || (x.FishBatchId.HasValue && fishBatchIds.Contains(x.FishBatchId.Value))));
+                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.FishTreatments.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId) || (x.ProjectCageId.HasValue && projectCageIds.Contains(x.ProjectCageId.Value)) || (x.FishBatchId.HasValue && fishBatchIds.Contains(x.FishBatchId.Value)) || (x.FishHealthEventId.HasValue && fishHealthEventIds.Contains(x.FishHealthEventId.Value))));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.FishLabSamples.IgnoreQueryFilters().Where(x => fishLabSampleIds.Contains(x.Id)));
+                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.FishHealthEvents.IgnoreQueryFilters().Where(x => fishHealthEventIds.Contains(x.Id)));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.WelfareAssessments.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId) || (x.ProjectCageId.HasValue && projectCageIds.Contains(x.ProjectCageId.Value)) || (x.FishBatchId.HasValue && fishBatchIds.Contains(x.FishBatchId.Value))));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.ComplianceAudits.IgnoreQueryFilters().Where(x => complianceAuditIds.Contains(x.Id)));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.DailyWeathers.IgnoreQueryFilters().Where(x => projectIds.Contains(x.ProjectId)));
@@ -526,15 +552,6 @@ public class OpeningImportService : IOpeningImportService
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.Weighings.IgnoreQueryFilters().Where(x => weighingIds.Contains(x.Id)));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.StockConverts.IgnoreQueryFilters().Where(x => stockConvertIds.Contains(x.Id)));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.NetOperations.IgnoreQueryFilters().Where(x => netOperationIds.Contains(x.Id)));
-
-                var batchesToDetach = await _unitOfWork.Db.FishBatches
-                    .IgnoreQueryFilters()
-                    .Where(x => fishBatchIds.Contains(x.Id))
-                    .ToListAsync();
-                foreach (var batch in batchesToDetach)
-                {
-                    batch.SourceGoodsReceiptLineId = null;
-                }
 
                 result.DeletedFishBatches = await RemoveRangeAsync(_unitOfWork.Db.FishBatches.IgnoreQueryFilters().Where(x => fishBatchIds.Contains(x.Id)));
                 result.DeletedProjectCages = await RemoveRangeAsync(_unitOfWork.Db.ProjectCages.IgnoreQueryFilters().Where(x => projectCageIds.Contains(x.Id)));
@@ -563,14 +580,9 @@ public class OpeningImportService : IOpeningImportService
         private async Task<int> RemoveRangeAsync<TEntity>(IQueryable<TEntity> query)
             where TEntity : class
         {
-            var entities = await query.ToListAsync();
-            if (entities.Count == 0)
-            {
-                return 0;
-            }
-
-            _unitOfWork.Db.Set<TEntity>().RemoveRange(entities);
-            return entities.Count;
+            // Execute every hard delete immediately so SQL Server observes the explicit
+            // child-to-parent order above instead of reordering one large SaveChanges batch.
+            return await query.ExecuteDeleteAsync();
         }
 
         private async Task<List<StagedRow>> ValidateRowsAsync(OpeningImportPreviewRequestDto dto)
