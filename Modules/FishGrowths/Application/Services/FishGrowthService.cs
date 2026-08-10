@@ -213,7 +213,7 @@ public class FishGrowthService : IFishGrowthService
                 GetEffectiveDate(growth.GrowthDate).AddMonths(1));
 
             var balance = await GetGrowthBalanceAsync(growth);
-            EnsureGrowthMutationAllowed(balance, growth, movement);
+            EnsureGrowthMutationAllowed(balance);
 
             var targetAverageGram = Math.Round(dto.NewAverageGram, 3, MidpointRounding.AwayFromZero);
             if (targetAverageGram <= growth.PreviousAverageGram)
@@ -527,7 +527,7 @@ public class FishGrowthService : IFishGrowthService
             var movement = await GetGrowthMovementAsync(growth.Id);
 
             var balance = await GetGrowthBalanceAsync(growth);
-            EnsureGrowthMutationAllowed(balance, growth, movement);
+            EnsureGrowthMutationAllowed(balance);
 
             var now = DateTimeProvider.UtcNow;
             // Revert average only; recompute biomass from current live count (no g/kg conversion).
@@ -665,36 +665,14 @@ public class FishGrowthService : IFishGrowthService
             .FirstOrDefaultAsync();
     }
 
-    private void EnsureGrowthMutationAllowed(
-        BatchCageBalance balance,
-        FishGrowth growth,
-        BatchMovement movement)
+    private void EnsureGrowthMutationAllowed(BatchCageBalance balance)
     {
         if (balance.LiveCount <= 0)
         {
             throw new InvalidOperationException(
                 _localizationService.GetLocalizedString("FishGrowthService.ActiveBalanceNotFound"));
         }
-
-        var expectedGrowthBiomassGram = growth.NewBiomassGram - growth.PreviousBiomassGram;
-        var movementMatches = movement.SignedCount == 0
-            && AreEqual(movement.SignedBiomassGram, expectedGrowthBiomassGram)
-            && movement.FromAverageGram.HasValue
-            && AreEqual(movement.FromAverageGram.Value, growth.PreviousAverageGram)
-            && movement.ToAverageGram.HasValue
-            && AreEqual(movement.ToAverageGram.Value, growth.NewAverageGram);
-
-        // Count/biomass may diverge after shipment/mortality; average must still be this growth tip.
-        var averageStillAtGrowth = AreEqual(balance.AverageGram, growth.NewAverageGram);
-
-        if (!movementMatches || !averageStillAtGrowth || expectedGrowthBiomassGram <= 0m)
-        {
-            throw new InvalidOperationException(
-                _localizationService.GetLocalizedString("FishGrowthService.BalanceMismatch"));
-        }
     }
-
-    private static bool AreEqual(decimal left, decimal right) => left == right;
 
     private static DateTime GetEffectiveDate(DateTime growthDate) =>
         new(growthDate.Year, growthDate.Month, 1);
