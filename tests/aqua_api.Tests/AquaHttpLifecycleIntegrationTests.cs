@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using aqua_api.Modules.Aqua.Application.Services;
 using aqua_api.Modules.Aqua.Domain.Enums;
+using aqua_api.Modules.Integrations.Domain.Entities;
 using aqua_api.Shared.Common.Dtos;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 using Xunit;
@@ -656,6 +657,58 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
         Assert.False(await db.Projects.IgnoreQueryFilters().AnyAsync(x => x.ProjectCode == "PRJ-RESET-APPLIED"));
         Assert.False(await db.GoodsReceipts.IgnoreQueryFilters().AnyAsync(x => x.ReceiptNo == "OPEN-RESET-APPLIED"));
+    }
+
+    [Fact]
+    public async Task OpeningImport_ResetExistingDataClearsErpMirrorMovementsReferencingBatchMovements()
+    {
+        var client = _factory.CreateClient();
+        client.DefaultRequestHeaders.Add("X-Branch-Code", "1");
+
+        var preview = await PostAsync<OpeningImportPreviewResponseDto>(
+            client,
+            "/api/aqua/OpeningImport/preview",
+            BuildOpeningGoodsReceiptRequest("PRJ-RESET-ERP", "OPEN-RESET-ERP", string.Empty, secondReceiptDate: string.Empty));
+
+        Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+
+        var commit = await PostAsync<OpeningImportCommitResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data!.JobId}/commit", new { });
+        Assert.True(commit.Success, $"{commit.Message} | {commit.ExceptionMessage}");
+
+        long batchMovementId;
+        using (var setupScope = _factory.Services.CreateScope())
+        {
+            var setupDb = setupScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var projectId = await setupDb.Projects.Where(x => x.ProjectCode == "PRJ-RESET-ERP").Select(x => x.Id).SingleAsync();
+            var fishBatchId = await setupDb.FishBatches.Where(x => x.ProjectId == projectId).Select(x => x.Id).FirstAsync();
+            batchMovementId = await setupDb.BatchMovements.Where(x => x.FishBatchId == fishBatchId).Select(x => x.Id).FirstAsync();
+
+            // Simulates a Netsis ERP sync mirror row left pointing at this ledger movement,
+            // which previously made ResetExistingDataAsync fail with an FK conflict on delete.
+            setupDb.ErpReceiptShipmentMovements.Add(new ErpReceiptShipmentMovement
+            {
+                SourceSystem = "Netsis",
+                SourceMovementKey = $"RESET-ERP-TEST-{batchMovementId}",
+                MovementDate = DateTime.UtcNow,
+                ErpStockCode = "STOCK-RESET-ERP",
+                Quantity = 1,
+                MovementKind = "3",
+                InOutCode = "C",
+                OperationType = "Test",
+                LastSyncedAt = DateTime.UtcNow,
+                BatchMovementId = batchMovementId,
+            });
+            await setupDb.SaveChangesAsync();
+        }
+
+        var reset = await PostAsync<OpeningImportResetExistingDataResultDto>(client, $"/api/aqua/OpeningImport/{preview.Data.JobId}/reset-existing-data", new { });
+        Assert.True(reset.Success, $"{reset.Message} | {reset.ExceptionMessage}");
+        Assert.Equal(1, reset.Data!.DeletedProjects);
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var verifyDb = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        Assert.False(await verifyDb.Projects.IgnoreQueryFilters().AnyAsync(x => x.ProjectCode == "PRJ-RESET-ERP"));
+        Assert.False(await verifyDb.ErpReceiptShipmentMovements.IgnoreQueryFilters().AnyAsync(x => x.BatchMovementId == batchMovementId));
     }
 
     [Fact]
