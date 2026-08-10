@@ -10,6 +10,7 @@ using aqua_api.Modules.KpiReport.Application.Dtos;
 using aqua_api.Modules.Mortalities.Application.Dtos;
 using aqua_api.Modules.Shipments.Application.Dtos;
 using aqua_api.Shared.Common.Dtos;
+using aqua_api.Shared.Common.Helpers;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 using Xunit;
 
@@ -395,24 +396,32 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
             var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
             var balance = await db.BatchCageBalances.SingleAsync(x =>
                 x.ProjectCageId == projectCageId && x.FishBatchId == fishBatchId);
-            balance.BiomassGram += 0.001m;
+            // Simulate post-shipment count/biomass drift while average gram stays at growth tip.
+            balance.LiveCount = 900;
+            balance.BiomassGram = BatchMath.CalculateBiomassGram(900, 730m);
             await db.SaveChangesAsync();
         }
 
-        using var mismatchedBalanceUpdateResponse = await client.PutAsJsonAsync(
+        using var driftedBalanceUpdateResponse = await client.PutAsJsonAsync(
             $"/api/aqua/FishGrowth/{recreateBody.Data.Id}",
             new UpdateFishGrowthDto { NewAverageGram = 740m });
-        Assert.Equal(HttpStatusCode.BadRequest, mismatchedBalanceUpdateResponse.StatusCode);
-        var mismatchedBalanceUpdateBody = await mismatchedBalanceUpdateResponse.Content
+        Assert.Equal(HttpStatusCode.OK, driftedBalanceUpdateResponse.StatusCode);
+        var driftedBalanceUpdateBody = await driftedBalanceUpdateResponse.Content
             .ReadFromJsonAsync<ApiResponse<FishGrowthDto>>();
-        Assert.Contains("Kafes bakiyesi büyütme kaydıyla uyuşmuyor", mismatchedBalanceUpdateBody!.Message);
+        Assert.True(driftedBalanceUpdateBody?.Success, driftedBalanceUpdateBody?.ExceptionMessage);
+        Assert.Equal(740m, driftedBalanceUpdateBody!.Data!.NewAverageGram);
 
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AquaDbContext>();
             var balance = await db.BatchCageBalances.SingleAsync(x =>
                 x.ProjectCageId == projectCageId && x.FishBatchId == fishBatchId);
-            balance.BiomassGram = 730_000m;
+            Assert.Equal(900, balance.LiveCount);
+            Assert.Equal(740m, balance.AverageGram);
+            Assert.Equal(BatchMath.CalculateBiomassGram(900, 740m), balance.BiomassGram);
+            // Restore count for the remainder of the scenario.
+            balance.LiveCount = 1000;
+            balance.BiomassGram = BatchMath.CalculateBiomassGram(1000, 740m);
             await db.SaveChangesAsync();
         }
 
@@ -428,7 +437,7 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
                 MovementDate = new DateTime(2026, 7, 29),
                 MovementType = BatchMovementType.Transfer,
                 SignedCount = -1,
-                SignedBiomassGram = -730m,
+                SignedBiomassGram = -740m,
                 ReferenceTable = "TEST_LATER_TRANSFER",
                 ReferenceId = 1,
                 Note = "Later transfer using FromProjectCageId"
@@ -438,12 +447,12 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
 
         using var allowedUpdateResponse = await client.PutAsJsonAsync(
             $"/api/aqua/FishGrowth/{recreateBody.Data.Id}",
-            new UpdateFishGrowthDto { NewAverageGram = 740m });
+            new UpdateFishGrowthDto { NewAverageGram = 750m });
         Assert.Equal(HttpStatusCode.OK, allowedUpdateResponse.StatusCode);
         var allowedUpdateBody = await allowedUpdateResponse.Content
             .ReadFromJsonAsync<ApiResponse<FishGrowthDto>>();
         Assert.True(allowedUpdateBody?.Success, allowedUpdateBody?.ExceptionMessage);
-        Assert.Equal(740m, allowedUpdateBody!.Data!.NewAverageGram);
+        Assert.Equal(750m, allowedUpdateBody!.Data!.NewAverageGram);
 
         using var allowedDeleteResponse = await client.DeleteAsync($"/api/aqua/FishGrowth/{recreateBody.Data.Id}");
         Assert.Equal(HttpStatusCode.OK, allowedDeleteResponse.StatusCode);

@@ -213,7 +213,7 @@ public class FishGrowthService : IFishGrowthService
                 GetEffectiveDate(growth.GrowthDate).AddMonths(1));
 
             var balance = await GetGrowthBalanceAsync(growth);
-            EnsureBalanceMatchesGrowth(balance, growth, movement);
+            EnsureGrowthMutationAllowed(balance, growth, movement);
 
             var targetAverageGram = Math.Round(dto.NewAverageGram, 3, MidpointRounding.AwayFromZero);
             if (targetAverageGram <= growth.PreviousAverageGram)
@@ -222,7 +222,9 @@ public class FishGrowthService : IFishGrowthService
                     _localizationService.GetLocalizedString("FishGrowthService.NewAverageMustExceedPrevious"));
             }
 
+            // Growth row keeps historical fish count; cage balance uses current live count (g only).
             var targetBiomassGram = BatchMath.CalculateBiomassGram(growth.FishCount, targetAverageGram);
+            var balanceBiomassGram = BatchMath.CalculateBiomassGram(balance.LiveCount, targetAverageGram);
             var growthGram = Math.Round(
                 targetAverageGram - growth.PreviousAverageGram,
                 3,
@@ -231,7 +233,7 @@ public class FishGrowthService : IFishGrowthService
             var effectiveDate = GetEffectiveDate(growth.GrowthDate);
 
             balance.AverageGram = targetAverageGram;
-            balance.BiomassGram = targetBiomassGram;
+            balance.BiomassGram = balanceBiomassGram;
             balance.AsOfDate = effectiveDate;
             balance.UpdatedBy = userId;
             balance.UpdatedDate = now;
@@ -525,11 +527,12 @@ public class FishGrowthService : IFishGrowthService
             var movement = await GetGrowthMovementAsync(growth.Id);
 
             var balance = await GetGrowthBalanceAsync(growth);
-            EnsureBalanceMatchesGrowth(balance, growth, movement);
+            EnsureGrowthMutationAllowed(balance, growth, movement);
 
             var now = DateTimeProvider.UtcNow;
-            balance.BiomassGram = growth.PreviousBiomassGram;
+            // Revert average only; recompute biomass from current live count (no g/kg conversion).
             balance.AverageGram = growth.PreviousAverageGram;
+            balance.BiomassGram = BatchMath.CalculateBiomassGram(balance.LiveCount, growth.PreviousAverageGram);
             balance.AsOfDate = await GetPreviousMovementDateAsync(growth, movement.Id)
                 ?? GetEffectiveDate(growth.GrowthDate);
             balance.UpdatedBy = userId;
@@ -662,11 +665,17 @@ public class FishGrowthService : IFishGrowthService
             .FirstOrDefaultAsync();
     }
 
-    private void EnsureBalanceMatchesGrowth(
+    private void EnsureGrowthMutationAllowed(
         BatchCageBalance balance,
         FishGrowth growth,
         BatchMovement movement)
     {
+        if (balance.LiveCount <= 0)
+        {
+            throw new InvalidOperationException(
+                _localizationService.GetLocalizedString("FishGrowthService.ActiveBalanceNotFound"));
+        }
+
         var expectedGrowthBiomassGram = growth.NewBiomassGram - growth.PreviousBiomassGram;
         var movementMatches = movement.SignedCount == 0
             && AreEqual(movement.SignedBiomassGram, expectedGrowthBiomassGram)
@@ -674,11 +683,11 @@ public class FishGrowthService : IFishGrowthService
             && AreEqual(movement.FromAverageGram.Value, growth.PreviousAverageGram)
             && movement.ToAverageGram.HasValue
             && AreEqual(movement.ToAverageGram.Value, growth.NewAverageGram);
-        var balanceMatches = balance.LiveCount == growth.FishCount
-            && AreEqual(balance.AverageGram, growth.NewAverageGram)
-            && AreEqual(balance.BiomassGram, growth.NewBiomassGram);
 
-        if (!movementMatches || !balanceMatches || expectedGrowthBiomassGram <= 0m)
+        // Count/biomass may diverge after shipment/mortality; average must still be this growth tip.
+        var averageStillAtGrowth = AreEqual(balance.AverageGram, growth.NewAverageGram);
+
+        if (!movementMatches || !averageStillAtGrowth || expectedGrowthBiomassGram <= 0m)
         {
             throw new InvalidOperationException(
                 _localizationService.GetLocalizedString("FishGrowthService.BalanceMismatch"));
