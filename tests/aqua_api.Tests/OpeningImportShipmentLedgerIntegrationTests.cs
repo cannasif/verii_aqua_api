@@ -112,6 +112,7 @@ public sealed class OpeningImportShipmentLedgerIntegrationTests
         Assert.Equal(600, balance.LiveCount);
         Assert.Equal(54_000m, balance.BiomassGram);
         Assert.Equal(90m, balance.AverageGram);
+        Assert.Equal(90m, batch.CurrentAverageGram);
         Assert.Equal(new DateTime(2026, 1, 20), balance.AsOfDate.Date);
 
         var shipmentLine = await db.ShipmentLines
@@ -256,15 +257,107 @@ public sealed class OpeningImportShipmentLedgerIntegrationTests
         Assert.Equal(66_000m, updatedBalance.BiomassGram);
     }
 
+    [Fact]
+    public async Task Commit_SynchronizesBatchAverageAcrossMultipleOpeningCages()
+    {
+        const string projectCode = "PRJ-OPEN-WEIGHTED-GRAM";
+        const string batchCode = "BATCH-OPEN-WEIGHTED-GRAM";
+        var request = new OpeningImportPreviewRequestDto
+        {
+            FileName = "opening-weighted-gram.xlsx",
+            SourceSystem = "integration-test",
+            Sheets =
+            [
+                Sheet("Projects", new()
+                {
+                    ["projectCode"] = projectCode,
+                    ["projectName"] = "Opening Weighted Gram Project",
+                    ["startDate"] = "2026-01-01",
+                }),
+                SheetRows("Cages",
+                    new()
+                    {
+                        ["projectCode"] = projectCode,
+                        ["cageCode"] = "CAGE-OPEN-WEIGHTED-1",
+                        ["cageName"] = "Opening Weighted Cage 1",
+                        ["assignedDate"] = "2026-01-01",
+                    },
+                    new()
+                    {
+                        ["projectCode"] = projectCode,
+                        ["cageCode"] = "CAGE-OPEN-WEIGHTED-2",
+                        ["cageName"] = "Opening Weighted Cage 2",
+                        ["assignedDate"] = "2026-01-01",
+                    }),
+                SheetRows("OpeningStock",
+                    new()
+                    {
+                        ["projectCode"] = projectCode,
+                        ["cageCode"] = "CAGE-OPEN-WEIGHTED-1",
+                        ["batchCode"] = batchCode,
+                        ["fishStockCode"] = "PLAMUT-5G",
+                        ["fishCount"] = "100",
+                        ["averageGram"] = "100",
+                        ["asOfDate"] = "2026-01-01",
+                    },
+                    new()
+                    {
+                        ["projectCode"] = projectCode,
+                        ["cageCode"] = "CAGE-OPEN-WEIGHTED-2",
+                        ["batchCode"] = batchCode,
+                        ["fishStockCode"] = "PLAMUT-5G",
+                        ["fishCount"] = "300",
+                        ["averageGram"] = "200",
+                        ["asOfDate"] = "2026-01-01",
+                    }),
+            ]
+        };
+
+        long jobId;
+        using (var previewScope = _factory.Services.CreateScope())
+        {
+            var service = previewScope.ServiceProvider.GetRequiredService<IOpeningImportService>();
+            var preview = await service.PreviewAsync(request);
+            Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+            Assert.Equal(0, preview.Data!.Summary.ErrorRows);
+            jobId = preview.Data.JobId;
+        }
+
+        using (var commitScope = _factory.Services.CreateScope())
+        {
+            var service = commitScope.ServiceProvider.GetRequiredService<IOpeningImportService>();
+            var commit = await service.CommitAsync(jobId);
+            Assert.True(commit.Success, $"{commit.Message} | {commit.ExceptionMessage}");
+        }
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var db = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        var project = await db.Projects.SingleAsync(x => x.ProjectCode == projectCode);
+        var batch = await db.FishBatches.SingleAsync(x => x.ProjectId == project.Id && x.BatchCode == batchCode);
+        var balances = await db.BatchCageBalances
+            .Where(x => x.FishBatchId == batch.Id && !x.IsDeleted)
+            .ToListAsync();
+
+        Assert.Equal(2, balances.Count);
+        Assert.Equal(400, balances.Sum(x => x.LiveCount));
+        Assert.Equal(70_000m, balances.Sum(x => x.BiomassGram));
+        Assert.Equal(175m, batch.CurrentAverageGram);
+    }
+
     private static OpeningImportSheetPayloadDto Sheet(
         string sheetName,
         Dictionary<string, string?> row)
+        => SheetRows(sheetName, row);
+
+    private static OpeningImportSheetPayloadDto SheetRows(
+        string sheetName,
+        params Dictionary<string, string?>[] rows)
     {
         return new OpeningImportSheetPayloadDto
         {
             SheetName = sheetName,
-            Rows = [row],
-            Mappings = row.Keys
+            Rows = rows.ToList(),
+            Mappings = rows[0].Keys
                 .Select(key => new OpeningImportFieldMappingDto
                 {
                     SourceColumn = key,

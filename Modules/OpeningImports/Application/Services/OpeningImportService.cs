@@ -168,6 +168,8 @@ public class OpeningImportService : IOpeningImportService
                 await _unitOfWork.SaveChangesAsync();
                 await ApplyOpeningMortalityLedgersAsync(committedRows, projectsByCode, cagesByCode);
                 await ApplyOpeningShipmentLedgersAsync(committedRows);
+                await _unitOfWork.SaveChangesAsync();
+                await SynchronizeImportedBatchAveragesAsync(committedRows, projectsByCode);
 
                 job.Status = OpeningImportJobStatus.Applied;
                 job.AppliedAt = DateTimeProvider.Now;
@@ -2115,6 +2117,113 @@ public class OpeningImportService : IOpeningImportService
                 });
 
                 result.CreatedShipmentLines += 1;
+            }
+        }
+
+        private async Task SynchronizeImportedBatchAveragesAsync(
+            IReadOnlyCollection<OpeningImportRow> rows,
+            IReadOnlyDictionary<string, Project> projectsByCode)
+        {
+            var importedBatchKeys = rows
+                .Where(x => x.Status is OpeningImportRowStatus.Valid or OpeningImportRowStatus.Warning or OpeningImportRowStatus.Applied)
+                .Select(ParseRow)
+                .Select(row =>
+                {
+                    var projectCode = row.TryGetValue("projectCode", out var projectCodeValue)
+                        ? projectCodeValue
+                        : null;
+                    if (string.IsNullOrWhiteSpace(projectCode) ||
+                        !projectsByCode.TryGetValue(projectCode, out var project))
+                    {
+                        return null;
+                    }
+
+                    var batchCode = row.TryGetValue("batchCode", out var batchCodeValue)
+                        ? batchCodeValue
+                        : null;
+                    return $"{project.Id}:{ResolveBatchCode(project.ProjectCode, batchCode)}";
+                })
+                .OfType<string>()
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (importedBatchKeys.Count == 0)
+            {
+                return;
+            }
+
+            var projectIds = projectsByCode.Values
+                .Where(x => importedBatchKeys.Any(key => key.StartsWith($"{x.Id}:", StringComparison.Ordinal)))
+                .Select(x => x.Id)
+                .Distinct()
+                .ToList();
+
+            var projectBatches = await _unitOfWork.Db.FishBatches
+                .Where(x => !x.IsDeleted && projectIds.Contains(x.ProjectId))
+                .ToListAsync();
+            var batches = projectBatches
+                .Where(x => importedBatchKeys.Contains($"{x.ProjectId}:{x.BatchCode}"))
+                .ToList();
+            if (batches.Count == 0)
+            {
+                return;
+            }
+
+            var batchIds = batches.Select(x => x.Id).ToList();
+            var cageBalances = await _unitOfWork.Db.BatchCageBalances
+                .AsNoTracking()
+                .Where(x => !x.IsDeleted && batchIds.Contains(x.FishBatchId))
+                .Select(x => new
+                {
+                    x.FishBatchId,
+                    x.LiveCount,
+                    x.BiomassGram
+                })
+                .ToListAsync();
+            var cageMass = cageBalances
+                .GroupBy(x => x.FishBatchId)
+                .ToDictionary(
+                    x => x.Key,
+                    x => new
+                    {
+                        LiveCount = x.Sum(balance => (long)balance.LiveCount),
+                        BiomassGram = x.Sum(balance => balance.BiomassGram)
+                    });
+
+            var warehouseBalances = await _unitOfWork.Db.BatchWarehouseBalances
+                .AsNoTracking()
+                .Where(x => !x.IsDeleted && batchIds.Contains(x.FishBatchId))
+                .Select(x => new
+                {
+                    x.FishBatchId,
+                    x.LiveCount,
+                    x.BiomassGram
+                })
+                .ToListAsync();
+            var warehouseMass = warehouseBalances
+                .GroupBy(x => x.FishBatchId)
+                .ToDictionary(
+                    x => x.Key,
+                    x => new
+                    {
+                        LiveCount = x.Sum(balance => (long)balance.LiveCount),
+                        BiomassGram = x.Sum(balance => balance.BiomassGram)
+                    });
+
+            foreach (var batch in batches)
+            {
+                var cage = cageMass.GetValueOrDefault(batch.Id);
+                var warehouse = warehouseMass.GetValueOrDefault(batch.Id);
+                var liveCount = (cage?.LiveCount ?? 0L) + (warehouse?.LiveCount ?? 0L);
+                var biomassGram = (cage?.BiomassGram ?? 0m) + (warehouse?.BiomassGram ?? 0m);
+
+                if (liveCount <= 0 || biomassGram <= 0m)
+                {
+                    continue;
+                }
+
+                batch.CurrentAverageGram = Math.Round(
+                    biomassGram / liveCount,
+                    3,
+                    MidpointRounding.AwayFromZero);
             }
         }
 
