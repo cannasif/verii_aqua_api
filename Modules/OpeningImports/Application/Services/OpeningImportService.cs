@@ -403,6 +403,36 @@ public class OpeningImportService : IOpeningImportService
                     .Select(x => x.Id)
                     .ToListAsync();
 
+                var batchMovementIds = await _unitOfWork.Db.BatchMovements
+                    .IgnoreQueryFilters()
+                    .Where(x =>
+                        fishBatchIds.Contains(x.FishBatchId) ||
+                        (x.ProjectCageId.HasValue && projectCageIds.Contains(x.ProjectCageId.Value)) ||
+                        (x.FromProjectCageId.HasValue && projectCageIds.Contains(x.FromProjectCageId.Value)) ||
+                        (x.ToProjectCageId.HasValue && projectCageIds.Contains(x.ToProjectCageId.Value)))
+                    .Select(x => x.Id)
+                    .ToListAsync();
+
+                var deletedErpMirrorRows = await RemoveRangeAsync(
+                    _unitOfWork.Db.ErpReceiptShipmentMovements.IgnoreQueryFilters().Where(x =>
+                        (x.ProjectId.HasValue && projectIds.Contains(x.ProjectId.Value)) ||
+                        (x.CageId.HasValue && cageIds.Contains(x.CageId.Value)) ||
+                        (x.ProjectCageId.HasValue && projectCageIds.Contains(x.ProjectCageId.Value)) ||
+                        (x.FishBatchId.HasValue && fishBatchIds.Contains(x.FishBatchId.Value)) ||
+                        (x.GoodsReceiptId.HasValue && goodsReceiptIds.Contains(x.GoodsReceiptId.Value)) ||
+                        (x.ShipmentId.HasValue && shipmentIds.Contains(x.ShipmentId.Value)) ||
+                        (x.BatchMovementId.HasValue && batchMovementIds.Contains(x.BatchMovementId.Value))));
+
+                if (deletedErpMirrorRows > 0)
+                {
+                    result.DeletedOperationalRecords += deletedErpMirrorRows;
+
+                    // SQL Server cannot delete a ledger movement while an ERP mirror FK still
+                    // references it. Persist dependents first; the surrounding transaction still
+                    // rolls this phase back if any later reset step fails.
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.FishLabResults.IgnoreQueryFilters().Where(x => fishLabSampleIds.Contains(x.FishLabSampleId)));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.ComplianceCorrectiveActions.IgnoreQueryFilters().Where(x => complianceAuditIds.Contains(x.ComplianceAuditId)));
 
@@ -420,25 +450,6 @@ public class OpeningImportService : IOpeningImportService
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.WeighingLines.IgnoreQueryFilters().Where(x => weighingIds.Contains(x.WeighingId) || projectCageIds.Contains(x.ProjectCageId) || fishBatchIds.Contains(x.FishBatchId)));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.StockConvertLines.IgnoreQueryFilters().Where(x => stockConvertIds.Contains(x.StockConvertId) || projectCageIds.Contains(x.FromProjectCageId) || projectCageIds.Contains(x.ToProjectCageId) || fishBatchIds.Contains(x.FromFishBatchId) || fishBatchIds.Contains(x.ToFishBatchId)));
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.NetOperationLines.IgnoreQueryFilters().Where(x => netOperationIds.Contains(x.NetOperationId) || projectCageIds.Contains(x.ProjectCageId) || (x.FishBatchId.HasValue && fishBatchIds.Contains(x.FishBatchId.Value))));
-
-                var batchMovementIds = await _unitOfWork.Db.BatchMovements
-                    .IgnoreQueryFilters()
-                    .Where(x =>
-                        fishBatchIds.Contains(x.FishBatchId) ||
-                        (x.ProjectCageId.HasValue && projectCageIds.Contains(x.ProjectCageId.Value)) ||
-                        (x.FromProjectCageId.HasValue && projectCageIds.Contains(x.FromProjectCageId.Value)) ||
-                        (x.ToProjectCageId.HasValue && projectCageIds.Contains(x.ToProjectCageId.Value)))
-                    .Select(x => x.Id)
-                    .ToListAsync();
-
-                result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.ErpReceiptShipmentMovements.IgnoreQueryFilters().Where(x =>
-                    (x.ProjectId.HasValue && projectIds.Contains(x.ProjectId.Value)) ||
-                    (x.CageId.HasValue && cageIds.Contains(x.CageId.Value)) ||
-                    (x.ProjectCageId.HasValue && projectCageIds.Contains(x.ProjectCageId.Value)) ||
-                    (x.FishBatchId.HasValue && fishBatchIds.Contains(x.FishBatchId.Value)) ||
-                    (x.GoodsReceiptId.HasValue && goodsReceiptIds.Contains(x.GoodsReceiptId.Value)) ||
-                    (x.ShipmentId.HasValue && shipmentIds.Contains(x.ShipmentId.Value)) ||
-                    (x.BatchMovementId.HasValue && batchMovementIds.Contains(x.BatchMovementId.Value))));
 
                 result.DeletedOperationalRecords += await RemoveRangeAsync(_unitOfWork.Db.BatchMovements.IgnoreQueryFilters().Where(x =>
                     batchMovementIds.Contains(x.Id)));
@@ -496,7 +507,7 @@ public class OpeningImportService : IOpeningImportService
                 await _unitOfWork.RollbackTransactionAsync();
 
                 return ApiResponse<OpeningImportResetExistingDataResultDto>.ErrorResult(
-                    L("OpeningImportService.ResetClearFailed"),
+                    L("OpeningImportService.ResetClearFailed", ex.GetBaseException().Message),
                     ex.GetBaseException().Message,
                     StatusCodes.Status409Conflict);
             }
