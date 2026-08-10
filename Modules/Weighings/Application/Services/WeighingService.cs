@@ -191,20 +191,47 @@ namespace aqua_api.Modules.Weighings.Application.Services
 
                 EnsureDraftStatus(weighing.Status, nameof(Weighing));
 
+                var touchedFishBatchIds = new HashSet<long>();
                 foreach (var line in weighing.Lines.Where(x => !x.IsDeleted))
                 {
-                    var fishBatch = line.FishBatch
-                        ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("WeighingService.FishBatchNotFoundForWeighingLine"));
+                    if (line.FishBatch == null)
+                    {
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("WeighingService.FishBatchNotFoundForWeighingLine"));
+                    }
+                    if (line.MeasuredAverageGram <= 0m || line.MeasuredCount <= 0)
+                    {
+                        throw new InvalidOperationException(_localizationService.GetLocalizedString("WeighingService.BusinessRuleError"));
+                    }
 
-                    var fromAvgGram = fishBatch.CurrentAverageGram;
-                    fishBatch.CurrentAverageGram = line.MeasuredAverageGram;
+                    var sourceMass = await _balanceLedgerManager.GetCageMassSnapshotAsync(
+                        line.FishBatchId,
+                        line.ProjectCageId,
+                        weighing.WeighingDate,
+                        BatchMovementType.Weighing);
+                    if (sourceMass.LiveCount <= 0 || sourceMass.AverageGram <= 0m)
+                    {
+                        throw new InvalidOperationException(
+                            _localizationService.GetLocalizedString("FishGrowthService.ActiveBalanceNotFound"));
+                    }
+
+                    var targetBiomassGram = BatchMath.CalculateBiomassGram(
+                        sourceMass.LiveCount,
+                        line.MeasuredAverageGram);
+                    var biomassDelta = Math.Round(
+                        targetBiomassGram - sourceMass.BiomassGram,
+                        3,
+                        MidpointRounding.AwayFromZero);
+                    line.MeasuredBiomassGram = BatchMath.CalculateBiomassGram(
+                        line.MeasuredCount,
+                        line.MeasuredAverageGram);
+                    touchedFishBatchIds.Add(line.FishBatchId);
 
                     await _balanceLedgerManager.ApplyDelta(
                         weighing.ProjectId,
                         line.FishBatchId,
                         line.ProjectCageId,
                         0,
-                        0m,
+                        biomassDelta,
                         BatchMovementType.Weighing,
                         weighing.WeighingDate,
                         "Weighing average update",
@@ -214,10 +241,13 @@ namespace aqua_api.Modules.Weighings.Application.Services
                         line.ProjectCageId,
                         null,
                         null,
-                        fromAvgGram,
+                        sourceMass.AverageGram,
                         line.MeasuredAverageGram,
                         userId);
                 }
+
+                await _unitOfWork.SaveChanges();
+                await UpdateFishBatchAveragesAsync(touchedFishBatchIds, userId);
 
                 weighing.Status = DocumentStatus.Posted;
                 weighing.UpdatedBy = userId;
@@ -252,6 +282,35 @@ namespace aqua_api.Modules.Weighings.Application.Services
         {
             if (status != DocumentStatus.Draft)
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", documentName));
+        }
+
+        private async Task UpdateFishBatchAveragesAsync(IEnumerable<long> fishBatchIds, long userId)
+        {
+            foreach (var fishBatchId in fishBatchIds.Distinct())
+            {
+                var cageBalances = await _unitOfWork.Db.BatchCageBalances
+                    .Where(x => !x.IsDeleted && x.FishBatchId == fishBatchId)
+                    .Select(x => new { x.LiveCount, x.BiomassGram })
+                    .ToListAsync();
+                var warehouseBalances = await _unitOfWork.Db.BatchWarehouseBalances
+                    .Where(x => !x.IsDeleted && x.FishBatchId == fishBatchId)
+                    .Select(x => new { x.LiveCount, x.BiomassGram })
+                    .ToListAsync();
+                var totalCount = cageBalances.Sum(x => (long)x.LiveCount)
+                    + warehouseBalances.Sum(x => (long)x.LiveCount);
+                var totalBiomassGram = cageBalances.Sum(x => x.BiomassGram)
+                    + warehouseBalances.Sum(x => x.BiomassGram);
+                var fishBatch = await _unitOfWork.Db.FishBatches
+                    .FirstOrDefaultAsync(x => x.Id == fishBatchId && !x.IsDeleted)
+                    ?? throw new InvalidOperationException(
+                        _localizationService.GetLocalizedString("WeighingService.FishBatchNotFoundForWeighingLine"));
+
+                fishBatch.CurrentAverageGram = totalCount > 0
+                    ? Math.Round(totalBiomassGram / totalCount, 3, MidpointRounding.AwayFromZero)
+                    : 0m;
+                fishBatch.UpdatedBy = userId;
+                fishBatch.UpdatedDate = DateTimeProvider.UtcNow;
+            }
         }
 
     }

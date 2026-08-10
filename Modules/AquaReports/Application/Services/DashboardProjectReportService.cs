@@ -387,6 +387,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 .Where(x => x.MovementType == BatchMovementType.StockConvert)
                 .GroupBy(x => x.ReferenceId)
                 .ToDictionary(x => x.Key, x => x.ToList());
+            var movementBiomassDeltaById = BatchReportMassCalculator.CalculateMovementBiomassDeltas(batchMovements);
 
             var cageLabelById = projectCages.ToDictionary(x => x.Id, x => x.Cage?.CageCode ?? x.Cage?.CageName ?? x.Id.ToString());
             var fishBatchLabelById = fishBatches.ToDictionary(x => x.Id, x => !string.IsNullOrWhiteSpace(x.BatchCode) ? x.BatchCode : x.Id.ToString());
@@ -396,26 +397,20 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     ? x.WarehouseName
                     : x.ErpWarehouseCode.ToString());
 
-            var initialByCage = new Dictionary<long, int>();
-            var initialBiomassByCage = new Dictionary<long, decimal>();
+            var initialSnapshotByCage = batchMovements
+                .Where(x =>
+                    x.ProjectCageId.HasValue
+                    && reportCageIdSet.Contains(x.ProjectCageId.Value)
+                    && x.SignedCount > 0
+                    && x.MovementType is BatchMovementType.OpeningImport or BatchMovementType.Stocking)
+                .GroupBy(x => x.ProjectCageId!.Value)
+                .ToDictionary(x => x.Key, x => BatchReportMassCalculator.CalculateSnapshot(x));
             var mortalityByCage = new Dictionary<long, int>();
             var movementMortalityByCage = new Dictionary<long, int>();
             foreach (var row in batchMovements)
             {
                 if (!row.ProjectCageId.HasValue || !reportCageIdSet.Contains(row.ProjectCageId.Value)) continue;
                 var cageId = row.ProjectCageId.Value;
-
-                if (row.MovementType is BatchMovementType.OpeningImport or BatchMovementType.Stocking)
-                {
-                    if (row.SignedCount > 0)
-                    {
-                        initialByCage[cageId] = (initialByCage.GetValueOrDefault(cageId)) + row.SignedCount;
-                    }
-                    if (row.SignedBiomassGram > 0)
-                    {
-                        initialBiomassByCage[cageId] = initialBiomassByCage.GetValueOrDefault(cageId) + row.SignedBiomassGram;
-                    }
-                }
 
                 if (row.MovementType == BatchMovementType.Mortality)
                 {
@@ -439,17 +434,31 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             foreach (var row in latestBalanceByBatchAndCage.Values)
             {
                 currentCountByCage[row.ProjectCageId] = currentCountByCage.GetValueOrDefault(row.ProjectCageId) + row.LiveCount;
-                currentBiomassByCage[row.ProjectCageId] = currentBiomassByCage.GetValueOrDefault(row.ProjectCageId) + row.BiomassGram;
+                currentBiomassByCage[row.ProjectCageId] = currentBiomassByCage.GetValueOrDefault(row.ProjectCageId)
+                    + BatchReportMassCalculator.CalculateBiomassGram(row.LiveCount, row.AverageGram);
             }
 
             var dailyDeadByCage = new Dictionary<long, Dictionary<string, int>>();
             var dailyDeadBiomassByCage = new Dictionary<long, Dictionary<string, decimal>>();
-            foreach (var movement in batchMovements.Where(x => x.MovementType == BatchMovementType.Mortality))
+            var mortalityMovementGroups = batchMovements
+                .Where(x => x.MovementType == BatchMovementType.Mortality && x.ProjectCageId.HasValue)
+                .GroupBy(x => new
+                {
+                    x.ReferenceTable,
+                    x.ReferenceId,
+                    x.FishBatchId,
+                    ProjectCageId = x.ProjectCageId!.Value,
+                    MovementDate = x.MovementDate.Date
+                });
+            foreach (var movementGroup in mortalityMovementGroups)
             {
-                if (!movement.ProjectCageId.HasValue || !reportCageIdSet.Contains(movement.ProjectCageId.Value)) continue;
-                var cageId = movement.ProjectCageId.Value;
-                var date = ToDateOnly(movement.MovementDate);
-                var deadBiomassGram = Math.Max(0m, -movement.SignedBiomassGram);
+                var cageId = movementGroup.Key.ProjectCageId;
+                if (!reportCageIdSet.Contains(cageId)) continue;
+                var date = ToDateOnly(movementGroup.Key.MovementDate);
+                var actualDeadBiomassGram = Math.Max(
+                    0m,
+                    -movementGroup.Sum(BatchReportMassCalculator.CalculateSignedBiomassGram));
+                var deadBiomassGram = MortalityBiomassMath.CalculateReportedBiomassGram(actualDeadBiomassGram);
                 if (deadBiomassGram <= 0) continue;
                 AddByDate(dailyDeadBiomassByCage, cageId, date, deadBiomassGram);
             }
@@ -547,7 +556,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     $"batch:{fishBatchText}",
                     $"count:{row.FishCount}",
                     $"avg:{row.AverageGram}g",
-                    $"biomass:{row.BiomassGram}g",
+                    $"biomass:{BatchReportMassCalculator.CalculateBiomassGram(row.FishCount, row.AverageGram)}g",
                     header?.Note
                 });
 
@@ -601,12 +610,16 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     $"{fromLabel} -> {targetWarehouseLabel}",
                     row.FishCount > 0 ? $"count:{row.FishCount}" : null,
                     $"avg:{row.AverageGram}g",
-                    row.BiomassGram > 0 ? $"biomass:{row.BiomassGram}g" : null,
+                    row.FishCount > 0 ? $"biomass:{BatchReportMassCalculator.CalculateBiomassGram(row.FishCount, row.AverageGram)}g" : null,
                     header?.Note
                 });
                 AddByDate(shipmentByCageDate, row.FromProjectCageId, date, 1);
                 AddByDate(shipmentFishByCageDate, row.FromProjectCageId, date, row.FishCount);
-                AddByDate(shipmentBiomassByCageDate, row.FromProjectCageId, date, row.BiomassGram);
+                AddByDate(
+                    shipmentBiomassByCageDate,
+                    row.FromProjectCageId,
+                    date,
+                    BatchReportMassCalculator.CalculateBiomassGram(row.FishCount, row.AverageGram));
                 AppendDetail(shipmentDetailsByCageDate, row.FromProjectCageId, date, detail);
             }
 
@@ -632,7 +645,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 var toAverageGram = row.NewAverageGram != 0
                     ? CalculateIncrementedAverageGram(fromAverageGram, gramIncrease)
                     : matchedMovement?.ToAverageGram ?? fromAverageGram;
-                var fromBiomass = row.BiomassGram != 0 ? row.BiomassGram : row.FishCount * fromAverageGram;
+                var fromBiomass = BatchReportMassCalculator.CalculateBiomassGram(row.FishCount, fromAverageGram);
                 var toBiomass = row.FishCount > 0 ? CalculateBiomassGram(row.FishCount, toAverageGram) : 0;
                 var biomassIncrease = RoundGram(toBiomass - fromBiomass);
                 var detail = JoinDetail(new List<string?>
@@ -681,7 +694,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     cageLabel,
                     batchLabel,
                     $"avg:{fromAverageGram}g + {growthGram}g = {toAverageGram}g",
-                    $"increase:{Math.Max(0m, movement.SignedBiomassGram)}g",
+                    $"increase:{Math.Max(0m, movementBiomassDeltaById.GetValueOrDefault(movement.Id))}g",
                     movement.Note
                 });
 
@@ -697,7 +710,11 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 var cageId = row.ProjectCageId.Value;
                 var date = ToDateOnly(row.MovementDate);
                 AddByDate(movementCountDeltaByCageDate, cageId, date, row.SignedCount);
-                AddByDate(movementBiomassDeltaByCageDate, cageId, date, row.SignedBiomassGram);
+                AddByDate(
+                    movementBiomassDeltaByCageDate,
+                    cageId,
+                    date,
+                    movementBiomassDeltaById.GetValueOrDefault(row.Id));
             }
 
             var startDate = project.StartDate.Date;
@@ -707,19 +724,13 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 .Where(x => postedShipmentIds.Contains(x.ShipmentId))
                 .ToList();
             var projectShipmentFish = postedShipmentLines.Sum(x => (long)x.FishCount);
-            var projectShipmentBiomass = postedShipmentLines.Sum(x => x.BiomassGram);
             var projectShipmentMovements = batchMovements
                 .Where(x => x.ProjectCageId.HasValue && x.MovementType == BatchMovementType.Shipment)
                 .ToList();
             var representedProjectShipmentFish = Math.Max(
                 0L,
                 -projectShipmentMovements.Sum(x => (long)x.SignedCount));
-            var representedProjectShipmentBiomass = Math.Max(
-                0m,
-                -projectShipmentMovements.Sum(x => x.SignedBiomassGram));
-            var projectShipmentsFullyRepresented =
-                representedProjectShipmentFish >= projectShipmentFish &&
-                representedProjectShipmentBiomass >= projectShipmentBiomass;
+            var projectShipmentsFullyRepresented = representedProjectShipmentFish >= projectShipmentFish;
 
             var cages = reportProjectCages.Select(projectCage =>
             {
@@ -791,9 +802,12 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     .ToList();
 
                 var missingFeedingDays = allDates.Where(date => feedByDate.GetValueOrDefault(date) <= 0).ToList();
-                var initialFish = initialByCage.GetValueOrDefault(cageId);
-                var initialBiomass = initialBiomassByCage.GetValueOrDefault(cageId);
-                var initialAvgGram = initialFish > 0 ? initialBiomass / initialFish : 0m;
+                var initialSnapshot = initialSnapshotByCage.GetValueOrDefault(cageId);
+                var currentMovementSnapshot = BatchReportMassCalculator.CalculateSnapshot(
+                    batchMovements.Where(x => x.ProjectCageId == cageId));
+                var initialFish = initialSnapshot.LiveCount;
+                var initialBiomass = initialSnapshot.BiomassGram;
+                var initialAvgGram = initialSnapshot.AverageGram;
                 var totalCountDelta = countDeltaByDate.Values.Sum();
                 var totalBiomassDelta = biomassDeltaByDate.Values.Sum();
                 var totalDead = mortalityByCage.GetValueOrDefault(cageId);
@@ -805,24 +819,21 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                         x.MovementType == BatchMovementType.Shipment &&
                         x.SignedCount < 0)
                     .Sum(x => Math.Max(0, -x.SignedCount));
-                var representedShipmentBiomass = batchMovements
-                    .Where(x =>
-                        x.ProjectCageId == cageId &&
-                        x.MovementType == BatchMovementType.Shipment &&
-                        x.SignedBiomassGram < 0)
-                    .Sum(x => Math.Max(0m, -x.SignedBiomassGram));
                 var unrepresentedShipmentFish = projectShipmentsFullyRepresented
                     ? 0
                     : Math.Max(0, totalShipmentFish - representedShipmentFish);
+                var shipmentLineAverageGram = totalShipmentFish > 0
+                    ? totalShipmentBiomass / totalShipmentFish
+                    : 0m;
                 var unrepresentedShipmentBiomass = projectShipmentsFullyRepresented
                     ? 0m
-                    : Math.Max(0m, totalShipmentBiomass - representedShipmentBiomass);
+                    : BatchReportMassCalculator.CalculateBiomassGram(unrepresentedShipmentFish, shipmentLineAverageGram);
                 var currentFishFromBalance = currentCountByCage.GetValueOrDefault(cageId);
                 var currentBiomassFromBalance = currentBiomassByCage.GetValueOrDefault(cageId);
                 var fallbackCurrentFish = Math.Max(0, initialFish - totalDead);
                 var fallbackCurrentBiomass = Math.Max(0m, initialBiomass - (totalDead * initialAvgGram));
-                var currentFishFromMovement = Math.Max(0, totalCountDelta);
-                var currentBiomassFromMovement = Math.Max(0m, totalBiomassDelta);
+                var currentFishFromMovement = currentMovementSnapshot.LiveCount;
+                var currentBiomassFromMovement = currentMovementSnapshot.BiomassGram;
                 var hasMovementSnapshot = countDeltaByDate.Count > 0 || biomassDeltaByDate.Count > 0;
                 var currentFishBeforeShipmentAdjustment = hasMovementSnapshot
                     ? currentFishFromMovement
@@ -832,7 +843,9 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     : (currentBiomassFromBalance > 0 ? currentBiomassFromBalance : fallbackCurrentBiomass);
                 var currentFish = Math.Max(0, currentFishBeforeShipmentAdjustment - unrepresentedShipmentFish);
                 var currentBiomass = Math.Max(0m, currentBiomassBeforeShipmentAdjustment - unrepresentedShipmentBiomass);
-                var currentAvgGram = currentFish > 0 ? currentBiomass / currentFish : 0m;
+                var currentAvgGram = currentFish > 0
+                    ? currentBiomass / currentFish
+                    : 0m;
 
                 return new CageProjectReport
                 {
@@ -855,7 +868,8 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             .ToList();
 
             var warehouseFishCount = batchWarehouseBalances.Sum(x => x.LiveCount);
-            var warehouseBiomassGram = RoundGram(batchWarehouseBalances.Sum(x => x.BiomassGram));
+            var warehouseBiomassGram = RoundGram(batchWarehouseBalances.Sum(x =>
+                BatchReportMassCalculator.CalculateBiomassGram(x.LiveCount, x.AverageGram)));
             var cageFishCount = cages.Sum(x => x.CurrentFishCount);
             var cageBiomassGram = cages.Sum(x => x.CurrentBiomassGram);
 
@@ -866,7 +880,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 WarehouseSummary = new WarehouseSummary
                 {
                     ActiveWarehouseCount = batchWarehouseBalances
-                        .Where(x => x.LiveCount > 0 || x.BiomassGram > 0)
+                        .Where(x => x.LiveCount > 0)
                         .Select(x => x.WarehouseId)
                         .Distinct()
                         .Count(),

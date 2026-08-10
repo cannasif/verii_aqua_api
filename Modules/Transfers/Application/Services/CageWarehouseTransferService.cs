@@ -277,6 +277,15 @@ namespace aqua_api.Modules.Transfers.Application.Services
 
                 foreach (var line in lines)
                 {
+                    var sourceMass = await _balanceLedgerManager.GetCageMassSnapshotAsync(
+                        line.FishBatchId,
+                        line.FromProjectCageId,
+                        transfer.TransferDate,
+                        BatchMovementType.WarehouseTransfer);
+                    EnsureSourceMass(sourceMass, line.FishCount);
+                    line.AverageGram = sourceMass.AverageGram;
+                    line.BiomassGram = BatchMath.CalculateBiomassGram(line.FishCount, sourceMass.AverageGram);
+
                     await _balanceLedgerManager.ApplyDelta(
                         transfer.ProjectId,
                         line.FishBatchId,
@@ -342,6 +351,21 @@ namespace aqua_api.Modules.Transfers.Application.Services
                     _localizationService.GetLocalizedString("CageWarehouseTransferService.InternalServerError"),
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
+            }
+        }
+
+        private void EnsureSourceMass(BatchMassSnapshot sourceMass, int fishCount)
+        {
+            if (fishCount <= 0 || sourceMass.LiveCount < fishCount)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("BalanceLedgerManager.BatchCageCountCannotGoNegative"));
+            }
+
+            if (sourceMass.AverageGram <= 0m)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("FishGrowthService.ActiveBalanceNotFound"));
             }
         }
     }

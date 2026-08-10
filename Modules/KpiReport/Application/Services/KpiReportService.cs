@@ -116,7 +116,7 @@ public class KpiReportService : IKpiReportService
                     x => new
                     {
                         Fish = x.Sum(y => y.LiveCount),
-                        BiomassGram = x.Sum(y => y.BiomassGram)
+                        BiomassGram = x.Sum(y => BatchReportMassCalculator.CalculateBiomassGram(y.LiveCount, y.AverageGram))
                     });
 
             var warehouseBalances = await _unitOfWork.Db.BatchWarehouseBalances
@@ -133,7 +133,7 @@ public class KpiReportService : IKpiReportService
                     x => new
                     {
                         Fish = x.Sum(y => y.LiveCount),
-                        BiomassGram = x.Sum(y => y.BiomassGram)
+                        BiomassGram = x.Sum(y => BatchReportMassCalculator.CalculateBiomassGram(y.LiveCount, y.AverageGram))
                     });
 
             var feedGramByProject = await (
@@ -543,7 +543,7 @@ public class KpiReportService : IKpiReportService
                     StockName = null,
                     FishBatchId = fishBatch.Id,
                     BatchCode = fishBatch.BatchCode,
-                    Kg = line.DeadCount * fishBatch.CurrentAverageGram / 1000m,
+                    Kg = 0m,
                     Count = line.DeadCount,
                     Amount = 0,
                     IsErpIntegrated = mortality.IsERPIntegrated,
@@ -624,7 +624,7 @@ public class KpiReportService : IKpiReportService
                     StockName = stock.StockName,
                     FishBatchId = fishBatch.Id,
                     BatchCode = fishBatch.BatchCode,
-                    Kg = line.BiomassGram / 1000m,
+                    Kg = line.FishCount * line.AverageGram / 1000m,
                     Count = line.FishCount,
                     Amount = line.LocalLineAmount ?? line.LineAmount ?? 0,
                     IsErpIntegrated = shipment.IsERPIntegrated,
@@ -636,6 +636,7 @@ public class KpiReportService : IKpiReportService
             if (projectCageIds.Count > 0) query = query.Where(x => projectCageIds.Contains(x.ProjectCageId));
 
             var records = await query.ToListAsync();
+            await ApplyShipmentLedgerBiomassAsync(records);
             var report = BuildMonthlyOperationalReport("shipment", fromDate, toDate, records);
             return ApiResponse<MonthlyOperationalReportDto>.SuccessResult(report, L("KpiReportService.MonthlyShipmentReportLoaded"));
         }
@@ -740,7 +741,7 @@ public class KpiReportService : IKpiReportService
                     x => new
                     {
                         LiveCount = x.Sum(y => y.LiveCount),
-                        BiomassGram = x.Sum(y => y.BiomassGram)
+                        BiomassGram = x.Sum(y => BatchReportMassCalculator.CalculateBiomassGram(y.LiveCount, y.AverageGram))
                     });
 
             var feedings = await _unitOfWork.Db.Feedings
@@ -801,7 +802,8 @@ public class KpiReportService : IKpiReportService
             var deadFish = rows.Sum(x => x.DeadFish);
             var currentBiomassKg = Round(rows.Sum(x => x.CurrentBiomassKg));
             var warehouseFish = latestWarehouseBalances.Sum(x => x.LiveCount);
-            var warehouseBiomassKg = Round(latestWarehouseBalances.Sum(x => x.BiomassGram) / 1000m);
+            var warehouseBiomassKg = Round(latestWarehouseBalances.Sum(x =>
+                BatchReportMassCalculator.CalculateBiomassGram(x.LiveCount, x.AverageGram)) / 1000m);
             var totalFeedKg = Round(rows.Sum(x => x.TotalFeedKg));
             var biomassGainKg = Round(rows.Sum(x => x.BiomassGainKg));
             var totalCapacityGram = reportProjectCages.Sum(x => x.Cage?.CapacityGram ?? 0m);
@@ -1169,25 +1171,25 @@ public class KpiReportService : IKpiReportService
         IEnumerable<MortalityLine> mortalityLines)
     {
         var movementList = movements.ToList();
-        var initialFish = Math.Max(0, movementList
-            .Where(x => x.MovementType == BatchMovementType.Stocking && x.SignedCount > 0)
-            .Sum(x => x.SignedCount));
-        var initialBiomassGram = Math.Max(0m, movementList
-            .Where(x => x.MovementType == BatchMovementType.Stocking && x.SignedBiomassGram > 0)
-            .Sum(x => x.SignedBiomassGram));
-        var initialAverageGram = initialFish > 0 ? Round(initialBiomassGram / initialFish) : 0m;
+        var initialSnapshot = BatchReportMassCalculator.CalculateSnapshot(movementList.Where(x =>
+            x.SignedCount > 0 &&
+            x.MovementType is BatchMovementType.Stocking or BatchMovementType.OpeningImport));
+        var currentSnapshot = BatchReportMassCalculator.CalculateSnapshot(movementList);
+        var initialFish = initialSnapshot.LiveCount;
+        var initialBiomassGram = initialSnapshot.BiomassGram;
+        var initialAverageGram = initialSnapshot.AverageGram;
         var deadFish = Math.Max(0, mortalityLines.Sum(x => x.DeadCount));
         var totalFeedGram = feedingDistributions.Sum(x => x.FeedGram);
-        var totalCountDelta = movementList.Sum(x => x.SignedCount);
-        var totalBiomassDelta = movementList.Sum(x => x.SignedBiomassGram);
         var hasMovementSnapshot = movementList.Count > 0;
         var liveFish = hasMovementSnapshot
-            ? Math.Max(0, totalCountDelta)
+            ? currentSnapshot.LiveCount
             : Math.Max(0, balanceLiveCount ?? initialFish - deadFish);
         var currentBiomassGram = hasMovementSnapshot
-            ? Math.Max(0m, totalBiomassDelta)
+            ? currentSnapshot.BiomassGram
             : Math.Max(0m, balanceBiomassGram ?? initialBiomassGram - deadFish * initialAverageGram);
-        var currentAverageGram = liveFish > 0 ? Round(currentBiomassGram / liveFish) : 0m;
+        var currentAverageGram = hasMovementSnapshot
+            ? currentSnapshot.AverageGram
+            : liveFish > 0 ? Round(currentBiomassGram / liveFish) : 0m;
         var currentBiomassKg = Round(currentBiomassGram / 1000m);
         var totalFeedKg = Round(totalFeedGram / 1000m);
         var biomassGainKg = Round(Math.Max(0m, (currentBiomassGram - initialBiomassGram) / 1000m));
@@ -1296,7 +1298,7 @@ public class KpiReportService : IKpiReportService
         var totalsByCage = new Dictionary<long, SaleTotals>();
         foreach (var line in shipmentLines)
         {
-            var kg = Math.Max(0m, line.BiomassGram / 1000m);
+            var kg = BatchReportMassCalculator.CalculateBiomassGram(line.FishCount, line.AverageGram) / 1000m;
             if (kg <= 0) continue;
 
             var amount = GetLocalLineAmount(line.LocalLineAmount, line.LineAmount, line.LocalUnitPrice, line.UnitPrice, line.ExchangeRate, kg);
@@ -1421,13 +1423,21 @@ public class KpiReportService : IKpiReportService
         var weighingById = weighings.ToDictionary(x => x.Id, x => x);
         var stockConvertById = stockConverts.ToDictionary(x => x.Id, x => x);
 
-        var initialByCage = new Dictionary<long, int>();
-        var initialBiomassByCage = new Dictionary<long, decimal>();
+        var initialSnapshotByCage = batchMovements
+            .Where(x =>
+                x.ProjectCageId.HasValue
+                && reportCageIdSet.Contains(x.ProjectCageId.Value)
+                && x.SignedCount > 0
+                && x.MovementType is BatchMovementType.OpeningImport or BatchMovementType.Stocking)
+            .GroupBy(x => x.ProjectCageId!.Value)
+            .ToDictionary(x => x.Key, x => BatchReportMassCalculator.CalculateSnapshot(x));
         var mortalityByCage = new Dictionary<long, int>();
+        var movementMortalityByCage = new Dictionary<long, int>();
         var movementCountByCageDate = new Dictionary<long, Dictionary<string, int>>();
         var movementBiomassByCageDate = new Dictionary<long, Dictionary<string, decimal>>();
         var deadBiomassByCageDate = new Dictionary<long, Dictionary<string, decimal>>();
         var stockConvertMovementsByRefId = new Dictionary<long, List<BatchMovement>>();
+        var movementBiomassDeltaById = BatchReportMassCalculator.CalculateMovementBiomassDeltas(batchMovements);
 
         foreach (var movement in batchMovements)
         {
@@ -1449,32 +1459,45 @@ public class KpiReportService : IKpiReportService
             var cageId = movement.ProjectCageId.Value;
             var date = DateKey(movement.MovementDate);
             AddValue(movementCountByCageDate, cageId, date, movement.SignedCount);
-            AddValue(movementBiomassByCageDate, cageId, date, movement.SignedBiomassGram);
+            AddValue(
+                movementBiomassByCageDate,
+                cageId,
+                date,
+                movementBiomassDeltaById.GetValueOrDefault(movement.Id));
 
-            if (movement.MovementType == BatchMovementType.Stocking)
+        }
+
+        foreach (var movementGroup in batchMovements
+            .Where(x =>
+                x.MovementType == BatchMovementType.Mortality &&
+                x.ProjectCageId.HasValue &&
+                reportCageIdSet.Contains(x.ProjectCageId.Value))
+            .GroupBy(x => new
             {
-                if (movement.SignedCount > 0)
-                {
-                    AddValue(initialByCage, cageId, movement.SignedCount);
-                }
-                if (movement.SignedBiomassGram > 0)
-                {
-                    AddValue(initialBiomassByCage, cageId, movement.SignedBiomassGram);
-                }
+                x.ReferenceTable,
+                x.ReferenceId,
+                x.FishBatchId,
+                ProjectCageId = x.ProjectCageId!.Value,
+                Date = DateKey(x.MovementDate)
+            }))
+        {
+            var deadCount = Math.Max(0, -movementGroup.Sum(x => x.SignedCount));
+            if (deadCount > 0)
+            {
+                AddValue(movementMortalityByCage, movementGroup.Key.ProjectCageId, deadCount);
             }
 
-            if (movement.MovementType == BatchMovementType.Mortality)
+            var actualDeadBiomassGram = Math.Max(
+                0m,
+                -movementGroup.Sum(BatchReportMassCalculator.CalculateSignedBiomassGram));
+            var reportedDeadBiomassGram = MortalityBiomassMath.CalculateReportedBiomassGram(actualDeadBiomassGram);
+            if (reportedDeadBiomassGram > 0)
             {
-                var deadCount = Math.Max(0, -movement.SignedCount);
-                var deadBiomass = Math.Max(0m, -movement.SignedBiomassGram);
-                if (deadCount > 0)
-                {
-                    AddValue(mortalityByCage, cageId, deadCount);
-                }
-                if (deadBiomass > 0)
-                {
-                    AddValue(deadBiomassByCageDate, cageId, date, deadBiomass);
-                }
+                AddValue(
+                    deadBiomassByCageDate,
+                    movementGroup.Key.ProjectCageId,
+                    movementGroup.Key.Date,
+                    reportedDeadBiomassGram);
             }
         }
 
@@ -1488,7 +1511,7 @@ public class KpiReportService : IKpiReportService
                 x => new
                 {
                     LiveCount = x.Sum(y => y.LiveCount),
-                    BiomassGram = x.Sum(y => y.BiomassGram)
+                    BiomassGram = x.Sum(y => BatchReportMassCalculator.CalculateBiomassGram(y.LiveCount, y.AverageGram))
                 });
 
         var feedByCageDate = new Dictionary<long, Dictionary<string, decimal>>();
@@ -1522,6 +1545,14 @@ public class KpiReportService : IKpiReportService
             if (!mortalityDateById.TryGetValue(line.MortalityId, out var date)) continue;
             AddValue(mortalityByCage, line.ProjectCageId, line.DeadCount);
             AddValue(deadByCageDate, line.ProjectCageId, date, line.DeadCount);
+        }
+
+        foreach (var (projectCageId, deadCount) in movementMortalityByCage)
+        {
+            if (!mortalityByCage.ContainsKey(projectCageId))
+            {
+                mortalityByCage[projectCageId] = deadCount;
+            }
         }
 
         var weatherByDate = dailyWeathers
@@ -1561,7 +1592,7 @@ public class KpiReportService : IKpiReportService
                 Detail("Batch", batchText),
                 Detail("Count", line.FishCount),
                 Detail("Average", $"{Round(line.AverageGram)}g"),
-                Detail("Biomass", $"{Round(line.BiomassGram)}g"),
+                Detail("Biomass", $"{BatchReportMassCalculator.CalculateBiomassGram(line.FishCount, line.AverageGram)}g"),
                 header.Note);
 
             if (reportCageIdSet.Contains(line.FromProjectCageId))
@@ -1594,7 +1625,7 @@ public class KpiReportService : IKpiReportService
                     header.WeighingNo,
                     Detail("Count", line.MeasuredCount),
                     Detail("Average", $"{Round(line.MeasuredAverageGram)}g"),
-                    Detail("Biomass", $"{Round(line.MeasuredBiomassGram)}g"),
+                    Detail("Biomass", $"{BatchReportMassCalculator.CalculateBiomassGram(line.MeasuredCount, line.MeasuredAverageGram)}g"),
                     header.Note));
         }
 
@@ -1609,7 +1640,8 @@ public class KpiReportService : IKpiReportService
             var fromLabel = cageLabelById.GetValueOrDefault(line.FromProjectCageId, line.FromProjectCageId.ToString());
             AddValue(shipmentByCageDate, line.FromProjectCageId, date, 1);
             AddValue(shipmentFishByCageDate, line.FromProjectCageId, date, line.FishCount);
-            AddValue(shipmentBiomassByCageDate, line.FromProjectCageId, date, line.BiomassGram);
+            var shipmentBiomassGram = BatchReportMassCalculator.CalculateBiomassGram(line.FishCount, line.AverageGram);
+            AddValue(shipmentBiomassByCageDate, line.FromProjectCageId, date, shipmentBiomassGram);
             AppendDetail(
                 shipmentDetailsByCageDate,
                 line.FromProjectCageId,
@@ -1619,7 +1651,7 @@ public class KpiReportService : IKpiReportService
                     $"{fromLabel} -> {header.TargetWarehouseId?.ToString() ?? L("KpiReportService.Detail.ColdStorage")}",
                     Detail("Count", line.FishCount),
                     Detail("Average", $"{Round(line.AverageGram)}g"),
-                    Detail("Biomass", $"{Round(line.BiomassGram)}g"),
+                    Detail("Biomass", $"{shipmentBiomassGram}g"),
                     header.Note));
         }
 
@@ -1640,7 +1672,7 @@ public class KpiReportService : IKpiReportService
                 stockTransition,
                 Detail("Count", line.FishCount),
                 Detail("Average", $"{Round(line.AverageGram)}g + {Round(line.NewAverageGram)}g = {Round(toAverageGram)}g"),
-                Detail("Biomass", $"{Round(line.BiomassGram)}g"),
+                Detail("Biomass", $"{BatchReportMassCalculator.CalculateBiomassGram(line.FishCount, line.AverageGram)}g"),
                 header.Note);
 
             if (reportCageIdSet.Contains(line.FromProjectCageId))
@@ -1676,7 +1708,7 @@ public class KpiReportService : IKpiReportService
                 cageLabel,
                 batchLabel,
                 Detail("Average", $"{Round(fromAverageGram)}g + {growthGram}g = {Round(toAverageGram)}g"),
-                Detail("Biomass", $"+{Round(Math.Max(0m, movement.SignedBiomassGram))}g"),
+                Detail("Biomass", $"+{Round(Math.Max(0m, movementBiomassDeltaById.GetValueOrDefault(movement.Id)))}g"),
                 movement.Note);
 
             AddValue(growthByCageDate, cageId, date, 1);
@@ -1737,15 +1769,25 @@ public class KpiReportService : IKpiReportService
                     .OrderByDescending(x => x.Date)
                     .ToList();
 
-                var initialFish = initialByCage.GetValueOrDefault(cageId);
-                var initialBiomass = initialBiomassByCage.GetValueOrDefault(cageId);
+                var initialSnapshot = initialSnapshotByCage.GetValueOrDefault(cageId);
+                var currentMovementSnapshot = BatchReportMassCalculator.CalculateSnapshot(
+                    batchMovements.Where(x => x.ProjectCageId == cageId));
+                var initialFish = initialSnapshot.LiveCount;
+                var initialBiomass = initialSnapshot.BiomassGram;
                 var totalDead = mortalityByCage.GetValueOrDefault(cageId);
                 var totalCountDelta = countDeltaByDate.Values.Sum();
                 var totalBiomassDelta = biomassDeltaByDate.Values.Sum();
-                var currentCount = latestBalanceByCage.GetValueOrDefault(cageId)?.LiveCount ?? Math.Max(0, totalCountDelta);
-                var currentBiomass = latestBalanceByCage.GetValueOrDefault(cageId)?.BiomassGram ?? Math.Max(0m, totalBiomassDelta);
-                var initialAverage = initialFish > 0 ? initialBiomass / initialFish : 0m;
-                var currentAverage = currentCount > 0 ? currentBiomass / currentCount : 0m;
+                var hasMovementSnapshot = batchMovements.Any(x => x.ProjectCageId == cageId);
+                var currentCount = hasMovementSnapshot
+                    ? currentMovementSnapshot.LiveCount
+                    : latestBalanceByCage.GetValueOrDefault(cageId)?.LiveCount ?? Math.Max(0, totalCountDelta);
+                var currentBiomass = hasMovementSnapshot
+                    ? currentMovementSnapshot.BiomassGram
+                    : latestBalanceByCage.GetValueOrDefault(cageId)?.BiomassGram ?? 0m;
+                var initialAverage = initialSnapshot.AverageGram;
+                var currentAverage = hasMovementSnapshot
+                    ? currentMovementSnapshot.AverageGram
+                    : currentCount > 0 ? currentBiomass / currentCount : 0m;
                 var missingStart = new[] { project.StartDate.Date, projectCage.AssignedDate.Date, today.AddDays(-60) }.Max();
                 var missingFeedingDays = EnumerateDates(missingStart, today)
                     .Where(date => feedByDate.GetValueOrDefault(date) <= 0)
@@ -1784,9 +1826,10 @@ public class KpiReportService : IKpiReportService
             .ToList();
 
         var warehouseFishCount = latestWarehouseBalances.Sum(x => x.LiveCount);
-        var warehouseBiomassGram = Round(latestWarehouseBalances.Sum(x => x.BiomassGram));
+        var warehouseBiomassGram = Round(latestWarehouseBalances.Sum(x =>
+            BatchReportMassCalculator.CalculateBiomassGram(x.LiveCount, x.AverageGram)));
         var activeWarehouseCount = latestWarehouseBalances
-            .Where(x => x.LiveCount > 0 || x.BiomassGram > 0)
+            .Where(x => x.LiveCount > 0)
             .Select(x => x.WarehouseId)
             .Distinct()
             .Count();
@@ -2169,32 +2212,28 @@ public class KpiReportService : IKpiReportService
             return;
         }
 
-        var ledgerMovements = await _unitOfWork.Db.BatchMovements
+        var fishBatchIds = records.Select(x => x.FishBatchId).Distinct().ToList();
+        var projectCageIds = records.Select(x => x.ProjectCageId).Distinct().ToList();
+        var latestReportDate = records.Max(x => x.Date).Date;
+        var relevantMovements = await _unitOfWork.Db.BatchMovements
             .AsNoTracking()
             .Where(x => !x.IsDeleted
-                && x.MovementType == BatchMovementType.Mortality
-                && x.ReferenceTable == "RII_MORTALITY"
-                && mortalityIds.Contains(x.ReferenceId)
-                && x.ProjectCageId.HasValue)
-            .Select(x => new
-            {
-                x.ReferenceId,
-                x.FishBatchId,
-                ProjectCageId = x.ProjectCageId!.Value,
-                x.SignedBiomassGram
-            })
+                && fishBatchIds.Contains(x.FishBatchId)
+                && x.ProjectCageId.HasValue
+                && projectCageIds.Contains(x.ProjectCageId.Value)
+                && x.MovementDate.Date <= latestReportDate)
             .ToListAsync();
 
-        var ledgerKgByKey = ledgerMovements
+        var ledgerKgByKey = relevantMovements
+            .Where(x =>
+                x.MovementType == BatchMovementType.Mortality
+                && x.ReferenceTable == "RII_MORTALITY"
+                && mortalityIds.Contains(x.ReferenceId))
             .GroupBy(x => (x.ReferenceId, x.FishBatchId, x.ProjectCageId))
             .ToDictionary(
-                x => x.Key,
-                x => x.Sum(y => Math.Abs(y.SignedBiomassGram)) / 1000m);
-
-        if (ledgerKgByKey.Count == 0)
-        {
-            return;
-        }
+                x => (x.Key.ReferenceId, x.Key.FishBatchId, ProjectCageId: x.Key.ProjectCageId!.Value),
+                x => MortalityBiomassMath.CalculateReportedBiomassKgFromActualGram(
+                    Math.Max(0m, -x.Sum(BatchReportMassCalculator.CalculateSignedBiomassGram))));
 
         var countByKey = records
             .GroupBy(x => (ReferenceId: x.HeaderId, x.FishBatchId, x.ProjectCageId))
@@ -2203,7 +2242,58 @@ public class KpiReportService : IKpiReportService
         foreach (var record in records)
         {
             var key = (ReferenceId: record.HeaderId, record.FishBatchId, record.ProjectCageId);
-            if (!ledgerKgByKey.TryGetValue(key, out var ledgerKg) || ledgerKg <= 0)
+            if (ledgerKgByKey.TryGetValue(key, out var ledgerKg) && ledgerKg > 0)
+            {
+                var totalCount = countByKey.GetValueOrDefault(key);
+                record.Kg = totalCount > 0
+                    ? ledgerKg * Math.Max(0, record.Count) / totalCount
+                    : ledgerKg;
+                continue;
+            }
+
+            var historicalSnapshot = BatchReportMassCalculator.CalculateSnapshot(relevantMovements.Where(x =>
+                x.FishBatchId == record.FishBatchId
+                && x.ProjectCageId == record.ProjectCageId
+                && x.MovementDate.Date <= record.Date.Date
+                && !(x.MovementType == BatchMovementType.Mortality
+                    && x.ReferenceTable == "RII_MORTALITY"
+                    && x.ReferenceId == record.HeaderId)));
+            record.Kg = MortalityBiomassMath.CalculateReportedBiomassKg(
+                record.Count,
+                historicalSnapshot.AverageGram);
+        }
+    }
+
+    private async Task ApplyShipmentLedgerBiomassAsync(List<MonthlyOperationalRawRecord> records)
+    {
+        var shipmentIds = records.Select(x => x.HeaderId).Distinct().ToList();
+        if (shipmentIds.Count == 0)
+        {
+            return;
+        }
+
+        var movements = await _unitOfWork.Db.BatchMovements
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted
+                && x.MovementType == BatchMovementType.Shipment
+                && x.ReferenceTable == "RII_SHIPMENT"
+                && shipmentIds.Contains(x.ReferenceId)
+                && x.ProjectCageId.HasValue)
+            .ToListAsync();
+
+        var ledgerKgByKey = movements
+            .GroupBy(x => (x.ReferenceId, x.FishBatchId, x.ProjectCageId))
+            .ToDictionary(
+                x => (x.Key.ReferenceId, x.Key.FishBatchId, ProjectCageId: x.Key.ProjectCageId!.Value),
+                x => Math.Max(0m, -x.Sum(BatchReportMassCalculator.CalculateSignedBiomassGram)) / 1000m);
+        var countByKey = records
+            .GroupBy(x => (ReferenceId: x.HeaderId, x.FishBatchId, x.ProjectCageId))
+            .ToDictionary(x => x.Key, x => x.Sum(y => Math.Max(0, y.Count)));
+
+        foreach (var record in records)
+        {
+            var key = (ReferenceId: record.HeaderId, record.FishBatchId, record.ProjectCageId);
+            if (!ledgerKgByKey.TryGetValue(key, out var ledgerKg) || ledgerKg <= 0m)
             {
                 continue;
             }

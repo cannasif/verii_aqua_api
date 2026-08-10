@@ -195,20 +195,21 @@ namespace aqua_api.Modules.AquaReports.Application.Services
         {
             var movementList = movements.ToList();
             var openingMovements = ResolveOpeningMovements(movementList, projectFromDate, toDate);
-            var openingFishCount = openingMovements.Sum(x => x.SignedCount);
-            var endingFishCount = movementList
-                .Where(x => x.MovementDate.Date <= toDate)
-                .Sum(x => x.SignedCount);
-            var openingBiomassGram = openingMovements.Sum(x => x.SignedBiomassGram);
-            var endingBiomassGram = movementList
-                .Where(x => x.MovementDate.Date <= toDate)
-                .Sum(x => x.SignedBiomassGram);
+            var openingSnapshot = BatchReportMassCalculator.CalculateSnapshot(openingMovements);
+            var endingSnapshot = BatchReportMassCalculator.CalculateSnapshot(
+                movementList.Where(x => x.MovementDate.Date <= toDate));
+            var openingFishCount = openingSnapshot.LiveCount;
+            var endingFishCount = endingSnapshot.LiveCount;
+            var openingBiomassGram = openingSnapshot.BiomassGram;
+            var endingBiomassGram = endingSnapshot.BiomassGram;
 
             var shipmentList = shipmentLines.ToList();
             var mortalityList = mortalityLines.ToList();
-            var mortalityMovementBiomassGram = movementList
-                .Where(x => x.MovementType == BatchMovementType.Mortality && IsInRange(x.MovementDate, projectFromDate, toDate))
-                .Sum(x => Math.Max(0m, -x.SignedBiomassGram));
+            var mortalityMovementBiomassGram = Math.Max(
+                0m,
+                -movementList
+                    .Where(x => x.MovementType == BatchMovementType.Mortality && IsInRange(x.MovementDate, projectFromDate, toDate))
+                    .Sum(BatchReportMassCalculator.CalculateSignedBiomassGram));
             var hasMortalityMovement = movementList.Any(x =>
                 x.MovementType == BatchMovementType.Mortality &&
                 IsInRange(x.MovementDate, projectFromDate, toDate));
@@ -217,12 +218,17 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 .Sum(x => Math.Max(0, -x.SignedCount));
             var shipmentMovementBiomassGram = movementList
                 .Where(x => x.MovementType == BatchMovementType.Shipment && IsInRange(x.MovementDate, projectFromDate, toDate))
-                .Sum(x => Math.Max(0m, -x.SignedBiomassGram));
+                .Sum(x => Math.Max(0m, -BatchReportMassCalculator.CalculateSignedBiomassGram(x)));
 
-            var shippedBiomassGram = shipmentList.Sum(x => x.BiomassGram);
             var shipmentFishCount = shipmentList.Sum(x => x.FishCount);
             var unrepresentedShipmentFishCount = Math.Max(0, shipmentFishCount - shipmentMovementFishCount);
-            var unrepresentedShipmentBiomassGram = Math.Max(0m, shippedBiomassGram - shipmentMovementBiomassGram);
+            var shipmentLineAverageGram = shipmentFishCount > 0
+                ? shipmentList.Sum(x => BatchReportMassCalculator.CalculateBiomassGram(x.FishCount, x.AverageGram)) / shipmentFishCount
+                : 0m;
+            var unrepresentedShipmentBiomassGram = BatchReportMassCalculator.CalculateBiomassGram(
+                unrepresentedShipmentFishCount,
+                shipmentLineAverageGram);
+            var shippedBiomassGram = shipmentMovementBiomassGram + unrepresentedShipmentBiomassGram;
             var totalFeedGram = feedingDistributions.Sum(x => x.FeedGram);
             var openingFish = Math.Max(0, openingFishCount);
             var endingFish = Math.Max(0, endingFishCount - unrepresentedShipmentFishCount);
@@ -237,7 +243,8 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     x.DeadCount * ResolveAverageGramAtMortalityDate(movementList, x, endingAverageGram),
                     3,
                     MidpointRounding.AwayFromZero));
-            var carriedOutputBiomassKg = Math.Max(0m, (adjustedEndingBiomassGram + mortalityFallbackBiomassGram + shippedBiomassGram) / 1000m);
+            var reportedMortalityBiomassGram = MortalityBiomassMath.CalculateReportedBiomassGram(mortalityFallbackBiomassGram);
+            var carriedOutputBiomassKg = Math.Max(0m, (adjustedEndingBiomassGram + reportedMortalityBiomassGram + shippedBiomassGram) / 1000m);
             var producedBiomassKg = carriedOutputBiomassKg;
 
             return new DevirFcrReportRowDto
@@ -254,7 +261,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 OpeningBiomassKg = Round(Math.Max(0m, openingBiomassGram / 1000m)),
                 EndingBiomassKg = Round(Math.Max(0m, adjustedEndingBiomassGram / 1000m)),
                 ShippedBiomassKg = Round(Math.Max(0m, shippedBiomassGram / 1000m)),
-                MortalityBiomassKg = Round(Math.Max(0m, mortalityFallbackBiomassGram / 1000m)),
+                MortalityBiomassKg = Round(reportedMortalityBiomassGram / 1000m),
                 TotalFeedKg = Round(Math.Max(0m, totalFeedGram / 1000m)),
                 ProducedBiomassKg = Round(producedBiomassKg),
                 Fcr = producedBiomassKg > 0 ? Round((totalFeedGram / 1000m) / producedBiomassKg) : null,
@@ -361,12 +368,10 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     x.MovementType != BatchMovementType.Mortality)
                 .ToList();
 
-            var balanceCount = balanceMovements.Sum(x => x.SignedCount);
-            var balanceBiomassGram = balanceMovements.Sum(x => x.SignedBiomassGram);
-
-            if (balanceCount > 0 && balanceBiomassGram > 0)
+            var snapshot = BatchReportMassCalculator.CalculateSnapshot(balanceMovements);
+            if (snapshot.AverageGram > 0m)
             {
-                return Round(balanceBiomassGram / balanceCount);
+                return snapshot.AverageGram;
             }
 
             return fallbackAverageGram;

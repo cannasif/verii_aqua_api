@@ -732,6 +732,13 @@ public class BudgetPlanningServiceIntegrationTests
             Assert.Equal(
                 Math.Min(afterSalesCount, (int)Math.Round(afterSalesCount * 0.25m / 100m, MidpointRounding.AwayFromZero)),
                 row.MortalityCount);
+            var actualMortalityKg = Math.Round(
+                row.MortalityCount * row.ClosingAverageGram / 1000m,
+                3,
+                MidpointRounding.AwayFromZero);
+            Assert.Equal(
+                Math.Round(actualMortalityKg / 2m, 3, MidpointRounding.AwayFromZero),
+                row.MortalityKg);
             Assert.Equal(row.OpeningLiveCount - row.SalesCount - row.MortalityCount, row.ClosingLiveCount);
             if (index > 0)
             {

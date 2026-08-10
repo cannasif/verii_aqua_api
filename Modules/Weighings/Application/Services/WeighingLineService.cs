@@ -115,6 +115,7 @@ namespace aqua_api.Modules.Weighings.Application.Services
         {
             try
             {
+                NormalizeMass(dto);
                 var entity = _mapper.Map<WeighingLine>(dto);
                 await _unitOfWork.WeighingLines.AddAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
@@ -182,7 +183,9 @@ namespace aqua_api.Modules.Weighings.Application.Services
                     ProjectCageId = dto.ProjectCageId,
                     MeasuredCount = dto.MeasuredCount,
                     MeasuredAverageGram = dto.MeasuredAverageGram,
-                    MeasuredBiomassGram = dto.MeasuredBiomassGram,
+                    MeasuredBiomassGram = dto.MeasuredCount > 0 && dto.MeasuredAverageGram > 0m
+                        ? BatchMath.CalculateBiomassGram(dto.MeasuredCount, dto.MeasuredAverageGram)
+                        : 0m,
                 };
 
                 await _unitOfWork.WeighingLines.AddAsync(entity);
@@ -217,6 +220,7 @@ namespace aqua_api.Modules.Weighings.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                NormalizeMass(dto);
                 _mapper.Map(dto, entity);
                 await repo.UpdateAsync(entity);
                 await _unitOfWork.SaveChangesAsync();
@@ -231,6 +235,13 @@ namespace aqua_api.Modules.Weighings.Application.Services
                     ex.Message,
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private static void NormalizeMass(CreateWeighingLineDto dto)
+        {
+            dto.MeasuredBiomassGram = dto.MeasuredCount > 0 && dto.MeasuredAverageGram > 0m
+                ? BatchMath.CalculateBiomassGram(dto.MeasuredCount, dto.MeasuredAverageGram)
+                : 0m;
         }
 
         public async Task<ApiResponse<bool>> SoftDeleteAsync(long id)

@@ -250,7 +250,7 @@ namespace aqua_api.Modules.Transfers.Application.Services
                 await _unitOfWork.BeginTransaction();
 
                 var transfer = await _unitOfWork.Repository<WarehouseTransfer>()
-                    .Query()
+                    .Query(tracking: true)
                     .Include(x => x.Lines)
                     .FirstOrDefaultAsync(x => x.Id == warehouseTransferId && !x.IsDeleted);
 
@@ -273,6 +273,15 @@ namespace aqua_api.Modules.Transfers.Application.Services
                     {
                         throw new InvalidOperationException(_localizationService.GetLocalizedString("WarehouseTransferLineService.SourceAndTargetWarehouseCannotBeSame"));
                     }
+
+                    var sourceMass = await _balanceLedgerManager.GetWarehouseMassSnapshotAsync(
+                        line.FishBatchId,
+                        line.FromWarehouseId,
+                        transfer.TransferDate,
+                        BatchMovementType.WarehouseTransfer);
+                    EnsureSourceMass(sourceMass, line.FishCount);
+                    line.AverageGram = sourceMass.AverageGram;
+                    line.BiomassGram = BatchMath.CalculateBiomassGram(line.FishCount, sourceMass.AverageGram);
 
                     await _balanceLedgerManager.ApplyWarehouseDelta(
                         transfer.ProjectId,
@@ -347,6 +356,21 @@ namespace aqua_api.Modules.Transfers.Application.Services
             if (status != DocumentStatus.Draft)
             {
                 throw new InvalidOperationException("WarehouseTransfer must be in Draft status.");
+            }
+        }
+
+        private void EnsureSourceMass(BatchMassSnapshot sourceMass, int fishCount)
+        {
+            if (fishCount <= 0 || sourceMass.LiveCount < fishCount)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("BalanceLedgerManager.BatchWarehouseCountCannotGoNegative"));
+            }
+
+            if (sourceMass.AverageGram <= 0m)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("FishGrowthService.ActiveBalanceNotFound"));
             }
         }
     }

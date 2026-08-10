@@ -227,27 +227,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
 
                 EnsureDraftStatus(mortality.Status, nameof(Mortality));
 
-                var postLines = new List<MortalityPostLine>();
-                foreach (var line in mortality.Lines.Where(x => !x.IsDeleted))
-                {
-                    var balance = await _unitOfWork.Db.BatchCageBalances
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(x => x.FishBatchId == line.FishBatchId && x.ProjectCageId == line.ProjectCageId && !x.IsDeleted);
-
-                    var averageGram = ResolveAverageGram(balance);
-                    if (averageGram <= 0)
-                    {
-                        throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.AverageGramMissing"));
-                    }
-
-                    if (balance == null || balance.LiveCount < line.DeadCount)
-                    {
-                        throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.InsufficientBalance"));
-                    }
-
-                    var biomassDelta = -Math.Round(averageGram * line.DeadCount, 3, MidpointRounding.AwayFromZero);
-                    postLines.Add(new MortalityPostLine(line, averageGram, biomassDelta));
-                }
+                var postLines = await BuildMortalityPostLinesAsync(mortality, validateBalance: true);
 
                 var itemSlipRequest = BuildMortalityWarehouseIssueRequest(mortality, postLines);
                 var itemSlipResponse = mortality.IsERPIntegrated
@@ -544,23 +524,26 @@ namespace aqua_api.Modules.Mortalities.Application.Services
             var postLines = new List<MortalityPostLine>();
             foreach (var line in mortality.Lines.Where(x => !x.IsDeleted))
             {
-                var balance = await _unitOfWork.Db.BatchCageBalances
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(x => x.FishBatchId == line.FishBatchId && x.ProjectCageId == line.ProjectCageId && !x.IsDeleted);
-
-                var averageGram = ResolveAverageGram(balance);
+                var sourceMass = validateBalance
+                    ? await _balanceLedgerManager.GetCageMassSnapshotAsync(
+                        line.FishBatchId,
+                        line.ProjectCageId,
+                        mortality.MortalityDate,
+                        BatchMovementType.Mortality)
+                    : default;
+                var averageGram = sourceMass.AverageGram;
                 if (validateBalance && averageGram <= 0)
                 {
                     throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.AverageGramMissing"));
                 }
 
-                if (validateBalance && (balance == null || balance.LiveCount < line.DeadCount))
+                if (validateBalance && sourceMass.LiveCount < line.DeadCount)
                 {
                     throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.InsufficientBalance"));
                 }
 
                 var biomassDelta = validateBalance
-                    ? -Math.Round(averageGram * line.DeadCount, 3, MidpointRounding.AwayFromZero)
+                    ? -BatchMath.CalculateBiomassGram(line.DeadCount, averageGram)
                     : 0m;
 
                 postLines.Add(new MortalityPostLine(line, averageGram, biomassDelta));
@@ -621,15 +604,13 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     continue;
                 }
 
-                var balance = await _unitOfWork.Db.BatchCageBalances
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(x =>
-                        x.FishBatchId == key.FishBatchId &&
-                        x.ProjectCageId == key.Item2 &&
-                        !x.IsDeleted);
-
-                var averageGram = ResolveAverageGram(balance);
-                if (averageGram <= 0 && movementGroups.TryGetValue(key, out var existingGroup))
+                var sourceMass = await _balanceLedgerManager.GetCageMassSnapshotAsync(
+                    key.FishBatchId,
+                    key.Item2,
+                    mortality.MortalityDate,
+                    BatchMovementType.Mortality);
+                var averageGram = sourceMass.AverageGram;
+                if (deltaDeadCount < 0 && movementGroups.TryGetValue(key, out var existingGroup))
                 {
                     averageGram = existingGroup.LastAverageGram ?? 0m;
                 }
@@ -639,12 +620,12 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.AverageGramMissing"));
                 }
 
-                if (deltaDeadCount > 0 && (balance == null || balance.LiveCount < deltaDeadCount))
+                if (deltaDeadCount > 0 && sourceMass.LiveCount < deltaDeadCount)
                 {
                     throw new InvalidOperationException(_localizationService.GetLocalizedString("MortalityService.InsufficientBalance"));
                 }
 
-                var biomassDelta = -Math.Round(averageGram * deltaDeadCount, 3, MidpointRounding.AwayFromZero);
+                var biomassDelta = -BatchMath.CalculateBiomassGram(deltaDeadCount, averageGram);
                 deltas.Add(new MortalityLedgerDelta(
                     key.FishBatchId,
                     key.Item2,
@@ -764,23 +745,6 @@ namespace aqua_api.Modules.Mortalities.Application.Services
         {
             if (status != DocumentStatus.Draft)
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", documentName));
-        }
-
-        private static decimal ResolveAverageGram(BatchCageBalance? balance)
-        {
-            if (balance == null)
-            {
-                return 0m;
-            }
-
-            if (balance.AverageGram > 0)
-            {
-                return balance.AverageGram;
-            }
-
-            return balance.LiveCount > 0 && balance.BiomassGram > 0
-                ? Math.Round(balance.BiomassGram / balance.LiveCount, 3, MidpointRounding.AwayFromZero)
-                : 0m;
         }
 
         private static string BuildDocumentNo(long projectId, DateTime mortalityDate)

@@ -1060,10 +1060,10 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.Equal(50m, devirFcrRow.OpeningBiomassKg);
         Assert.Equal(57.25m, devirFcrRow.EndingBiomassKg);
         Assert.Equal(12m, devirFcrRow.ShippedBiomassKg);
-        Assert.Equal(0.75m, devirFcrRow.MortalityBiomassKg);
-        Assert.Equal(70m, devirFcrRow.ProducedBiomassKg);
+        Assert.Equal(0.375m, devirFcrRow.MortalityBiomassKg);
+        Assert.Equal(69.625m, devirFcrRow.ProducedBiomassKg);
         Assert.Equal(63m, devirFcrRow.TotalFeedKg);
-        Assert.Equal(0.9m, devirFcrRow.Fcr);
+        Assert.Equal(0.905m, devirFcrRow.Fcr);
 
         var preLifecycleDevirFcr = await PostAsync<DevirFcrReportDto>(client, "/api/kpi-report/devir-fcr", new DevirFcrReportRequestDto
         {
@@ -1092,7 +1092,7 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.Equal(50, rangedDevirFcrRow.MortalityFishCount);
         Assert.Equal(43m, rangedDevirFcrRow.TotalFeedKg);
         Assert.Equal(12m, rangedDevirFcrRow.ShippedBiomassKg);
-        Assert.Equal(0.25m, rangedDevirFcrRow.MortalityBiomassKg);
+        Assert.Equal(0.125m, rangedDevirFcrRow.MortalityBiomassKg);
 
         var invalidDevirFcrRange = await PostAsync<DevirFcrReportDto>(client, "/api/kpi-report/devir-fcr", new DevirFcrReportRequestDto
         {
@@ -1121,7 +1121,7 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.Equal(devirFcrRow.TotalFeedKg, dashboardCage.TotalFeedGram / 1000m);
         Assert.Equal(devirFcrRow.ShippedBiomassKg, dashboardCage.TotalShipmentBiomassGram / 1000m);
         Assert.Equal(devirFcrRow.MortalityBiomassKg, dashboardCage.TotalDeadBiomassGram / 1000m);
-        Assert.Equal(1.05m, dashboardCage.Fcr);
+        Assert.Equal(1.057m, dashboardCage.Fcr);
         Assert.Equal(4, dashboardCage.DailyRows.Count);
 
         var day1 = Assert.Single(dashboardCage.DailyRows, x => x.Date == "2026-04-01");
@@ -1133,7 +1133,7 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         var day2 = Assert.Single(dashboardCage.DailyRows, x => x.Date == "2026-04-02");
         Assert.Equal(20m, day2.FeedGram / 1000m);
         Assert.Equal(100, day2.DeadCount);
-        Assert.Equal(0.5m, day2.DeadBiomassGram / 1000m);
+        Assert.Equal(0.25m, day2.DeadBiomassGram / 1000m);
         Assert.Equal(0, day2.ShipmentFishCount);
         Assert.True(day2.Fed);
 
@@ -1147,7 +1147,7 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         var day4 = Assert.Single(dashboardCage.DailyRows, x => x.Date == "2026-04-04");
         Assert.Equal(18m, day4.FeedGram / 1000m);
         Assert.Equal(50, day4.DeadCount);
-        Assert.Equal(0.25m, day4.DeadBiomassGram / 1000m);
+        Assert.Equal(0.125m, day4.DeadBiomassGram / 1000m);
         Assert.Equal(2, day4.ShipmentCount);
         Assert.Equal(1_200, day4.ShipmentFishCount);
         Assert.Equal(12m, day4.ShipmentBiomassGram / 1000m);
@@ -1386,10 +1386,10 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.Equal(10_000m, row.OpeningBiomassKg);
         Assert.Equal(30_000m, row.EndingBiomassKg);
         Assert.Equal(15_000m, row.ShippedBiomassKg);
-        Assert.Equal(5_000m, row.MortalityBiomassKg);
-        Assert.Equal(50_000m, row.ProducedBiomassKg);
+        Assert.Equal(2_500m, row.MortalityBiomassKg);
+        Assert.Equal(47_500m, row.ProducedBiomassKg);
         Assert.Equal(100_000m, row.TotalFeedKg);
-        Assert.Equal(2m, row.Fcr);
+        Assert.Equal(2.105m, row.Fcr);
 
         var dashboardSummary = await PostAsync<DashboardProjectsResponseDto>(client, "/api/aqua/dashboard-project/summary", new DashboardProjectsRequestDto
         {

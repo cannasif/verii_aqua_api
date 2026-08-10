@@ -320,8 +320,13 @@ namespace aqua_api.Modules.GoodsReceipts.Application.Services
                         continue;
                     }
 
-                    if (line.FishCount is null || line.FishAverageGram is null || line.FishTotalGram is null)
+                    if (line.FishCount is null || line.FishAverageGram is null)
                         throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.FishLineValuesRequired"));
+
+                    line.FishTotalGram = BatchMath.CalculateBiomassGram(
+                        line.FishCount.Value,
+                        line.FishAverageGram.Value);
+                    NormalizeLinePricing(line);
 
                     if (!line.FishDistributions.Any(x => !x.IsDeleted))
                         throw new InvalidOperationException(_localizationService.GetLocalizedString("GoodsReceiptService.FishLineDistributionRequired"));
@@ -427,6 +432,24 @@ namespace aqua_api.Modules.GoodsReceipts.Application.Services
         {
             if (status != DocumentStatus.Draft)
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", documentName));
+        }
+
+        private static void NormalizeLinePricing(GoodsReceiptLine line)
+        {
+            var pricing = AquaLinePricingMath.NormalizeGoodsReceiptLine(
+                (byte)line.ItemType,
+                line.QtyUnit,
+                line.TotalGram,
+                line.FishTotalGram,
+                line.CurrencyCode,
+                line.ExchangeRate,
+                line.UnitPrice);
+            line.CurrencyCode = pricing.CurrencyCode;
+            line.ExchangeRate = pricing.ExchangeRate;
+            line.UnitPrice = pricing.UnitPrice;
+            line.LocalUnitPrice = pricing.LocalUnitPrice;
+            line.LineAmount = pricing.LineAmount;
+            line.LocalLineAmount = pricing.LocalLineAmount;
         }
 
         private async Task<BatchCageBalance> GetOrCreateBalanceAsync(long fishBatchId, long projectCageId, long userId, DateTime asOfDate)

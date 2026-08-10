@@ -198,15 +198,33 @@ namespace aqua_api.Modules.StockConverts.Application.Services
 
                     var fromStockId = fromBatch.FishStockId;
                     long? toStockId = line.ToFishBatch?.FishStockId;
-                    var fromAverageGram = line.AverageGram;
+                    var sourceMass = await _balanceLedgerManager.GetCageMassSnapshotAsync(
+                        line.FromFishBatchId,
+                        line.FromProjectCageId,
+                        convert.ConvertDate,
+                        BatchMovementType.StockConvert);
+                    if (line.FishCount <= 0 || sourceMass.LiveCount < line.FishCount)
+                    {
+                        throw new InvalidOperationException(
+                            _localizationService.GetLocalizedString("BalanceLedgerManager.BatchCageCountCannotGoNegative"));
+                    }
+                    if (sourceMass.AverageGram <= 0m)
+                    {
+                        throw new InvalidOperationException(
+                            _localizationService.GetLocalizedString("FishGrowthService.ActiveBalanceNotFound"));
+                    }
+
+                    var fromAverageGram = sourceMass.AverageGram;
                     if (line.NewAverageGram <= 0)
                     {
                         throw new InvalidOperationException(_localizationService.GetLocalizedString("StockConvertService.GramIncrementMustBeGreaterThanZero"));
                     }
                     // NewAverageGram is treated as increment gram entered by user.
                     var toAverageGram = BatchMath.CalculateIncrementedAverageGram(fromAverageGram, line.NewAverageGram);
-                    var fromBiomassGram = line.BiomassGram;
+                    var fromBiomassGram = BatchMath.CalculateBiomassGram(line.FishCount, fromAverageGram);
                     var toBiomassGram = BatchMath.CalculateBiomassGram(line.FishCount, toAverageGram);
+                    line.AverageGram = fromAverageGram;
+                    line.BiomassGram = fromBiomassGram;
 
                     await _balanceLedgerManager.ApplyDelta(
                         convert.ProjectId,

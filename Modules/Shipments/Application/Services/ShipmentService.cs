@@ -215,6 +215,26 @@ namespace aqua_api.Modules.Shipments.Application.Services
                 {
                     sourceProjectCageIds.Add(line.FromProjectCageId);
 
+                    var sourceMass = await _balanceLedgerManager.GetCageMassSnapshotAsync(
+                        line.FishBatchId,
+                        line.FromProjectCageId,
+                        shipment.ShipmentDate,
+                        BatchMovementType.Shipment);
+                    if (line.FishCount <= 0 || sourceMass.LiveCount < line.FishCount)
+                    {
+                        throw new InvalidOperationException(
+                            _localizationService.GetLocalizedString("BalanceLedgerManager.BatchCageCountCannotGoNegative"));
+                    }
+                    if (sourceMass.AverageGram <= 0m)
+                    {
+                        throw new InvalidOperationException(
+                            _localizationService.GetLocalizedString("ShipmentLineService.ExitWeightNotFound"));
+                    }
+
+                    line.AverageGram = sourceMass.AverageGram;
+                    line.BiomassGram = BatchMath.CalculateBiomassGram(line.FishCount, sourceMass.AverageGram);
+                    NormalizePricing(line);
+
                     await _balanceLedgerManager.ApplyDelta(
                         shipment.ProjectId,
                         line.FishBatchId,
@@ -370,6 +390,21 @@ namespace aqua_api.Modules.Shipments.Application.Services
         {
             if (status != DocumentStatus.Draft)
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", documentName));
+        }
+
+        private static void NormalizePricing(ShipmentLine line)
+        {
+            var pricing = AquaLinePricingMath.NormalizeShipmentLine(
+                line.BiomassGram,
+                line.CurrencyCode,
+                line.ExchangeRate,
+                line.UnitPrice);
+            line.CurrencyCode = pricing.CurrencyCode;
+            line.ExchangeRate = pricing.ExchangeRate;
+            line.UnitPrice = pricing.UnitPrice;
+            line.LocalUnitPrice = pricing.LocalUnitPrice;
+            line.LineAmount = pricing.LineAmount;
+            line.LocalLineAmount = pricing.LocalLineAmount;
         }
 
         private async Task<long> ValidateAndResolveWarehouseIdAsync(long warehouseId)

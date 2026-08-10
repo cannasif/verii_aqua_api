@@ -1562,9 +1562,10 @@ public class BudgetPlanningService : IBudgetPlanningService
                         ? FindMortalityRateDefinition(mortalityRates, batch.FishStockId, calibration?.Id, monthIndex)?.MortalityRatePercent ?? 0m
                         : 0m;
                     var mortalityCount = Math.Min(afterSalesLiveCount, (int)Math.Round(afterSalesLiveCount * mortalityRate / 100m, MidpointRounding.AwayFromZero));
-                    var mortalityKg = Round(mortalityCount * afterSalesAverageGram / 1000m);
+                    var actualMortalityKg = Round(mortalityCount * afterSalesAverageGram / 1000m);
+                    var mortalityKg = MortalityBiomassMath.CalculateReportedBiomassKg(mortalityCount, afterSalesAverageGram);
                     var closingLiveCount = Math.Max(0, afterSalesLiveCount - mortalityCount);
-                    var closingBiomassKg = Math.Max(0m, Round(afterSalesBiomassKg - mortalityKg));
+                    var closingBiomassKg = Math.Max(0m, Round(afterSalesBiomassKg - actualMortalityKg));
 
                     var feedRate = includeSalesAndOperations ? FindFeedRate(feedRates, waterTemperature?.Id, calibration?.Id) : null;
                     var averageBiomassKg = (afterSalesBiomassKg + closingBiomassKg) / 2m;

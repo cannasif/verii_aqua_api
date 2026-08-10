@@ -14,6 +14,80 @@ namespace aqua_api.Modules.Aqua.Application.Services
             _localizationService = localizationService;
         }
 
+        public async Task<BatchMassSnapshot> GetCageMassSnapshotAsync(
+            long fishBatchId,
+            long projectCageId,
+            DateTime movementDate,
+            BatchMovementType movementType)
+        {
+            var balance = _uow.Db.BatchCageBalances.Local.FirstOrDefault(x =>
+                x.FishBatchId == fishBatchId
+                && x.ProjectCageId == projectCageId
+                && !x.IsDeleted);
+            balance ??= await _uow.Db.BatchCageBalances
+                .FirstOrDefaultAsync(x =>
+                    x.FishBatchId == fishBatchId
+                    && x.ProjectCageId == projectCageId
+                    && !x.IsDeleted);
+
+            if (balance != null && movementDate.Date >= balance.AsOfDate.Date)
+            {
+                return CreateSnapshot(balance.LiveCount, balance.BiomassGram);
+            }
+
+            var movements = await _uow.Db.BatchMovements
+                .AsNoTracking()
+                .Where(x =>
+                    !x.IsDeleted
+                    && x.FishBatchId == fishBatchId
+                    && x.ProjectCageId == projectCageId
+                    && x.MovementDate < movementDate.Date.AddDays(1))
+                .ToListAsync();
+
+            return CreateHistoricalSnapshot(
+                movements,
+                movementDate,
+                movementType,
+                x => x.FishBatchId == fishBatchId && x.ProjectCageId == projectCageId);
+        }
+
+        public async Task<BatchMassSnapshot> GetWarehouseMassSnapshotAsync(
+            long fishBatchId,
+            long warehouseId,
+            DateTime movementDate,
+            BatchMovementType movementType)
+        {
+            var balance = _uow.Db.BatchWarehouseBalances.Local.FirstOrDefault(x =>
+                x.FishBatchId == fishBatchId
+                && x.WarehouseId == warehouseId
+                && !x.IsDeleted);
+            balance ??= await _uow.Db.BatchWarehouseBalances
+                .FirstOrDefaultAsync(x =>
+                    x.FishBatchId == fishBatchId
+                    && x.WarehouseId == warehouseId
+                    && !x.IsDeleted);
+
+            if (balance != null && movementDate.Date >= balance.AsOfDate.Date)
+            {
+                return CreateSnapshot(balance.LiveCount, balance.BiomassGram);
+            }
+
+            var movements = await _uow.Db.BatchMovements
+                .AsNoTracking()
+                .Where(x =>
+                    !x.IsDeleted
+                    && x.FishBatchId == fishBatchId
+                    && x.WarehouseId == warehouseId
+                    && x.MovementDate < movementDate.Date.AddDays(1))
+                .ToListAsync();
+
+            return CreateHistoricalSnapshot(
+                movements,
+                movementDate,
+                movementType,
+                x => x.FishBatchId == fishBatchId && x.WarehouseId == warehouseId);
+        }
+
         public async Task ApplyDelta(
             long projectId,
             long fishBatchId,
@@ -40,7 +114,9 @@ namespace aqua_api.Modules.Aqua.Application.Services
             var resolvedFromStockId = fromStockId ?? fishBatch?.FishStockId;
             var resolvedToStockId = toStockId ?? resolvedFromStockId;
 
-            var balance = await _uow.Db.BatchCageBalances
+            var balance = _uow.Db.BatchCageBalances.Local.FirstOrDefault(x =>
+                x.FishBatchId == fishBatchId && x.ProjectCageId == projectCageId && !x.IsDeleted);
+            balance ??= await _uow.Db.BatchCageBalances
                 .FirstOrDefaultAsync(x => x.FishBatchId == fishBatchId && x.ProjectCageId == projectCageId && !x.IsDeleted);
 
             if (balance == null)
@@ -142,7 +218,9 @@ namespace aqua_api.Modules.Aqua.Application.Services
             var resolvedFromStockId = fromStockId ?? fishBatch?.FishStockId;
             var resolvedToStockId = toStockId ?? resolvedFromStockId;
 
-            var balance = await _uow.Db.BatchWarehouseBalances
+            var balance = _uow.Db.BatchWarehouseBalances.Local.FirstOrDefault(x =>
+                x.ProjectId == projectId && x.FishBatchId == fishBatchId && x.WarehouseId == warehouseId && !x.IsDeleted);
+            balance ??= await _uow.Db.BatchWarehouseBalances
                 .FirstOrDefaultAsync(x => x.ProjectId == projectId && x.FishBatchId == fishBatchId && x.WarehouseId == warehouseId && !x.IsDeleted);
 
             if (balance == null)
@@ -219,5 +297,107 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 IsDeleted = false
             });
         }
+
+        private BatchMassSnapshot CreateHistoricalSnapshot(
+            List<BatchMovement> persistedMovements,
+            DateTime movementDate,
+            BatchMovementType movementType,
+            Func<BatchMovement, bool> locationPredicate)
+        {
+            var persistedById = persistedMovements
+                .Where(x => x.Id > 0)
+                .ToDictionary(x => x.Id);
+            var pendingMovements = new List<BatchMovement>();
+
+            foreach (var entry in _uow.Db.ChangeTracker.Entries<BatchMovement>())
+            {
+                var movement = entry.Entity;
+                if (!locationPredicate(movement) || movement.MovementDate >= movementDate.Date.AddDays(1))
+                {
+                    continue;
+                }
+
+                if (movement.Id > 0)
+                {
+                    persistedById.Remove(movement.Id);
+                }
+
+                if (entry.State != EntityState.Deleted && !movement.IsDeleted)
+                {
+                    pendingMovements.Add(movement);
+                }
+            }
+
+            var includedMovements = persistedById.Values
+                .Concat(pendingMovements)
+                .Where(x => IsIncludedAtOperation(x, movementDate, movementType))
+                .ToList();
+            var liveCount = includedMovements.Sum(x => (long)x.SignedCount);
+            var biomassGram = includedMovements.Sum(x => x.SignedBiomassGram);
+
+            if (liveCount < 0)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("BalanceLedgerManager.BatchCageCountCannotGoNegative"));
+            }
+
+            if (biomassGram < 0m)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("BalanceLedgerManager.BatchCageBiomassCannotGoNegative"));
+            }
+
+            return CreateSnapshot(checked((int)liveCount), biomassGram);
+        }
+
+        private static BatchMassSnapshot CreateSnapshot(int liveCount, decimal biomassGram)
+        {
+            var roundedBiomass = Math.Round(biomassGram, 3, MidpointRounding.AwayFromZero);
+            var averageGram = liveCount > 0
+                ? Math.Round(roundedBiomass / liveCount, 3, MidpointRounding.AwayFromZero)
+                : 0m;
+            return new BatchMassSnapshot(liveCount, roundedBiomass, averageGram);
+        }
+
+        private static bool IsIncludedAtOperation(
+            BatchMovement movement,
+            DateTime operationDate,
+            BatchMovementType operationType)
+        {
+            if (movement.MovementDate.Date < operationDate.Date)
+            {
+                return true;
+            }
+
+            if (movement.MovementDate.Date > operationDate.Date)
+            {
+                return false;
+            }
+
+            if (movement.MovementDate.TimeOfDay < operationDate.TimeOfDay)
+            {
+                return true;
+            }
+
+            if (movement.MovementDate.TimeOfDay > operationDate.TimeOfDay)
+            {
+                return false;
+            }
+
+            return GetOperationPriority(movement.MovementType) <= GetOperationPriority(operationType);
+        }
+
+        private static int GetOperationPriority(BatchMovementType movementType) => movementType switch
+        {
+            BatchMovementType.Stocking or BatchMovementType.OpeningImport => 0,
+            BatchMovementType.Adjustment => 10,
+            BatchMovementType.FishGrowth => 20,
+            BatchMovementType.Weighing => 30,
+            BatchMovementType.Transfer or BatchMovementType.WarehouseTransfer or BatchMovementType.StockConvert => 40,
+            BatchMovementType.Shipment => 50,
+            BatchMovementType.Mortality => 60,
+            BatchMovementType.Feeding => 70,
+            _ => 40
+        };
     }
 }

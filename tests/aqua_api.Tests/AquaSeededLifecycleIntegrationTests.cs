@@ -77,6 +77,7 @@ public class AquaSeededLifecycleIntegrationTests
 
         var cageService = scope.ServiceProvider.GetRequiredService<ICageService>();
         var openingImportService = scope.ServiceProvider.GetRequiredService<IOpeningImportService>();
+        var goodsReceiptLineService = scope.ServiceProvider.GetRequiredService<IGoodsReceiptLineService>();
         var goodsReceiptFishDistributionService = scope.ServiceProvider.GetRequiredService<IGoodsReceiptFishDistributionService>();
         var fishBatchService = scope.ServiceProvider.GetRequiredService<IFishBatchService>();
         var feedingLineService = scope.ServiceProvider.GetRequiredService<IFeedingLineService>();
@@ -93,6 +94,9 @@ public class AquaSeededLifecycleIntegrationTests
         var warehouseCageTransferService = scope.ServiceProvider.GetRequiredService<IWarehouseCageTransferService>();
         var shipmentLineService = scope.ServiceProvider.GetRequiredService<IShipmentLineService>();
         var shipmentService = scope.ServiceProvider.GetRequiredService<IShipmentService>();
+        var weighingLineService = scope.ServiceProvider.GetRequiredService<IWeighingLineService>();
+        var weighingService = scope.ServiceProvider.GetRequiredService<IWeighingService>();
+        var balanceLedgerManager = scope.ServiceProvider.GetRequiredService<IBalanceLedgerManager>();
         var kpiService = scope.ServiceProvider.GetRequiredService<IProjectCageDailyKpiService>();
 
         var missingCageName = await cageService.CreateAsync(new CreateCageDto
@@ -250,6 +254,33 @@ public class AquaSeededLifecycleIntegrationTests
         var warehouse = await db.Warehouses.SingleAsync(x => !x.IsDeleted && x.ErpWarehouseCode == 10);
         var targetWarehouse = await db.Warehouses.SingleAsync(x => !x.IsDeleted && x.ErpWarehouseCode == 20);
 
+        var massValidationReceipt = new GoodsReceipt
+        {
+            ProjectId = project.Id,
+            ReceiptNo = "MASS-NORMALIZATION-TEST",
+            ReceiptDate = new DateTime(2026, 4, 1),
+            Status = DocumentStatus.Draft,
+            WarehouseId = warehouse.Id,
+        };
+        db.GoodsReceipts.Add(massValidationReceipt);
+        await db.SaveChangesAsync();
+
+        var normalizedReceiptLine = await goodsReceiptLineService.CreateAsync(new CreateGoodsReceiptLineDto
+        {
+            GoodsReceiptId = massValidationReceipt.Id,
+            ItemType = GoodsReceiptItemType.Fish,
+            StockId = fish5Stock.Id,
+            FishCount = 100,
+            FishAverageGram = 435m,
+            FishTotalGram = 1m,
+            CurrencyCode = "TRY",
+            ExchangeRate = 1m,
+            UnitPrice = 10m,
+        });
+        Assert.True(normalizedReceiptLine.Success, $"{normalizedReceiptLine.Message} | {normalizedReceiptLine.ExceptionMessage}");
+        Assert.Equal(43_500m, normalizedReceiptLine.Data!.FishTotalGram);
+        Assert.Equal(435m, normalizedReceiptLine.Data.LineAmount);
+
         var convertedBatchCreate = await fishBatchService.CreateAsync(new CreateFishBatchDto
         {
             ProjectId = project.Id,
@@ -323,11 +354,17 @@ public class AquaSeededLifecycleIntegrationTests
             FromProjectCageId = projectCage.Id,
             ToProjectCageId = projectCage.Id,
             FishCount = 4_000,
-            AverageGram = 5m,
+            AverageGram = 999m,
             NewAverageGram = 5m,
-            BiomassGram = BatchMath.CalculateBiomassGram(4_000, 5m),
+            BiomassGram = 1m,
         });
         Assert.True(stockConvert.Success);
+
+        var normalizedStockConvertLine = await db.StockConvertLines
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == stockConvert.Data!.Id);
+        Assert.Equal(5m, normalizedStockConvertLine.AverageGram);
+        Assert.Equal(20_000m, normalizedStockConvertLine.BiomassGram);
 
         var feedingDay4 = await feedingLineService.CreateWithAutoHeaderAsync(new CreateFeedingLineWithAutoHeaderDto
         {
@@ -363,14 +400,20 @@ public class AquaSeededLifecycleIntegrationTests
             FromProjectCageId = projectCage.Id,
             ToWarehouseId = warehouse.Id,
             FishCount = 1_500,
-            AverageGram = 10m,
-            BiomassGram = BatchMath.CalculateBiomassGram(1_500, 10m),
+            AverageGram = 999m,
+            BiomassGram = 1m,
         });
         Assert.True(cageWarehouseLine.Success);
 
         var cageWarehouseHeader = await db.CageWarehouseTransfers
             .SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.TransferDate.Date == new DateTime(2026, 4, 4));
         Assert.True((await cageWarehouseTransferService.Post(cageWarehouseHeader.Id, 1)).Success);
+
+        var normalizedCageWarehouseLine = await db.CageWarehouseTransferLines
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == cageWarehouseLine.Data!.Id);
+        Assert.Equal(10m, normalizedCageWarehouseLine.AverageGram);
+        Assert.Equal(15_000m, normalizedCageWarehouseLine.BiomassGram);
 
         var warehouseCageLine = await warehouseCageTransferLineService.CreateWithAutoHeaderAsync(new CreateWarehouseCageTransferLineWithAutoHeaderDto
         {
@@ -380,14 +423,20 @@ public class AquaSeededLifecycleIntegrationTests
             FromWarehouseId = warehouse.Id,
             ToProjectCageId = projectCage.Id,
             FishCount = 500,
-            AverageGram = 10m,
-            BiomassGram = BatchMath.CalculateBiomassGram(500, 10m),
+            AverageGram = 999m,
+            BiomassGram = 1m,
         });
         Assert.True(warehouseCageLine.Success);
 
         var warehouseCageHeader = await db.WarehouseCageTransfers
             .SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.TransferDate.Date == new DateTime(2026, 4, 4));
         Assert.True((await warehouseCageTransferService.Post(warehouseCageHeader.Id, 1)).Success);
+
+        var normalizedWarehouseCageLine = await db.WarehouseCageTransferLines
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == warehouseCageLine.Data!.Id);
+        Assert.Equal(10m, normalizedWarehouseCageLine.AverageGram);
+        Assert.Equal(5_000m, normalizedWarehouseCageLine.BiomassGram);
 
         var shipmentLineOne = await shipmentLineService.CreateWithAutoHeaderAsync(new CreateShipmentLineWithAutoHeaderDto
         {
@@ -396,8 +445,8 @@ public class AquaSeededLifecycleIntegrationTests
             FishBatchId = convertedBatchId,
             FromProjectCageId = projectCage.Id,
             FishCount = 1_000,
-            AverageGram = 10m,
-            BiomassGram = BatchMath.CalculateBiomassGram(1_000, 10m),
+            AverageGram = 999m,
+            BiomassGram = 1m,
             CurrencyCode = "TRY",
             ExchangeRate = 1m,
             UnitPrice = 210m,
@@ -411,8 +460,8 @@ public class AquaSeededLifecycleIntegrationTests
             FishBatchId = convertedBatchId,
             FromProjectCageId = projectCage.Id,
             FishCount = 200,
-            AverageGram = 10m,
-            BiomassGram = BatchMath.CalculateBiomassGram(200, 10m),
+            AverageGram = 999m,
+            BiomassGram = 1m,
             CurrencyCode = "TRY",
             ExchangeRate = 1m,
             UnitPrice = 230m,
@@ -470,6 +519,9 @@ public class AquaSeededLifecycleIntegrationTests
             .OrderBy(x => x.Id)
             .ToListAsync();
         Assert.Equal(2, shipmentLines.Count);
+        Assert.All(shipmentLines, line => Assert.Equal(10m, line.AverageGram));
+        Assert.Equal(10_000m, shipmentLines[0].BiomassGram);
+        Assert.Equal(2_000m, shipmentLines[1].BiomassGram);
         Assert.Equal(2_100m, shipmentLines[0].LocalLineAmount);
         Assert.Equal(460m, shipmentLines[1].LocalLineAmount);
 
@@ -785,6 +837,104 @@ public class AquaSeededLifecycleIntegrationTests
                 x.ProjectCageId == createdTargetAssignment.Id);
         Assert.Equal(0, unassignedTargetBalanceAfterCancel.LiveCount);
         Assert.Equal(0m, unassignedTargetBalanceAfterCancel.BiomassGram);
+
+        var weighingLine = await weighingLineService.CreateWithAutoHeaderAsync(new CreateWeighingLineWithAutoHeaderDto
+        {
+            ProjectId = project.Id,
+            WeighingDate = new DateTime(2026, 4, 11),
+            FishBatchId = convertedBatchId,
+            ProjectCageId = projectCage.Id,
+            MeasuredCount = 50,
+            MeasuredAverageGram = 12m,
+            MeasuredBiomassGram = 1m,
+        });
+        Assert.True(weighingLine.Success, $"{weighingLine.Message} | {weighingLine.ExceptionMessage}");
+        Assert.Equal(600m, weighingLine.Data!.MeasuredBiomassGram);
+
+        var weighingHeader = await db.Weighings
+            .SingleAsync(x => !x.IsDeleted && x.ProjectId == project.Id && x.WeighingDate.Date == new DateTime(2026, 4, 11));
+        var weighingPost = await weighingService.Post(weighingHeader.Id, 1);
+        Assert.True(weighingPost.Success, $"{weighingPost.Message} | {weighingPost.ExceptionMessage}");
+
+        var weighedCageBalance = await db.BatchCageBalances
+            .AsNoTracking()
+            .SingleAsync(x => !x.IsDeleted && x.FishBatchId == convertedBatchId && x.ProjectCageId == projectCage.Id);
+        Assert.Equal(1_800, weighedCageBalance.LiveCount);
+        Assert.Equal(21_600m, weighedCageBalance.BiomassGram);
+        Assert.Equal(12m, weighedCageBalance.AverageGram);
+
+        var weighingMovement = await db.BatchMovements
+            .AsNoTracking()
+            .SingleAsync(x => !x.IsDeleted && x.ReferenceTable == "RII_WEIGHING" && x.ReferenceId == weighingHeader.Id);
+        Assert.Equal(0, weighingMovement.SignedCount);
+        Assert.Equal(3_600m, weighingMovement.SignedBiomassGram);
+
+        var convertedBatchAfterWeighing = await db.FishBatches
+            .AsNoTracking()
+            .SingleAsync(x => x.Id == convertedBatchId);
+        Assert.Equal(11.286m, convertedBatchAfterWeighing.CurrentAverageGram);
+
+        var historicalBatch = new FishBatch
+        {
+            ProjectId = project.Id,
+            FishStockId = fish5Stock.Id,
+            BatchCode = "BATCH-HISTORICAL-MASS",
+            CurrentAverageGram = 200m,
+            StartDate = new DateTime(2026, 1, 1),
+        };
+        db.FishBatches.Add(historicalBatch);
+        await db.SaveChangesAsync();
+
+        await balanceLedgerManager.ApplyDelta(
+            project.Id,
+            historicalBatch.Id,
+            projectCage.Id,
+            1_000,
+            100_000m,
+            BatchMovementType.Stocking,
+            new DateTime(2026, 1, 1),
+            "Historical mass opening",
+            "TEST_HISTORICAL_MASS",
+            1,
+            null,
+            projectCage.Id,
+            fish5Stock.Id,
+            fish5Stock.Id,
+            100m,
+            100m,
+            1);
+        await balanceLedgerManager.ApplyDelta(
+            project.Id,
+            historicalBatch.Id,
+            projectCage.Id,
+            0,
+            100_000m,
+            BatchMovementType.FishGrowth,
+            new DateTime(2026, 3, 1),
+            "Historical mass growth",
+            "TEST_HISTORICAL_MASS",
+            2,
+            projectCage.Id,
+            projectCage.Id,
+            fish5Stock.Id,
+            fish5Stock.Id,
+            100m,
+            200m,
+            1);
+        await db.SaveChangesAsync();
+
+        var februaryMass = await balanceLedgerManager.GetCageMassSnapshotAsync(
+            historicalBatch.Id,
+            projectCage.Id,
+            new DateTime(2026, 2, 15),
+            BatchMovementType.Shipment);
+        var marchMass = await balanceLedgerManager.GetCageMassSnapshotAsync(
+            historicalBatch.Id,
+            projectCage.Id,
+            new DateTime(2026, 3, 1),
+            BatchMovementType.Mortality);
+        Assert.Equal(new BatchMassSnapshot(1_000, 100_000m, 100m), februaryMass);
+        Assert.Equal(new BatchMassSnapshot(1_000, 200_000m, 200m), marchMass);
     }
 
     private static async Task SeedMasterDataAsync(AquaDbContext db)

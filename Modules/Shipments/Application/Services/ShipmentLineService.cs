@@ -9,16 +9,19 @@ namespace aqua_api.Modules.Shipments.Application.Services
     public class ShipmentLineService : IShipmentLineService
     {
         private readonly IUnitOfWork _unitOfWork;
+        private readonly IBalanceLedgerManager _balanceLedgerManager;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
 
         public ShipmentLineService(
             IUnitOfWork unitOfWork,
+            IBalanceLedgerManager balanceLedgerManager,
             IMapper mapper,
             ILocalizationService localizationService,
             IErpService erpService)
         {
             _unitOfWork = unitOfWork;
+            _balanceLedgerManager = balanceLedgerManager;
             _mapper = mapper;
             _localizationService = localizationService;
         }
@@ -430,52 +433,23 @@ namespace aqua_api.Modules.Shipments.Application.Services
                     _localizationService.GetLocalizedString("ShipmentLineService.SourceNotFound"));
             }
 
-            var endExclusive = shipmentDate.Date.AddDays(1);
-            var movements = await _unitOfWork.Db.BatchMovements
-                .AsNoTracking()
-                .Where(x =>
-                    !x.IsDeleted &&
-                    x.FishBatchId == dto.FishBatchId &&
-                    x.MovementDate < endExclusive &&
-                    (x.ProjectCageId == dto.FromProjectCageId ||
-                     x.FromProjectCageId == dto.FromProjectCageId ||
-                     x.ToProjectCageId == dto.FromProjectCageId))
-                .OrderByDescending(x => x.MovementDate)
-                .ThenByDescending(x => x.Id)
-                .Take(50)
-                .ToListAsync();
-
-            decimal? exitAverageGram = null;
-            foreach (var movement in movements)
-            {
-                if (movement.ToProjectCageId == dto.FromProjectCageId && movement.ToAverageGram > 0)
-                {
-                    exitAverageGram = movement.ToAverageGram;
-                }
-                else if (movement.FromProjectCageId == dto.FromProjectCageId && movement.FromAverageGram > 0)
-                {
-                    exitAverageGram = movement.FromAverageGram;
-                }
-                else if (movement.ProjectCageId == dto.FromProjectCageId)
-                {
-                    exitAverageGram = movement.ToAverageGram > 0
-                        ? movement.ToAverageGram
-                        : movement.FromAverageGram;
-                }
-
-                if (exitAverageGram > 0)
-                {
-                    break;
-                }
-            }
-
-            if (!exitAverageGram.HasValue || exitAverageGram.Value <= 0)
+            var sourceMass = await _balanceLedgerManager.GetCageMassSnapshotAsync(
+                dto.FishBatchId,
+                dto.FromProjectCageId,
+                shipmentDate,
+                BatchMovementType.Shipment);
+            if (sourceMass.AverageGram <= 0)
             {
                 throw new InvalidOperationException(
                     _localizationService.GetLocalizedString("ShipmentLineService.ExitWeightNotFound"));
             }
+            if (sourceMass.LiveCount < dto.FishCount)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("BalanceLedgerManager.BatchCageCountCannotGoNegative"));
+            }
 
-            dto.AverageGram = Math.Round(exitAverageGram.Value, 3, MidpointRounding.AwayFromZero);
+            dto.AverageGram = sourceMass.AverageGram;
             dto.BiomassGram = BatchMath.CalculateBiomassGram(dto.FishCount, dto.AverageGram);
         }
 

@@ -20,6 +20,15 @@ namespace aqua_api.Modules.GoodsReceipts.Application.Services
 
         private static void NormalizePricing(CreateGoodsReceiptLineDto dto)
         {
+            if (dto.ItemType == GoodsReceiptItemType.Fish
+                && dto.FishCount is > 0
+                && dto.FishAverageGram is > 0m)
+            {
+                dto.FishTotalGram = BatchMath.CalculateBiomassGram(
+                    dto.FishCount.Value,
+                    dto.FishAverageGram.Value);
+            }
+
             var pricing = AquaLinePricingMath.NormalizeGoodsReceiptLine(
                 (byte)dto.ItemType,
                 dto.QtyUnit,

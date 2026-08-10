@@ -1261,8 +1261,8 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
         Assert.Equal(100, marchAfterOutputs.ShipmentFishCount);
         Assert.Equal(30m, marchAfterOutputs.ShippedBiomassKg);
         Assert.Equal(10, marchAfterOutputs.MortalityFishCount);
-        Assert.Equal(3m, marchAfterOutputs.MortalityBiomassKg);
-        Assert.Equal(0.6m, marchAfterOutputs.Fcr);
+        Assert.Equal(1.5m, marchAfterOutputs.MortalityBiomassKg);
+        Assert.Equal(0.603m, marchAfterOutputs.Fcr);
 
         var reportRequest = new MonthlyOperationalReportRequestDto
         {
@@ -1281,7 +1281,7 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
         Assert.Equal(HttpStatusCode.OK, mortalityReportResponse.StatusCode);
         var mortalityReport = (await mortalityReportResponse.Content.ReadFromJsonAsync<ApiResponse<MonthlyOperationalReportDto>>())!.Data!;
         Assert.Equal(10, mortalityReport.TotalCount);
-        Assert.Equal(3m, mortalityReport.TotalKg);
+        Assert.Equal(1.5m, mortalityReport.TotalKg);
 
         using var finalDashboardResponse = await client.GetAsync($"/api/aqua/dashboard-project/detail/{projectId}");
         var finalDashboard = (await finalDashboardResponse.Content.ReadFromJsonAsync<ApiResponse<DashboardProjectDetailDto>>())!.Data!;
@@ -1289,6 +1289,15 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
         Assert.Equal(890, finalDashboardCage.CurrentFishCount);
         Assert.Equal(300m, finalDashboardCage.CurrentAverageGram);
         Assert.Equal(267_000m, finalDashboardCage.CurrentBiomassGram);
+        Assert.Equal(1_500m, finalDashboardCage.TotalDeadBiomassGram);
+        Assert.Equal(1_500m, finalDashboardCage.DailyRows.Single(x => x.Date == "2026-03-21").DeadBiomassGram);
+        Assert.Equal(0.603m, finalDashboardCage.Fcr);
+
+        using var finalProjectDetailResponse = await client.GetAsync($"/api/kpi-report/project-detail/{projectId}");
+        var finalProjectDetail = (await finalProjectDetailResponse.Content.ReadFromJsonAsync<ApiResponse<ProjectDetailReportDto>>())!.Data!;
+        var finalProjectDetailCage = Assert.Single(finalProjectDetail.Cages);
+        Assert.Equal(10, finalProjectDetailCage.TotalDeadCount);
+        Assert.Equal(1_500m, finalProjectDetailCage.DailyRows.Single(x => x.Date == "2026-03-21").DeadBiomassGram);
 
         using var finalRawKpiResponse = await client.GetAsync($"/api/kpi-report/raw-kpi/{projectId}");
         var finalRawKpi = (await finalRawKpiResponse.Content.ReadFromJsonAsync<ApiResponse<RawKpiReportDto>>())!.Data!;
@@ -1296,6 +1305,60 @@ public sealed class FishGrowthHttpIntegrationTests : IClassFixture<AquaHttpTestW
         Assert.Equal(300m, finalRawKpi.CurrentAverageGram);
         Assert.Equal(267m, finalRawKpi.CurrentBiomassKg);
         Assert.Equal(10, finalRawKpi.DeadFish);
+
+        using (var corruptScope = _factory.Services.CreateScope())
+        {
+            var db = corruptScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var balance = await db.BatchCageBalances.SingleAsync(x =>
+                x.FishBatchId == fishBatchId && x.ProjectCageId == projectCageId && !x.IsDeleted);
+            balance.BiomassGram = 1m;
+
+            var batch = await db.FishBatches.SingleAsync(x => x.Id == fishBatchId);
+            batch.CurrentAverageGram = 999m;
+
+            var movements = await db.BatchMovements
+                .Where(x => x.FishBatchId == fishBatchId && !x.IsDeleted)
+                .ToListAsync();
+            foreach (var movement in movements)
+            {
+                movement.SignedBiomassGram = movement.SignedCount < 0 ? -1m : 1m;
+            }
+
+            var shipmentLine = await db.ShipmentLines.SingleAsync(x =>
+                x.FishBatchId == fishBatchId && !x.IsDeleted);
+            shipmentLine.BiomassGram = 1m;
+            await db.SaveChangesAsync();
+        }
+
+        var devirAfterStoredKgCorruption = await GetDevirFcr(new DateTime(2026, 3, 31));
+        Assert.Equal(300m, devirAfterStoredKgCorruption.EndingAverageGram);
+        Assert.Equal(267m, devirAfterStoredKgCorruption.EndingBiomassKg);
+        Assert.Equal(30m, devirAfterStoredKgCorruption.ShippedBiomassKg);
+        Assert.Equal(1.5m, devirAfterStoredKgCorruption.MortalityBiomassKg);
+
+        using var dashboardAfterCorruptionResponse = await client.GetAsync($"/api/aqua/dashboard-project/detail/{projectId}");
+        var dashboardAfterCorruption = (await dashboardAfterCorruptionResponse.Content
+            .ReadFromJsonAsync<ApiResponse<DashboardProjectDetailDto>>())!.Data!;
+        var dashboardCageAfterCorruption = Assert.Single(dashboardAfterCorruption.Cages);
+        Assert.Equal(300m, dashboardCageAfterCorruption.CurrentAverageGram);
+        Assert.Equal(267_000m, dashboardCageAfterCorruption.CurrentBiomassGram);
+        Assert.Equal(1_500m, dashboardCageAfterCorruption.TotalDeadBiomassGram);
+
+        using var shipmentAfterCorruptionResponse = await client.PostAsJsonAsync("/api/kpi-report/monthly-shipments", reportRequest);
+        var shipmentAfterCorruption = (await shipmentAfterCorruptionResponse.Content
+            .ReadFromJsonAsync<ApiResponse<MonthlyOperationalReportDto>>())!.Data!;
+        Assert.Equal(30m, shipmentAfterCorruption.TotalKg);
+
+        using var mortalityAfterCorruptionResponse = await client.PostAsJsonAsync("/api/kpi-report/monthly-mortalities", reportRequest);
+        var mortalityAfterCorruption = (await mortalityAfterCorruptionResponse.Content
+            .ReadFromJsonAsync<ApiResponse<MonthlyOperationalReportDto>>())!.Data!;
+        Assert.Equal(1.5m, mortalityAfterCorruption.TotalKg);
+
+        using var rawKpiAfterCorruptionResponse = await client.GetAsync($"/api/kpi-report/raw-kpi/{projectId}");
+        var rawKpiAfterCorruption = (await rawKpiAfterCorruptionResponse.Content
+            .ReadFromJsonAsync<ApiResponse<RawKpiReportDto>>())!.Data!;
+        Assert.Equal(300m, rawKpiAfterCorruption.CurrentAverageGram);
+        Assert.Equal(267m, rawKpiAfterCorruption.CurrentBiomassKg);
 
         async Task<FishGrowthDto> PostGrowth(DateTime growthDate, decimal targetGram)
         {

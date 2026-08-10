@@ -300,6 +300,15 @@ namespace aqua_api.Modules.Transfers.Application.Services
                         throw new InvalidOperationException(_localizationService.GetLocalizedString("TransferService.SourceAndTargetCageCannotBeSame"));
                     sourceProjectCageIds.Add(line.FromProjectCageId);
 
+                    var sourceMass = await _balanceLedgerManager.GetCageMassSnapshotAsync(
+                        line.FishBatchId,
+                        line.FromProjectCageId,
+                        transfer.TransferDate,
+                        BatchMovementType.Transfer);
+                    EnsureSourceMass(sourceMass, line.FishCount);
+                    line.AverageGram = sourceMass.AverageGram;
+                    line.BiomassGram = BatchMath.CalculateBiomassGram(line.FishCount, sourceMass.AverageGram);
+
                     await _balanceLedgerManager.ApplyDelta(
                         transfer.ProjectId,
                         line.FishBatchId,
@@ -396,6 +405,21 @@ namespace aqua_api.Modules.Transfers.Application.Services
         {
             if (status != DocumentStatus.Draft)
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("General.DocumentMustBeDraftBeforePosting", documentName));
+        }
+
+        private void EnsureSourceMass(BatchMassSnapshot sourceMass, int fishCount)
+        {
+            if (fishCount <= 0 || sourceMass.LiveCount < fishCount)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("BalanceLedgerManager.BatchCageCountCannotGoNegative"));
+            }
+
+            if (sourceMass.AverageGram <= 0m)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("FishGrowthService.ActiveBalanceNotFound"));
+            }
         }
 
         private async Task EnsureTransferSettingsAsync(Transfer transfer)

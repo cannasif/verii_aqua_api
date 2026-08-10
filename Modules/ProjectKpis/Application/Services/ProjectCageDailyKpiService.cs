@@ -117,8 +117,16 @@ namespace aqua_api.Modules.ProjectKpis.Application.Services
 
                     var days = Math.Max(1d, (snapshotDate - (previousBalance?.AsOfDate.Date ?? snapshotDate)).TotalDays);
                     var initialCount = Math.Max(1, firstBalance?.LiveCount ?? balance.LiveCount);
-                    var biomassKg = balance.BiomassGram / 1000m;
-                    var previousBiomassKg = (previousBalance?.BiomassGram ?? balance.BiomassGram) / 1000m;
+                    var biomassGram = BatchReportMassCalculator.CalculateBiomassGram(
+                        balance.LiveCount,
+                        balance.AverageGram);
+                    var previousBiomassGram = previousBalance == null
+                        ? biomassGram
+                        : BatchReportMassCalculator.CalculateBiomassGram(
+                            previousBalance.LiveCount,
+                            previousBalance.AverageGram);
+                    var biomassKg = biomassGram / 1000m;
+                    var previousBiomassKg = previousBiomassGram / 1000m;
                     var biomassGainKg = Math.Max(0m, biomassKg - previousBiomassKg);
                     var feedKgPeriod = feedKg / 1000m;
                     var survivalPct = Math.Round((decimal)balance.LiveCount / initialCount * 100m, 2);
@@ -129,7 +137,7 @@ namespace aqua_api.Modules.ProjectKpis.Application.Services
                     var sgr = Math.Round((decimal)(100d * (Math.Log(currentWeight) - Math.Log(previousWeight)) / days), 4);
                     var fcr = biomassGainKg > 0 ? Math.Round(feedKgPeriod / biomassGainKg, 4) : 0m;
                     var capacityGram = balance.ProjectCage?.Cage?.CapacityGram ?? 0m;
-                    var capacityUsagePct = capacityGram > 0 ? Math.Round(balance.BiomassGram / capacityGram * 100m, 2) : 0m;
+                    var capacityUsagePct = capacityGram > 0 ? Math.Round(biomassGram / capacityGram * 100m, 2) : 0m;
                     var forecastBiomassKg30Days = Math.Round(Math.Max(0m, biomassKg + (adg * balance.LiveCount * 30m / 1000m)), 3);
                     var targetHarvestGram = balance.FishBatch?.TargetHarvestAverageGram ?? 0m;
                     var harvestReadinessScore = targetHarvestGram > 0
