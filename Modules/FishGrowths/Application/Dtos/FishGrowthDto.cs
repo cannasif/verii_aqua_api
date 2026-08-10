@@ -68,6 +68,7 @@ public class FishGrowthTimelineMonthDto
     public decimal ExpectedPreviousAverageGram { get; set; }
     public decimal GrowthGram { get; set; }
     public decimal EndAverageGram { get; set; }
+    public decimal OperationalAverageChangeGram { get; set; }
     public decimal GrowthRatePercent { get; set; }
     public int? FishCount { get; set; }
     public DateTime? CarriedFromPeriod { get; set; }

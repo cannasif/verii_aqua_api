@@ -75,4 +75,10 @@
   <data name="FishGrowthService.UnrepresentedShipmentExists" xml:space="preserve">
     <value>A historical sale/shipment for this fish batch has not been applied to the stock ledger. Growth is blocked until the balance is reconciled.</value>
   </data>
+  <data name="FishGrowthService.LedgerReconciliationUnsafe" xml:space="preserve">
+    <value>A difference between the document, stock movement, and balance could not be reconciled automatically. No records were changed.</value>
+  </data>
+  <data name="FishGrowthService.StructuralMovementReplayRequired" xml:space="preserve">
+    <value>A cage/warehouse transfer or stock conversion exists after this growth. The chain could not be replayed safely, so no records were changed.</value>
+  </data>
 </root>

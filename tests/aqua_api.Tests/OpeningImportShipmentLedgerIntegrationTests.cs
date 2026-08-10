@@ -161,7 +161,7 @@ public sealed class OpeningImportShipmentLedgerIntegrationTests
         shipmentMovement.DeletedDate = DateTime.UtcNow;
         await db.SaveChangesAsync();
 
-        var blockedGrowth = await growthService.CreateAsync(new CreateFishGrowthDto
+        var reconciledGrowth = await growthService.CreateAsync(new CreateFishGrowthDto
         {
             ProjectId = project.Id,
             ProjectCageId = projectCage.Id,
@@ -169,29 +169,91 @@ public sealed class OpeningImportShipmentLedgerIntegrationTests
             GrowthDate = new DateTime(2026, 2, 15),
             NewAverageGram = 100m,
         }, 1);
-        Assert.False(blockedGrowth.Success);
         Assert.True(
-            blockedGrowth.StatusCode == 400,
-            $"{blockedGrowth.Message} | {blockedGrowth.ExceptionMessage}");
-        Assert.Contains("stok hareketine uygulanmamış", blockedGrowth.Message);
+            reconciledGrowth.Success,
+            $"{reconciledGrowth.Message} | {reconciledGrowth.ExceptionMessage}");
+        Assert.Equal(600, reconciledGrowth.Data!.FishCount);
+        Assert.Equal(90m, reconciledGrowth.Data.PreviousAverageGram);
+        Assert.Equal(60_000m, reconciledGrowth.Data.NewBiomassGram);
 
-        shipmentMovement.IsDeleted = false;
-        shipmentMovement.DeletedDate = null;
+        var reconstructedMovement = await db.BatchMovements.SingleAsync(x =>
+            x.MovementType == BatchMovementType.Shipment
+            && x.ReferenceTable == "RII_SHIPMENT_LINE"
+            && x.ReferenceId == shipmentLine.Id);
+        Assert.Equal(-300, reconstructedMovement.SignedCount);
+        Assert.Equal(-36_000m, reconstructedMovement.SignedBiomassGram);
+        var reconciledBalance = await db.BatchCageBalances.SingleAsync(x =>
+            x.ProjectCageId == projectCage.Id && x.FishBatchId == batch.Id);
+        Assert.Equal(600, reconciledBalance.LiveCount);
+        Assert.Equal(100m, reconciledBalance.AverageGram);
+        Assert.Equal(60_000m, reconciledBalance.BiomassGram);
+
+        // Legacy data can contain case-variant references and zero-count biomass
+        // correction rows. Reconciliation must repair the linked aggregate instead
+        // of creating a second shipment exit.
+        db.ChangeTracker.Clear();
+        reconstructedMovement = await db.BatchMovements.SingleAsync(x =>
+            x.MovementType == BatchMovementType.Shipment
+            && x.ReferenceTable == "RII_SHIPMENT_LINE"
+            && x.ReferenceId == shipmentLine.Id);
+        reconstructedMovement.ReferenceTable = "RII_ShipmentLine";
+        reconstructedMovement.SignedCount = -250;
+        reconstructedMovement.SignedBiomassGram = -30_000m;
+        db.BatchMovements.Add(new BatchMovement
+        {
+            FishBatchId = batch.Id,
+            ProjectCageId = projectCage.Id,
+            FromProjectCageId = projectCage.Id,
+            FromStockId = batch.FishStockId,
+            ToStockId = batch.FishStockId,
+            FromAverageGram = 120m,
+            MovementDate = shipmentLine.Shipment!.ShipmentDate,
+            MovementType = BatchMovementType.Shipment,
+            SignedCount = 0,
+            SignedBiomassGram = -5_000m,
+            ActorUserId = 1,
+            ReferenceTable = "rii_shipment_line",
+            ReferenceId = shipmentLine.Id,
+            Note = "Legacy shipment biomass correction",
+            CreatedBy = 1,
+            IsDeleted = false
+        });
         await db.SaveChangesAsync();
 
-        var growth = await growthService.CreateAsync(new CreateFishGrowthDto
-        {
-            ProjectId = project.Id,
-            ProjectCageId = projectCage.Id,
-            FishBatchId = batch.Id,
-            GrowthDate = new DateTime(2026, 2, 15),
-            NewAverageGram = 100m,
-        }, 1);
+        var legacyLedger = await db.BatchMovements
+            .Where(x => x.FishBatchId == batch.Id && x.ProjectCageId == projectCage.Id)
+            .ToListAsync();
+        Assert.Equal(650, legacyLedger.Sum(x => x.SignedCount));
+        Assert.Equal(61_000m, legacyLedger.Sum(x => x.SignedBiomassGram));
 
-        Assert.True(growth.Success, $"{growth.Message} | {growth.ExceptionMessage}");
-        Assert.Equal(600, growth.Data!.FishCount);
-        Assert.Equal(90m, growth.Data.PreviousAverageGram);
-        Assert.Equal(60_000m, growth.Data.NewBiomassGram);
+        var updatedGrowth = await growthService.UpdateAsync(
+            reconciledGrowth.Data.Id,
+            new UpdateFishGrowthDto { NewAverageGram = 110m },
+            1);
+        Assert.True(
+            updatedGrowth.Success,
+            $"{updatedGrowth.Message} | {updatedGrowth.ExceptionMessage}");
+
+        var shipmentMovements = (await db.BatchMovements
+                .Where(x =>
+                    x.MovementType == BatchMovementType.Shipment
+                    && x.ReferenceId == shipmentLine.Id)
+                .ToListAsync())
+            .Where(x => string.Equals(
+                x.ReferenceTable,
+                "RII_SHIPMENT_LINE",
+                StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        Assert.Equal(2, shipmentMovements.Count);
+        Assert.Equal(-300, shipmentMovements.Sum(x => x.SignedCount));
+        Assert.Equal(-36_000m, shipmentMovements.Sum(x => x.SignedBiomassGram));
+        Assert.All(shipmentMovements, x => Assert.Equal("RII_SHIPMENT_LINE", x.ReferenceTable));
+
+        var updatedBalance = await db.BatchCageBalances.SingleAsync(x =>
+            x.ProjectCageId == projectCage.Id && x.FishBatchId == batch.Id);
+        Assert.Equal(600, updatedBalance.LiveCount);
+        Assert.Equal(110m, updatedBalance.AverageGram);
+        Assert.Equal(66_000m, updatedBalance.BiomassGram);
     }
 
     private static OpeningImportSheetPayloadDto Sheet(

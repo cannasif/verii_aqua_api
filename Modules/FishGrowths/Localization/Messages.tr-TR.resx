@@ -75,4 +75,10 @@
   <data name="FishGrowthService.UnrepresentedShipmentExists" xml:space="preserve">
     <value>Bu balık partisi için stok hareketine uygulanmamış geçmiş satış/sevkiyat bulunmaktadır. Bakiye eşitlenmeden büyütme yapılamaz.</value>
   </data>
+  <data name="FishGrowthService.LedgerReconciliationUnsafe" xml:space="preserve">
+    <value>Belge, stok hareketi ve bakiye aras&#305;nda otomatik olarak &#231;&#246;z&#252;lemeyen bir fark bulundu. Hi&#231;bir kay&#305;t de&#287;i&#351;tirilmedi.</value>
+  </data>
+  <data name="FishGrowthService.StructuralMovementReplayRequired" xml:space="preserve">
+    <value>B&#252;y&#252;tmeden sonra kafes/depo transferi veya stok d&#246;n&#252;&#351;&#252;m&#252; bulunuyor. Zincir g&#252;venli bi&#231;imde yeniden oynat&#305;lamad&#305;&#287;&#305; i&#231;in hi&#231;bir kay&#305;t de&#287;i&#351;tirilmedi.</value>
+  </data>
 </root>

@@ -7,16 +7,16 @@ public class FishGrowthService : IFishGrowthService
     private const string ReferenceTable = "RII_FISH_GROWTH";
     private const int TimelineMonthLimit = 120;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly IBalanceLedgerManager _balanceLedgerManager;
+    private readonly IFishGrowthLedgerReplayService _ledgerReplayService;
     private readonly ILocalizationService _localizationService;
 
     public FishGrowthService(
         IUnitOfWork unitOfWork,
-        IBalanceLedgerManager balanceLedgerManager,
+        IFishGrowthLedgerReplayService ledgerReplayService,
         ILocalizationService localizationService)
     {
         _unitOfWork = unitOfWork;
-        _balanceLedgerManager = balanceLedgerManager;
+        _ledgerReplayService = ledgerReplayService;
         _localizationService = localizationService;
     }
 
@@ -86,15 +86,6 @@ public class FishGrowthService : IFishGrowthService
                 .FirstOrDefaultAsync(x => x.Id == dto.FishBatchId && x.ProjectId == dto.ProjectId && !x.IsDeleted)
                 ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("FishGrowthService.FishBatchNotFound"));
 
-            var balance = await _unitOfWork.Db.BatchCageBalances
-                .FirstOrDefaultAsync(x => x.ProjectCageId == dto.ProjectCageId
-                    && x.FishBatchId == dto.FishBatchId
-                    && !x.IsDeleted)
-                ?? throw new InvalidOperationException(_localizationService.GetLocalizedString("FishGrowthService.ActiveBalanceNotFound"));
-
-            if (balance.LiveCount <= 0 || balance.AverageGram <= 0)
-                throw new InvalidOperationException(_localizationService.GetLocalizedString("FishGrowthService.ActiveBalanceNotFound"));
-
             var alreadyExists = await _unitOfWork.Db.FishGrowths.AnyAsync(x =>
                 !x.IsDeleted
                 && x.ProjectCageId == dto.ProjectCageId
@@ -105,14 +96,20 @@ public class FishGrowthService : IFishGrowthService
             if (alreadyExists)
                 throw new InvalidOperationException(_localizationService.GetLocalizedString("FishGrowthService.MonthlyGrowthAlreadyExists"));
 
-            await EnsureShipmentLedgersCompleteAsync(
+            await _ledgerReplayService.PrepareAsync(
+                dto.ProjectId,
                 dto.FishBatchId,
-                effectiveDate.AddMonths(1));
+                dto.ProjectCageId,
+                userId);
+            var state = await _ledgerReplayService.GetStateBeforeAsync(
+                dto.FishBatchId,
+                dto.ProjectCageId,
+                effectiveDate);
 
-            var previousAverageGram = balance.AverageGram;
+            var previousAverageGram = state.AverageGram;
             var (growthGram, newAverageGram) = ResolveGrowthValues(dto, previousAverageGram);
-            var previousBiomassGram = balance.BiomassGram;
-            var newBiomassGram = BatchMath.CalculateBiomassGram(balance.LiveCount, newAverageGram);
+            var previousBiomassGram = state.BiomassGram;
+            var newBiomassGram = BatchMath.CalculateBiomassGram(state.FishCount, newAverageGram);
             var growth = new FishGrowth
             {
                 ProjectId = dto.ProjectId,
@@ -121,7 +118,7 @@ public class FishGrowthService : IFishGrowthService
                 GrowthDate = growthDate,
                 GrowthYear = growthDate.Year,
                 GrowthMonth = (byte)growthDate.Month,
-                FishCount = balance.LiveCount,
+                FishCount = state.FishCount,
                 PreviousAverageGram = previousAverageGram,
                 GrowthGram = growthGram,
                 NewAverageGram = newAverageGram,
@@ -135,26 +132,40 @@ public class FishGrowthService : IFishGrowthService
             await _unitOfWork.Db.FishGrowths.AddAsync(growth);
             await _unitOfWork.SaveChangesAsync();
 
-            await _balanceLedgerManager.ApplyDelta(
+            await _unitOfWork.Db.BatchMovements.AddAsync(new BatchMovement
+            {
+                FishBatchId = dto.FishBatchId,
+                ProjectCageId = dto.ProjectCageId,
+                FromProjectCageId = dto.ProjectCageId,
+                ToProjectCageId = dto.ProjectCageId,
+                FromStockId = fishBatch.FishStockId,
+                ToStockId = fishBatch.FishStockId,
+                FromAverageGram = previousAverageGram,
+                ToAverageGram = newAverageGram,
+                MovementDate = effectiveDate,
+                MovementType = BatchMovementType.FishGrowth,
+                SignedCount = 0,
+                SignedBiomassGram = newBiomassGram - previousBiomassGram,
+                ActorUserId = userId,
+                ReferenceTable = ReferenceTable,
+                ReferenceId = growth.Id,
+                Note = BuildMovementNote(
+                    growth,
+                    fishBatch.FishStockId,
+                    previousAverageGram,
+                    newAverageGram,
+                    _localizationService.GetLocalizedString("FishGrowthService.Created")),
+                CreatedBy = userId,
+                IsDeleted = false
+            });
+
+            await _unitOfWork.SaveChangesAsync();
+            await _ledgerReplayService.ReplayAsync(
                 dto.ProjectId,
                 dto.FishBatchId,
                 dto.ProjectCageId,
-                0,
-                newBiomassGram - previousBiomassGram,
-                BatchMovementType.FishGrowth,
                 effectiveDate,
-                _localizationService.GetLocalizedString("FishGrowthService.Created"),
-                ReferenceTable,
-                growth.Id,
-                dto.ProjectCageId,
-                dto.ProjectCageId,
-                fishBatch.FishStockId,
-                fishBatch.FishStockId,
-                previousAverageGram,
-                newAverageGram,
                 userId);
-
-            await _unitOfWork.SaveChangesAsync();
             await _unitOfWork.Commit();
 
             growth.ProjectCage = projectCage;
@@ -207,60 +218,33 @@ public class FishGrowthService : IFishGrowthService
                 ?? throw new KeyNotFoundException(
                     _localizationService.GetLocalizedString("FishGrowthService.NotFound"));
 
-            var movement = await GetGrowthMovementAsync(growth.Id);
-            await EnsureShipmentLedgersCompleteAsync(
+            await _ledgerReplayService.PrepareAsync(
+                growth.ProjectId,
                 growth.FishBatchId,
-                GetEffectiveDate(growth.GrowthDate).AddMonths(1));
-
-            var balance = await GetGrowthBalanceAsync(growth);
-            EnsureGrowthMutationAllowed(balance);
+                growth.ProjectCageId,
+                userId);
 
             var targetAverageGram = Math.Round(dto.NewAverageGram, 3, MidpointRounding.AwayFromZero);
-            if (targetAverageGram <= growth.PreviousAverageGram)
+            if (targetAverageGram <= 0m)
             {
                 throw new InvalidOperationException(
                     _localizationService.GetLocalizedString("FishGrowthService.NewAverageMustExceedPrevious"));
             }
 
-            // Growth row keeps historical fish count; cage balance uses current live count (g only).
-            var targetBiomassGram = BatchMath.CalculateBiomassGram(growth.FishCount, targetAverageGram);
-            var balanceBiomassGram = BatchMath.CalculateBiomassGram(balance.LiveCount, targetAverageGram);
-            var growthGram = Math.Round(
-                targetAverageGram - growth.PreviousAverageGram,
-                3,
-                MidpointRounding.AwayFromZero);
             var now = DateTimeProvider.UtcNow;
             var effectiveDate = GetEffectiveDate(growth.GrowthDate);
 
-            balance.AverageGram = targetAverageGram;
-            balance.BiomassGram = balanceBiomassGram;
-            balance.AsOfDate = effectiveDate;
-            balance.UpdatedBy = userId;
-            balance.UpdatedDate = now;
-
-            growth.GrowthGram = growthGram;
             growth.NewAverageGram = targetAverageGram;
-            growth.NewBiomassGram = targetBiomassGram;
             growth.Description = NormalizeDescription(dto.Description);
             growth.UpdatedBy = userId;
             growth.UpdatedDate = now;
 
-            movement.MovementDate = effectiveDate;
-            movement.SignedCount = 0;
-            movement.SignedBiomassGram = targetBiomassGram - growth.PreviousBiomassGram;
-            movement.FromAverageGram = growth.PreviousAverageGram;
-            movement.ToAverageGram = targetAverageGram;
-            movement.ActorUserId = userId;
-            movement.Note = BuildMovementNote(
-                growth,
-                growth.FishBatch?.FishStockId,
-                growth.PreviousAverageGram,
-                targetAverageGram,
-                _localizationService.GetLocalizedString("FishGrowthService.Updated"));
-            movement.UpdatedBy = userId;
-            movement.UpdatedDate = now;
-
-            await _unitOfWork.SaveChangesAsync();
+            await _ledgerReplayService.ReplayAsync(
+                growth.ProjectId,
+                growth.FishBatchId,
+                growth.ProjectCageId,
+                effectiveDate,
+                userId);
             await _unitOfWork.Commit();
 
             return ApiResponse<FishGrowthDto>.SuccessResult(
@@ -372,15 +356,9 @@ public class FishGrowthService : IFishGrowthService
                 && x.FishBatchId == fishBatchId
                 && x.MovementDate < periodEndExclusive
                 && x.ProjectCageId == projectCageId
-                && x.SignedCount != 0)
+                && (x.SignedCount != 0 || x.SignedBiomassGram != 0m))
             .OrderBy(x => x.MovementDate)
             .ThenBy(x => x.Id)
-            .Select(x => new
-            {
-                x.MovementDate,
-                x.SignedCount,
-                AverageGram = x.ToAverageGram ?? x.FromAverageGram
-            })
             .ToListAsync();
         var entryMovement = cageMovements.FirstOrDefault(x => x.SignedCount > 0);
 
@@ -418,25 +396,39 @@ public class FishGrowthService : IFishGrowthService
             .ToList();
 
         var firstGrowth = growths.FirstOrDefault();
-        var initialAverageGram = lastGrowthBeforeStart?.NewAverageGram
-            ?? entryMovement?.AverageGram
+        var movementsBeforeStart = cageMovements
+            .Where(x => x.MovementDate < startPeriod)
+            .ToList();
+        var runningFishCount = movementsBeforeStart.Sum(x => (long)x.SignedCount);
+        var runningBiomassGram = movementsBeforeStart.Sum(x => x.SignedBiomassGram);
+        var entryAverageGram = entryMovement == null
+            ? (decimal?)null
+            : CalculateMovementAverageGram(entryMovement);
+        var fallbackInitialAverageGram = lastGrowthBeforeStart?.NewAverageGram
+            ?? entryAverageGram
             ?? firstGrowth?.PreviousAverageGram
             ?? balanceSnapshot?.AverageGram
             ?? fishBatch.CurrentAverageGram;
-        initialAverageGram = Math.Round(Math.Max(0m, initialAverageGram), 3, MidpointRounding.AwayFromZero);
+        var initialAverageGram = CalculateLedgerAverageGram(
+            runningFishCount,
+            runningBiomassGram,
+            fallbackInitialAverageGram);
 
         var growthByPeriod = growths
             .GroupBy(x => new DateTime(x.GrowthYear, x.GrowthMonth, 1))
             .ToDictionary(x => x.Key, x => x.OrderByDescending(growth => growth.Id).First());
         var currentPeriod = GetEffectiveDate(DateTimeProvider.Now);
         var runningAverageGram = initialAverageGram;
-        var countDeltaByPeriod = cageMovements
+        var movementsByPeriod = cageMovements
+            .Where(x => x.MovementDate >= startPeriod)
             .GroupBy(x => GetEffectiveDate(x.MovementDate))
-            .ToDictionary(x => x.Key, x => x.Sum(movement => movement.SignedCount));
-        var hasCountLedger = cageMovements.Count > 0;
-        var runningFishCount = hasCountLedger
-            ? cageMovements.Where(x => x.MovementDate < startPeriod).Sum(x => x.SignedCount)
-            : balanceSnapshot?.LiveCount ?? 0;
+            .ToDictionary(x => x.Key, x => x.OrderBy(movement => movement.MovementDate).ThenBy(movement => movement.Id).ToList());
+        var hasLedger = cageMovements.Count > 0;
+        if (!hasLedger)
+        {
+            runningFishCount = balanceSnapshot?.LiveCount ?? 0;
+        }
+
         var lastSourcePeriod = lastGrowthBeforeStart == null
             ? startPeriod
             : new DateTime(lastGrowthBeforeStart.GrowthYear, lastGrowthBeforeStart.GrowthMonth, 1);
@@ -444,11 +436,38 @@ public class FishGrowthService : IFishGrowthService
 
         for (var period = startPeriod; period <= selectedPeriod; period = period.AddMonths(1))
         {
-            runningFishCount += countDeltaByPeriod.GetValueOrDefault(period);
+            var periodStartAverageGram = CalculateLedgerAverageGram(
+                runningFishCount,
+                runningBiomassGram,
+                runningAverageGram);
+            var periodMovements = movementsByPeriod.GetValueOrDefault(period) ?? new List<BatchMovement>();
+            foreach (var movement in periodMovements)
+            {
+                runningFishCount += movement.SignedCount;
+                runningBiomassGram += movement.SignedBiomassGram;
+            }
+
+            var periodEndAverageGram = CalculateLedgerAverageGram(
+                runningFishCount,
+                runningBiomassGram,
+                periodStartAverageGram);
+
             if (growthByPeriod.TryGetValue(period, out var growth))
             {
-                var expectedPreviousAverageGram = runningAverageGram;
-                var hasContinuityIssue = Math.Abs(growth.PreviousAverageGram - expectedPreviousAverageGram) > 0.001m;
+                var growthMovement = cageMovements.FirstOrDefault(x =>
+                    x.MovementType == BatchMovementType.FishGrowth
+                    && x.ReferenceTable == ReferenceTable
+                    && x.ReferenceId == growth.Id);
+                var ledgerAverageBeforeGrowth = growthMovement == null
+                    ? null
+                    : CalculateLedgerAverageBeforeMovement(cageMovements, growthMovement.Id);
+                var expectedPreviousAverageGram = ledgerAverageBeforeGrowth ?? growth.PreviousAverageGram;
+                var hasContinuityIssue = HasGrowthIntegrityIssue(growth, growthMovement)
+                    || (ledgerAverageBeforeGrowth.HasValue
+                        && Math.Abs(growth.PreviousAverageGram - ledgerAverageBeforeGrowth.Value) > 0.001m);
+                var endAverageGram = runningFishCount > 0 && runningBiomassGram > 0m
+                    ? periodEndAverageGram
+                    : growth.NewAverageGram;
                 rows.Add(new FishGrowthTimelineMonthDto
                 {
                     Period = period,
@@ -459,38 +478,52 @@ public class FishGrowthService : IFishGrowthService
                     PreviousAverageGram = growth.PreviousAverageGram,
                     ExpectedPreviousAverageGram = expectedPreviousAverageGram,
                     GrowthGram = growth.GrowthGram,
-                    EndAverageGram = growth.NewAverageGram,
+                    EndAverageGram = endAverageGram,
+                    OperationalAverageChangeGram = Math.Round(
+                        endAverageGram - growth.NewAverageGram,
+                        3,
+                        MidpointRounding.AwayFromZero),
                     GrowthRatePercent = growth.PreviousAverageGram > 0m
                         ? Math.Round(growth.GrowthGram / growth.PreviousAverageGram * 100m, 4, MidpointRounding.AwayFromZero)
                         : 0m,
-                    FishCount = Math.Max(0, runningFishCount),
+                    FishCount = (int)Math.Clamp(runningFishCount, 0L, int.MaxValue),
                     HasContinuityIssue = hasContinuityIssue,
                     IsSelectedPeriod = period == selectedPeriod,
                     Description = growth.Description
                 });
-                runningAverageGram = growth.NewAverageGram;
+                runningAverageGram = endAverageGram;
                 lastSourcePeriod = period;
                 continue;
             }
 
+            var operationalAverageChangeGram = Math.Round(
+                periodEndAverageGram - periodStartAverageGram,
+                3,
+                MidpointRounding.AwayFromZero);
             var status = period == startPeriod
                 ? "Baseline"
                 : period >= currentPeriod
                     ? "Pending"
-                    : "CarriedForward";
+                    : Math.Abs(operationalAverageChangeGram) > 0.001m
+                        ? "OperationallyAdjusted"
+                        : "CarriedForward";
             rows.Add(new FishGrowthTimelineMonthDto
             {
                 Period = period,
                 Year = period.Year,
                 Month = (byte)period.Month,
                 Status = status,
-                PreviousAverageGram = runningAverageGram,
-                ExpectedPreviousAverageGram = runningAverageGram,
-                EndAverageGram = runningAverageGram,
-                FishCount = Math.Max(0, runningFishCount),
+                PreviousAverageGram = period == startPeriod && runningFishCount > 0
+                    ? periodEndAverageGram
+                    : periodStartAverageGram,
+                ExpectedPreviousAverageGram = periodStartAverageGram,
+                EndAverageGram = periodEndAverageGram,
+                OperationalAverageChangeGram = period == startPeriod ? 0m : operationalAverageChangeGram,
+                FishCount = (int)Math.Clamp(runningFishCount, 0L, int.MaxValue),
                 CarriedFromPeriod = period == startPeriod ? null : lastSourcePeriod,
                 IsSelectedPeriod = period == selectedPeriod
             });
+            runningAverageGram = periodEndAverageGram;
         }
 
         var response = new FishGrowthTimelineDto
@@ -500,9 +533,10 @@ public class FishGrowthService : IFishGrowthService
             StartPeriod = startPeriod,
             EndPeriod = selectedPeriod,
             InitialAverageGram = initialAverageGram,
-            LatestAverageGram = runningAverageGram,
+            LatestAverageGram = rows.LastOrDefault()?.EndAverageGram ?? runningAverageGram,
             RecordedMonthCount = rows.Count(x => x.Status == "Recorded"),
-            CarriedForwardMonthCount = rows.Count(x => x.Status == "CarriedForward"),
+            CarriedForwardMonthCount = rows.Count(x =>
+                x.Status == "CarriedForward" || x.Status == "OperationallyAdjusted"),
             HasContinuityIssue = rows.Any(x => x.HasContinuityIssue),
             WasTruncated = wasTruncated,
             Months = rows
@@ -511,6 +545,84 @@ public class FishGrowthService : IFishGrowthService
         return ApiResponse<FishGrowthTimelineDto>.SuccessResult(
             response,
             _localizationService.GetLocalizedString("FishGrowthService.Listed"));
+    }
+
+    private static decimal CalculateMovementAverageGram(BatchMovement movement)
+    {
+        if (movement.SignedCount > 0 && movement.SignedBiomassGram > 0m)
+        {
+            return Math.Round(
+                movement.SignedBiomassGram / movement.SignedCount,
+                3,
+                MidpointRounding.AwayFromZero);
+        }
+
+        return Math.Round(
+            Math.Max(0m, movement.ToAverageGram ?? movement.FromAverageGram ?? 0m),
+            3,
+            MidpointRounding.AwayFromZero);
+    }
+
+    private static decimal CalculateLedgerAverageGram(
+        long fishCount,
+        decimal biomassGram,
+        decimal fallbackAverageGram)
+    {
+        if (fishCount > 0 && biomassGram > 0m)
+        {
+            return Math.Round(
+                biomassGram / fishCount,
+                3,
+                MidpointRounding.AwayFromZero);
+        }
+
+        return Math.Round(
+            Math.Max(0m, fallbackAverageGram),
+            3,
+            MidpointRounding.AwayFromZero);
+    }
+
+    private static decimal? CalculateLedgerAverageBeforeMovement(
+        IEnumerable<BatchMovement> movements,
+        long targetMovementId)
+    {
+        long fishCount = 0;
+        decimal biomassGram = 0m;
+        var targetFound = false;
+
+        foreach (var movement in movements.OrderBy(x => x.CreatedDate).ThenBy(x => x.Id))
+        {
+            if (movement.Id == targetMovementId)
+            {
+                targetFound = true;
+                break;
+            }
+
+            fishCount += movement.SignedCount;
+            biomassGram += movement.SignedBiomassGram;
+        }
+
+        return targetFound && fishCount > 0 && biomassGram > 0m
+            ? CalculateLedgerAverageGram(fishCount, biomassGram, 0m)
+            : null;
+    }
+
+    private static bool HasGrowthIntegrityIssue(FishGrowth growth, BatchMovement? movement)
+    {
+        if (growth.FishCount <= 0
+            || Math.Abs(growth.NewAverageGram - (growth.PreviousAverageGram + growth.GrowthGram)) > 0.001m
+            || movement == null)
+        {
+            return true;
+        }
+
+        var expectedBiomassDelta = growth.NewBiomassGram - growth.PreviousBiomassGram;
+        return movement.SignedCount != 0
+            || Math.Abs(movement.SignedBiomassGram - expectedBiomassDelta) > 0.001m
+            || !movement.FromAverageGram.HasValue
+            || Math.Abs(movement.FromAverageGram.Value - growth.PreviousAverageGram) > 0.001m
+            || !movement.ToAverageGram.HasValue
+            || Math.Abs(movement.ToAverageGram.Value - growth.NewAverageGram) > 0.001m;
     }
 
     public async Task<ApiResponse<bool>> DeleteAsync(long id, long userId)
@@ -524,19 +636,15 @@ public class FishGrowthService : IFishGrowthService
                 ?? throw new KeyNotFoundException(
                     _localizationService.GetLocalizedString("FishGrowthService.NotFound"));
 
+            await _ledgerReplayService.PrepareAsync(
+                growth.ProjectId,
+                growth.FishBatchId,
+                growth.ProjectCageId,
+                userId);
             var movement = await GetGrowthMovementAsync(growth.Id);
 
-            var balance = await GetGrowthBalanceAsync(growth);
-            EnsureGrowthMutationAllowed(balance);
-
             var now = DateTimeProvider.UtcNow;
-            // Revert average only; recompute biomass from current live count (no g/kg conversion).
-            balance.AverageGram = growth.PreviousAverageGram;
-            balance.BiomassGram = BatchMath.CalculateBiomassGram(balance.LiveCount, growth.PreviousAverageGram);
-            balance.AsOfDate = await GetPreviousMovementDateAsync(growth, movement.Id)
-                ?? GetEffectiveDate(growth.GrowthDate);
-            balance.UpdatedBy = userId;
-            balance.UpdatedDate = now;
+            var effectiveDate = GetEffectiveDate(growth.GrowthDate);
 
             growth.IsDeleted = true;
             growth.DeletedBy = userId;
@@ -547,6 +655,12 @@ public class FishGrowthService : IFishGrowthService
             movement.DeletedDate = now;
 
             await _unitOfWork.SaveChangesAsync();
+            await _ledgerReplayService.ReplayAsync(
+                growth.ProjectId,
+                growth.FishBatchId,
+                growth.ProjectCageId,
+                effectiveDate,
+                userId);
             await _unitOfWork.Commit();
 
             return ApiResponse<bool>.SuccessResult(
@@ -584,96 +698,6 @@ public class FishGrowthService : IFishGrowthService
                 _localizationService.GetLocalizedString("FishGrowthService.MovementNotFound"));
     }
 
-    private async Task<BatchCageBalance> GetGrowthBalanceAsync(FishGrowth growth)
-    {
-        return await _unitOfWork.Db.BatchCageBalances
-            .FirstOrDefaultAsync(x =>
-                x.ProjectCageId == growth.ProjectCageId
-                && x.FishBatchId == growth.FishBatchId)
-            ?? throw new InvalidOperationException(
-                _localizationService.GetLocalizedString("FishGrowthService.BalanceNotFound"));
-    }
-
-    private async Task EnsureShipmentLedgersCompleteAsync(
-        long fishBatchId,
-        DateTime periodEndExclusive)
-    {
-        var documentRows = await _unitOfWork.Db.ShipmentLines
-            .Where(x =>
-                x.FishBatchId == fishBatchId
-                && x.Shipment != null
-                && x.Shipment.Status == DocumentStatus.Posted
-                && x.Shipment.ShipmentDate < periodEndExclusive)
-            .Select(x => new
-            {
-                FishCount = (long)x.FishCount,
-                x.BiomassGram
-            })
-            .ToListAsync();
-        var documentTotals = new ShipmentLedgerTotals
-        {
-            FishCount = documentRows.Sum(x => x.FishCount),
-            BiomassGram = documentRows.Sum(x => x.BiomassGram)
-        };
-
-        if (documentTotals.FishCount == 0 && documentTotals.BiomassGram == 0m)
-        {
-            return;
-        }
-
-        var movementRows = await _unitOfWork.Db.BatchMovements
-            .Where(x =>
-                x.FishBatchId == fishBatchId
-                && x.ProjectCageId != null
-                && x.MovementType == BatchMovementType.Shipment
-                && x.MovementDate < periodEndExclusive
-                && (x.SignedCount != 0 || x.SignedBiomassGram != 0m))
-            .Select(x => new
-            {
-                x.SignedCount,
-                x.SignedBiomassGram
-            })
-            .ToListAsync();
-        var movementTotals = new ShipmentLedgerTotals
-        {
-            FishCount = Math.Max(0L, -movementRows.Sum(x => (long)x.SignedCount)),
-            BiomassGram = Math.Max(0m, -movementRows.Sum(x => x.SignedBiomassGram))
-        };
-
-        if (documentTotals.FishCount > movementTotals.FishCount
-            || documentTotals.BiomassGram > movementTotals.BiomassGram)
-        {
-            throw new InvalidOperationException(
-                _localizationService.GetLocalizedString("FishGrowthService.UnrepresentedShipmentExists"));
-        }
-    }
-
-    private async Task<DateTime?> GetPreviousMovementDateAsync(FishGrowth growth, long growthMovementId)
-    {
-        var effectiveDate = GetEffectiveDate(growth.GrowthDate);
-        return await _unitOfWork.Db.BatchMovements
-            .Where(x =>
-                x.Id != growthMovementId
-                && x.FishBatchId == growth.FishBatchId
-                && (x.ProjectCageId == growth.ProjectCageId
-                    || x.FromProjectCageId == growth.ProjectCageId
-                    || x.ToProjectCageId == growth.ProjectCageId)
-                && x.MovementDate <= effectiveDate)
-            .OrderByDescending(x => x.MovementDate)
-            .ThenByDescending(x => x.Id)
-            .Select(x => (DateTime?)x.MovementDate)
-            .FirstOrDefaultAsync();
-    }
-
-    private void EnsureGrowthMutationAllowed(BatchCageBalance balance)
-    {
-        if (balance.LiveCount <= 0)
-        {
-            throw new InvalidOperationException(
-                _localizationService.GetLocalizedString("FishGrowthService.ActiveBalanceNotFound"));
-        }
-    }
-
     private static DateTime GetEffectiveDate(DateTime growthDate) =>
         new(growthDate.Year, growthDate.Month, 1);
 
@@ -698,12 +722,6 @@ public class FishGrowthService : IFishGrowthService
             $"fromAvg={fromAverageGram:0.###}",
             $"toAvg={toAverageGram:0.###}"
         });
-    }
-
-    private sealed class ShipmentLedgerTotals
-    {
-        public long FishCount { get; init; }
-        public decimal BiomassGram { get; init; }
     }
 
     private static FishGrowthDto Map(FishGrowth entity) => new()
