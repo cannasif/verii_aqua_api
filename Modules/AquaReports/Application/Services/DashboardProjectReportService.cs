@@ -12,15 +12,18 @@ namespace aqua_api.Modules.AquaReports.Application.Services
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILocalizationService _localizationService;
         private readonly IDevirFcrReportService _devirFcrReportService;
+        private readonly IAquaSettingsService _aquaSettingsService;
 
         public DashboardProjectReportService(
             IUnitOfWork unitOfWork,
             ILocalizationService localizationService,
-            IDevirFcrReportService devirFcrReportService)
+            IDevirFcrReportService devirFcrReportService,
+            IAquaSettingsService aquaSettingsService)
         {
             _unitOfWork = unitOfWork;
             _localizationService = localizationService;
             _devirFcrReportService = devirFcrReportService;
+            _aquaSettingsService = aquaSettingsService;
         }
 
         public async Task<ApiResponse<DashboardProjectsResponseDto>> GetProjectSummariesAsync(IEnumerable<long> projectIds)
@@ -288,6 +291,9 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     .Where(x => !x.IsDeleted && targetWarehouseIds.Contains(x.Id))
                     .ToListAsync();
 
+            var mortalityBiomassCalculationMode =
+                await _aquaSettingsService.GetMortalityBiomassCalculationModeAsync();
+
             return projects
                 .OrderBy(x => x.ProjectCode)
                 .Select(project => BuildProjectReport(
@@ -315,7 +321,8 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     stocks,
                     fishBatches.Where(x => x.ProjectId == project.Id).ToList(),
                     warehouses,
-                    _localizationService))
+                    _localizationService,
+                    mortalityBiomassCalculationMode))
                 .ToList();
             }
 
@@ -344,7 +351,8 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             List<StockEntity> stocks,
             List<FishBatch> fishBatches,
             List<WarehouseEntity> warehouses,
-            ILocalizationService localizationService)
+            ILocalizationService localizationService,
+            MortalityBiomassCalculationMode mortalityBiomassCalculationMode)
         {
             var activeProjectCages = projectCages.Where(x => IsActiveProjectCage(x.ReleasedDate)).ToList();
             var projectHasEnded = project.EndDate.HasValue;
@@ -440,6 +448,8 @@ namespace aqua_api.Modules.AquaReports.Application.Services
 
             var dailyDeadByCage = new Dictionary<long, Dictionary<string, int>>();
             var dailyDeadBiomassByCage = new Dictionary<long, Dictionary<string, decimal>>();
+            var representedMortalityKeys = new HashSet<(long ReferenceId, long FishBatchId, long ProjectCageId)>();
+            var mortalityReportEndDate = DateTimeProvider.Now.Date;
             var mortalityMovementGroups = batchMovements
                 .Where(x => x.MovementType == BatchMovementType.Mortality && x.ProjectCageId.HasValue)
                 .GroupBy(x => new
@@ -454,11 +464,20 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             {
                 var cageId = movementGroup.Key.ProjectCageId;
                 if (!reportCageIdSet.Contains(cageId)) continue;
+                representedMortalityKeys.Add((movementGroup.Key.ReferenceId, movementGroup.Key.FishBatchId, cageId));
                 var date = ToDateOnly(movementGroup.Key.MovementDate);
+                var deadCount = Math.Max(0, -movementGroup.Sum(x => x.SignedCount));
                 var actualDeadBiomassGram = Math.Max(
                     0m,
                     -movementGroup.Sum(BatchReportMassCalculator.CalculateInventorySignedBiomassGram));
-                var deadBiomassGram = MortalityBiomassMath.CalculateReportedBiomassGram(actualDeadBiomassGram);
+                var deadBiomassGram = MortalityReportBiomassCalculator.CalculateReportedBiomassGram(
+                    mortalityBiomassCalculationMode,
+                    deadCount,
+                    actualDeadBiomassGram,
+                    batchMovements,
+                    movementGroup.Key.FishBatchId,
+                    cageId,
+                    mortalityReportEndDate);
                 if (deadBiomassGram <= 0) continue;
                 AddByDate(dailyDeadBiomassByCage, cageId, date, deadBiomassGram);
             }
@@ -468,6 +487,47 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 if (!mortalityIdToDate.TryGetValue(row.MortalityId, out var date)) continue;
                 mortalityByCage[row.ProjectCageId] = mortalityByCage.GetValueOrDefault(row.ProjectCageId) + row.DeadCount;
                 AddByDate(dailyDeadByCage, row.ProjectCageId, date, row.DeadCount);
+            }
+
+            foreach (var lineGroup in mortalityLines
+                .Where(x => reportCageIdSet.Contains(x.ProjectCageId) && mortalityIdToDate.ContainsKey(x.MortalityId))
+                .GroupBy(x => new
+                {
+                    ReferenceId = x.MortalityId,
+                    x.FishBatchId,
+                    x.ProjectCageId,
+                    Date = mortalityIdToDate[x.MortalityId]
+                }))
+            {
+                var key = (lineGroup.Key.ReferenceId, lineGroup.Key.FishBatchId, lineGroup.Key.ProjectCageId);
+                if (representedMortalityKeys.Contains(key)) continue;
+
+                var deadCount = Math.Max(0, lineGroup.Sum(x => x.DeadCount));
+                var eventDate = DateTime.ParseExact(lineGroup.Key.Date, "yyyy-MM-dd", null);
+                var eventAverageGram = MortalityReportBiomassCalculator.ResolveLatestAverageGram(
+                    batchMovements,
+                    lineGroup.Key.FishBatchId,
+                    lineGroup.Key.ProjectCageId,
+                    eventDate);
+                var historicalActualBiomassGram = BatchReportMassCalculator.CalculateBiomassGram(
+                    deadCount,
+                    eventAverageGram);
+                var deadBiomassGram = MortalityReportBiomassCalculator.CalculateReportedBiomassGram(
+                    mortalityBiomassCalculationMode,
+                    deadCount,
+                    historicalActualBiomassGram,
+                    batchMovements,
+                    lineGroup.Key.FishBatchId,
+                    lineGroup.Key.ProjectCageId,
+                    mortalityReportEndDate);
+                if (deadBiomassGram > 0m)
+                {
+                    AddByDate(
+                        dailyDeadBiomassByCage,
+                        lineGroup.Key.ProjectCageId,
+                        lineGroup.Key.Date,
+                        deadBiomassGram);
+                }
             }
 
             foreach (var (projectCageId, deadCount) in movementMortalityByCage)

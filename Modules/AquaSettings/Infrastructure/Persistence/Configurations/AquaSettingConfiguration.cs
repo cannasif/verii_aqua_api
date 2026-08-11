@@ -12,6 +12,9 @@ namespace aqua_api.Modules.AquaSettings.Infrastructure.Persistence.Configuration
                 table.HasCheckConstraint(
                     "CK_RII_AQUA_SETTING_PARTIAL_TRANSFER_OCCUPIED_CAGE_MODE",
                     "[PartialTransferOccupiedCageMode] IN (0,1,2)");
+                table.HasCheckConstraint(
+                    "CK_RII_AQUA_SETTING_MORTALITY_BIOMASS_CALCULATION_MODE",
+                    "[MortalityBiomassCalculationMode] IN (0,1)");
             });
 
             builder.Property(x => x.PartialTransferOccupiedCageMode)
@@ -25,6 +28,10 @@ namespace aqua_api.Modules.AquaSettings.Infrastructure.Persistence.Configuration
             builder.Property(x => x.AllowProjectMerge)
                 .IsRequired()
                 .HasDefaultValue(false);
+
+            builder.Property(x => x.MortalityBiomassCalculationMode)
+                .IsRequired()
+                .HasDefaultValue(0);
 
             builder.HasQueryFilter(x => !x.IsDeleted);
         }

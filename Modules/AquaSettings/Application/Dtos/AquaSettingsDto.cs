@@ -8,6 +8,7 @@ namespace aqua_api.Modules.AquaSettings.Application.Dtos
         public bool AllowProjectMerge { get; set; }
         public int PartialTransferOccupiedCageMode { get; set; }
         public int FeedCostFallbackStrategy { get; set; }
+        public int MortalityBiomassCalculationMode { get; set; }
     }
 
     public class UpdateAquaSettingsDto
@@ -20,5 +21,8 @@ namespace aqua_api.Modules.AquaSettings.Application.Dtos
 
         [Range(0, 2)]
         public int FeedCostFallbackStrategy { get; set; } = 0;
+
+        [Range(0, 1)]
+        public int MortalityBiomassCalculationMode { get; set; } = 0;
     }
 }

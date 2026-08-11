@@ -7,11 +7,16 @@ namespace aqua_api.Modules.AquaReports.Application.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILocalizationService _localizationService;
+        private readonly IAquaSettingsService? _aquaSettingsService;
 
-        public DevirFcrReportService(IUnitOfWork unitOfWork, ILocalizationService localizationService)
+        public DevirFcrReportService(
+            IUnitOfWork unitOfWork,
+            ILocalizationService localizationService,
+            IAquaSettingsService? aquaSettingsService = null)
         {
             _unitOfWork = unitOfWork;
             _localizationService = localizationService;
+            _aquaSettingsService = aquaSettingsService;
         }
 
         public async Task<ApiResponse<DevirFcrReportDto>> GetReportAsync(DevirFcrReportRequestDto request)
@@ -142,6 +147,9 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 var mortalityProjectById = mortalities.ToDictionary(x => x.Id, x => x.ProjectId);
                 var mortalityDateById = mortalities.ToDictionary(x => x.Id, x => x.MortalityDate);
                 var shipmentProjectById = shipments.ToDictionary(x => x.Id, x => x.ProjectId);
+                var mortalityBiomassCalculationMode = _aquaSettingsService == null
+                    ? MortalityBiomassCalculationMode.HistoricalEventWeight
+                    : await _aquaSettingsService.GetMortalityBiomassCalculationModeAsync();
 
                 var rows = projects
                     .Select(project => BuildRow(
@@ -159,7 +167,8 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                                 x.ProjectCageId,
                                 x.DeadCount,
                                 mortalityDateById.GetValueOrDefault(x.MortalityId, toDate))),
-                        shipmentLines.Where(x => shipmentProjectById.GetValueOrDefault(x.ShipmentId) == project.Id)))
+                        shipmentLines.Where(x => shipmentProjectById.GetValueOrDefault(x.ShipmentId) == project.Id),
+                        mortalityBiomassCalculationMode))
                     .OrderBy(x => x.ProjectCode)
                     .ToList();
 
@@ -191,7 +200,8 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             IEnumerable<BatchMovement> movements,
             IEnumerable<FeedingDistribution> feedingDistributions,
             IEnumerable<MortalityLineSnapshot> mortalityLines,
-            IEnumerable<ShipmentLine> shipmentLines)
+            IEnumerable<ShipmentLine> shipmentLines,
+            MortalityBiomassCalculationMode mortalityBiomassCalculationMode)
         {
             var movementList = movements.ToList();
             var openingMovements = ResolveOpeningMovements(movementList, projectFromDate, toDate);
@@ -220,14 +230,16 @@ namespace aqua_api.Modules.AquaReports.Application.Services
 
             var shipmentList = shipmentLines.ToList();
             var mortalityList = mortalityLines.ToList();
-            var mortalityMovementBiomassGram = Math.Max(
-                0m,
-                -movementList
-                    .Where(x => x.MovementType == BatchMovementType.Mortality && IsInRange(x.MovementDate, projectFromDate, toDate))
-                    .Sum(BatchReportMassCalculator.CalculateInventorySignedBiomassGram));
-            var hasMortalityMovement = movementList.Any(x =>
-                x.MovementType == BatchMovementType.Mortality &&
-                IsInRange(x.MovementDate, projectFromDate, toDate));
+            var mortalityMovementGroups = movementList
+                .Where(x =>
+                    x.MovementType == BatchMovementType.Mortality &&
+                    x.ProjectCageId.HasValue &&
+                    IsInRange(x.MovementDate, projectFromDate, toDate))
+                .GroupBy(x => (x.FishBatchId, ProjectCageId: x.ProjectCageId!.Value))
+                .ToDictionary(x => x.Key, x => x.ToList());
+            var mortalityLineGroups = mortalityList
+                .GroupBy(x => (x.FishBatchId, x.ProjectCageId))
+                .ToDictionary(x => x.Key, x => x.ToList());
             var shipmentMovementFishCount = movementList
                 .Where(x => x.MovementType == BatchMovementType.Shipment && IsInRange(x.MovementDate, projectFromDate, toDate))
                 .Sum(x => Math.Max(0, -x.SignedCount));
@@ -250,15 +262,37 @@ namespace aqua_api.Modules.AquaReports.Application.Services
             var adjustedEndingBiomassGram = endingFish > 0
                 ? Math.Max(0m, endingBiomassGram - unrepresentedShipmentBiomassGram)
                 : 0m;
-            var mortalityFish = Math.Max(0, mortalityList.Sum(x => x.DeadCount));
+            var mortalityKeys = mortalityLineGroups.Keys
+                .Union(mortalityMovementGroups.Keys)
+                .ToList();
+            var mortalityFish = mortalityKeys.Sum(key =>
+                mortalityLineGroups.TryGetValue(key, out var lines)
+                    ? Math.Max(0, lines.Sum(x => x.DeadCount))
+                    : Math.Max(0, -mortalityMovementGroups[key].Sum(x => x.SignedCount)));
             var endingAverageGram = endingFish > 0 ? Round(adjustedEndingBiomassGram / endingFish) : 0m;
-            var mortalityFallbackBiomassGram = hasMortalityMovement
-                ? mortalityMovementBiomassGram
-                : mortalityList.Sum(x => Math.Round(
-                    x.DeadCount * ResolveAverageGramAtMortalityDate(movementList, x, endingAverageGram),
-                    3,
-                    MidpointRounding.AwayFromZero));
-            var reportedMortalityBiomassGram = MortalityBiomassMath.CalculateReportedBiomassGram(mortalityFallbackBiomassGram);
+            var reportedMortalityBiomassGram = mortalityKeys.Sum(key =>
+            {
+                var lines = mortalityLineGroups.GetValueOrDefault(key) ?? new List<MortalityLineSnapshot>();
+                var groupMovements = mortalityMovementGroups.GetValueOrDefault(key) ?? new List<BatchMovement>();
+                var deadCount = lines.Count > 0
+                    ? Math.Max(0, lines.Sum(x => x.DeadCount))
+                    : Math.Max(0, -groupMovements.Sum(x => x.SignedCount));
+                var historicalActualBiomassGram = groupMovements.Count > 0
+                    ? Math.Max(0m, -groupMovements.Sum(BatchReportMassCalculator.CalculateInventorySignedBiomassGram))
+                    : lines.Sum(x => Math.Round(
+                        x.DeadCount * ResolveAverageGramAtMortalityDate(movementList, x, endingAverageGram),
+                        3,
+                        MidpointRounding.AwayFromZero));
+
+                return MortalityReportBiomassCalculator.CalculateReportedBiomassGram(
+                    mortalityBiomassCalculationMode,
+                    deadCount,
+                    historicalActualBiomassGram,
+                    movementList,
+                    key.FishBatchId,
+                    key.ProjectCageId,
+                    toDate);
+            });
             var carriedOutputBiomassKg = Math.Max(0m, (adjustedEndingBiomassGram + reportedMortalityBiomassGram + shippedBiomassGram) / 1000m);
             var producedBiomassKg = carriedOutputBiomassKg;
 

@@ -5,5 +5,6 @@ namespace aqua_api.Modules.AquaSettings.Application.Services
     {
         Task<ApiResponse<AquaSettingsDto>> GetAsync();
         Task<ApiResponse<AquaSettingsDto>> UpdateAsync(UpdateAquaSettingsDto dto, long userId);
+        Task<MortalityBiomassCalculationMode> GetMortalityBiomassCalculationModeAsync();
     }
 }

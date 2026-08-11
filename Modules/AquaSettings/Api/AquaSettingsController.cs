@@ -19,6 +19,7 @@ namespace aqua_api.Modules.AquaSettings.Api
         }
 
         [HttpGet]
+        [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
         public async Task<ActionResult<ApiResponse<AquaSettingsDto>>> Get()
         {
             var result = await _service.GetAsync();

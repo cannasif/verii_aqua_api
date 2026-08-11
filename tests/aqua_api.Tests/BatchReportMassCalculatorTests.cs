@@ -104,6 +104,25 @@ public sealed class BatchReportMassCalculatorTests
                 Math.Max(0m, -BatchReportMassCalculator.CalculateInventorySignedBiomassGram(mortality))));
     }
 
+    [Fact]
+    public void InventorySignedBiomass_RebuildsMassFromCountAndOperationAverage()
+    {
+        var mortality = Movement(
+            1,
+            new DateTime(2026, 3, 31),
+            BatchMovementType.Mortality,
+            -10,
+            -1m,
+            300m,
+            300m);
+
+        Assert.Equal(-3_000m, BatchReportMassCalculator.CalculateInventorySignedBiomassGram(mortality));
+        Assert.Equal(
+            1.5m,
+            MortalityBiomassMath.CalculateReportedBiomassKgFromActualGram(
+                Math.Max(0m, -BatchReportMassCalculator.CalculateInventorySignedBiomassGram(mortality))));
+    }
+
     private static BatchMovement Movement(
         long id,
         DateTime date,

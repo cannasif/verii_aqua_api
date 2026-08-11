@@ -4,6 +4,7 @@ global using aqua_api.Modules.Aqua.Infrastructure.Persistence.Repositories;
 global using aqua_api.Modules.AquaSettings.Application.Dtos;
 global using aqua_api.Modules.AquaSettings.Application.Services;
 global using aqua_api.Modules.AquaSettings.Domain.Entities;
+global using aqua_api.Modules.AquaSettings.Domain.Enums;
 global using aqua_api.Modules.Cages.Application.Dtos;
 global using aqua_api.Modules.Cages.Application.Services;
 global using aqua_api.Modules.Cages.Domain.Entities;

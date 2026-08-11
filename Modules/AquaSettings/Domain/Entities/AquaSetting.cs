@@ -14,5 +14,9 @@ namespace aqua_api.Modules.AquaSettings.Domain.Entities
         // 1: FIFO
         // 2: Son alim fiyati
         public int FeedCostFallbackStrategy { get; set; } = 0;
+
+        // 0: Her fireyi olay tarihindeki gramaj ile hesapla
+        // 1: Toplam fireyi rapor donemi sonundaki son gramaj ile hesapla
+        public int MortalityBiomassCalculationMode { get; set; } = 0;
     }
 }

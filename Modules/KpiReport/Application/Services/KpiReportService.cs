@@ -17,15 +17,18 @@ public class KpiReportService : IKpiReportService
     private readonly IUnitOfWork _unitOfWork;
     private readonly IDevirFcrReportService _devirFcrReportService;
     private readonly ILocalizationService _localizationService;
+    private readonly IAquaSettingsService _aquaSettingsService;
 
     public KpiReportService(
         IUnitOfWork unitOfWork,
         IDevirFcrReportService devirFcrReportService,
-        ILocalizationService localizationService)
+        ILocalizationService localizationService,
+        IAquaSettingsService aquaSettingsService)
     {
         _unitOfWork = unitOfWork;
         _devirFcrReportService = devirFcrReportService;
         _localizationService = localizationService;
+        _aquaSettingsService = aquaSettingsService;
     }
 
     public async Task<ApiResponse<List<KpiReportProjectOptionDto>>> GetProjectsAsync()
@@ -561,7 +564,12 @@ public class KpiReportService : IKpiReportService
             if (projectCageIds.Count > 0) query = query.Where(x => projectCageIds.Contains(x.ProjectCageId));
 
             var records = await query.ToListAsync();
-            await ApplyMortalityLedgerBiomassAsync(records);
+            var mortalityBiomassCalculationMode =
+                await _aquaSettingsService.GetMortalityBiomassCalculationModeAsync();
+            await ApplyMortalityLedgerBiomassAsync(
+                records,
+                mortalityBiomassCalculationMode,
+                toDate);
 
             var report = BuildMonthlyOperationalReport("mortality", fromDate, toDate, records);
             return ApiResponse<MonthlyOperationalReportDto>.SuccessResult(report, L("KpiReportService.MonthlyMortalityReportLoaded"));
@@ -1045,6 +1053,8 @@ public class KpiReportService : IKpiReportService
                 .AsNoTracking()
                 .Where(x => !x.IsDeleted && x.ProjectId == projectId)
                 .ToDictionaryAsync(x => x.Id, x => string.IsNullOrWhiteSpace(x.BatchCode) ? x.Id.ToString() : x.BatchCode);
+            var mortalityBiomassCalculationMode =
+                await _aquaSettingsService.GetMortalityBiomassCalculationModeAsync();
 
             var report = BuildProjectDetailReport(
                 project,
@@ -1071,7 +1081,8 @@ public class KpiReportService : IKpiReportService
                 batchCageBalances,
                 latestWarehouseBalances,
                 stocks,
-                fishBatches);
+                fishBatches,
+                mortalityBiomassCalculationMode);
 
             return ApiResponse<ProjectDetailReportDto>.SuccessResult(report, L("KpiReportService.ProjectDetailLoaded"));
         }
@@ -1420,7 +1431,8 @@ public class KpiReportService : IKpiReportService
         List<BatchCageBalance> batchCageBalances,
         List<BatchWarehouseBalance> latestWarehouseBalances,
         Dictionary<long, string> stockLabelById,
-        Dictionary<long, string> fishBatchLabelById)
+        Dictionary<long, string> fishBatchLabelById,
+        MortalityBiomassCalculationMode mortalityBiomassCalculationMode)
     {
         var reportCageIdSet = reportProjectCageIds.ToHashSet();
         var cageLabelById = projectCages.ToDictionary(x => x.Id, x => CageLabel(x));
@@ -1446,6 +1458,8 @@ public class KpiReportService : IKpiReportService
         var movementCountByCageDate = new Dictionary<long, Dictionary<string, int>>();
         var movementBiomassByCageDate = new Dictionary<long, Dictionary<string, decimal>>();
         var deadBiomassByCageDate = new Dictionary<long, Dictionary<string, decimal>>();
+        var representedMortalityKeys = new HashSet<(long ReferenceId, long FishBatchId, long ProjectCageId)>();
+        var mortalityReportEndDate = DateTimeProvider.Now.Date;
         var stockConvertMovementsByRefId = new Dictionary<long, List<BatchMovement>>();
         var movementBiomassDeltaById = BatchReportMassCalculator.CalculateMovementBiomassDeltas(batchMovements);
 
@@ -1492,6 +1506,10 @@ public class KpiReportService : IKpiReportService
             }))
         {
             var deadCount = Math.Max(0, -movementGroup.Sum(x => x.SignedCount));
+            representedMortalityKeys.Add((
+                movementGroup.Key.ReferenceId,
+                movementGroup.Key.FishBatchId,
+                movementGroup.Key.ProjectCageId));
             if (deadCount > 0)
             {
                 AddValue(movementMortalityByCage, movementGroup.Key.ProjectCageId, deadCount);
@@ -1500,7 +1518,14 @@ public class KpiReportService : IKpiReportService
             var actualDeadBiomassGram = Math.Max(
                 0m,
                 -movementGroup.Sum(BatchReportMassCalculator.CalculateInventorySignedBiomassGram));
-            var reportedDeadBiomassGram = MortalityBiomassMath.CalculateReportedBiomassGram(actualDeadBiomassGram);
+            var reportedDeadBiomassGram = MortalityReportBiomassCalculator.CalculateReportedBiomassGram(
+                mortalityBiomassCalculationMode,
+                deadCount,
+                actualDeadBiomassGram,
+                batchMovements,
+                movementGroup.Key.FishBatchId,
+                movementGroup.Key.ProjectCageId,
+                mortalityReportEndDate);
             if (reportedDeadBiomassGram > 0)
             {
                 AddValue(
@@ -1555,6 +1580,47 @@ public class KpiReportService : IKpiReportService
             if (!mortalityDateById.TryGetValue(line.MortalityId, out var date)) continue;
             AddValue(mortalityByCage, line.ProjectCageId, line.DeadCount);
             AddValue(deadByCageDate, line.ProjectCageId, date, line.DeadCount);
+        }
+
+        foreach (var lineGroup in mortalityLines
+            .Where(x => reportCageIdSet.Contains(x.ProjectCageId) && mortalityDateById.ContainsKey(x.MortalityId))
+            .GroupBy(x => new
+            {
+                ReferenceId = x.MortalityId,
+                x.FishBatchId,
+                x.ProjectCageId,
+                Date = mortalityDateById[x.MortalityId]
+            }))
+        {
+            var key = (lineGroup.Key.ReferenceId, lineGroup.Key.FishBatchId, lineGroup.Key.ProjectCageId);
+            if (representedMortalityKeys.Contains(key)) continue;
+
+            var deadCount = Math.Max(0, lineGroup.Sum(x => x.DeadCount));
+            var eventDate = DateTime.ParseExact(lineGroup.Key.Date, "yyyy-MM-dd", null);
+            var eventAverageGram = MortalityReportBiomassCalculator.ResolveLatestAverageGram(
+                batchMovements,
+                lineGroup.Key.FishBatchId,
+                lineGroup.Key.ProjectCageId,
+                eventDate);
+            var historicalActualBiomassGram = BatchReportMassCalculator.CalculateBiomassGram(
+                deadCount,
+                eventAverageGram);
+            var reportedDeadBiomassGram = MortalityReportBiomassCalculator.CalculateReportedBiomassGram(
+                mortalityBiomassCalculationMode,
+                deadCount,
+                historicalActualBiomassGram,
+                batchMovements,
+                lineGroup.Key.FishBatchId,
+                lineGroup.Key.ProjectCageId,
+                mortalityReportEndDate);
+            if (reportedDeadBiomassGram > 0m)
+            {
+                AddValue(
+                    deadBiomassByCageDate,
+                    lineGroup.Key.ProjectCageId,
+                    lineGroup.Key.Date,
+                    reportedDeadBiomassGram);
+            }
         }
 
         foreach (var (projectCageId, deadCount) in movementMortalityByCage)
@@ -1725,7 +1791,7 @@ public class KpiReportService : IKpiReportService
             AppendDetail(growthDetailsByCageDate, cageId, date, detail);
         }
 
-        var today = DateTimeProvider.Now.Date;
+        var today = mortalityReportEndDate;
         var cages = reportProjectCages
             .OrderBy(x => CageLabel(x))
             .Select(projectCage =>
@@ -2210,7 +2276,10 @@ public class KpiReportService : IKpiReportService
             StatusCodes.Status400BadRequest);
     }
 
-    private async Task ApplyMortalityLedgerBiomassAsync(List<MonthlyOperationalRawRecord> records)
+    private async Task ApplyMortalityLedgerBiomassAsync(
+        List<MonthlyOperationalRawRecord> records,
+        MortalityBiomassCalculationMode mortalityBiomassCalculationMode,
+        DateTime reportPeriodEnd)
     {
         var mortalityIds = records
             .Select(x => x.HeaderId)
@@ -2224,14 +2293,13 @@ public class KpiReportService : IKpiReportService
 
         var fishBatchIds = records.Select(x => x.FishBatchId).Distinct().ToList();
         var projectCageIds = records.Select(x => x.ProjectCageId).Distinct().ToList();
-        var latestReportDate = records.Max(x => x.Date).Date;
         var relevantMovements = await _unitOfWork.Db.BatchMovements
             .AsNoTracking()
             .Where(x => !x.IsDeleted
                 && fishBatchIds.Contains(x.FishBatchId)
                 && x.ProjectCageId.HasValue
                 && projectCageIds.Contains(x.ProjectCageId.Value)
-                && x.MovementDate.Date <= latestReportDate)
+                && x.MovementDate.Date <= reportPeriodEnd.Date)
             .ToListAsync();
 
         var ledgerKgByKey = relevantMovements
@@ -2271,6 +2339,37 @@ public class KpiReportService : IKpiReportService
             record.Kg = MortalityBiomassMath.CalculateReportedBiomassKg(
                 record.Count,
                 historicalSnapshot.AverageGram);
+        }
+
+        if (mortalityBiomassCalculationMode != MortalityBiomassCalculationMode.PeriodEndLatestWeight)
+        {
+            return;
+        }
+
+        foreach (var recordGroup in records.GroupBy(x => (x.FishBatchId, x.ProjectCageId)))
+        {
+            var totalDeadCount = recordGroup.Sum(x => Math.Max(0, x.Count));
+            if (totalDeadCount <= 0)
+            {
+                continue;
+            }
+
+            var historicalActualBiomassGram = recordGroup.Sum(x => Math.Max(0m, x.Kg))
+                / MortalityBiomassMath.ReportedWeightRatio
+                * 1000m;
+            var totalReportedKg = MortalityReportBiomassCalculator.CalculateReportedBiomassKg(
+                mortalityBiomassCalculationMode,
+                totalDeadCount,
+                historicalActualBiomassGram,
+                relevantMovements,
+                recordGroup.Key.FishBatchId,
+                recordGroup.Key.ProjectCageId,
+                reportPeriodEnd);
+
+            foreach (var record in recordGroup)
+            {
+                record.Kg = totalReportedKg * Math.Max(0, record.Count) / totalDeadCount;
+            }
         }
     }
 

@@ -28,12 +28,23 @@ namespace aqua_api.Modules.Aqua.Application.Services
         }
 
         /// <summary>
-        /// Inventory mass removed/added on the ledger.
-        /// Use this (then apply MortalityBiomassMath once) for mortality FCR/KPI so a
-        /// pre-halved ReportedBiomassGram cannot be halved again.
+        /// Actual inventory mass removed/added by the movement. Count and operation-time
+        /// average are authoritative; stored mass is only a legacy fallback. Use this
+        /// before applying MortalityBiomassMath so reported mortality is halved once.
         /// </summary>
         public static decimal CalculateInventorySignedBiomassGram(BatchMovement movement)
-            => Round(movement.SignedBiomassGram);
+        {
+            if (movement.SignedCount != 0)
+            {
+                var averageGram = ResolveMovementAverageGram(movement);
+                if (averageGram > 0m)
+                {
+                    return Round(movement.SignedCount * averageGram);
+                }
+            }
+
+            return Round(movement.SignedBiomassGram);
+        }
 
         public static decimal CalculateSignedBiomassGram(BatchMovement movement)
         {

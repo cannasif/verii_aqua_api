@@ -58,6 +58,21 @@ namespace aqua_api.Modules.AquaSettings.Application.Services
             }
         }
 
+        public async Task<MortalityBiomassCalculationMode> GetMortalityBiomassCalculationModeAsync()
+        {
+            var mode = await _unitOfWork.AquaSettings
+                .Query()
+                .AsNoTracking()
+                .Where(x => !x.IsDeleted)
+                .OrderBy(x => x.Id)
+                .Select(x => x.MortalityBiomassCalculationMode)
+                .FirstOrDefaultAsync();
+
+            return Enum.IsDefined(typeof(MortalityBiomassCalculationMode), mode)
+                ? (MortalityBiomassCalculationMode)mode
+                : MortalityBiomassCalculationMode.HistoricalEventWeight;
+        }
+
         private async Task<AquaSetting> EnsureEntityAsync()
         {
             var entity = await _unitOfWork.AquaSettings
@@ -77,6 +92,7 @@ namespace aqua_api.Modules.AquaSettings.Application.Services
                 AllowProjectMerge = false,
                 PartialTransferOccupiedCageMode = 0,
                 FeedCostFallbackStrategy = 0,
+                MortalityBiomassCalculationMode = 0,
                 CreatedDate = DateTimeProvider.Now,
                 UpdatedDate = DateTimeProvider.Now,
                 IsDeleted = false
