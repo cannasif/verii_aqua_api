@@ -1499,7 +1499,7 @@ public class KpiReportService : IKpiReportService
 
             var actualDeadBiomassGram = Math.Max(
                 0m,
-                -movementGroup.Sum(BatchReportMassCalculator.CalculateSignedBiomassGram));
+                -movementGroup.Sum(BatchReportMassCalculator.CalculateInventorySignedBiomassGram));
             var reportedDeadBiomassGram = MortalityBiomassMath.CalculateReportedBiomassGram(actualDeadBiomassGram);
             if (reportedDeadBiomassGram > 0)
             {
@@ -2243,7 +2243,7 @@ public class KpiReportService : IKpiReportService
             .ToDictionary(
                 x => (x.Key.ReferenceId, x.Key.FishBatchId, ProjectCageId: x.Key.ProjectCageId!.Value),
                 x => MortalityBiomassMath.CalculateReportedBiomassKgFromActualGram(
-                    Math.Max(0m, -x.Sum(BatchReportMassCalculator.CalculateSignedBiomassGram))));
+                    Math.Max(0m, -x.Sum(BatchReportMassCalculator.CalculateInventorySignedBiomassGram))));
 
         var countByKey = records
             .GroupBy(x => (ReferenceId: x.HeaderId, x.FishBatchId, x.ProjectCageId))

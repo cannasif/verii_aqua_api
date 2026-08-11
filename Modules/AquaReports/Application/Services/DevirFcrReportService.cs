@@ -224,7 +224,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 0m,
                 -movementList
                     .Where(x => x.MovementType == BatchMovementType.Mortality && IsInRange(x.MovementDate, projectFromDate, toDate))
-                    .Sum(BatchReportMassCalculator.CalculateSignedBiomassGram));
+                    .Sum(BatchReportMassCalculator.CalculateInventorySignedBiomassGram));
             var hasMortalityMovement = movementList.Any(x =>
                 x.MovementType == BatchMovementType.Mortality &&
                 IsInRange(x.MovementDate, projectFromDate, toDate));

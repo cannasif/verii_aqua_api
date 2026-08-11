@@ -1,5 +1,6 @@
 using aqua_api.Modules.Aqua.Application.Services;
 using aqua_api.Modules.Aqua.Domain.Enums;
+using aqua_api.Shared.Common.Helpers;
 using Xunit;
 
 namespace aqua_api.Tests;
@@ -80,6 +81,27 @@ public sealed class BatchReportMassCalculatorTests
         Assert.Equal(1_400m, deltas[1]);
         Assert.Equal(520m, deltas[2]);
         Assert.Equal(520m, BatchReportMassCalculator.CalculateSignedBiomassGram(legacyCorrection));
+    }
+
+    [Fact]
+    public void InventorySignedBiomass_IgnoresPreHalvedReportedMortalityMass()
+    {
+        var mortality = Movement(
+            1,
+            new DateTime(2026, 3, 31),
+            BatchMovementType.Mortality,
+            -181_042,
+            -150_264_860m,
+            830m,
+            830m);
+        mortality.ReportedBiomassGram = -75_132_430m;
+
+        Assert.Equal(-75_132_430m, BatchReportMassCalculator.CalculateSignedBiomassGram(mortality));
+        Assert.Equal(-150_264_860m, BatchReportMassCalculator.CalculateInventorySignedBiomassGram(mortality));
+        Assert.Equal(
+            75_132.43m,
+            MortalityBiomassMath.CalculateReportedBiomassKgFromActualGram(
+                Math.Max(0m, -BatchReportMassCalculator.CalculateInventorySignedBiomassGram(mortality))));
     }
 
     private static BatchMovement Movement(

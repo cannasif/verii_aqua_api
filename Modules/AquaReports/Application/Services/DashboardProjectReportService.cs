@@ -457,7 +457,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                 var date = ToDateOnly(movementGroup.Key.MovementDate);
                 var actualDeadBiomassGram = Math.Max(
                     0m,
-                    -movementGroup.Sum(BatchReportMassCalculator.CalculateSignedBiomassGram));
+                    -movementGroup.Sum(BatchReportMassCalculator.CalculateInventorySignedBiomassGram));
                 var deadBiomassGram = MortalityBiomassMath.CalculateReportedBiomassGram(actualDeadBiomassGram);
                 if (deadBiomassGram <= 0) continue;
                 AddByDate(dailyDeadBiomassByCage, cageId, date, deadBiomassGram);

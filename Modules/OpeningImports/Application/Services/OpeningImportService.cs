@@ -1365,6 +1365,10 @@ public class OpeningImportService : IOpeningImportService
                     continue;
                 }
 
+                // Inventory mass always uses live average × dead count so remaining stock
+                // average is stable. Reported mass is the FULL actual document biomass;
+                // Devir/FCR/KPI apply MortalityBiomassMath (×0.5) once on top of it.
+                // Excel "Fire KG" must be full kg (adet × gram ÷ 1000), not the already-halved FCR value.
                 var explicitMortalityBiomassKg = ParseNullableDecimal(
                     normalized.TryGetValue("mortalityBiomassKg", out var mortalityBiomassKgValue)
                         ? mortalityBiomassKgValue
@@ -1380,13 +1384,13 @@ public class OpeningImportService : IOpeningImportService
                 {
                     throw new InvalidOperationException(L("OpeningImportService.MortalityAverageGramNotFound"));
                 }
-                var reportedMortalityBiomassGram = hasExplicitMortalityBiomass
-                    ? Math.Round(explicitMortalityBiomassKg!.Value * 1000m, 3, MidpointRounding.AwayFromZero)
-                    : Math.Round(deadCount * inventoryAverageGram, 3, MidpointRounding.AwayFromZero);
                 var inventoryBiomassGram = Math.Round(
                     deadCount * inventoryAverageGram,
                     3,
                     MidpointRounding.AwayFromZero);
+                var reportedMortalityBiomassGram = hasExplicitMortalityBiomass
+                    ? Math.Round(explicitMortalityBiomassKg!.Value * 1000m, 3, MidpointRounding.AwayFromZero)
+                    : inventoryBiomassGram;
 
                 await _balanceLedgerManager.ApplyDelta(
                     project.Id,

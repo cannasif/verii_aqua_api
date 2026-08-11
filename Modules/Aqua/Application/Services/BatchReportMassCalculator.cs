@@ -27,6 +27,14 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 Round(Math.Max(0m, biomassGram)));
         }
 
+        /// <summary>
+        /// Inventory mass removed/added on the ledger.
+        /// Use this (then apply MortalityBiomassMath once) for mortality FCR/KPI so a
+        /// pre-halved ReportedBiomassGram cannot be halved again.
+        /// </summary>
+        public static decimal CalculateInventorySignedBiomassGram(BatchMovement movement)
+            => Round(movement.SignedBiomassGram);
+
         public static decimal CalculateSignedBiomassGram(BatchMovement movement)
         {
             if (movement.ReportedBiomassGram.HasValue)
