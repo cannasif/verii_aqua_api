@@ -110,9 +110,9 @@ public sealed class OpeningImportShipmentLedgerIntegrationTests
             .SingleAsync(x => x.ProjectCageId == projectCage.Id && x.FishBatchId == batch.Id);
 
         Assert.Equal(600, balance.LiveCount);
-        Assert.Equal(54_000m, balance.BiomassGram);
-        Assert.Equal(90m, balance.AverageGram);
-        Assert.Equal(90m, batch.CurrentAverageGram);
+        Assert.Equal(60_000m, balance.BiomassGram);
+        Assert.Equal(100m, balance.AverageGram);
+        Assert.Equal(100m, batch.CurrentAverageGram);
         Assert.Equal(new DateTime(2026, 1, 20), balance.AsOfDate.Date);
 
         var shipmentLine = await db.ShipmentLines
@@ -125,21 +125,31 @@ public sealed class OpeningImportShipmentLedgerIntegrationTests
             x.ReferenceTable == "RII_SHIPMENT_LINE" &&
             x.ReferenceId == shipmentLine.Id);
         Assert.Equal(-300, shipmentMovement.SignedCount);
-        Assert.Equal(-36_000m, shipmentMovement.SignedBiomassGram);
+        Assert.Equal(-30_000m, shipmentMovement.SignedBiomassGram);
+        Assert.Equal(-36_000m, shipmentMovement.ReportedBiomassGram);
+        Assert.Equal(100m, shipmentMovement.FromAverageGram);
         Assert.Equal(projectCage.Id, shipmentMovement.FromProjectCageId);
+
+        var mortalityMovement = await db.BatchMovements.SingleAsync(x =>
+            x.MovementType == BatchMovementType.Mortality &&
+            x.FishBatchId == batch.Id);
+        Assert.Equal(-100, mortalityMovement.SignedCount);
+        Assert.Equal(-10_000m, mortalityMovement.SignedBiomassGram);
+        Assert.Equal(-10_000m, mortalityMovement.ReportedBiomassGram);
+        Assert.Equal(100m, mortalityMovement.FromAverageGram);
 
         var dashboardService = verifyScope.ServiceProvider.GetRequiredService<IDashboardProjectReportService>();
         var dashboard = await dashboardService.GetProjectDetailAsync(project.Id);
         Assert.True(dashboard.Success, $"{dashboard.Message} | {dashboard.ExceptionMessage}");
         var dashboardCage = Assert.Single(dashboard.Data!.Cages);
         Assert.Equal(600, dashboardCage.CurrentFishCount);
-        Assert.Equal(90m, dashboardCage.CurrentAverageGram);
-        Assert.Equal(54_000m, dashboardCage.CurrentBiomassGram);
+        Assert.Equal(100m, dashboardCage.CurrentAverageGram);
+        Assert.Equal(60_000m, dashboardCage.CurrentBiomassGram);
 
         var summaries = await dashboardService.GetProjectSummariesAsync([project.Id]);
         Assert.True(summaries.Success, $"{summaries.Message} | {summaries.ExceptionMessage}");
         var summaryCage = Assert.Single(Assert.Single(summaries.Data!.Projects).Cages);
-        Assert.Equal(90m, summaryCage.CurrentAverageGram);
+        Assert.Equal(100m, summaryCage.CurrentAverageGram);
 
         var devirService = verifyScope.ServiceProvider.GetRequiredService<IDevirFcrReportService>();
         var devir = await devirService.GetReportAsync(new DevirFcrReportRequestDto
@@ -154,8 +164,10 @@ public sealed class OpeningImportShipmentLedgerIntegrationTests
         Assert.Equal(300, devirRow.ShipmentFishCount);
         Assert.Equal(100, devirRow.MortalityFishCount);
         Assert.Equal(600, devirRow.EndingFishCount);
-        Assert.Equal(90m, devirRow.EndingAverageGram);
-        Assert.Equal(54m, devirRow.EndingBiomassKg);
+        Assert.Equal(100m, devirRow.EndingAverageGram);
+        Assert.Equal(60m, devirRow.EndingBiomassKg);
+        Assert.Equal(36m, devirRow.ShippedBiomassKg);
+        Assert.Equal(5m, devirRow.MortalityBiomassKg);
 
         var growthService = verifyScope.ServiceProvider.GetRequiredService<IFishGrowthService>();
         shipmentMovement.IsDeleted = true;
@@ -168,26 +180,27 @@ public sealed class OpeningImportShipmentLedgerIntegrationTests
             ProjectCageId = projectCage.Id,
             FishBatchId = batch.Id,
             GrowthDate = new DateTime(2026, 2, 15),
-            NewAverageGram = 100m,
+            NewAverageGram = 110m,
         }, 1);
         Assert.True(
             reconciledGrowth.Success,
             $"{reconciledGrowth.Message} | {reconciledGrowth.ExceptionMessage}");
         Assert.Equal(600, reconciledGrowth.Data!.FishCount);
-        Assert.Equal(90m, reconciledGrowth.Data.PreviousAverageGram);
-        Assert.Equal(60_000m, reconciledGrowth.Data.NewBiomassGram);
+        Assert.Equal(100m, reconciledGrowth.Data.PreviousAverageGram);
+        Assert.Equal(66_000m, reconciledGrowth.Data.NewBiomassGram);
 
         var reconstructedMovement = await db.BatchMovements.SingleAsync(x =>
             x.MovementType == BatchMovementType.Shipment
             && x.ReferenceTable == "RII_SHIPMENT_LINE"
             && x.ReferenceId == shipmentLine.Id);
         Assert.Equal(-300, reconstructedMovement.SignedCount);
-        Assert.Equal(-36_000m, reconstructedMovement.SignedBiomassGram);
+        Assert.Equal(-30_000m, reconstructedMovement.SignedBiomassGram);
+        Assert.Equal(-36_000m, reconstructedMovement.ReportedBiomassGram);
         var reconciledBalance = await db.BatchCageBalances.SingleAsync(x =>
             x.ProjectCageId == projectCage.Id && x.FishBatchId == batch.Id);
         Assert.Equal(600, reconciledBalance.LiveCount);
-        Assert.Equal(100m, reconciledBalance.AverageGram);
-        Assert.Equal(60_000m, reconciledBalance.BiomassGram);
+        Assert.Equal(110m, reconciledBalance.AverageGram);
+        Assert.Equal(66_000m, reconciledBalance.BiomassGram);
 
         // Legacy data can contain case-variant references and zero-count biomass
         // correction rows. Reconciliation must repair the linked aggregate instead
@@ -229,7 +242,7 @@ public sealed class OpeningImportShipmentLedgerIntegrationTests
 
         var updatedGrowth = await growthService.UpdateAsync(
             reconciledGrowth.Data.Id,
-            new UpdateFishGrowthDto { NewAverageGram = 110m },
+            new UpdateFishGrowthDto { NewAverageGram = 120m },
             1);
         Assert.True(
             updatedGrowth.Success,
@@ -247,14 +260,152 @@ public sealed class OpeningImportShipmentLedgerIntegrationTests
             .ToList();
         Assert.Equal(2, shipmentMovements.Count);
         Assert.Equal(-300, shipmentMovements.Sum(x => x.SignedCount));
-        Assert.Equal(-36_000m, shipmentMovements.Sum(x => x.SignedBiomassGram));
+        Assert.Equal(-30_000m, shipmentMovements.Sum(x => x.SignedBiomassGram));
+        Assert.Equal(-36_000m, shipmentMovements.Sum(x => x.ReportedBiomassGram ?? 0m));
         Assert.All(shipmentMovements, x => Assert.Equal("RII_SHIPMENT_LINE", x.ReferenceTable));
 
         var updatedBalance = await db.BatchCageBalances.SingleAsync(x =>
             x.ProjectCageId == projectCage.Id && x.FishBatchId == batch.Id);
         Assert.Equal(600, updatedBalance.LiveCount);
-        Assert.Equal(110m, updatedBalance.AverageGram);
-        Assert.Equal(66_000m, updatedBalance.BiomassGram);
+        Assert.Equal(120m, updatedBalance.AverageGram);
+        Assert.Equal(72_000m, updatedBalance.BiomassGram);
+    }
+
+    [Fact]
+    public async Task Commit_ProductionScaleOpeningHistory_PreservesOpeningGramAndRemainingStockMass()
+    {
+        const string projectCode = "PRJ-OPEN-HISTORY-MASS";
+        const string cageCode = "CAGE-OPEN-HISTORY-MASS";
+        const string batchCode = "BATCH-OPEN-HISTORY-MASS";
+        var request = new OpeningImportPreviewRequestDto
+        {
+            FileName = "opening-history-mass.xlsx",
+            SourceSystem = "integration-test",
+            Sheets =
+            [
+                Sheet("Projects", new()
+                {
+                    ["projectCode"] = projectCode,
+                    ["projectName"] = "Opening History Mass Project",
+                    ["startDate"] = "2026-03-01",
+                }),
+                Sheet("Cages", new()
+                {
+                    ["projectCode"] = projectCode,
+                    ["cageCode"] = cageCode,
+                    ["cageName"] = "Opening History Mass Cage",
+                    ["assignedDate"] = "2026-03-01",
+                }),
+                Sheet("OpeningStock", new()
+                {
+                    ["projectCode"] = projectCode,
+                    ["cageCode"] = cageCode,
+                    ["batchCode"] = batchCode,
+                    ["fishStockCode"] = "PLAMUT-5G",
+                    ["fishCount"] = "1064000",
+                    ["averageGram"] = "830",
+                    ["asOfDate"] = "2026-03-01",
+                }),
+                Sheet("OpeningMortality", new()
+                {
+                    ["projectCode"] = projectCode,
+                    ["cageCode"] = cageCode,
+                    ["batchCode"] = batchCode,
+                    ["fishStockCode"] = "PLAMUT-5G",
+                    ["deadCount"] = "181042",
+                    ["mortalityBiomassKg"] = "75132.44",
+                    ["mortalityDate"] = "2026-03-20",
+                }),
+                Sheet("OpeningShipments", new()
+                {
+                    ["projectCode"] = projectCode,
+                    ["cageCode"] = cageCode,
+                    ["batchCode"] = batchCode,
+                    ["fishStockCode"] = "PLAMUT-5G",
+                    ["shipmentDate"] = "2026-03-10",
+                    ["fishCount"] = "864655",
+                    ["averageGram"] = "638.241842",
+                    ["currencyCode"] = "TRY",
+                    ["exchangeRate"] = "1",
+                    ["unitPrice"] = "0",
+                }),
+            ]
+        };
+
+        long jobId;
+        using (var previewScope = _factory.Services.CreateScope())
+        {
+            var service = previewScope.ServiceProvider.GetRequiredService<IOpeningImportService>();
+            var preview = await service.PreviewAsync(request);
+            Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+            Assert.Equal(0, preview.Data!.Summary.ErrorRows);
+            jobId = preview.Data.JobId;
+        }
+
+        using (var commitScope = _factory.Services.CreateScope())
+        {
+            var service = commitScope.ServiceProvider.GetRequiredService<IOpeningImportService>();
+            var commit = await service.CommitAsync(jobId);
+            Assert.True(commit.Success, $"{commit.Message} | {commit.ExceptionMessage}");
+        }
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var db = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        var project = await db.Projects.SingleAsync(x => x.ProjectCode == projectCode);
+        var projectCage = await db.ProjectCages
+            .Include(x => x.Cage)
+            .SingleAsync(x => x.ProjectId == project.Id && x.Cage!.CageCode == cageCode);
+        var batch = await db.FishBatches
+            .SingleAsync(x => x.ProjectId == project.Id && x.BatchCode == batchCode);
+        var balance = await db.BatchCageBalances
+            .SingleAsync(x => x.ProjectCageId == projectCage.Id && x.FishBatchId == batch.Id);
+
+        Assert.Equal(18_303, balance.LiveCount);
+        Assert.Equal(830m, balance.AverageGram);
+        Assert.Equal(15_191_490m, balance.BiomassGram);
+        Assert.Equal(830m, batch.CurrentAverageGram);
+
+        var dashboardService = verifyScope.ServiceProvider.GetRequiredService<IDashboardProjectReportService>();
+        var dashboard = await dashboardService.GetProjectDetailAsync(project.Id);
+        Assert.True(dashboard.Success, $"{dashboard.Message} | {dashboard.ExceptionMessage}");
+        var dashboardCage = Assert.Single(dashboard.Data!.Cages);
+        Assert.Equal(18_303, dashboardCage.CurrentFishCount);
+        Assert.Equal(830m, dashboardCage.CurrentAverageGram);
+        Assert.Equal(15_191_490m, dashboardCage.CurrentBiomassGram);
+
+        var growthService = verifyScope.ServiceProvider.GetRequiredService<IFishGrowthService>();
+        var openingTimeline = await growthService.GetTimelineAsync(
+            projectCage.Id,
+            batch.Id,
+            2026,
+            3);
+        Assert.True(openingTimeline.Success, $"{openingTimeline.Message} | {openingTimeline.ExceptionMessage}");
+        Assert.Equal(830m, openingTimeline.Data!.LatestAverageGram);
+        var openingMonth = Assert.Single(openingTimeline.Data.Months);
+        Assert.Equal(18_303, openingMonth.FishCount);
+        Assert.Equal(830m, openingMonth.EndAverageGram);
+
+        var growth = await growthService.CreateAsync(new CreateFishGrowthDto
+        {
+            ProjectId = project.Id,
+            ProjectCageId = projectCage.Id,
+            FishBatchId = batch.Id,
+            GrowthDate = new DateTime(2026, 4, 15),
+            NewAverageGram = 850m,
+        }, 1);
+        Assert.True(growth.Success, $"{growth.Message} | {growth.ExceptionMessage}");
+        Assert.Equal(18_303, growth.Data!.FishCount);
+        Assert.Equal(830m, growth.Data.PreviousAverageGram);
+        Assert.Equal(15_557_550m, growth.Data.NewBiomassGram);
+
+        var grownTimeline = await growthService.GetTimelineAsync(
+            projectCage.Id,
+            batch.Id,
+            2026,
+            4);
+        Assert.True(grownTimeline.Success, $"{grownTimeline.Message} | {grownTimeline.ExceptionMessage}");
+        Assert.Equal(850m, grownTimeline.Data!.LatestAverageGram);
+        Assert.Equal(850m, grownTimeline.Data.Months.Single(x => x.Month == 4).EndAverageGram);
     }
 
     [Fact]

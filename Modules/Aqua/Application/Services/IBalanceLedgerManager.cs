@@ -37,7 +37,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
             long? toStockId,
             decimal? fromAvgGram,
             decimal? toAvgGram,
-            long? actorUserId = null);
+            long? actorUserId = null,
+            decimal? reportedBiomassGram = null);
 
         Task ApplyWarehouseDelta(
             long projectId,
@@ -56,6 +57,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
             long? toStockId,
             decimal? fromAvgGram,
             decimal? toAvgGram,
-            long? actorUserId = null);
+            long? actorUserId = null,
+            decimal? reportedBiomassGram = null);
     }
 }

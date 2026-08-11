@@ -29,9 +29,22 @@ namespace aqua_api.Modules.Aqua.Application.Services
 
         public static decimal CalculateSignedBiomassGram(BatchMovement movement)
         {
+            if (movement.ReportedBiomassGram.HasValue)
+            {
+                return Round(movement.ReportedBiomassGram.Value);
+            }
+
             if (movement.SignedCount == 0)
             {
                 return 0m;
+            }
+
+            // Opening import summaries carry the historical document mass in legacy
+            // ledgers. It must remain visible in reports, but must not redefine the
+            // average gram of the remaining live stock.
+            if (IsOpeningImportHistoricalExit(movement))
+            {
+                return Round(movement.SignedBiomassGram);
             }
 
             if (IsMixedStockingCorrection(movement))
@@ -132,6 +145,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
             return 0m;
         }
 
+        public static bool IsOpeningImportHistoricalExit(BatchMovement movement) =>
+            movement.SignedCount < 0
+            && movement.MovementType is BatchMovementType.Shipment or BatchMovementType.Mortality
+            && movement.Note?.StartsWith("Opening import ", StringComparison.OrdinalIgnoreCase) == true;
+
         private static BatchReportMassSnapshot CalculateLocationSnapshot(
             IGrouping<MovementLocationKey, BatchMovement> movementGroup)
         {
@@ -164,7 +182,6 @@ namespace aqua_api.Modules.Aqua.Application.Services
             ref long liveCount,
             ref decimal biomassGram)
         {
-            var movementAverageGram = ResolveMovementAverageGram(movement);
             if (movement.SignedCount != 0)
             {
                 var nextCount = liveCount + movement.SignedCount;
@@ -175,6 +192,9 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     return;
                 }
 
+                var movementAverageGram = IsOpeningImportHistoricalExit(movement) && liveCount > 0
+                    ? Round(biomassGram / liveCount)
+                    : ResolveMovementAverageGram(movement);
                 biomassGram += IsMixedStockingCorrection(movement)
                     ? movement.SignedBiomassGram
                     : movementAverageGram > 0m

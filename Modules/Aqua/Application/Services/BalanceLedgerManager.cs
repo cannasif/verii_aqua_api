@@ -105,7 +105,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
             long? toStockId,
             decimal? fromAvgGram,
             decimal? toAvgGram,
-            long? actorUserId = null)
+            long? actorUserId = null,
+            decimal? reportedBiomassGram = null)
         {
             var fishBatch = await _uow.Db.FishBatches
                 .AsNoTracking()
@@ -182,6 +183,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 MovementType = movementType,
                 SignedCount = deltaCount,
                 SignedBiomassGram = biomassDelta,
+                ReportedBiomassGram = reportedBiomassGram,
                 FeedGram = null,
                 ActorUserId = actorUserId,
                 ReferenceTable = refTable,
@@ -209,7 +211,8 @@ namespace aqua_api.Modules.Aqua.Application.Services
             long? toStockId,
             decimal? fromAvgGram,
             decimal? toAvgGram,
-            long? actorUserId = null)
+            long? actorUserId = null,
+            decimal? reportedBiomassGram = null)
         {
             var fishBatch = await _uow.Db.FishBatches
                 .AsNoTracking()
@@ -288,6 +291,7 @@ namespace aqua_api.Modules.Aqua.Application.Services
                 MovementType = movementType,
                 SignedCount = deltaCount,
                 SignedBiomassGram = biomassDelta,
+                ReportedBiomassGram = reportedBiomassGram,
                 FeedGram = null,
                 ActorUserId = actorUserId,
                 ReferenceTable = refTable,

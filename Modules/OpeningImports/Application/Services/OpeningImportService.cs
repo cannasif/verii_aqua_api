@@ -1370,30 +1370,30 @@ public class OpeningImportService : IOpeningImportService
                         ? mortalityBiomassKgValue
                         : null);
                 var hasExplicitMortalityBiomass = explicitMortalityBiomassKg.HasValue && explicitMortalityBiomassKg.Value >= 0m;
-                var balance = hasExplicitMortalityBiomass
-                    ? null
-                    : await _unitOfWork.Db.BatchCageBalances
-                        .AsNoTracking()
-                        .FirstOrDefaultAsync(x => !x.IsDeleted && x.FishBatchId == batch.Id && x.ProjectCageId == projectCage.Id);
-                var averageGram = hasExplicitMortalityBiomass
-                    ? deadCount > 0 && explicitMortalityBiomassKg!.Value > 0m
-                        ? Math.Round(explicitMortalityBiomassKg.Value * 1000m / deadCount, 3, MidpointRounding.AwayFromZero)
-                        : 0m
-                    : ResolveAverageGram(balance);
-                if (!hasExplicitMortalityBiomass && averageGram <= 0)
+                var inventorySnapshot = await _balanceLedgerManager.GetCageMassSnapshotAsync(
+                    batch.Id,
+                    projectCage.Id,
+                    mortalityDate,
+                    BatchMovementType.Mortality);
+                var inventoryAverageGram = inventorySnapshot.AverageGram;
+                if (inventoryAverageGram <= 0m)
                 {
                     throw new InvalidOperationException(L("OpeningImportService.MortalityAverageGramNotFound"));
                 }
-                var mortalityBiomassGram = hasExplicitMortalityBiomass
+                var reportedMortalityBiomassGram = hasExplicitMortalityBiomass
                     ? Math.Round(explicitMortalityBiomassKg!.Value * 1000m, 3, MidpointRounding.AwayFromZero)
-                    : Math.Round(deadCount * averageGram, 3, MidpointRounding.AwayFromZero);
+                    : Math.Round(deadCount * inventoryAverageGram, 3, MidpointRounding.AwayFromZero);
+                var inventoryBiomassGram = Math.Round(
+                    deadCount * inventoryAverageGram,
+                    3,
+                    MidpointRounding.AwayFromZero);
 
                 await _balanceLedgerManager.ApplyDelta(
                     project.Id,
                     batch.Id,
                     projectCage.Id,
                     -deadCount,
-                    -mortalityBiomassGram,
+                    -inventoryBiomassGram,
                     BatchMovementType.Mortality,
                     mortalityDate,
                     "Opening import mortality",
@@ -1403,8 +1403,9 @@ public class OpeningImportService : IOpeningImportService
                     null,
                     stock.Id,
                     stock.Id,
-                    averageGram,
-                    averageGram);
+                    inventoryAverageGram,
+                    inventoryAverageGram,
+                    reportedBiomassGram: -reportedMortalityBiomassGram);
             }
         }
 
@@ -1456,6 +1457,18 @@ public class OpeningImportService : IOpeningImportService
 
                 var shipment = line.Shipment!;
                 var fishStockId = line.FishBatch?.FishStockId;
+                var inventorySnapshot = await _balanceLedgerManager.GetCageMassSnapshotAsync(
+                    line.FishBatchId,
+                    line.FromProjectCageId,
+                    shipment.ShipmentDate,
+                    BatchMovementType.Shipment);
+                var inventoryAverageGram = inventorySnapshot.AverageGram > 0m
+                    ? inventorySnapshot.AverageGram
+                    : line.AverageGram;
+                var inventoryBiomassGram = Math.Round(
+                    line.FishCount * inventoryAverageGram,
+                    3,
+                    MidpointRounding.AwayFromZero);
 
                 if (!sourceLedgerExists)
                 {
@@ -1464,7 +1477,7 @@ public class OpeningImportService : IOpeningImportService
                         line.FishBatchId,
                         line.FromProjectCageId,
                         -line.FishCount,
-                        -line.BiomassGram,
+                        -inventoryBiomassGram,
                         BatchMovementType.Shipment,
                         shipment.ShipmentDate,
                         "Opening import shipment",
@@ -1474,8 +1487,9 @@ public class OpeningImportService : IOpeningImportService
                         null,
                         fishStockId,
                         fishStockId,
-                        line.AverageGram,
-                        null);
+                        inventoryAverageGram,
+                        inventoryAverageGram,
+                        reportedBiomassGram: -line.BiomassGram);
                 }
 
                 if (shipment.TargetWarehouseId.HasValue)
@@ -1495,7 +1509,7 @@ public class OpeningImportService : IOpeningImportService
                             line.FishBatchId,
                             shipment.TargetWarehouseId.Value,
                             line.FishCount,
-                            line.BiomassGram,
+                            inventoryBiomassGram,
                             BatchMovementType.Shipment,
                             shipment.ShipmentDate,
                             "Opening import shipment to warehouse",
@@ -1506,7 +1520,8 @@ public class OpeningImportService : IOpeningImportService
                             fishStockId,
                             fishStockId,
                             null,
-                            line.AverageGram);
+                            inventoryAverageGram,
+                            reportedBiomassGram: line.BiomassGram);
                     }
                 }
 

@@ -14,6 +14,7 @@ namespace aqua_api.Modules.BatchBalances.Infrastructure.Persistence.Configuratio
             builder.Property(x => x.MovementDate).HasPrecision(3).IsRequired();
             builder.Property(x => x.MovementType).HasConversion<byte>().IsRequired();
             builder.Property(x => x.SignedBiomassGram).HasPrecision(18, 3);
+            builder.Property(x => x.ReportedBiomassGram).HasPrecision(18, 3);
             builder.Property(x => x.FeedGram).HasPrecision(18, 3);
             builder.Property(x => x.FromAverageGram).HasPrecision(18, 3);
             builder.Property(x => x.ToAverageGram).HasPrecision(18, 3);

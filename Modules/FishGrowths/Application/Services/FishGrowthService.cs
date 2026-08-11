@@ -399,8 +399,10 @@ public class FishGrowthService : IFishGrowthService
         var movementsBeforeStart = cageMovements
             .Where(x => x.MovementDate < startPeriod)
             .ToList();
-        var runningFishCount = movementsBeforeStart.Sum(x => (long)x.SignedCount);
-        var runningBiomassGram = movementsBeforeStart.Sum(x => x.SignedBiomassGram);
+        var appliedMovements = movementsBeforeStart.ToList();
+        var openingLedgerSnapshot = BatchReportMassCalculator.CalculateSnapshot(appliedMovements);
+        long runningFishCount = openingLedgerSnapshot.LiveCount;
+        var runningBiomassGram = openingLedgerSnapshot.BiomassGram;
         var entryAverageGram = entryMovement == null
             ? (decimal?)null
             : CalculateMovementAverageGram(entryMovement);
@@ -441,11 +443,10 @@ public class FishGrowthService : IFishGrowthService
                 runningBiomassGram,
                 runningAverageGram);
             var periodMovements = movementsByPeriod.GetValueOrDefault(period) ?? new List<BatchMovement>();
-            foreach (var movement in periodMovements)
-            {
-                runningFishCount += movement.SignedCount;
-                runningBiomassGram += movement.SignedBiomassGram;
-            }
+            appliedMovements.AddRange(periodMovements);
+            var periodSnapshot = BatchReportMassCalculator.CalculateSnapshot(appliedMovements);
+            runningFishCount = periodSnapshot.LiveCount;
+            runningBiomassGram = periodSnapshot.BiomassGram;
 
             var periodEndAverageGram = CalculateLedgerAverageGram(
                 runningFishCount,
@@ -586,8 +587,7 @@ public class FishGrowthService : IFishGrowthService
         IEnumerable<BatchMovement> movements,
         long targetMovementId)
     {
-        long fishCount = 0;
-        decimal biomassGram = 0m;
+        var precedingMovements = new List<BatchMovement>();
         var targetFound = false;
 
         foreach (var movement in movements.OrderBy(x => x.CreatedDate).ThenBy(x => x.Id))
@@ -598,12 +598,12 @@ public class FishGrowthService : IFishGrowthService
                 break;
             }
 
-            fishCount += movement.SignedCount;
-            biomassGram += movement.SignedBiomassGram;
+            precedingMovements.Add(movement);
         }
 
-        return targetFound && fishCount > 0 && biomassGram > 0m
-            ? CalculateLedgerAverageGram(fishCount, biomassGram, 0m)
+        var snapshot = BatchReportMassCalculator.CalculateSnapshot(precedingMovements);
+        return targetFound && snapshot.LiveCount > 0 && snapshot.BiomassGram > 0m
+            ? snapshot.AverageGram
             : null;
     }
 

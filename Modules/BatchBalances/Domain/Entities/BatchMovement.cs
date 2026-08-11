@@ -20,6 +20,7 @@ namespace aqua_api.Modules.BatchBalances.Domain.Entities
         public BatchMovementType MovementType { get; set; }
         public int SignedCount { get; set; }
         public decimal SignedBiomassGram { get; set; }
+        public decimal? ReportedBiomassGram { get; set; }
         public decimal? FeedGram { get; set; }
         public long? ActorUserId { get; set; }
         public string ReferenceTable { get; set; } = string.Empty;

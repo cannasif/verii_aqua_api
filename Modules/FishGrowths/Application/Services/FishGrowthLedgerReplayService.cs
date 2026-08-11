@@ -35,6 +35,10 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
                 _localizationService.GetLocalizedString("FishGrowthService.FishBatchNotFound"));
 
         var synchronization = new LedgerSynchronizationResult();
+        var normalizedOpeningHistory = await NormalizeOpeningImportHistoryAsync(
+            fishBatchId,
+            projectCageId,
+            userId);
         await SynchronizeShipmentMovementsAsync(
             fishBatch,
             projectCageId,
@@ -50,10 +54,15 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
             projectCageId,
             userId);
 
-        if (!synchronization.HasBalanceMovementChanges)
+        if (!synchronization.HasBalanceMovementChanges && !normalizedOpeningHistory)
         {
             await _unitOfWork.SaveChangesAsync();
             return;
+        }
+
+        if (normalizedOpeningHistory)
+        {
+            synchronization.TouchedCageIds.Add(projectCageId);
         }
 
         foreach (var cageDelta in synchronization.CageDeltas)
@@ -93,6 +102,59 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         await _unitOfWork.SaveChangesAsync();
         await UpdateFishBatchAverageAsync(fishBatchId, userId);
         await _unitOfWork.SaveChangesAsync();
+    }
+
+    private async Task<bool> NormalizeOpeningImportHistoryAsync(
+        long fishBatchId,
+        long projectCageId,
+        long? userId)
+    {
+        var movements = await _unitOfWork.Db.BatchMovements
+            .Where(x =>
+                !x.IsDeleted
+                && x.FishBatchId == fishBatchId
+                && x.ProjectCageId == projectCageId)
+            .ToListAsync();
+        var historicalExits = movements
+            .Where(BatchReportMassCalculator.IsOpeningImportHistoricalExit)
+            .ToList();
+        if (historicalExits.Count == 0)
+        {
+            return false;
+        }
+
+        var inventoryDeltas = BatchReportMassCalculator.CalculateMovementBiomassDeltas(movements);
+        var now = DateTimeProvider.UtcNow;
+        var changed = false;
+        foreach (var movement in historicalExits)
+        {
+            if (!inventoryDeltas.TryGetValue(movement.Id, out var inventoryBiomassDelta))
+            {
+                continue;
+            }
+
+            var inventoryAverageGram = movement.SignedCount != 0
+                ? RoundAverage(Math.Abs(inventoryBiomassDelta / movement.SignedCount))
+                : 0m;
+            var reportedBiomassGram = movement.ReportedBiomassGram
+                ?? movement.SignedBiomassGram;
+            if (movement.SignedBiomassGram == inventoryBiomassDelta
+                && movement.ReportedBiomassGram == reportedBiomassGram
+                && movement.FromAverageGram == inventoryAverageGram)
+            {
+                continue;
+            }
+
+            movement.ReportedBiomassGram = reportedBiomassGram;
+            movement.SignedBiomassGram = inventoryBiomassDelta;
+            movement.FromAverageGram = inventoryAverageGram;
+            movement.ToAverageGram = inventoryAverageGram;
+            movement.UpdatedBy = userId;
+            movement.UpdatedDate = now;
+            changed = true;
+        }
+
+        return changed;
     }
 
     public async Task<FishGrowthLedgerState> GetStateBeforeAsync(
@@ -317,6 +379,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         foreach (var line in lines)
         {
             var shipment = line.Shipment!;
+            var isOpeningImport = IsOpeningImportShipmentLine(line);
             var cageMovements = FindShipmentMovements(
                 movements,
                 line,
@@ -325,6 +388,14 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
                 null,
                 -line.FishCount,
                 usedCageMovementIds);
+            var inventoryAverageGram = isOpeningImport
+                ? cageMovements
+                    .Select(x => x.FromAverageGram)
+                    .FirstOrDefault(x => x is > 0m)
+                    ?? await ResolveOpeningImportAverageGramAsync(fishBatch.Id, projectCageId)
+                : line.AverageGram;
+            var sourceSignedBiomassGram = RoundBiomass(-line.FishCount * inventoryAverageGram);
+            decimal? sourceReportedBiomassGram = isOpeningImport ? -line.BiomassGram : null;
             if (cageMovements.Count == 0)
             {
                 var movement = CreateShipmentMovement(
@@ -334,7 +405,9 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
                     projectCageId,
                     null,
                     -line.FishCount,
-                    -line.BiomassGram,
+                    sourceSignedBiomassGram,
+                    inventoryAverageGram,
+                    sourceReportedBiomassGram,
                     userId);
                 await _unitOfWork.Db.BatchMovements.AddAsync(movement);
                 synchronization.RegisterMovementReplacement(
@@ -356,7 +429,9 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
                     projectCageId,
                     null,
                     -line.FishCount,
-                    -line.BiomassGram,
+                    sourceSignedBiomassGram,
+                    inventoryAverageGram,
+                    sourceReportedBiomassGram,
                     userId,
                     synchronization);
             }
@@ -383,7 +458,9 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
                     null,
                     shipment.TargetWarehouseId,
                     line.FishCount,
-                    line.BiomassGram,
+                    -sourceSignedBiomassGram,
+                    inventoryAverageGram,
+                    isOpeningImport ? line.BiomassGram : null,
                     userId);
                 await _unitOfWork.Db.BatchMovements.AddAsync(movement);
                 synchronization.RegisterMovementReplacement(
@@ -405,7 +482,9 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
                     null,
                     shipment.TargetWarehouseId,
                     line.FishCount,
-                    line.BiomassGram,
+                    -sourceSignedBiomassGram,
+                    inventoryAverageGram,
+                    isOpeningImport ? line.BiomassGram : null,
                     userId,
                     synchronization);
             }
@@ -726,6 +805,8 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         long? warehouseId,
         int signedCount,
         decimal signedBiomassGram,
+        decimal inventoryAverageGram,
+        decimal? reportedBiomassGram,
         long? userId)
     {
         var isCageExit = projectCageId.HasValue;
@@ -738,12 +819,13 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
             ToWarehouseId = warehouseId,
             FromStockId = fishBatch.FishStockId,
             ToStockId = fishBatch.FishStockId,
-            FromAverageGram = isCageExit ? line.AverageGram : null,
-            ToAverageGram = isCageExit ? null : line.AverageGram,
+            FromAverageGram = isCageExit ? inventoryAverageGram : null,
+            ToAverageGram = inventoryAverageGram,
             MovementDate = shipment.ShipmentDate,
             MovementType = BatchMovementType.Shipment,
             SignedCount = signedCount,
             SignedBiomassGram = signedBiomassGram,
+            ReportedBiomassGram = reportedBiomassGram,
             ActorUserId = userId,
             ReferenceTable = ShipmentLineReferenceTable,
             ReferenceId = line.Id,
@@ -761,6 +843,8 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         long? warehouseId,
         int expectedSignedCount,
         decimal expectedSignedBiomassGram,
+        decimal inventoryAverageGram,
+        decimal? reportedBiomassGram,
         long? userId,
         LedgerSynchronizationResult synchronization)
     {
@@ -782,6 +866,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
             movement.ReferenceTable = ShipmentLineReferenceTable;
             movement.ReferenceId = line.Id;
             movement.ActorUserId = userId;
+            movement.ReportedBiomassGram = null;
             movement.UpdatedBy = userId;
             movement.UpdatedDate = now;
 
@@ -807,8 +892,9 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         primaryMovement.SignedCount += countDelta;
         primaryMovement.SignedBiomassGram = RoundBiomass(
             primaryMovement.SignedBiomassGram + biomassDelta);
-        primaryMovement.FromAverageGram = projectCageId.HasValue ? line.AverageGram : null;
-        primaryMovement.ToAverageGram = warehouseId.HasValue ? line.AverageGram : null;
+        primaryMovement.FromAverageGram = projectCageId.HasValue ? inventoryAverageGram : null;
+        primaryMovement.ToAverageGram = inventoryAverageGram;
+        primaryMovement.ReportedBiomassGram = reportedBiomassGram;
 
         synchronization.RegisterMovementReplacement(
             primaryMovement.ProjectCageId,
@@ -820,6 +906,45 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
             primaryMovement.SignedCount,
             primaryMovement.SignedBiomassGram);
     }
+
+    private async Task<decimal> ResolveOpeningImportAverageGramAsync(
+        long fishBatchId,
+        long projectCageId)
+    {
+        var openingMovements = await _unitOfWork.Db.BatchMovements
+            .AsNoTracking()
+            .Where(x =>
+                !x.IsDeleted
+                && x.FishBatchId == fishBatchId
+                && x.ProjectCageId == projectCageId
+                && x.MovementType == BatchMovementType.OpeningImport
+                && x.SignedCount > 0)
+            .Select(x => new { x.SignedCount, x.SignedBiomassGram })
+            .ToListAsync();
+        var openingCount = openingMovements.Sum(x => (long)x.SignedCount);
+        var openingBiomassGram = openingMovements.Sum(x => x.SignedBiomassGram);
+        if (openingCount > 0 && openingBiomassGram > 0m)
+        {
+            return CalculateAverageGram(openingCount, openingBiomassGram);
+        }
+
+        var balance = await _unitOfWork.Db.BatchCageBalances
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x =>
+                !x.IsDeleted
+                && x.FishBatchId == fishBatchId
+                && x.ProjectCageId == projectCageId);
+        if (balance?.AverageGram is > 0m)
+        {
+            return RoundAverage(balance.AverageGram);
+        }
+
+        throw new InvalidOperationException(
+            _localizationService.GetLocalizedString("FishGrowthService.ActiveBalanceNotFound"));
+    }
+
+    private static bool IsOpeningImportShipmentLine(ShipmentLine line) =>
+        line.ErpSourceMovementKey?.StartsWith("OPENING_IMPORT:", StringComparison.OrdinalIgnoreCase) == true;
 
     private static bool ReferenceTableEquals(string left, string right) =>
         string.Equals(
@@ -892,6 +1017,11 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
     {
         EnsureLiveState(fishCount, biomassGram);
         var averageGram = CalculateAverageGram(fishCount, biomassGram);
+        if (BatchReportMassCalculator.IsOpeningImportHistoricalExit(movement)
+            && !movement.ReportedBiomassGram.HasValue)
+        {
+            movement.ReportedBiomassGram = movement.SignedBiomassGram;
+        }
         var biomassDelta = RoundBiomass(movement.SignedCount * averageGram);
         var nextCount = fishCount + movement.SignedCount;
         var nextBiomass = biomassGram + biomassDelta;
@@ -967,13 +1097,16 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         var lines = await lineQuery.ToListAsync();
         foreach (var line in lines)
         {
-            line.AverageGram = sourceAverageGram;
-            line.BiomassGram = BatchMath.CalculateBiomassGram(
-                line.FishCount,
-                sourceAverageGram);
-            ApplyShipmentPricing(line);
-            line.UpdatedBy = userId;
-            line.UpdatedDate = DateTimeProvider.UtcNow;
+            if (!movement.ReportedBiomassGram.HasValue)
+            {
+                line.AverageGram = sourceAverageGram;
+                line.BiomassGram = BatchMath.CalculateBiomassGram(
+                    line.FishCount,
+                    sourceAverageGram);
+                ApplyShipmentPricing(line);
+                line.UpdatedBy = userId;
+                line.UpdatedDate = DateTimeProvider.UtcNow;
+            }
 
             if (!line.Shipment!.TargetWarehouseId.HasValue)
             {
