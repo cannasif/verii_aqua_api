@@ -272,6 +272,120 @@ public sealed class OpeningImportShipmentLedgerIntegrationTests
     }
 
     [Fact]
+    public async Task Commit_WithoutOpeningStock_DerivesGrossReceiptThenAppliesHistoricalExitsOnce()
+    {
+        const string projectCode = "PRJ-DERIVED-OPENING-GROSS";
+        const string cageCode = "CAGE-DERIVED-OPENING-GROSS";
+        const string batchCode = "BATCH-DERIVED-OPENING-GROSS";
+        var request = new OpeningImportPreviewRequestDto
+        {
+            FileName = "derived-opening-gross.xlsx",
+            SourceSystem = "integration-test",
+            Sheets =
+            [
+                Sheet("Projects", new()
+                {
+                    ["projectCode"] = projectCode,
+                    ["projectName"] = "Derived Opening Gross Project",
+                    ["startDate"] = "2026-01-01",
+                }),
+                Sheet("Cages", new()
+                {
+                    ["projectCode"] = projectCode,
+                    ["cageCode"] = cageCode,
+                    ["cageName"] = "Derived Opening Gross Cage",
+                    ["assignedDate"] = "2026-01-01",
+                }),
+                Sheet("OpeningGoodsReceipts", new()
+                {
+                    ["projectCode"] = projectCode,
+                    ["cageCode"] = cageCode,
+                    ["receiptNo"] = "DERIVED-OPENING-REC-001",
+                    ["receiptDate"] = "2026-01-01",
+                    ["batchCode"] = batchCode,
+                    ["fishStockCode"] = "PLAMUT-5G",
+                    ["fishCount"] = "1000",
+                    ["averageGram"] = "800",
+                }),
+                Sheet("OpeningMortality", new()
+                {
+                    ["projectCode"] = projectCode,
+                    ["cageCode"] = cageCode,
+                    ["batchCode"] = batchCode,
+                    ["fishStockCode"] = "PLAMUT-5G",
+                    ["deadCount"] = "100",
+                    ["mortalityBiomassKg"] = "80",
+                    ["mortalityDate"] = "2026-02-01",
+                }),
+                Sheet("OpeningShipments", new()
+                {
+                    ["projectCode"] = projectCode,
+                    ["cageCode"] = cageCode,
+                    ["batchCode"] = batchCode,
+                    ["fishStockCode"] = "PLAMUT-5G",
+                    ["shipmentDate"] = "2026-03-01",
+                    ["fishCount"] = "200",
+                    ["averageGram"] = "800",
+                    ["currencyCode"] = "TRY",
+                    ["exchangeRate"] = "1",
+                    ["unitPrice"] = "50",
+                }),
+            ]
+        };
+
+        long jobId;
+        using (var previewScope = _factory.Services.CreateScope())
+        {
+            var service = previewScope.ServiceProvider.GetRequiredService<IOpeningImportService>();
+            var preview = await service.PreviewAsync(request);
+            Assert.True(preview.Success, $"{preview.Message} | {preview.ExceptionMessage}");
+            Assert.Equal(0, preview.Data!.Summary.ErrorRows);
+            jobId = preview.Data.JobId;
+        }
+
+        using (var commitScope = _factory.Services.CreateScope())
+        {
+            var service = commitScope.ServiceProvider.GetRequiredService<IOpeningImportService>();
+            var commit = await service.CommitAsync(jobId);
+            Assert.True(commit.Success, $"{commit.Message} | {commit.ExceptionMessage}");
+        }
+
+        using var verifyScope = _factory.Services.CreateScope();
+        var db = verifyScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+        var project = await db.Projects.SingleAsync(x => x.ProjectCode == projectCode);
+        var projectCage = await db.ProjectCages
+            .Include(x => x.Cage)
+            .SingleAsync(x => x.ProjectId == project.Id && x.Cage!.CageCode == cageCode);
+        var batch = await db.FishBatches
+            .SingleAsync(x => x.ProjectId == project.Id && x.BatchCode == batchCode);
+        var balance = await db.BatchCageBalances
+            .SingleAsync(x => x.ProjectCageId == projectCage.Id && x.FishBatchId == batch.Id);
+
+        Assert.Equal(700, balance.LiveCount);
+        Assert.Equal(800m, balance.AverageGram);
+        Assert.Equal(560_000m, balance.BiomassGram);
+
+        var devirService = verifyScope.ServiceProvider.GetRequiredService<IDevirFcrReportService>();
+        var devir = await devirService.GetReportAsync(new DevirFcrReportRequestDto
+        {
+            ProjectIds = [project.Id],
+            FromDate = new DateTime(2026, 1, 1),
+            ToDate = new DateTime(2026, 3, 31),
+        });
+        Assert.True(devir.Success, $"{devir.Message} | {devir.ExceptionMessage}");
+        var row = Assert.Single(devir.Data!.Rows);
+        Assert.Equal(1_000, row.OpeningFishCount);
+        Assert.Equal(200, row.ShipmentFishCount);
+        Assert.Equal(100, row.MortalityFishCount);
+        Assert.Equal(700, row.EndingFishCount);
+        Assert.Equal(800m, row.EndingAverageGram);
+        Assert.Equal(560m, row.EndingBiomassKg);
+        Assert.Equal(160m, row.ShippedBiomassKg);
+        Assert.Equal(40m, row.MortalityBiomassKg);
+        Assert.Equal(760m, row.ProducedBiomassKg);
+    }
+
+    [Fact]
     public async Task Commit_ProductionScaleOpeningHistory_PreservesOpeningGramAndRemainingStockMass()
     {
         const string projectCode = "PRJ-OPEN-HISTORY-MASS";

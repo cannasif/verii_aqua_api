@@ -1544,10 +1544,6 @@ public class OpeningImportService : IOpeningImportService
                 .Where(x => IsSheet(x.SheetName, "OpeningGoodsReceipts") && (x.Status == OpeningImportRowStatus.Valid || x.Status == OpeningImportRowStatus.Warning))
                 .Select(ParseRow)
                 .ToList();
-            var mortalityRows = rows
-                .Where(x => IsSheet(x.SheetName, "OpeningMortality") && (x.Status == OpeningImportRowStatus.Valid || x.Status == OpeningImportRowStatus.Warning))
-                .Select(ParseRow)
-                .ToList();
 
             var aggregates = new Dictionary<string, (Dictionary<string, string?> Row, int FishCount)>(StringComparer.OrdinalIgnoreCase);
 
@@ -1575,28 +1571,6 @@ public class OpeningImportService : IOpeningImportService
                 {
                     aggregates[key] = (aggregate.Row, aggregate.FishCount + fishCount);
                 }
-            }
-
-            foreach (var row in mortalityRows)
-            {
-                var key = CreateBalanceKey(row);
-                if (key == null || explicitRows.Contains(key))
-                {
-                    continue;
-                }
-
-                var deadCount = ParseIntOrDefault(row.TryGetValue("deadCount", out var deadCountValue) ? deadCountValue : null, 0);
-                if (deadCount <= 0)
-                {
-                    continue;
-                }
-
-                if (!aggregates.TryGetValue(key, out var aggregate))
-                {
-                    continue;
-                }
-
-                aggregates[key] = (aggregate.Row, Math.Max(0, aggregate.FishCount - deadCount));
             }
 
             return aggregates
