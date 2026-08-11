@@ -122,6 +122,11 @@ namespace aqua_api.Modules.Feedings.Application.Services
         {
             try
             {
+                if (dto.FeedGram <= 0)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingLineService.PositiveValuesRequired"));
+                }
+
                 var feedingLine = await _unitOfWork.FeedingLines
                     .Query(tracking: true)
                     .Include(x => x.Feeding)
@@ -136,6 +141,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 }
 
                 EnsureFeedingCanBeChanged(feedingLine.Feeding);
+                await _unitOfWork.BeginTransactionAsync();
 
                 var entity = await _unitOfWork.FeedingDistributions
                     .Query(tracking: true)
@@ -167,11 +173,16 @@ namespace aqua_api.Modules.Feedings.Application.Services
                     await AddOrUpdateFeedingMovementAsync(entity, feedingLine);
                 }
 
+                await SynchronizeFeedingLineTotalsAsync(entity.FeedingLineId);
+                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
+
                 var result = MapFeedingDistribution(entity);
                 return ApiResponse<FeedingDistributionDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingDistributionService.OperationSuccessful"));
             }
             catch (InvalidOperationException ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 return ApiResponse<FeedingDistributionDto>.ErrorResult(
                     ex.Message,
                     ex.Message,
@@ -179,6 +190,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
             }
             catch (Exception ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 return ApiResponse<FeedingDistributionDto>.ErrorResult(
                     _localizationService.GetLocalizedString("FeedingDistributionService.InternalServerError"),
                     ex.Message,
@@ -190,6 +202,11 @@ namespace aqua_api.Modules.Feedings.Application.Services
         {
             try
             {
+                if (dto.FeedGram <= 0)
+                {
+                    throw new InvalidOperationException(_localizationService.GetLocalizedString("FeedingLineService.PositiveValuesRequired"));
+                }
+
                 var entity = await _unitOfWork.FeedingDistributions
                     .Query(tracking: true)
                     .Include(x => x.FeedingLine)
@@ -205,16 +222,21 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 }
 
                 EnsureFeedingCanBeChanged(entity.FeedingLine?.Feeding);
+                await _unitOfWork.BeginTransactionAsync();
 
                 _mapper.Map(dto, entity);
                 await _unitOfWork.FeedingDistributions.UpdateAsync(entity);
+                await AddOrUpdateFeedingMovementAsync(entity, entity.FeedingLine!);
+                await SynchronizeFeedingLineTotalsAsync(entity.FeedingLineId);
                 await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
 
                 var result = MapFeedingDistribution(entity);
                 return ApiResponse<FeedingDistributionDto>.SuccessResult(result, _localizationService.GetLocalizedString("FeedingDistributionService.OperationSuccessful"));
             }
             catch (InvalidOperationException ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 return ApiResponse<FeedingDistributionDto>.ErrorResult(
                     ex.Message,
                     ex.Message,
@@ -222,6 +244,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
             }
             catch (Exception ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 return ApiResponse<FeedingDistributionDto>.ErrorResult(
                     _localizationService.GetLocalizedString("FeedingDistributionService.InternalServerError"),
                     ex.Message,
@@ -249,6 +272,21 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 }
 
                 EnsureFeedingCanBeChanged(entity.FeedingLine?.Feeding);
+                await _unitOfWork.BeginTransactionAsync();
+
+                var movementIds = await _unitOfWork.Db.BatchMovements
+                    .Where(x =>
+                        !x.IsDeleted &&
+                        x.ReferenceTable == "RII_FEEDING_DISTRIBUTION" &&
+                        x.ReferenceId == entity.Id &&
+                        x.MovementType == BatchMovementType.Feeding)
+                    .Select(x => x.Id)
+                    .ToListAsync();
+
+                foreach (var movementId in movementIds)
+                {
+                    await _unitOfWork.BatchMovements.SoftDeleteAsync(movementId);
+                }
 
                 var isDeleted = await repo.SoftDeleteAsync(id);
 
@@ -260,11 +298,28 @@ namespace aqua_api.Modules.Feedings.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                var hasOtherDistributions = await SynchronizeFeedingLineTotalsAsync(entity.FeedingLineId, id);
+                if (!hasOtherDistributions)
+                {
+                    await _unitOfWork.FeedingLines.SoftDeleteAsync(entity.FeedingLineId);
+
+                    var feedingId = entity.FeedingLine?.FeedingId ?? 0;
+                    var hasOtherLines = feedingId > 0 && await _unitOfWork.FeedingLines
+                        .Query()
+                        .AnyAsync(x => x.FeedingId == feedingId && x.Id != entity.FeedingLineId && !x.IsDeleted);
+                    if (feedingId > 0 && !hasOtherLines)
+                    {
+                        await _unitOfWork.Feedings.SoftDeleteAsync(feedingId);
+                    }
+                }
+
                 await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.CommitTransactionAsync();
                 return ApiResponse<bool>.SuccessResult(true, _localizationService.GetLocalizedString("FeedingDistributionService.OperationSuccessful"));
             }
             catch (InvalidOperationException ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 return ApiResponse<bool>.ErrorResult(
                     ex.Message,
                     ex.Message,
@@ -272,6 +327,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
             }
             catch (Exception ex)
             {
+                await _unitOfWork.RollbackTransactionAsync();
                 return ApiResponse<bool>.ErrorResult(
                     _localizationService.GetLocalizedString("FeedingDistributionService.InternalServerError"),
                     ex.Message,
@@ -304,6 +360,39 @@ namespace aqua_api.Modules.Feedings.Application.Services
             return dto;
         }
 
+        private async Task<bool> SynchronizeFeedingLineTotalsAsync(long feedingLineId, long? excludedDistributionId = null)
+        {
+            var feedGrams = await _unitOfWork.FeedingDistributions
+                .Query()
+                .Where(x =>
+                    x.FeedingLineId == feedingLineId &&
+                    !x.IsDeleted &&
+                    (!excludedDistributionId.HasValue || x.Id != excludedDistributionId.Value))
+                .Select(x => x.FeedGram)
+                .ToListAsync();
+            if (feedGrams.Count == 0)
+            {
+                return false;
+            }
+
+            var feedingLine = await _unitOfWork.FeedingLines.GetByIdForUpdateAsync(feedingLineId);
+            if (feedingLine == null)
+            {
+                return false;
+            }
+
+            feedingLine.TotalGram = Math.Round(feedGrams.Sum(), 3, MidpointRounding.AwayFromZero);
+            if (feedingLine.GramPerUnit <= 0)
+            {
+                feedingLine.GramPerUnit = 1m;
+            }
+            feedingLine.QtyUnit = Math.Round(
+                feedingLine.TotalGram / feedingLine.GramPerUnit,
+                3,
+                MidpointRounding.AwayFromZero);
+            return true;
+        }
+
         private async Task AddOrUpdateFeedingMovementAsync(FeedingDistribution entity, FeedingLine feedingLine)
         {
             var movement = await _unitOfWork.Db.BatchMovements
@@ -315,6 +404,9 @@ namespace aqua_api.Modules.Feedings.Application.Services
 
             if (movement != null)
             {
+                movement.FishBatchId = entity.FishBatchId;
+                movement.ProjectCageId = entity.ProjectCageId;
+                movement.MovementDate = feedingLine.Feeding?.FeedingDate ?? movement.MovementDate;
                 movement.FeedGram = entity.FeedGram;
                 movement.Note = $"FeedingDistribution | feedGram={entity.FeedGram}";
                 await _unitOfWork.SaveChangesAsync();

@@ -3,6 +3,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using aqua_api.Modules.Aqua.Domain.Enums;
+using aqua_api.Modules.KpiReport.Application.Dtos;
 using aqua_api.Shared.Common.Dtos;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 using Xunit;
@@ -278,6 +279,125 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
         Assert.Equal(10_000m, cageScopedLine.TotalGram);
         var cageScopedDistribution = Assert.Single(cageScopedDistributions);
         Assert.Equal(10_000m, cageScopedDistribution.FeedGram);
+
+        var updatedLine = await PutAsync<FeedingLineDto>(clientA, $"/api/aqua/FeedingLine/{cageScopedLine.Id}", new UpdateFeedingLineDto
+        {
+            FeedingId = cageScopedHeader.Id,
+            StockId = feedStockId,
+            QtyUnit = 14m,
+            GramPerUnit = 1000m,
+            TotalGram = 14_000m,
+        });
+        Assert.True(updatedLine.Success, $"{updatedLine.Message} | {updatedLine.ExceptionMessage}");
+
+        using (var updatedScope = _factory.Services.CreateScope())
+        {
+            var updatedDb = updatedScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var persistedLine = await updatedDb.FeedingLines.SingleAsync(x => x.Id == cageScopedLine.Id);
+            var persistedDistribution = await updatedDb.FeedingDistributions.SingleAsync(x => x.Id == cageScopedDistribution.Id);
+            var persistedMovement = await updatedDb.BatchMovements.SingleAsync(x =>
+                x.ReferenceTable == "RII_FEEDING_DISTRIBUTION" &&
+                x.ReferenceId == cageScopedDistribution.Id &&
+                x.MovementType == BatchMovementType.Feeding);
+
+            Assert.Equal(14m, persistedLine.QtyUnit);
+            Assert.Equal(14_000m, persistedLine.TotalGram);
+            Assert.Equal(14_000m, persistedDistribution.FeedGram);
+            Assert.Equal(14_000m, persistedMovement.FeedGram);
+        }
+
+        var cageScopedReportRequest = new DailyFeedingReportRequestDto
+        {
+            FromDate = cageScopedDate,
+            ToDate = cageScopedDate,
+            ProjectIds = [projectId],
+            ProjectCageIds = [projectCageId],
+        };
+        var dailyAfterLineUpdate = await PostAsync<DailyFeedingReportDto>(clientA, "/api/kpi-report/daily-feedings", cageScopedReportRequest);
+        var monthlyAfterLineUpdate = await PostAsync<MonthlyOperationalReportDto>(clientA, "/api/kpi-report/monthly-feedings", cageScopedReportRequest);
+        Assert.Equal(14m, dailyAfterLineUpdate.Data!.TotalFeedKg);
+        Assert.Equal(14m, monthlyAfterLineUpdate.Data!.TotalKg);
+
+        var invalidLineUpdate = await PutAsync<FeedingLineDto>(clientA, $"/api/aqua/FeedingLine/{cageScopedLine.Id}", new UpdateFeedingLineDto
+        {
+            FeedingId = cageScopedHeader.Id,
+            StockId = feedStockId,
+            QtyUnit = 0m,
+            GramPerUnit = 1000m,
+            TotalGram = 0m,
+        });
+        Assert.False(invalidLineUpdate.Success);
+        Assert.Equal(400, invalidLineUpdate.StatusCode);
+
+        var deletedLine = await DeleteAsync<bool>(clientA, $"/api/aqua/FeedingLine/{cageScopedLine.Id}");
+        Assert.True(deletedLine.Success, $"{deletedLine.Message} | {deletedLine.ExceptionMessage}");
+
+        using (var deletedScope = _factory.Services.CreateScope())
+        {
+            var deletedDb = deletedScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            Assert.True((await deletedDb.FeedingLines.IgnoreQueryFilters().SingleAsync(x => x.Id == cageScopedLine.Id)).IsDeleted);
+            Assert.True((await deletedDb.FeedingDistributions.IgnoreQueryFilters().SingleAsync(x => x.Id == cageScopedDistribution.Id)).IsDeleted);
+            Assert.True((await deletedDb.BatchMovements.IgnoreQueryFilters().SingleAsync(x =>
+                x.ReferenceTable == "RII_FEEDING_DISTRIBUTION" &&
+                x.ReferenceId == cageScopedDistribution.Id &&
+                x.MovementType == BatchMovementType.Feeding)).IsDeleted);
+            Assert.True((await deletedDb.Feedings.IgnoreQueryFilters().SingleAsync(x => x.Id == cageScopedHeader.Id)).IsDeleted);
+        }
+
+        var dailyAfterLineDelete = await PostAsync<DailyFeedingReportDto>(clientA, "/api/kpi-report/daily-feedings", cageScopedReportRequest);
+        Assert.Equal(0m, dailyAfterLineDelete.Data!.TotalFeedKg);
+
+        var recreatedLine = await PostAsync<FeedingLineDto>(clientA, "/api/aqua/FeedingLine/auto-header", new CreateFeedingLineWithAutoHeaderDto
+        {
+            ProjectId = projectId,
+            ProjectCageId = projectCageId,
+            FeedingDate = cageScopedDate,
+            FeedingSlot = FeedingSlot.Morning,
+            StockId = feedStockId,
+            QtyUnit = 9m,
+            GramPerUnit = 1000m,
+            TotalGram = 9_000m,
+        });
+        Assert.True(recreatedLine.Success, $"{recreatedLine.Message} | {recreatedLine.ExceptionMessage}");
+
+        long recreatedDistributionId;
+        using (var recreatedScope = _factory.Services.CreateScope())
+        {
+            var recreatedDb = recreatedScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            recreatedDistributionId = await recreatedDb.FeedingDistributions
+                .Where(x => x.FeedingLineId == recreatedLine.Data!.Id && x.ProjectCageId == projectCageId)
+                .Select(x => x.Id)
+                .SingleAsync();
+        }
+
+        var updatedDistribution = await PutAsync<FeedingDistributionDto>(clientA, $"/api/aqua/FeedingDistribution/{recreatedDistributionId}", new UpdateFeedingDistributionDto
+        {
+            FeedingLineId = recreatedLine.Data!.Id,
+            FishBatchId = cageScopedDistribution.FishBatchId,
+            ProjectCageId = projectCageId,
+            FeedGram = 11_000m,
+        });
+        Assert.True(updatedDistribution.Success, $"{updatedDistribution.Message} | {updatedDistribution.ExceptionMessage}");
+
+        var dailyAfterDistributionUpdate = await PostAsync<DailyFeedingReportDto>(clientA, "/api/kpi-report/daily-feedings", cageScopedReportRequest);
+        Assert.Equal(11m, dailyAfterDistributionUpdate.Data!.TotalFeedKg);
+        using (var distributionUpdateScope = _factory.Services.CreateScope())
+        {
+            var distributionUpdateDb = distributionUpdateScope.ServiceProvider.GetRequiredService<AquaDbContext>();
+            var synchronizedLine = await distributionUpdateDb.FeedingLines.SingleAsync(x => x.Id == recreatedLine.Data!.Id);
+            var synchronizedMovement = await distributionUpdateDb.BatchMovements.SingleAsync(x =>
+                x.ReferenceTable == "RII_FEEDING_DISTRIBUTION" &&
+                x.ReferenceId == recreatedDistributionId &&
+                x.MovementType == BatchMovementType.Feeding);
+            Assert.Equal(11m, synchronizedLine.QtyUnit);
+            Assert.Equal(11_000m, synchronizedLine.TotalGram);
+            Assert.Equal(11_000m, synchronizedMovement.FeedGram);
+        }
+
+        var deletedDistribution = await DeleteAsync<bool>(clientA, $"/api/aqua/FeedingDistribution/{recreatedDistributionId}");
+        Assert.True(deletedDistribution.Success, $"{deletedDistribution.Message} | {deletedDistribution.ExceptionMessage}");
+        var dailyAfterDistributionDelete = await PostAsync<DailyFeedingReportDto>(clientA, "/api/kpi-report/daily-feedings", cageScopedReportRequest);
+        Assert.Equal(0m, dailyAfterDistributionDelete.Data!.TotalFeedKg);
     }
 
     [Fact]
@@ -679,6 +799,22 @@ public sealed class AquaConcurrencyTests : IClassFixture<AquaConcurrencyHttpTest
     private static async Task<ApiResponse<T>> PostAsync<T>(HttpClient client, string url, object payload)
     {
         using var response = await client.PostAsJsonAsync(url, payload);
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse<T>>(JsonOptions);
+        Assert.NotNull(body);
+        return body!;
+    }
+
+    private static async Task<ApiResponse<T>> PutAsync<T>(HttpClient client, string url, object payload)
+    {
+        using var response = await client.PutAsJsonAsync(url, payload);
+        var body = await response.Content.ReadFromJsonAsync<ApiResponse<T>>(JsonOptions);
+        Assert.NotNull(body);
+        return body!;
+    }
+
+    private static async Task<ApiResponse<T>> DeleteAsync<T>(HttpClient client, string url)
+    {
+        using var response = await client.DeleteAsync(url);
         var body = await response.Content.ReadFromJsonAsync<ApiResponse<T>>(JsonOptions);
         Assert.NotNull(body);
         return body!;
