@@ -21,9 +21,11 @@ public interface IBudgetPlanningService
     Task<ApiResponse<List<BudgetPlanExchangeRateDto>>> GetExchangeRatesAsync(long budgetPlanId);
     Task<ApiResponse<List<BudgetPlanExchangeRateDto>>> GenerateExchangeRatesAsync(long budgetPlanId, GenerateBudgetPlanExchangeRatesDto dto);
     Task<ApiResponse<BudgetPlanExchangeRateDto>> UpsertExchangeRateAsync(long budgetPlanId, UpsertBudgetPlanExchangeRateDto dto);
+    Task<ApiResponse<BudgetPlanImportResultDto<BudgetPlanExchangeRateDto>>> ImportExchangeRatesAsync(long budgetPlanId, ImportBudgetPlanExchangeRatesDto dto);
     Task<ApiResponse<List<BudgetPlanFishPriceDto>>> GetFishPricesAsync(long budgetPlanId);
     Task<ApiResponse<List<BudgetPlanFishPriceDto>>> GenerateFishPricesAsync(long budgetPlanId, GenerateBudgetPlanFishPricesDto dto);
     Task<ApiResponse<BudgetPlanFishPriceDto>> UpsertFishPriceAsync(long budgetPlanId, UpsertBudgetPlanFishPriceDto dto);
+    Task<ApiResponse<BudgetPlanImportResultDto<BudgetPlanFishPriceDto>>> ImportFishPricesAsync(long budgetPlanId, ImportBudgetPlanFishPricesDto dto);
     Task<ApiResponse<List<BudgetPlanMonthlyProjectionDto>>> CalculateGrowthAsync(long budgetPlanId);
     Task<ApiResponse<List<BudgetPlanMonthlyProjectionDto>>> CalculateAsync(long budgetPlanId);
     Task<ApiResponse<List<BudgetPlanMonthlyProjectionDto>>> GetProjectionsAsync(long budgetPlanId);

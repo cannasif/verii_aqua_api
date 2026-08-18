@@ -1095,14 +1095,10 @@ public class BudgetPlanningService : IBudgetPlanningService
 
     public async Task<ApiResponse<BudgetPlanExchangeRateDto>> UpsertExchangeRateAsync(long budgetPlanId, UpsertBudgetPlanExchangeRateDto dto)
     {
-        if (!IsValidMonth(dto.Month) || dto.Year < 2000 || dto.Year > 2100)
+        var valueError = ValidateExchangeRateValues<BudgetPlanExchangeRateDto>(dto);
+        if (valueError != null)
         {
-            return ApiResponse<BudgetPlanExchangeRateDto>.ErrorResult("Kur donemi hatali.", "Kur donemi hatali.", StatusCodes.Status400BadRequest);
-        }
-
-        if (dto.ExchangeRate < 0)
-        {
-            return ApiResponse<BudgetPlanExchangeRateDto>.ErrorResult("Kur negatif olamaz.", "Kur negatif olamaz.", StatusCodes.Status400BadRequest);
+            return valueError;
         }
 
         var plan = await _unitOfWork.Db.BudgetPlans
@@ -1113,19 +1109,12 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<BudgetPlanExchangeRateDto>.ErrorResult("Butce plani bulunamadi.", "Butce plani bulunamadi.", StatusCodes.Status404NotFound);
         }
 
-        var periodKey = dto.Year * 12 + dto.Month;
-        if (periodKey < plan.StartYear * 12 + plan.StartMonth || periodKey > plan.EndYear * 12 + plan.EndMonth)
+        var planError = ValidateExchangeRateAgainstPlan<BudgetPlanExchangeRateDto>(plan, dto, out var currencyCode, out var rateType);
+        if (planError != null)
         {
-            return ApiResponse<BudgetPlanExchangeRateDto>.ErrorResult("Kur donemi butce tarih araligi disinda olamaz.", "Kur donemi butce tarih araligi disinda olamaz.", StatusCodes.Status400BadRequest);
+            return planError;
         }
 
-        var currencyCode = NormalizeCurrencyCode(dto.CurrencyCode);
-        if (string.IsNullOrWhiteSpace(currencyCode))
-        {
-            return ApiResponse<BudgetPlanExchangeRateDto>.ErrorResult("Para birimi zorunludur.", "Para birimi zorunludur.", StatusCodes.Status400BadRequest);
-        }
-
-        var rateType = NormalizeRequired(dto.RateType, "Budget");
         var entity = await _unitOfWork.Db.BudgetPlanExchangeRates.FirstOrDefaultAsync(x =>
             x.BudgetPlanId == budgetPlanId &&
             x.Year == dto.Year &&
@@ -1140,18 +1129,139 @@ public class BudgetPlanningService : IBudgetPlanningService
             await _unitOfWork.Repository<BudgetPlanExchangeRate>().AddAsync(entity);
         }
 
-        entity.Year = dto.Year;
-        entity.Month = dto.Month;
-        entity.CurrencyCode = currencyCode;
-        entity.RateType = rateType;
-        entity.ExchangeRate = dto.ExchangeRate;
-        entity.SourceType = NormalizeRequired(dto.SourceType, "Manual");
-        entity.SourceReference = NormalizeOptional(dto.SourceReference);
-        entity.IsManualOverride = dto.IsManualOverride;
-        entity.Description = NormalizeOptional(dto.Description);
-
+        ApplyExchangeRateValues(entity, dto, currencyCode, rateType);
         await _unitOfWork.SaveChangesAsync();
         return ApiResponse<BudgetPlanExchangeRateDto>.SuccessResult(MapExchangeRate(entity), "Kur kaydedildi.");
+    }
+
+    public async Task<ApiResponse<BudgetPlanImportResultDto<BudgetPlanExchangeRateDto>>> ImportExchangeRatesAsync(
+        long budgetPlanId,
+        ImportBudgetPlanExchangeRatesDto dto)
+    {
+        dto ??= new ImportBudgetPlanExchangeRatesDto();
+        if (dto.Lines.Count == 0)
+        {
+            return ApiResponse<BudgetPlanImportResultDto<BudgetPlanExchangeRateDto>>.ErrorResult(
+                "Excel dosyasında aktarılacak kur satırı bulunamadı.",
+                "Excel dosyasında aktarılacak kur satırı bulunamadı.",
+                StatusCodes.Status400BadRequest);
+        }
+
+        var duplicate = dto.Lines
+            .Select((line, index) => new
+            {
+                ExcelRowNumber = ResolveExcelRowNumber(line.ExcelRowNumber, index),
+                Key = new ExchangeRateKey(
+                    line.Year,
+                    line.Month,
+                    NormalizeCurrencyCode(line.CurrencyCode),
+                    NormalizeRequired(line.RateType, "Budget"))
+            })
+            .GroupBy(x => x.Key)
+            .FirstOrDefault(x => x.Count() > 1);
+        if (duplicate != null)
+        {
+            var excelRowNumber = duplicate.Skip(1).First().ExcelRowNumber;
+            return ExcelImportError<BudgetPlanExchangeRateDto>(
+                excelRowNumber,
+                $"Aynı kur anahtarı Excel içerisinde birden fazla kez yer alıyor: {duplicate.Key.Year}/{duplicate.Key.Month:00} {duplicate.Key.CurrencyCode} {duplicate.Key.RateType}.");
+        }
+
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            var plan = await _unitOfWork.Db.BudgetPlans
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == budgetPlanId && !x.IsDeleted);
+
+            var existingRows = await _unitOfWork.Db.BudgetPlanExchangeRates
+                .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
+                .ToListAsync();
+            var lookup = existingRows.ToDictionary(x => new ExchangeRateKey(
+                x.Year,
+                x.Month,
+                NormalizeCurrencyCode(x.CurrencyCode),
+                NormalizeRequired(x.RateType, "Budget")));
+
+            var processed = new List<BudgetPlanExchangeRate>(dto.Lines.Count);
+            var insertedCount = 0;
+            var updatedCount = 0;
+            for (var index = 0; index < dto.Lines.Count; index++)
+            {
+                var line = dto.Lines[index];
+                var excelRowNumber = ResolveExcelRowNumber(line.ExcelRowNumber, index);
+                var upsertDto = ToExchangeRateUpsert(line);
+
+                var valueError = ValidateExchangeRateValues<BudgetPlanExchangeRateDto>(upsertDto);
+                if (valueError != null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ExcelImportError<BudgetPlanExchangeRateDto>(
+                        excelRowNumber,
+                        valueError.Message,
+                        valueError.ExceptionMessage,
+                        valueError.StatusCode);
+                }
+
+                if (plan == null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ExcelImportError<BudgetPlanExchangeRateDto>(
+                        excelRowNumber,
+                        "Butce plani bulunamadi.",
+                        "Butce plani bulunamadi.",
+                        StatusCodes.Status404NotFound);
+                }
+
+                var planError = ValidateExchangeRateAgainstPlan<BudgetPlanExchangeRateDto>(
+                    plan,
+                    upsertDto,
+                    out var currencyCode,
+                    out var rateType);
+                if (planError != null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ExcelImportError<BudgetPlanExchangeRateDto>(
+                        excelRowNumber,
+                        planError.Message,
+                        planError.ExceptionMessage,
+                        planError.StatusCode);
+                }
+
+                var key = new ExchangeRateKey(upsertDto.Year, upsertDto.Month, currencyCode, rateType);
+                if (lookup.TryGetValue(key, out var entity))
+                {
+                    updatedCount++;
+                }
+                else
+                {
+                    entity = new BudgetPlanExchangeRate { BudgetPlanId = budgetPlanId };
+                    await _unitOfWork.Repository<BudgetPlanExchangeRate>().AddAsync(entity);
+                    lookup[key] = entity;
+                    insertedCount++;
+                }
+
+                ApplyExchangeRateValues(entity, upsertDto, currencyCode, rateType);
+                processed.Add(entity);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitTransactionAsync();
+            return ApiResponse<BudgetPlanImportResultDto<BudgetPlanExchangeRateDto>>.SuccessResult(
+                new BudgetPlanImportResultDto<BudgetPlanExchangeRateDto>
+                {
+                    InsertedCount = insertedCount,
+                    UpdatedCount = updatedCount,
+                    TotalCount = processed.Count,
+                    Items = processed.Select(MapExchangeRate).ToList()
+                },
+                $"{processed.Count} kur satırı Excel'den aktarıldı.");
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
     }
 
     public async Task<ApiResponse<List<BudgetPlanFishPriceDto>>> GetFishPricesAsync(long budgetPlanId)
@@ -1349,6 +1459,188 @@ public class BudgetPlanningService : IBudgetPlanningService
         var saved = await FishPriceQuery().FirstAsync(x => x.Id == entity.Id);
         var exchangeRate = await FindExchangeRateAsync(budgetPlanId, dto.Year, dto.Month, currencyCode);
         return ApiResponse<BudgetPlanFishPriceDto>.SuccessResult(MapFishPrice(saved, exchangeRate), "Balik fiyati kaydedildi.");
+    }
+
+    public async Task<ApiResponse<BudgetPlanImportResultDto<BudgetPlanFishPriceDto>>> ImportFishPricesAsync(
+        long budgetPlanId,
+        ImportBudgetPlanFishPricesDto dto)
+    {
+        dto ??= new ImportBudgetPlanFishPricesDto();
+        if (dto.Lines.Count == 0)
+        {
+            return ApiResponse<BudgetPlanImportResultDto<BudgetPlanFishPriceDto>>.ErrorResult(
+                "Excel dosyasında aktarılacak balık fiyatı satırı bulunamadı.",
+                "Excel dosyasında aktarılacak balık fiyatı satırı bulunamadı.",
+                StatusCodes.Status400BadRequest);
+        }
+
+        var duplicate = dto.Lines
+            .Select((line, index) => new
+            {
+                ExcelRowNumber = ResolveExcelRowNumber(line.ExcelRowNumber, index),
+                Key = new FishPriceKey(
+                    line.FishStockId,
+                    line.CalibrationDefinitionId,
+                    line.Year,
+                    line.Month,
+                    line.PriceType,
+                    line.MarketType,
+                    NormalizeCurrencyCode(line.CurrencyCode))
+            })
+            .GroupBy(x => x.Key)
+            .FirstOrDefault(x => x.Count() > 1);
+        if (duplicate != null)
+        {
+            var excelRowNumber = duplicate.Skip(1).First().ExcelRowNumber;
+            return ExcelImportError<BudgetPlanFishPriceDto>(
+                excelRowNumber,
+                $"Aynı balık fiyatı anahtarı Excel içerisinde birden fazla kez yer alıyor: {duplicate.Key.Year}/{duplicate.Key.Month:00}.");
+        }
+
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            var plan = await _unitOfWork.Db.BudgetPlans
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == budgetPlanId && !x.IsDeleted);
+
+            var calibrationIds = dto.Lines.Select(x => x.CalibrationDefinitionId).Where(x => x > 0).Distinct().ToList();
+            var existingCalibrationIds = calibrationIds.Count == 0
+                ? new HashSet<long>()
+                : (await _unitOfWork.Db.BudgetCalibrationDefinitions
+                    .AsNoTracking()
+                    .Where(x => calibrationIds.Contains(x.Id) && !x.IsDeleted)
+                    .Select(x => x.Id)
+                    .ToListAsync())
+                    .ToHashSet();
+
+            var stockIds = dto.Lines
+                .Where(x => x.FishStockId.HasValue)
+                .Select(x => x.FishStockId!.Value)
+                .Distinct()
+                .ToList();
+            var existingStockIds = stockIds.Count == 0
+                ? new HashSet<long>()
+                : (await _unitOfWork.Db.Stocks
+                    .AsNoTracking()
+                    .Where(x => stockIds.Contains(x.Id) && !x.IsDeleted)
+                    .Select(x => x.Id)
+                    .ToListAsync())
+                    .ToHashSet();
+
+            var existingRows = await _unitOfWork.Db.BudgetPlanFishPrices
+                .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
+                .ToListAsync();
+            var lookup = existingRows.ToDictionary(x => new FishPriceKey(
+                x.FishStockId,
+                x.CalibrationDefinitionId,
+                x.Year,
+                x.Month,
+                x.PriceType,
+                x.MarketType,
+                NormalizeCurrencyCode(x.CurrencyCode)));
+
+            var processed = new List<BudgetPlanFishPrice>(dto.Lines.Count);
+            var insertedCount = 0;
+            var updatedCount = 0;
+            for (var index = 0; index < dto.Lines.Count; index++)
+            {
+                var line = dto.Lines[index];
+                var excelRowNumber = ResolveExcelRowNumber(line.ExcelRowNumber, index);
+                var upsertDto = ToFishPriceUpsert(line);
+
+                var valueError = ValidateFishPriceValues<BudgetPlanFishPriceDto>(upsertDto, out var unitPrice, out var currencyCode);
+                if (valueError != null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ExcelImportError<BudgetPlanFishPriceDto>(
+                        excelRowNumber,
+                        valueError.Message,
+                        valueError.ExceptionMessage,
+                        valueError.StatusCode);
+                }
+
+                if (plan == null)
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ExcelImportError<BudgetPlanFishPriceDto>(
+                        excelRowNumber,
+                        "Butce plani bulunamadi.",
+                        "Butce plani bulunamadi.",
+                        StatusCodes.Status404NotFound);
+                }
+
+                if (!IsPeriodWithinPlan(plan, upsertDto.Year, upsertDto.Month))
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ExcelImportError<BudgetPlanFishPriceDto>(
+                        excelRowNumber,
+                        "Fiyat donemi butce tarih araligi disinda olamaz.",
+                        "Fiyat donemi butce tarih araligi disinda olamaz.",
+                        StatusCodes.Status400BadRequest);
+                }
+
+                if (!existingCalibrationIds.Contains(upsertDto.CalibrationDefinitionId))
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ExcelImportError<BudgetPlanFishPriceDto>(
+                        excelRowNumber,
+                        "Kalibre tanimi bulunamadi.",
+                        "Kalibre tanimi bulunamadi.",
+                        StatusCodes.Status404NotFound);
+                }
+
+                if (upsertDto.FishStockId.HasValue && !existingStockIds.Contains(upsertDto.FishStockId.Value))
+                {
+                    await _unitOfWork.RollbackTransactionAsync();
+                    return ExcelImportError<BudgetPlanFishPriceDto>(
+                        excelRowNumber,
+                        "Balik stogu bulunamadi.",
+                        "Balik stogu bulunamadi.",
+                        StatusCodes.Status404NotFound);
+                }
+
+                var key = new FishPriceKey(
+                    upsertDto.FishStockId,
+                    upsertDto.CalibrationDefinitionId,
+                    upsertDto.Year,
+                    upsertDto.Month,
+                    upsertDto.PriceType,
+                    upsertDto.MarketType,
+                    currencyCode);
+                if (lookup.TryGetValue(key, out var entity))
+                {
+                    updatedCount++;
+                }
+                else
+                {
+                    entity = new BudgetPlanFishPrice { BudgetPlanId = budgetPlanId };
+                    await _unitOfWork.Repository<BudgetPlanFishPrice>().AddAsync(entity);
+                    lookup[key] = entity;
+                    insertedCount++;
+                }
+
+                ApplyFishPriceValues(entity, upsertDto, unitPrice, currencyCode);
+                processed.Add(entity);
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitTransactionAsync();
+            return ApiResponse<BudgetPlanImportResultDto<BudgetPlanFishPriceDto>>.SuccessResult(
+                new BudgetPlanImportResultDto<BudgetPlanFishPriceDto>
+                {
+                    InsertedCount = insertedCount,
+                    UpdatedCount = updatedCount,
+                    TotalCount = processed.Count,
+                    Items = processed.Select(MapImportedFishPrice).ToList()
+                },
+                $"{processed.Count} balık fiyatı satırı Excel'den aktarıldı.");
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
     }
 
     public Task<ApiResponse<List<BudgetPlanMonthlyProjectionDto>>> CalculateGrowthAsync(long budgetPlanId)
@@ -3144,6 +3436,198 @@ public class BudgetPlanningService : IBudgetPlanningService
         return string.IsNullOrEmpty(normalized) ? fallback : normalized;
     }
 
+    private static int ResolveExcelRowNumber(int excelRowNumber, int index)
+    {
+        return excelRowNumber > 0 ? excelRowNumber : index + 2;
+    }
+
+    private static ApiResponse<BudgetPlanImportResultDto<T>> ExcelImportError<T>(
+        int excelRowNumber,
+        string reason,
+        string? exceptionMessage = null,
+        int statusCode = StatusCodes.Status400BadRequest)
+    {
+        var message = $"Excel {excelRowNumber}. satır: {reason}";
+        return ApiResponse<BudgetPlanImportResultDto<T>>.ErrorResult(
+            message,
+            string.IsNullOrWhiteSpace(exceptionMessage) ? message : exceptionMessage,
+            statusCode);
+    }
+
+    private static UpsertBudgetPlanFishPriceDto ToFishPriceUpsert(ImportBudgetPlanFishPriceLineDto line)
+    {
+        return new UpsertBudgetPlanFishPriceDto
+        {
+            FishStockId = line.FishStockId,
+            CalibrationDefinitionId = line.CalibrationDefinitionId,
+            Year = line.Year,
+            Month = line.Month,
+            PriceType = line.PriceType,
+            MarketType = line.MarketType,
+            CurrencyCode = line.CurrencyCode,
+            UnitPrice = line.UnitPrice,
+            IncreaseRatePercent = line.IncreaseRatePercent,
+            IncreasePeriodMonths = line.IncreasePeriodMonths,
+            Description = line.Description
+        };
+    }
+
+    private static ApiResponse<T>? ValidateFishPriceValues<T>(
+        UpsertBudgetPlanFishPriceDto dto,
+        out decimal unitPrice,
+        out string currencyCode)
+    {
+        unitPrice = ResolveUnitPrice(dto.UnitPrice, dto.UnitPriceEuro);
+        currencyCode = NormalizeCurrencyCode(dto.CurrencyCode);
+        if (!IsValidMonth(dto.Month) ||
+            unitPrice < 0 ||
+            dto.IncreaseRatePercent < 0 ||
+            dto.IncreasePeriodMonths < 1 ||
+            string.IsNullOrWhiteSpace(currencyCode) ||
+            !Enum.IsDefined(dto.PriceType) ||
+            !Enum.IsDefined(dto.MarketType))
+        {
+            return ApiResponse<T>.ErrorResult(
+                "Fiyat donemi veya tutari hatali.",
+                "Fiyat donemi veya tutari hatali.",
+                StatusCodes.Status400BadRequest);
+        }
+
+        return null;
+    }
+
+    private static void ApplyFishPriceValues(
+        BudgetPlanFishPrice entity,
+        UpsertBudgetPlanFishPriceDto dto,
+        decimal unitPrice,
+        string currencyCode)
+    {
+        entity.FishStockId = dto.FishStockId;
+        entity.CalibrationDefinitionId = dto.CalibrationDefinitionId;
+        entity.Year = dto.Year;
+        entity.Month = dto.Month;
+        entity.PriceType = dto.PriceType;
+        entity.MarketType = dto.MarketType;
+        entity.CurrencyCode = currencyCode;
+        entity.UnitPrice = unitPrice;
+        entity.IncreaseRatePercent = dto.IncreaseRatePercent;
+        entity.IncreasePeriodMonths = dto.IncreasePeriodMonths;
+        entity.Description = NormalizeOptional(dto.Description);
+    }
+
+    private static BudgetPlanFishPriceDto MapImportedFishPrice(BudgetPlanFishPrice entity)
+    {
+        var normalizedCurrency = NormalizeCurrencyCode(entity.CurrencyCode);
+        return new BudgetPlanFishPriceDto
+        {
+            Id = entity.Id,
+            BudgetPlanId = entity.BudgetPlanId,
+            FishStockId = entity.FishStockId,
+            CalibrationDefinitionId = entity.CalibrationDefinitionId,
+            Year = entity.Year,
+            Month = entity.Month,
+            PriceType = entity.PriceType,
+            MarketType = entity.MarketType,
+            CurrencyCode = normalizedCurrency,
+            CurrencyName = ResolveCurrencyName(normalizedCurrency),
+            UnitPrice = entity.UnitPrice,
+            UnitPriceEuro = normalizedCurrency == "EUR" ? entity.UnitPrice : null,
+            IncreaseRatePercent = entity.IncreaseRatePercent,
+            IncreasePeriodMonths = entity.IncreasePeriodMonths,
+            Description = entity.Description
+        };
+    }
+
+    private static ApiResponse<T>? ValidateExchangeRateValues<T>(UpsertBudgetPlanExchangeRateDto dto)
+    {
+        if (!IsValidMonth(dto.Month) || dto.Year < 2000 || dto.Year > 2100)
+        {
+            return ApiResponse<T>.ErrorResult("Kur donemi hatali.", "Kur donemi hatali.", StatusCodes.Status400BadRequest);
+        }
+
+        if (dto.ExchangeRate < 0)
+        {
+            return ApiResponse<T>.ErrorResult("Kur negatif olamaz.", "Kur negatif olamaz.", StatusCodes.Status400BadRequest);
+        }
+
+        return null;
+    }
+
+    private static ApiResponse<T>? ValidateExchangeRateAgainstPlan<T>(
+        BudgetPlan plan,
+        UpsertBudgetPlanExchangeRateDto dto,
+        out string currencyCode,
+        out string rateType)
+    {
+        currencyCode = string.Empty;
+        rateType = string.Empty;
+
+        var periodKey = dto.Year * 12 + dto.Month;
+        if (periodKey < plan.StartYear * 12 + plan.StartMonth || periodKey > plan.EndYear * 12 + plan.EndMonth)
+        {
+            return ApiResponse<T>.ErrorResult(
+                "Kur donemi butce tarih araligi disinda olamaz.",
+                "Kur donemi butce tarih araligi disinda olamaz.",
+                StatusCodes.Status400BadRequest);
+        }
+
+        currencyCode = NormalizeCurrencyCode(dto.CurrencyCode);
+        if (string.IsNullOrWhiteSpace(currencyCode))
+        {
+            return ApiResponse<T>.ErrorResult("Para birimi zorunludur.", "Para birimi zorunludur.", StatusCodes.Status400BadRequest);
+        }
+
+        if (currencyCode == "TRY" && dto.ExchangeRate != 1m)
+        {
+            return ApiResponse<T>.ErrorResult("TRY kuru yalnizca 1 olabilir.", "TRY kuru yalnizca 1 olabilir.", StatusCodes.Status400BadRequest);
+        }
+
+        rateType = NormalizeRequired(dto.RateType, "Budget");
+        return null;
+    }
+
+    private static void ApplyExchangeRateValues(
+        BudgetPlanExchangeRate entity,
+        UpsertBudgetPlanExchangeRateDto dto,
+        string currencyCode,
+        string rateType)
+    {
+        entity.Year = dto.Year;
+        entity.Month = dto.Month;
+        entity.CurrencyCode = currencyCode;
+        entity.RateType = rateType;
+        entity.ExchangeRate = dto.ExchangeRate;
+        entity.SourceType = NormalizeRequired(dto.SourceType, "Manual");
+        entity.SourceReference = NormalizeOptional(dto.SourceReference);
+        entity.IsManualOverride = dto.IsManualOverride;
+        entity.Description = NormalizeOptional(dto.Description);
+    }
+
+    private static UpsertBudgetPlanExchangeRateDto ToExchangeRateUpsert(ImportBudgetPlanExchangeRateLineDto line)
+    {
+        return new UpsertBudgetPlanExchangeRateDto
+        {
+            Year = line.Year,
+            Month = line.Month,
+            CurrencyCode = line.CurrencyCode,
+            RateType = line.RateType,
+            ExchangeRate = line.ExchangeRate,
+            SourceType = string.IsNullOrWhiteSpace(line.SourceType) ? "Manual" : line.SourceType,
+            SourceReference = line.SourceReference,
+            IsManualOverride = line.IsManualOverride,
+            Description = line.Description
+        };
+    }
+
+    private sealed record FishPriceKey(
+        long? FishStockId,
+        long CalibrationDefinitionId,
+        int Year,
+        int Month,
+        BudgetFishPriceType PriceType,
+        BudgetMarketType MarketType,
+        string CurrencyCode);
+    private sealed record ExchangeRateKey(int Year, int Month, string CurrencyCode, string RateType);
     private sealed record BalanceSeed(FishBatch FishBatch, int LiveCount, decimal AverageGram, decimal BiomassGram, DateTime AsOfDate);
     private sealed record ShipmentSeed(long FishBatchId, int FishCount, decimal BiomassGram, DateTime AsOfDate);
     private sealed record BudgetPeriod(int Year, int Month);

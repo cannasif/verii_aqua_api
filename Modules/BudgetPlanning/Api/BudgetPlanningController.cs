@@ -148,6 +148,13 @@ public class BudgetPlanningController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
+    [HttpPost("{budgetPlanId:long}/exchange-rates/import")]
+    public async Task<ActionResult<ApiResponse<BudgetPlanImportResultDto<BudgetPlanExchangeRateDto>>>> ImportExchangeRates(long budgetPlanId, [FromBody] ImportBudgetPlanExchangeRatesDto dto)
+    {
+        var result = await _service.ImportExchangeRatesAsync(budgetPlanId, dto);
+        return StatusCode(result.StatusCode, result);
+    }
+
     [HttpGet("{budgetPlanId:long}/fish-prices")]
     public async Task<ActionResult<ApiResponse<List<BudgetPlanFishPriceDto>>>> GetFishPrices(long budgetPlanId)
     {
@@ -166,6 +173,13 @@ public class BudgetPlanningController : ControllerBase
     public async Task<ActionResult<ApiResponse<BudgetPlanFishPriceDto>>> UpsertFishPrice(long budgetPlanId, [FromBody] UpsertBudgetPlanFishPriceDto dto)
     {
         var result = await _service.UpsertFishPriceAsync(budgetPlanId, dto);
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpPost("{budgetPlanId:long}/fish-prices/import")]
+    public async Task<ActionResult<ApiResponse<BudgetPlanImportResultDto<BudgetPlanFishPriceDto>>>> ImportFishPrices(long budgetPlanId, [FromBody] ImportBudgetPlanFishPricesDto dto)
+    {
+        var result = await _service.ImportFishPricesAsync(budgetPlanId, dto);
         return StatusCode(result.StatusCode, result);
     }
 

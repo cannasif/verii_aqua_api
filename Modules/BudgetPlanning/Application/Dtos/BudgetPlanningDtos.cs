@@ -212,6 +212,54 @@ public class ImportBudgetPlanSalesTonsDto
     public List<UpsertBudgetPlanSalesTonDto> Lines { get; set; } = new();
 }
 
+public class BudgetPlanImportResultDto<T>
+{
+    public int InsertedCount { get; set; }
+    public int UpdatedCount { get; set; }
+    public int TotalCount { get; set; }
+    public List<T> Items { get; set; } = new();
+}
+
+public class ImportBudgetPlanFishPriceLineDto
+{
+    public int ExcelRowNumber { get; set; }
+    public long? FishStockId { get; set; }
+    public long CalibrationDefinitionId { get; set; }
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public BudgetFishPriceType PriceType { get; set; } = BudgetFishPriceType.Sales;
+    public BudgetMarketType MarketType { get; set; } = BudgetMarketType.Domestic;
+    public string CurrencyCode { get; set; } = "EUR";
+    public decimal UnitPrice { get; set; }
+    public decimal IncreaseRatePercent { get; set; }
+    public int IncreasePeriodMonths { get; set; } = 1;
+    public string? Description { get; set; }
+}
+
+public class ImportBudgetPlanFishPricesDto
+{
+    public List<ImportBudgetPlanFishPriceLineDto> Lines { get; set; } = new();
+}
+
+public class ImportBudgetPlanExchangeRateLineDto
+{
+    public int ExcelRowNumber { get; set; }
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public string CurrencyCode { get; set; } = string.Empty;
+    public string RateType { get; set; } = "Budget";
+    public decimal ExchangeRate { get; set; }
+    public string SourceType { get; set; } = "Manual";
+    public string? SourceReference { get; set; }
+    public bool IsManualOverride { get; set; } = true;
+    public string? Description { get; set; }
+}
+
+public class ImportBudgetPlanExchangeRatesDto
+{
+    public List<ImportBudgetPlanExchangeRateLineDto> Lines { get; set; } = new();
+}
+
 public class GenerateBudgetPlanExchangeRatesDto
 {
     public List<string> CurrencyCodes { get; set; } = new();

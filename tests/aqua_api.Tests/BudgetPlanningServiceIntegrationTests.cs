@@ -16,13 +16,23 @@ using aqua_api.Shared.Common.Dtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
+using System.Data.Common;
+using System.Diagnostics;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace aqua_api.Tests;
 
 public class BudgetPlanningServiceIntegrationTests
 {
+    private readonly ITestOutputHelper _output;
+
+    public BudgetPlanningServiceIntegrationTests(ITestOutputHelper output)
+    {
+        _output = output;
+    }
     [Fact]
     public async Task GenerateExchangeRates_UsesLatestErpRates_FallsBackAndPreservesManualOverrides()
     {
@@ -1190,6 +1200,909 @@ public class BudgetPlanningServiceIntegrationTests
     }
 
     [Fact]
+    public async Task ImportFishPrices_ImportsMultipleRowsSuccessfully()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var fishStock = new Stock { ErpStockCode = "FISH-PRICE-IMP", StockName = "Import Fish", Unit = "AD" };
+        var calibration = new BudgetCalibrationDefinition { CalibrationCode = "K-IMP", CalibrationInfo = "Import Calibration" };
+        db.AddRange(fishStock, calibration);
+        await db.SaveChangesAsync();
+
+        var plan = await CreatePlanAsync(fixture.Service, "PRICE-IMP-OK", 2026, 1, 2026, 6);
+        var result = await fixture.Service.ImportFishPricesAsync(plan.Id, new ImportBudgetPlanFishPricesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 2,
+                    FishStockId = fishStock.Id,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 1,
+                    PriceType = BudgetFishPriceType.Sales,
+                    MarketType = BudgetMarketType.Domestic,
+                    CurrencyCode = "eur",
+                    UnitPrice = 6.5m,
+                    IncreaseRatePercent = 0m,
+                    IncreasePeriodMonths = 1
+                },
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 3,
+                    FishStockId = null,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 1,
+                    PriceType = BudgetFishPriceType.Sales,
+                    MarketType = BudgetMarketType.Domestic,
+                    CurrencyCode = "EUR",
+                    UnitPrice = 6.1m,
+                    IncreaseRatePercent = 0m,
+                    IncreasePeriodMonths = 1
+                },
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 4,
+                    FishStockId = fishStock.Id,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 2,
+                    PriceType = BudgetFishPriceType.Purchase,
+                    MarketType = BudgetMarketType.Foreign,
+                    CurrencyCode = "tl",
+                    UnitPrice = 250m,
+                    IncreaseRatePercent = 2m,
+                    IncreasePeriodMonths = 3,
+                    Description = "Alim"
+                }
+            }
+        });
+
+        Assert.True(result.Success, result.Message);
+        Assert.Equal(3, result.Data!.InsertedCount);
+        Assert.Equal(0, result.Data.UpdatedCount);
+        Assert.Equal(3, result.Data.TotalCount);
+        Assert.Equal(3, result.Data.Items.Count);
+        Assert.Contains(result.Data.Items, x => x.FishStockId == fishStock.Id && x.Month == 1 && x.CurrencyCode == "EUR" && x.UnitPrice == 6.5m);
+        Assert.Contains(result.Data.Items, x => x.FishStockId == null && x.Month == 1 && x.UnitPrice == 6.1m);
+        Assert.Contains(result.Data.Items, x => x.PriceType == BudgetFishPriceType.Purchase && x.CurrencyCode == "TRY" && x.UnitPrice == 250m);
+        Assert.Equal(3, await db.BudgetPlanFishPrices.CountAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task ImportExchangeRates_ImportsMultipleRowsSuccessfully()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var plan = await CreatePlanAsync(fixture.Service, "RATE-IMP-OK", 2026, 1, 2026, 6);
+        var result = await fixture.Service.ImportExchangeRatesAsync(plan.Id, new ImportBudgetPlanExchangeRatesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanExchangeRateLineDto
+                {
+                    ExcelRowNumber = 2,
+                    Year = 2026,
+                    Month = 1,
+                    CurrencyCode = "eur",
+                    ExchangeRate = 42.15m
+                },
+                new ImportBudgetPlanExchangeRateLineDto
+                {
+                    ExcelRowNumber = 3,
+                    Year = 2026,
+                    Month = 1,
+                    CurrencyCode = "USD",
+                    ExchangeRate = 36.4m
+                },
+                new ImportBudgetPlanExchangeRateLineDto
+                {
+                    ExcelRowNumber = 4,
+                    Year = 2026,
+                    Month = 1,
+                    CurrencyCode = "tl",
+                    ExchangeRate = 1m
+                }
+            }
+        });
+
+        Assert.True(result.Success, result.Message);
+        Assert.Equal(3, result.Data!.InsertedCount);
+        Assert.Equal(0, result.Data.UpdatedCount);
+        Assert.Equal(3, result.Data.TotalCount);
+        Assert.Equal(42.15m, result.Data.Items.Single(x => x.CurrencyCode == "EUR").ExchangeRate);
+        Assert.Equal("TRY", result.Data.Items.Single(x => x.CurrencyCode == "TRY").CurrencyCode);
+        Assert.All(result.Data.Items, x =>
+        {
+            Assert.Equal("Budget", x.RateType);
+            Assert.Equal("Manual", x.SourceType);
+            Assert.True(x.IsManualOverride);
+        });
+    }
+
+    [Fact]
+    public async Task ImportFishPricesAndExchangeRates_AcceptsMultiYearMonthlyRows()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var fishStock = new Stock { ErpStockCode = "FISH-24M", StockName = "Long Plan Fish", Unit = "AD" };
+        var calibration = new BudgetCalibrationDefinition { CalibrationCode = "K-24M", CalibrationInfo = "Long Calibration" };
+        db.AddRange(fishStock, calibration);
+        await db.SaveChangesAsync();
+
+        var plan = await CreatePlanAsync(fixture.Service, "LONG-24M", 2026, 1, 2027, 12);
+        var months = EnumeratePlanMonths(2026, 1, 2027, 12).ToList();
+        Assert.Equal(24, months.Count);
+
+        var priceResult = await fixture.Service.ImportFishPricesAsync(plan.Id, new ImportBudgetPlanFishPricesDto
+        {
+            Lines = months.Select((period, index) => new ImportBudgetPlanFishPriceLineDto
+            {
+                ExcelRowNumber = index + 2,
+                FishStockId = fishStock.Id,
+                CalibrationDefinitionId = calibration.Id,
+                Year = period.Year,
+                Month = period.Month,
+                PriceType = BudgetFishPriceType.Sales,
+                MarketType = BudgetMarketType.Domestic,
+                CurrencyCode = "EUR",
+                UnitPrice = 5m + index,
+                IncreasePeriodMonths = 1
+            }).ToList()
+        });
+        Assert.True(priceResult.Success, priceResult.Message);
+        Assert.Equal(24, priceResult.Data!.InsertedCount);
+        Assert.Equal(24, priceResult.Data.TotalCount);
+        Assert.Contains(priceResult.Data.Items, x => x.Year == 2027 && x.Month == 12 && x.UnitPrice == 28m);
+
+        var rateResult = await fixture.Service.ImportExchangeRatesAsync(plan.Id, new ImportBudgetPlanExchangeRatesDto
+        {
+            Lines = months.Select((period, index) => new ImportBudgetPlanExchangeRateLineDto
+            {
+                ExcelRowNumber = index + 2,
+                Year = period.Year,
+                Month = period.Month,
+                CurrencyCode = "EUR",
+                ExchangeRate = 40m + index
+            }).ToList()
+        });
+        Assert.True(rateResult.Success, rateResult.Message);
+        Assert.Equal(24, rateResult.Data!.InsertedCount);
+        Assert.Equal(24, rateResult.Data.TotalCount);
+        Assert.Contains(rateResult.Data.Items, x => x.Year == 2027 && x.Month == 12 && x.ExchangeRate == 63m);
+    }
+
+    [Fact]
+    public async Task ImportFishPrices_RollsBackAllRowsWhenOneRowIsInvalid()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var fishStock = new Stock { ErpStockCode = "FISH-PRICE-RB", StockName = "Rollback Fish", Unit = "AD" };
+        var calibration = new BudgetCalibrationDefinition { CalibrationCode = "K-RB", CalibrationInfo = "Rollback" };
+        db.AddRange(fishStock, calibration);
+        await db.SaveChangesAsync();
+
+        var plan = await CreatePlanAsync(fixture.Service, "PRICE-RB", 2026, 1, 2026, 12);
+        var result = await fixture.Service.ImportFishPricesAsync(plan.Id, new ImportBudgetPlanFishPricesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 2,
+                    FishStockId = fishStock.Id,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 1,
+                    UnitPrice = 6m,
+                    IncreasePeriodMonths = 1
+                },
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 5,
+                    FishStockId = fishStock.Id,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 2,
+                    UnitPrice = -1m,
+                    IncreasePeriodMonths = 1
+                }
+            }
+        });
+
+        Assert.False(result.Success);
+        Assert.Equal("Excel 5. satır: Fiyat donemi veya tutari hatali.", result.Message);
+        db.ChangeTracker.Clear();
+        Assert.False(await db.BudgetPlanFishPrices.AnyAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task ImportExchangeRates_RollsBackAllRowsWhenOneRowIsInvalid()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var plan = await CreatePlanAsync(fixture.Service, "RATE-RB", 2026, 1, 2026, 12);
+        var result = await fixture.Service.ImportExchangeRatesAsync(plan.Id, new ImportBudgetPlanExchangeRatesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanExchangeRateLineDto
+                {
+                    ExcelRowNumber = 2,
+                    Year = 2026,
+                    Month = 1,
+                    CurrencyCode = "EUR",
+                    ExchangeRate = 42m
+                },
+                new ImportBudgetPlanExchangeRateLineDto
+                {
+                    ExcelRowNumber = 8,
+                    Year = 2026,
+                    Month = 2,
+                    CurrencyCode = "EUR",
+                    ExchangeRate = -1m
+                }
+            }
+        });
+
+        Assert.False(result.Success);
+        Assert.Equal("Excel 8. satır: Kur negatif olamaz.", result.Message);
+        fixture.Db.ChangeTracker.Clear();
+        Assert.False(await fixture.Db.BudgetPlanExchangeRates.AnyAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task ImportFishPrices_RejectsDuplicateUniqueKeyInFile()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var calibration = new BudgetCalibrationDefinition { CalibrationCode = "K-DUP", CalibrationInfo = "Dup" };
+        db.BudgetCalibrationDefinitions.Add(calibration);
+        await db.SaveChangesAsync();
+
+        var plan = await CreatePlanAsync(fixture.Service, "PRICE-DUP", 2026, 1, 2026, 12);
+        var result = await fixture.Service.ImportFishPricesAsync(plan.Id, new ImportBudgetPlanFishPricesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 2,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 3,
+                    CurrencyCode = "EUR",
+                    UnitPrice = 5m,
+                    IncreasePeriodMonths = 1
+                },
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 6,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 3,
+                    CurrencyCode = "eur",
+                    UnitPrice = 7m,
+                    IncreasePeriodMonths = 1
+                }
+            }
+        });
+
+        Assert.False(result.Success);
+        Assert.StartsWith("Excel 6. satır:", result.Message);
+        Assert.Contains("birden fazla kez", result.Message);
+        Assert.False(await db.BudgetPlanFishPrices.AnyAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task ImportExchangeRates_RejectsDuplicateUniqueKeyInFile()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var plan = await CreatePlanAsync(fixture.Service, "RATE-DUP", 2026, 1, 2026, 12);
+        var result = await fixture.Service.ImportExchangeRatesAsync(plan.Id, new ImportBudgetPlanExchangeRatesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanExchangeRateLineDto
+                {
+                    ExcelRowNumber = 2,
+                    Year = 2026,
+                    Month = 4,
+                    CurrencyCode = "USD",
+                    RateType = "Budget",
+                    ExchangeRate = 36m
+                },
+                new ImportBudgetPlanExchangeRateLineDto
+                {
+                    ExcelRowNumber = 9,
+                    Year = 2026,
+                    Month = 4,
+                    CurrencyCode = "usd",
+                    RateType = " Budget ",
+                    ExchangeRate = 37m
+                }
+            }
+        });
+
+        Assert.False(result.Success);
+        Assert.StartsWith("Excel 9. satır:", result.Message);
+        Assert.Contains("birden fazla kez", result.Message);
+        Assert.False(await fixture.Db.BudgetPlanExchangeRates.AnyAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task ImportExchangeRates_RejectsTryRateOtherThanOne()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var plan = await CreatePlanAsync(fixture.Service, "RATE-TRY", 2026, 1, 2026, 12);
+        var result = await fixture.Service.ImportExchangeRatesAsync(plan.Id, new ImportBudgetPlanExchangeRatesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanExchangeRateLineDto
+                {
+                    ExcelRowNumber = 2,
+                    Year = 2026,
+                    Month = 1,
+                    CurrencyCode = "EUR",
+                    ExchangeRate = 42m
+                },
+                new ImportBudgetPlanExchangeRateLineDto
+                {
+                    ExcelRowNumber = 4,
+                    Year = 2026,
+                    Month = 1,
+                    CurrencyCode = "TRY",
+                    ExchangeRate = 1.25m
+                }
+            }
+        });
+
+        Assert.False(result.Success);
+        Assert.Equal("Excel 4. satır: TRY kuru yalnizca 1 olabilir.", result.Message);
+        fixture.Db.ChangeTracker.Clear();
+        Assert.False(await fixture.Db.BudgetPlanExchangeRates.AnyAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task ImportFishPrices_RejectsRowOutsideBudgetPlanPeriod()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var calibration = new BudgetCalibrationDefinition { CalibrationCode = "K-OUT", CalibrationInfo = "Out" };
+        db.BudgetCalibrationDefinitions.Add(calibration);
+        await db.SaveChangesAsync();
+
+        var plan = await CreatePlanAsync(fixture.Service, "PRICE-OUT", 2026, 3, 2027, 6);
+        var result = await fixture.Service.ImportFishPricesAsync(plan.Id, new ImportBudgetPlanFishPricesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 2,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 3,
+                    UnitPrice = 5m,
+                    IncreasePeriodMonths = 1
+                },
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 3,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 2,
+                    UnitPrice = 5m,
+                    IncreasePeriodMonths = 1
+                }
+            }
+        });
+
+        Assert.False(result.Success);
+        Assert.Equal("Excel 3. satır: Fiyat donemi butce tarih araligi disinda olamaz.", result.Message);
+        db.ChangeTracker.Clear();
+        Assert.False(await db.BudgetPlanFishPrices.AnyAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task ImportExchangeRates_RejectsRowOutsideBudgetPlanPeriod()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var plan = await CreatePlanAsync(fixture.Service, "RATE-OUT", 2026, 3, 2027, 6);
+        var result = await fixture.Service.ImportExchangeRatesAsync(plan.Id, new ImportBudgetPlanExchangeRatesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanExchangeRateLineDto
+                {
+                    ExcelRowNumber = 2,
+                    Year = 2027,
+                    Month = 6,
+                    CurrencyCode = "EUR",
+                    ExchangeRate = 45m
+                },
+                new ImportBudgetPlanExchangeRateLineDto
+                {
+                    ExcelRowNumber = 7,
+                    Year = 2027,
+                    Month = 7,
+                    CurrencyCode = "EUR",
+                    ExchangeRate = 46m
+                }
+            }
+        });
+
+        Assert.False(result.Success);
+        Assert.Equal("Excel 7. satır: Kur donemi butce tarih araligi disinda olamaz.", result.Message);
+        fixture.Db.ChangeTracker.Clear();
+        Assert.False(await fixture.Db.BudgetPlanExchangeRates.AnyAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task ImportExchangeRates_DefaultsToManualOverride()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var plan = await CreatePlanAsync(fixture.Service, "RATE-DEF", 2026, 1, 2026, 12);
+        var result = await fixture.Service.ImportExchangeRatesAsync(plan.Id, new ImportBudgetPlanExchangeRatesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanExchangeRateLineDto
+                {
+                    ExcelRowNumber = 2,
+                    Year = 2026,
+                    Month = 5,
+                    CurrencyCode = "GBP",
+                    RateType = " ",
+                    ExchangeRate = 48.2m,
+                    SourceType = " "
+                }
+            }
+        });
+
+        Assert.True(result.Success, result.Message);
+        var saved = Assert.Single(result.Data!.Items);
+        Assert.Equal("Budget", saved.RateType);
+        Assert.Equal("Manual", saved.SourceType);
+        Assert.True(saved.IsManualOverride);
+        Assert.Equal(1, result.Data.InsertedCount);
+    }
+
+    [Fact]
+    public async Task ImportFishPrices_UpdatesExistingRowInsteadOfInserting()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var calibration = new BudgetCalibrationDefinition { CalibrationCode = "K-UPD", CalibrationInfo = "Update" };
+        db.BudgetCalibrationDefinitions.Add(calibration);
+        await db.SaveChangesAsync();
+
+        var plan = await CreatePlanAsync(fixture.Service, "PRICE-UPD", 2026, 1, 2026, 12);
+        var first = await fixture.Service.ImportFishPricesAsync(plan.Id, new ImportBudgetPlanFishPricesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 2,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 8,
+                    CurrencyCode = "EUR",
+                    UnitPrice = 7m,
+                    IncreasePeriodMonths = 1
+                }
+            }
+        });
+        Assert.True(first.Success, first.Message);
+        Assert.Equal(1, first.Data!.InsertedCount);
+
+        var second = await fixture.Service.ImportFishPricesAsync(plan.Id, new ImportBudgetPlanFishPricesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 2,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 8,
+                    CurrencyCode = "EUR",
+                    UnitPrice = 8.25m,
+                    IncreaseRatePercent = 5m,
+                    IncreasePeriodMonths = 3,
+                    Description = "Revize"
+                }
+            }
+        });
+
+        Assert.True(second.Success, second.Message);
+        Assert.Equal(0, second.Data!.InsertedCount);
+        Assert.Equal(1, second.Data.UpdatedCount);
+        Assert.Equal(1, second.Data.TotalCount);
+        Assert.Equal(8.25m, second.Data.Items.Single().UnitPrice);
+        Assert.Equal(5m, second.Data.Items.Single().IncreaseRatePercent);
+        Assert.Equal(3, second.Data.Items.Single().IncreasePeriodMonths);
+        Assert.Equal("Revize", second.Data.Items.Single().Description);
+        Assert.Equal(1, await db.BudgetPlanFishPrices.CountAsync(x => x.BudgetPlanId == plan.Id));
+        Assert.Equal(first.Data.Items.Single().Id, second.Data.Items.Single().Id);
+    }
+
+    [Fact]
+    public async Task ImportFishPrices_KeepsGenericAndStockSpecificPricesSeparate()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var fishStock = new Stock { ErpStockCode = "FISH-GEN-SPEC", StockName = "Split Price Fish", Unit = "AD" };
+        var calibration = new BudgetCalibrationDefinition { CalibrationCode = "K-SPLIT", CalibrationInfo = "Split" };
+        db.AddRange(fishStock, calibration);
+        await db.SaveChangesAsync();
+
+        var plan = await CreatePlanAsync(fixture.Service, "PRICE-SPLIT", 2026, 1, 2026, 12);
+        var result = await fixture.Service.ImportFishPricesAsync(plan.Id, new ImportBudgetPlanFishPricesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 2,
+                    FishStockId = null,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 4,
+                    PriceType = BudgetFishPriceType.Sales,
+                    MarketType = BudgetMarketType.Domestic,
+                    CurrencyCode = "EUR",
+                    UnitPrice = 5m,
+                    IncreasePeriodMonths = 1
+                },
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 3,
+                    FishStockId = fishStock.Id,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 4,
+                    PriceType = BudgetFishPriceType.Sales,
+                    MarketType = BudgetMarketType.Domestic,
+                    CurrencyCode = "EUR",
+                    UnitPrice = 6.5m,
+                    IncreasePeriodMonths = 1
+                }
+            }
+        });
+
+        Assert.True(result.Success, result.Message);
+        Assert.Equal(2, result.Data!.InsertedCount);
+        Assert.Equal(2, await db.BudgetPlanFishPrices.CountAsync(x => x.BudgetPlanId == plan.Id && x.Year == 2026 && x.Month == 4));
+        Assert.Equal(5m, result.Data.Items.Single(x => x.FishStockId == null).UnitPrice);
+        Assert.Equal(6.5m, result.Data.Items.Single(x => x.FishStockId == fishStock.Id).UnitPrice);
+    }
+
+    [Fact]
+    public async Task ImportFishPrices_RollsBackWhenCalibrationIsMissing()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var calibration = new BudgetCalibrationDefinition { CalibrationCode = "K-MISS", CalibrationInfo = "Exists" };
+        db.BudgetCalibrationDefinitions.Add(calibration);
+        await db.SaveChangesAsync();
+
+        var plan = await CreatePlanAsync(fixture.Service, "PRICE-CAL-MISS", 2026, 1, 2026, 12);
+        var result = await fixture.Service.ImportFishPricesAsync(plan.Id, new ImportBudgetPlanFishPricesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 2,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 1,
+                    UnitPrice = 5m,
+                    IncreasePeriodMonths = 1
+                },
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 7,
+                    CalibrationDefinitionId = calibration.Id + 999,
+                    Year = 2026,
+                    Month = 2,
+                    UnitPrice = 5.5m,
+                    IncreasePeriodMonths = 1
+                }
+            }
+        });
+
+        Assert.False(result.Success);
+        Assert.Equal("Excel 7. satır: Kalibre tanimi bulunamadi.", result.Message);
+        db.ChangeTracker.Clear();
+        Assert.False(await db.BudgetPlanFishPrices.AnyAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task ImportFishPrices_RollsBackWhenFishStockIsMissing()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var fishStock = new Stock { ErpStockCode = "FISH-OK", StockName = "Known Fish", Unit = "AD" };
+        var calibration = new BudgetCalibrationDefinition { CalibrationCode = "K-STOCK-MISS", CalibrationInfo = "Exists" };
+        db.AddRange(fishStock, calibration);
+        await db.SaveChangesAsync();
+
+        var plan = await CreatePlanAsync(fixture.Service, "PRICE-STOCK-MISS", 2026, 1, 2026, 12);
+        var result = await fixture.Service.ImportFishPricesAsync(plan.Id, new ImportBudgetPlanFishPricesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 2,
+                    FishStockId = fishStock.Id,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 1,
+                    UnitPrice = 5m,
+                    IncreasePeriodMonths = 1
+                },
+                new ImportBudgetPlanFishPriceLineDto
+                {
+                    ExcelRowNumber = 9,
+                    FishStockId = fishStock.Id + 999,
+                    CalibrationDefinitionId = calibration.Id,
+                    Year = 2026,
+                    Month = 2,
+                    UnitPrice = 5.5m,
+                    IncreasePeriodMonths = 1
+                }
+            }
+        });
+
+        Assert.False(result.Success);
+        Assert.Equal("Excel 9. satır: Balik stogu bulunamadi.", result.Message);
+        db.ChangeTracker.Clear();
+        Assert.False(await db.BudgetPlanFishPrices.AnyAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task ImportFishPrices_FortyEightMonths_ImportsSuccessfully()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var fishStock = new Stock { ErpStockCode = "FISH-48M", StockName = "Long Fish", Unit = "AD" };
+        var calibration = new BudgetCalibrationDefinition { CalibrationCode = "K-48M", CalibrationInfo = "Long" };
+        db.AddRange(fishStock, calibration);
+        await db.SaveChangesAsync();
+
+        var plan = await CreatePlanAsync(fixture.Service, "PRICE-48M", 2026, 1, 2029, 12);
+        var months = EnumeratePlanMonths(2026, 1, 2029, 12).ToList();
+        Assert.Equal(48, months.Count);
+
+        var result = await fixture.Service.ImportFishPricesAsync(plan.Id, new ImportBudgetPlanFishPricesDto
+        {
+            Lines = months.Select((period, index) => new ImportBudgetPlanFishPriceLineDto
+            {
+                ExcelRowNumber = index + 2,
+                FishStockId = fishStock.Id,
+                CalibrationDefinitionId = calibration.Id,
+                Year = period.Year,
+                Month = period.Month,
+                CurrencyCode = "EUR",
+                UnitPrice = 4m + index,
+                IncreasePeriodMonths = 1
+            }).ToList()
+        });
+
+        Assert.True(result.Success, result.Message);
+        Assert.Equal(48, result.Data!.InsertedCount);
+        Assert.Equal(0, result.Data.UpdatedCount);
+        Assert.Equal(48, result.Data.TotalCount);
+        Assert.Contains(result.Data.Items, x => x.Year == 2029 && x.Month == 12 && x.UnitPrice == 51m);
+        Assert.Equal(48, await db.BudgetPlanFishPrices.CountAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task ImportFishPrices_TwentySixRows_UsesConstantSqlRoundtrips()
+    {
+        var interceptor = new CountingDbCommandInterceptor();
+        await using var fixture = await CreateFixtureAsync(interceptor: interceptor);
+        var fishStock = new Stock { ErpStockCode = "FISH-PERF-26", StockName = "Perf Fish", Unit = "AD" };
+        var calibration = new BudgetCalibrationDefinition { CalibrationCode = "K-PERF-26", CalibrationInfo = "Perf" };
+        fixture.Db.AddRange(fishStock, calibration);
+        await fixture.Db.SaveChangesAsync();
+
+        var plan = await CreatePlanAsync(fixture.Service, "PRICE-PERF-26", 2026, 1, 2028, 2);
+        var months = EnumeratePlanMonths(2026, 1, 2028, 2).ToList();
+        Assert.Equal(26, months.Count);
+
+        interceptor.Reset();
+        var stopwatch = Stopwatch.StartNew();
+        var result = await fixture.Service.ImportFishPricesAsync(plan.Id, new ImportBudgetPlanFishPricesDto
+        {
+            Lines = months.Select((period, index) => new ImportBudgetPlanFishPriceLineDto
+            {
+                ExcelRowNumber = index + 2,
+                FishStockId = fishStock.Id,
+                CalibrationDefinitionId = calibration.Id,
+                Year = period.Year,
+                Month = period.Month,
+                CurrencyCode = "EUR",
+                UnitPrice = 5m + index,
+                IncreasePeriodMonths = 1
+            }).ToList()
+        });
+        stopwatch.Stop();
+
+        var planSelects = interceptor.Commands.Count(x =>
+            x.Contains("RII_BUDGET_PLAN", StringComparison.OrdinalIgnoreCase) &&
+            !x.Contains("FISH_PRICE", StringComparison.OrdinalIgnoreCase) &&
+            !x.Contains("EXCHANGE_RATE", StringComparison.OrdinalIgnoreCase) &&
+            x.Contains("SELECT", StringComparison.OrdinalIgnoreCase));
+        var priceSelects = interceptor.Commands.Count(x =>
+            x.Contains("RII_BUDGET_PLAN_FISH_PRICE", StringComparison.OrdinalIgnoreCase) &&
+            x.Contains("SELECT", StringComparison.OrdinalIgnoreCase));
+        var calibrationSelects = interceptor.Commands.Count(x =>
+            x.Contains("RII_BUDGET_CALIBRATION_DEFINITION", StringComparison.OrdinalIgnoreCase) &&
+            x.Contains("SELECT", StringComparison.OrdinalIgnoreCase));
+        var stockSelects = interceptor.Commands.Count(x =>
+            x.Contains("RII_STOCK", StringComparison.OrdinalIgnoreCase) &&
+            !x.Contains("DETAIL", StringComparison.OrdinalIgnoreCase) &&
+            !x.Contains("RELATION", StringComparison.OrdinalIgnoreCase) &&
+            !x.Contains("IMAGE", StringComparison.OrdinalIgnoreCase) &&
+            x.Contains("SELECT", StringComparison.OrdinalIgnoreCase));
+        var writeCommands = interceptor.Commands.Count(x =>
+        {
+            var trimmed = x.TrimStart();
+            return trimmed.StartsWith("INSERT", StringComparison.OrdinalIgnoreCase) ||
+                   trimmed.StartsWith("UPDATE", StringComparison.OrdinalIgnoreCase);
+        });
+        var commandCount = interceptor.Count;
+        var elapsedMs = stopwatch.ElapsedMilliseconds;
+        _output.WriteLine(
+            "26-row fish-price import: {0} ms, {1} SQL commands, {2} plan SELECT, {3} price SELECT, {4} calibration SELECT, {5} stock SELECT, {6} write commands",
+            elapsedMs,
+            commandCount,
+            planSelects,
+            priceSelects,
+            calibrationSelects,
+            stockSelects,
+            writeCommands);
+
+        Assert.True(result.Success, result.Message);
+        Assert.Equal(26, result.Data!.InsertedCount);
+        Assert.Equal(0, result.Data.UpdatedCount);
+        Assert.Equal(26, result.Data.TotalCount);
+        Assert.True(planSelects <= 1, $"BudgetPlan SELECT count should stay O(1), was {planSelects}. SQL:\n{string.Join("\n---\n", interceptor.Commands)}");
+        Assert.True(priceSelects <= 1, $"FishPrice SELECT count should stay O(1), was {priceSelects}. SQL:\n{string.Join("\n---\n", interceptor.Commands)}");
+        Assert.True(calibrationSelects <= 1, $"Calibration SELECT count should stay O(1), was {calibrationSelects}.");
+        Assert.True(stockSelects <= 1, $"Stock SELECT count should stay O(1), was {stockSelects}.");
+        Assert.True(
+            commandCount < 26 * 3,
+            $"26-row fish-price import should not do per-row upsert SQL. Commands={commandCount}, elapsedMs={elapsedMs}");
+        Assert.True(
+            elapsedMs < 5000,
+            $"26-row fish-price import took {elapsedMs}ms with {commandCount} SQL commands.");
+        Assert.Equal(26, await fixture.Db.BudgetPlanFishPrices.CountAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task ImportExchangeRates_UpdatesExistingRowInsteadOfInserting()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var plan = await CreatePlanAsync(fixture.Service, "RATE-UPD", 2026, 1, 2026, 12);
+        var first = await fixture.Service.ImportExchangeRatesAsync(plan.Id, new ImportBudgetPlanExchangeRatesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanExchangeRateLineDto
+                {
+                    ExcelRowNumber = 2,
+                    Year = 2026,
+                    Month = 9,
+                    CurrencyCode = "EUR",
+                    ExchangeRate = 41m
+                }
+            }
+        });
+        Assert.True(first.Success, first.Message);
+        Assert.Equal(1, first.Data!.InsertedCount);
+
+        var second = await fixture.Service.ImportExchangeRatesAsync(plan.Id, new ImportBudgetPlanExchangeRatesDto
+        {
+            Lines =
+            {
+                new ImportBudgetPlanExchangeRateLineDto
+                {
+                    ExcelRowNumber = 2,
+                    Year = 2026,
+                    Month = 9,
+                    CurrencyCode = "EUR",
+                    ExchangeRate = 44.5m,
+                    Description = "Excel revize"
+                }
+            }
+        });
+
+        Assert.True(second.Success, second.Message);
+        Assert.Equal(0, second.Data!.InsertedCount);
+        Assert.Equal(1, second.Data.UpdatedCount);
+        Assert.Equal(44.5m, second.Data.Items.Single().ExchangeRate);
+        Assert.True(second.Data.Items.Single().IsManualOverride);
+        Assert.Equal("Manual", second.Data.Items.Single().SourceType);
+        Assert.Equal(first.Data.Items.Single().Id, second.Data.Items.Single().Id);
+        Assert.Equal(1, await fixture.Db.BudgetPlanExchangeRates.CountAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
+    public async Task ImportExchangeRates_TwentySixRows_UsesConstantSqlRoundtrips()
+    {
+        var interceptor = new CountingDbCommandInterceptor();
+        await using var fixture = await CreateFixtureAsync(interceptor: interceptor);
+        var plan = await CreatePlanAsync(fixture.Service, "RATE-PERF-26", 2026, 1, 2028, 2);
+        var months = EnumeratePlanMonths(2026, 1, 2028, 2).ToList();
+        Assert.Equal(26, months.Count);
+
+        interceptor.Reset();
+        var stopwatch = Stopwatch.StartNew();
+        var result = await fixture.Service.ImportExchangeRatesAsync(plan.Id, new ImportBudgetPlanExchangeRatesDto
+        {
+            Lines = months.Select((period, index) => new ImportBudgetPlanExchangeRateLineDto
+            {
+                ExcelRowNumber = index + 2,
+                Year = period.Year,
+                Month = period.Month,
+                CurrencyCode = "EUR",
+                ExchangeRate = 40m + index
+            }).ToList()
+        });
+        stopwatch.Stop();
+
+        var planSelects = interceptor.Commands.Count(x =>
+            x.Contains("RII_BUDGET_PLAN", StringComparison.OrdinalIgnoreCase) &&
+            !x.Contains("EXCHANGE_RATE", StringComparison.OrdinalIgnoreCase) &&
+            x.Contains("SELECT", StringComparison.OrdinalIgnoreCase));
+        var rateSelects = interceptor.Commands.Count(x =>
+            x.Contains("RII_BUDGET_PLAN_EXCHANGE_RATE", StringComparison.OrdinalIgnoreCase) &&
+            x.Contains("SELECT", StringComparison.OrdinalIgnoreCase));
+        var saveChangesCommands = interceptor.Commands.Count(x =>
+        {
+            var trimmed = x.TrimStart();
+            return trimmed.StartsWith("INSERT", StringComparison.OrdinalIgnoreCase) ||
+                   trimmed.StartsWith("UPDATE", StringComparison.OrdinalIgnoreCase);
+        });
+        var commandCount = interceptor.Count;
+        var elapsedMs = stopwatch.ElapsedMilliseconds;
+        _output.WriteLine(
+            "26-row exchange-rate import: {0} ms, {1} SQL commands, {2} plan SELECT, {3} rate SELECT, {4} write commands",
+            elapsedMs,
+            commandCount,
+            planSelects,
+            rateSelects,
+            saveChangesCommands);
+
+        Assert.True(result.Success, result.Message);
+        Assert.Equal(26, result.Data!.InsertedCount);
+        Assert.Equal(0, result.Data.UpdatedCount);
+        Assert.Equal(26, result.Data.TotalCount);
+        Assert.All(result.Data.Items, x =>
+        {
+            Assert.Equal("Manual", x.SourceType);
+            Assert.True(x.IsManualOverride);
+            Assert.Equal("Budget", x.RateType);
+        });
+        Assert.True(planSelects <= 1, $"BudgetPlan SELECT count should stay O(1), was {planSelects}. SQL:\n{string.Join("\n---\n", interceptor.Commands)}");
+        Assert.True(rateSelects <= 1, $"ExchangeRate SELECT count should stay O(1), was {rateSelects}. SQL:\n{string.Join("\n---\n", interceptor.Commands)}");
+        Assert.True(
+            commandCount < 26 * 3,
+            $"26-row import should not do per-row upsert SQL. Commands={commandCount}, elapsedMs={elapsedMs}");
+        Assert.True(
+            elapsedMs < 5000,
+            $"26-row import took {elapsedMs}ms with {commandCount} SQL commands ({planSelects} plan SELECT, {rateSelects} rate SELECT, {saveChangesCommands} write).");
+        Assert.Equal(26, await fixture.Db.BudgetPlanExchangeRates.CountAsync(x => x.BudgetPlanId == plan.Id));
+    }
+
+    [Fact]
     public async Task KpiReport_UsesDevirFcrProducedBiomassFormula()
     {
         await using var fixture = await CreateFixtureAsync();
@@ -1308,6 +2221,35 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.Equal(1500000m, row.AmountTry);
     }
 
+    private static async Task<BudgetPlanDto> CreatePlanAsync(
+        BudgetPlanningService service,
+        string budgetCode,
+        int startYear,
+        int startMonth,
+        int endYear,
+        int endMonth)
+    {
+        var result = await service.CreatePlanAsync(new CreateBudgetPlanDto
+        {
+            BudgetCode = budgetCode,
+            BudgetName = budgetCode,
+            StartYear = startYear,
+            StartMonth = startMonth,
+            EndYear = endYear,
+            EndMonth = endMonth
+        });
+        Assert.True(result.Success, result.Message);
+        return result.Data!;
+    }
+
+    private static IEnumerable<(int Year, int Month)> EnumeratePlanMonths(int startYear, int startMonth, int endYear, int endMonth)
+    {
+        for (var period = startYear * 12 + startMonth; period <= endYear * 12 + endMonth; period++)
+        {
+            yield return ((period - 1) / 12, ((period - 1) % 12) + 1);
+        }
+    }
+
     private static async Task<BudgetPlan> SeedBudgetPlanAsync(AquaDbContext db, long fishStockId, BudgetPlanStatus status)
     {
         var plan = new BudgetPlan
@@ -1424,14 +2366,19 @@ public class BudgetPlanningServiceIntegrationTests
     }
 
     private static async Task<BudgetFixture> CreateFixtureAsync(
-        IBudgetExchangeRateReadService? exchangeRateReadService = null)
+        IBudgetExchangeRateReadService? exchangeRateReadService = null,
+        IInterceptor? interceptor = null)
     {
         var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
-        var options = new DbContextOptionsBuilder<AquaDbContext>()
-            .UseSqlite(connection)
-            .Options;
-        var db = new BudgetSqliteAquaDbContext(options);
+        var optionsBuilder = new DbContextOptionsBuilder<AquaDbContext>()
+            .UseSqlite(connection);
+        if (interceptor != null)
+        {
+            optionsBuilder.AddInterceptors(interceptor);
+        }
+
+        var db = new BudgetSqliteAquaDbContext(optionsBuilder.Options);
         await db.Database.EnsureCreatedAsync();
 
         var unitOfWork = new EfUnitOfWork(db, new HttpContextAccessor());
@@ -1441,6 +2388,81 @@ public class BudgetPlanningServiceIntegrationTests
             new BudgetPlanningService(unitOfWork, exchangeRateReadService),
             new BudgetAdjustmentRateDefinitionService(unitOfWork),
             new BudgetKpiService(db));
+    }
+
+    private sealed class CountingDbCommandInterceptor : DbCommandInterceptor
+    {
+        public int Count { get; private set; }
+        public List<string> Commands { get; } = new();
+
+        public void Reset()
+        {
+            Count = 0;
+            Commands.Clear();
+        }
+
+        public override InterceptionResult<DbDataReader> ReaderExecuting(
+            DbCommand command,
+            CommandEventData eventData,
+            InterceptionResult<DbDataReader> result)
+        {
+            Capture(command);
+            return base.ReaderExecuting(command, eventData, result);
+        }
+
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+            DbCommand command,
+            CommandEventData eventData,
+            InterceptionResult<DbDataReader> result,
+            CancellationToken cancellationToken = default)
+        {
+            Capture(command);
+            return base.ReaderExecutingAsync(command, eventData, result, cancellationToken);
+        }
+
+        public override InterceptionResult<int> NonQueryExecuting(
+            DbCommand command,
+            CommandEventData eventData,
+            InterceptionResult<int> result)
+        {
+            Capture(command);
+            return base.NonQueryExecuting(command, eventData, result);
+        }
+
+        public override ValueTask<InterceptionResult<int>> NonQueryExecutingAsync(
+            DbCommand command,
+            CommandEventData eventData,
+            InterceptionResult<int> result,
+            CancellationToken cancellationToken = default)
+        {
+            Capture(command);
+            return base.NonQueryExecutingAsync(command, eventData, result, cancellationToken);
+        }
+
+        public override InterceptionResult<object> ScalarExecuting(
+            DbCommand command,
+            CommandEventData eventData,
+            InterceptionResult<object> result)
+        {
+            Capture(command);
+            return base.ScalarExecuting(command, eventData, result);
+        }
+
+        public override ValueTask<InterceptionResult<object>> ScalarExecutingAsync(
+            DbCommand command,
+            CommandEventData eventData,
+            InterceptionResult<object> result,
+            CancellationToken cancellationToken = default)
+        {
+            Capture(command);
+            return base.ScalarExecutingAsync(command, eventData, result, cancellationToken);
+        }
+
+        private void Capture(DbCommand command)
+        {
+            Count++;
+            Commands.Add(command.CommandText);
+        }
     }
 
     private sealed class StubBudgetExchangeRateReadService : IBudgetExchangeRateReadService
