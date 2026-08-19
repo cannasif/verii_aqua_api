@@ -11,6 +11,7 @@ public sealed class PagedRequestValidationFilter : IAsyncActionFilter
         var requests = context.ActionArguments.Values.OfType<PagedRequest>().ToArray();
         foreach (var request in requests)
         {
+            request.Normalize();
             QueryHelper.ValidateRequestContract(request);
         }
 

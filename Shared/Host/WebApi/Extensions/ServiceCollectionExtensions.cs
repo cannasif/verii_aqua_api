@@ -40,7 +40,6 @@ public static class ServiceCollectionExtensions
         services.AddControllers(options =>
         {
             options.Conventions.Add(new IisSafeHttpMethodConvention());
-            options.Conventions.Add(new PagedPostRouteConvention());
             options.Filters.Add<PagedRequestValidationFilter>();
         });
 

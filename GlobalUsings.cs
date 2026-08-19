@@ -112,7 +112,6 @@ global using aqua_api.Shared.Host.WebApi.Filters;
 global using aqua_api.Shared.Host.WebApi.Hubs;
 global using aqua_api.Shared.Host.WebApi.Localization;
 global using aqua_api.Shared.Host.WebApi.Middleware;
-global using aqua_api.Shared.Host.WebApi.ModelBinding;
 global using aqua_api.Shared.Infrastructure.Configuration;
 global using aqua_api.Shared.Infrastructure.Contracts;
 global using aqua_api.Shared.Infrastructure.Persistence;
