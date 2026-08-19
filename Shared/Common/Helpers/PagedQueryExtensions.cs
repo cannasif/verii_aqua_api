@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using aqua_api.Shared.Common.Exceptions;
 
 namespace aqua_api.Shared.Common.Helpers
 {
@@ -23,8 +24,9 @@ namespace aqua_api.Shared.Common.Helpers
 
     public static class PagedQueryExtensions
     {
-        private const int DefaultPageSize = 20;
-        private const int DefaultMaxPageSize = 500;
+        public const int DefaultMaxPageSize = 500;
+        public const int DefaultMaxSearchLength = 200;
+        public const int MaximumSearchFieldCount = 12;
 
         public static async Task<PagedQueryResult<T>> ToPagedItemsAsync<T>(
             this IQueryable<T> query,
@@ -34,6 +36,7 @@ namespace aqua_api.Shared.Common.Helpers
             CancellationToken cancellationToken = default)
         {
             request ??= new PagedRequest();
+            ValidateRequest(request, maxPageSize);
 
             return await query
                 .ToPagedItemsAsync(
@@ -55,37 +58,22 @@ namespace aqua_api.Shared.Common.Helpers
             int maxPageSize = DefaultMaxPageSize,
             CancellationToken cancellationToken = default)
         {
-            var normalizedPageNumber = NormalizePageNumber(pageNumber);
-            var normalizedPageSize = NormalizePageSize(pageSize, maxPageSize);
-            var skip = (normalizedPageNumber - 1) * normalizedPageSize;
-
-            if (useSeekCountForSearch && hasSearch)
+            ValidatePagination(pageNumber, pageSize, maxPageSize);
+            var skipLong = (long)(pageNumber - 1) * pageSize;
+            if (skipLong > int.MaxValue)
             {
-                var items = await query
-                    .Skip(skip)
-                    .Take(normalizedPageSize + 1)
-                    .ToListAsync(cancellationToken)
-                    .ConfigureAwait(false);
-
-                var hasNextPage = items.Count > normalizedPageSize;
-                if (hasNextPage)
-                {
-                    items.RemoveAt(items.Count - 1);
-                }
-
-                return new PagedQueryResult<T>
-                {
-                    Items = items,
-                    TotalCount = skip + items.Count + (hasNextPage ? 1 : 0),
-                    PageNumber = normalizedPageNumber,
-                    PageSize = normalizedPageSize
-                };
+                throw new PagedQueryValidationException("İstenen sayfa numarası desteklenen sınırı aşıyor.");
             }
+
+            var skip = (int)skipLong;
+
+            _ = hasSearch;
+            _ = useSeekCountForSearch;
 
             var totalCount = await query.CountAsync(cancellationToken).ConfigureAwait(false);
             var pageItems = await query
                 .Skip(skip)
-                .Take(normalizedPageSize)
+                .Take(pageSize)
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
 
@@ -93,8 +81,8 @@ namespace aqua_api.Shared.Common.Helpers
             {
                 Items = pageItems,
                 TotalCount = totalCount,
-                PageNumber = normalizedPageNumber,
-                PageSize = normalizedPageSize
+                PageNumber = pageNumber,
+                PageSize = pageSize
             };
         }
 
@@ -110,24 +98,44 @@ namespace aqua_api.Shared.Common.Helpers
             return !string.IsNullOrWhiteSpace(request.Search);
         }
 
-        private static int NormalizePageNumber(int pageNumber)
+        internal static void ValidateRequest(PagedRequest request, int maxPageSize = DefaultMaxPageSize)
         {
-            return pageNumber < 1 ? 1 : pageNumber;
+            ValidatePagination(request.PageNumber, request.PageSize, maxPageSize);
+            if (request.Search?.Length > DefaultMaxSearchLength)
+            {
+                throw new PagedQueryValidationException($"Arama metni en fazla {DefaultMaxSearchLength} karakter olabilir.");
+            }
+
+            if ((request.SearchFields?.Count ?? 0) > MaximumSearchFieldCount)
+            {
+                throw new PagedQueryValidationException($"En fazla {MaximumSearchFieldCount} arama alanı seçilebilir.");
+            }
         }
 
-        private static int NormalizePageSize(int pageSize, int maxPageSize)
+        internal static void ValidatePagination(
+            int pageNumber,
+            int pageSize,
+            int maxPageSize = DefaultMaxPageSize)
         {
+            if (pageNumber < 1)
+            {
+                throw new PagedQueryValidationException("Sayfa numarası en az 1 olmalıdır.");
+            }
+
             if (pageSize < 1)
             {
-                return DefaultPageSize;
+                throw new PagedQueryValidationException("Sayfa boyutu en az 1 olmalıdır.");
             }
 
-            if (maxPageSize < 1)
+            if (maxPageSize > 0 && pageSize > maxPageSize)
             {
-                return pageSize;
+                throw new PagedQueryValidationException($"Sayfa boyutu en fazla {maxPageSize} olabilir.");
             }
 
-            return Math.Min(pageSize, maxPageSize);
+            if ((long)(pageNumber - 1) * pageSize > int.MaxValue)
+            {
+                throw new PagedQueryValidationException("İstenen sayfa numarası desteklenen sınırı aşıyor.");
+            }
         }
     }
 }

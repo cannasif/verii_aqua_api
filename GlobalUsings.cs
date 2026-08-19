@@ -101,6 +101,7 @@ global using aqua_api.Modules.FishHealth.Domain.Entities;
 global using aqua_api.Modules.Compliances.Domain.Entities;
 global using aqua_api.Modules.Welfares.Domain.Entities;
 global using aqua_api.Shared.Common.Dtos;
+global using aqua_api.Shared.Common.Exceptions;
 global using aqua_api.Shared.Common.Helpers;
 global using aqua_api.Shared.Common.Localization;
 global using aqua_api.Shared.Common.Mappings;

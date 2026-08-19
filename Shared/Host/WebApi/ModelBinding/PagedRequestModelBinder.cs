@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using aqua_api.Shared.Common.Helpers;
+using aqua_api.Shared.Common.Exceptions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Extensions.Primitives;
@@ -28,19 +30,24 @@ namespace aqua_api.Shared.Host.WebApi.ModelBinding
 
             var query = bindingContext.HttpContext.Request.Query;
             var request = CreateRequestInstance(bindingContext);
-            request.PageNumber = ParseInt(query, new[] { "pageNumber", "PageNumber" }, 1);
-            request.PageSize = ParseInt(query, new[] { "pageSize", "PageSize" }, 20);
+            request.PageNumber = ParseInt(query, new[] { "pageNumber", "PageNumber" }, 1, "pageNumber");
+            request.PageSize = ParseInt(query, new[] { "pageSize", "PageSize" }, 20, "pageSize");
             request.Search = ParseString(query, new[] { "search", "Search" });
             request.SearchFields = ParseStringList(query, new[] { "searchFields", "SearchFields" });
-            request.SortBy = ParseString(query, new[] { "sortBy", "SortBy" }) ?? "Id";
+            if (query.ContainsKey("searchFields") || query.ContainsKey("SearchFields"))
+            {
+                request.MarkSearchFieldsSpecified();
+            }
+            request.SortBy = ParseString(query, new[] { "sortBy", "SortBy" });
             request.SortDirection = ParseString(query, new[] { "sortDirection", "SortDirection" }) ?? "desc";
             request.Filters = ParseJsonFilters(query) ?? ParseIndexedFilters(query) ?? new List<Filter>();
 
             var filterLogic = ParseString(query, new[] { "filterLogic", "FilterLogic" });
-            request.FilterLogic = string.Equals(filterLogic, "or", StringComparison.OrdinalIgnoreCase) ? "or" : "and";
+            request.FilterLogic = filterLogic ?? "and";
 
             BindDerivedBooleanProperties(request, query);
             BindDerivedNullableLongProperties(request, query);
+            BindDerivedNullableDateTimeProperties(request, query);
 
             Normalize(request);
             bindingContext.Result = ModelBindingResult.Success(request);
@@ -62,31 +69,40 @@ namespace aqua_api.Shared.Host.WebApi.ModelBinding
 
             try
             {
-                var parsed = await JsonSerializer
-                    .DeserializeAsync(httpRequest.Body, bindingContext.ModelType, JsonOptions)
+                using var document = await JsonDocument
+                    .ParseAsync(httpRequest.Body)
                     .ConfigureAwait(false);
+                var parsed = document.RootElement.Deserialize(bindingContext.ModelType, JsonOptions);
 
                 if (httpRequest.Body.CanSeek)
                 {
                     httpRequest.Body.Position = 0;
                 }
 
+                if (parsed is PagedRequest request && document.RootElement.ValueKind == JsonValueKind.Object &&
+                    document.RootElement.EnumerateObject().Any(property =>
+                        property.Name.Equals("searchFields", StringComparison.OrdinalIgnoreCase)))
+                {
+                    request.MarkSearchFieldsSpecified();
+                }
+
                 return parsed as PagedRequest;
             }
-            catch (JsonException)
+            catch (JsonException exception)
             {
                 if (httpRequest.Body.CanSeek)
                 {
                     httpRequest.Body.Position = 0;
                 }
 
-                return null;
+                throw new PagedQueryValidationException($"Paged request JSON gövdesi geçersiz: {exception.Message}");
             }
         }
 
         private static bool CanReadJsonBody(HttpRequest request)
         {
-            if (HttpMethods.IsGet(request.Method) || HttpMethods.IsHead(request.Method))
+            var isPagedPostRewrite = request.HttpContext.Items.ContainsKey("Aqua.PagedPostRewrite");
+            if ((HttpMethods.IsGet(request.Method) && !isPagedPostRewrite) || HttpMethods.IsHead(request.Method))
             {
                 return false;
             }
@@ -113,25 +129,19 @@ namespace aqua_api.Shared.Host.WebApi.ModelBinding
 
         private static void Normalize(PagedRequest request)
         {
-            request.PageNumber = request.PageNumber <= 0 ? 1 : request.PageNumber;
-            request.PageSize = request.PageSize <= 0 ? 20 : request.PageSize;
             request.Search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
             request.SearchFields = (request.SearchFields ?? new List<string>())
-                .Where(field => !string.IsNullOrWhiteSpace(field))
-                .Select(field => field.Trim())
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .Take(64)
+                .Select(field => field?.Trim() ?? string.Empty)
                 .ToList();
-            request.SortBy = string.IsNullOrWhiteSpace(request.SortBy) ? "Id" : request.SortBy.Trim();
+            request.SortBy = string.IsNullOrWhiteSpace(request.SortBy) ? null : request.SortBy.Trim();
             request.SortDirection = string.IsNullOrWhiteSpace(request.SortDirection) ? "desc" : request.SortDirection.Trim();
-            request.FilterLogic = string.Equals(request.FilterLogic, "or", StringComparison.OrdinalIgnoreCase) ? "or" : "and";
+            request.FilterLogic = string.IsNullOrWhiteSpace(request.FilterLogic) ? "and" : request.FilterLogic.Trim();
             request.Filters = request.Filters?
-                .Where(IsValidFilter)
                 .Select(filter => new Filter
                 {
-                    Column = filter.Column.Trim(),
-                    Operator = string.IsNullOrWhiteSpace(filter.Operator) ? "Equals" : filter.Operator.Trim(),
-                    Value = filter.Value?.Trim() ?? string.Empty
+                    Column = filter.Column?.Trim() ?? string.Empty,
+                    Operator = filter.Operator?.Trim() ?? string.Empty,
+                    Value = filter.Value?.Trim()
                 })
                 .ToList() ?? new List<Filter>();
         }
@@ -162,6 +172,30 @@ namespace aqua_api.Shared.Host.WebApi.ModelBinding
             }
         }
 
+        private static void BindDerivedNullableDateTimeProperties(PagedRequest request, Microsoft.AspNetCore.Http.IQueryCollection query)
+        {
+            var requestType = request.GetType();
+            foreach (var property in requestType.GetProperties().Where(property => property.PropertyType == typeof(DateTime?)))
+            {
+                var rawValue = ParseString(query, new[] { ToCamelCase(property.Name), property.Name });
+                if (rawValue is null)
+                {
+                    continue;
+                }
+
+                if (!DateTime.TryParse(
+                        rawValue,
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.RoundtripKind,
+                        out var parsed))
+                {
+                    throw new PagedQueryValidationException($"'{ToCamelCase(property.Name)}' ISO tarih değeri olmalıdır.");
+                }
+
+                property.SetValue(request, parsed);
+            }
+        }
+
         private static string ToCamelCase(string value)
         {
             return string.IsNullOrWhiteSpace(value)
@@ -169,10 +203,21 @@ namespace aqua_api.Shared.Host.WebApi.ModelBinding
                 : char.ToLowerInvariant(value[0]) + value[1..];
         }
 
-        private static int ParseInt(Microsoft.AspNetCore.Http.IQueryCollection query, IEnumerable<string> keys, int fallback)
+        private static int ParseInt(
+            Microsoft.AspNetCore.Http.IQueryCollection query,
+            IEnumerable<string> keys,
+            int fallback,
+            string parameterName)
         {
             var raw = ParseString(query, keys);
-            return int.TryParse(raw, out var value) ? value : fallback;
+            if (raw is null)
+            {
+                return fallback;
+            }
+
+            return int.TryParse(raw, out var value)
+                ? value
+                : throw new PagedQueryValidationException($"'{parameterName}' tam sayı olmalıdır.");
         }
 
         private static string? ParseString(Microsoft.AspNetCore.Http.IQueryCollection query, IEnumerable<string> keys)
@@ -200,10 +245,8 @@ namespace aqua_api.Shared.Host.WebApi.ModelBinding
                 }
 
                 return values
-                    .SelectMany(value => (value ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries))
+                    .SelectMany(value => (value ?? string.Empty).Split(','))
                     .Select(value => value.Trim())
-                    .Where(value => value.Length > 0)
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
                     .ToList();
             }
 
@@ -230,13 +273,11 @@ namespace aqua_api.Shared.Host.WebApi.ModelBinding
                     PropertyNameCaseInsensitive = true
                 });
 
-                return parsed?
-                    .Where(IsValidFilter)
-                    .ToList();
+                return parsed;
             }
-            catch
+            catch (JsonException exception)
             {
-                return null;
+                throw new PagedQueryValidationException($"'filters' JSON değeri geçersiz: {exception.Message}");
             }
         }
 
@@ -278,26 +319,15 @@ namespace aqua_api.Shared.Host.WebApi.ModelBinding
                     break;
                 }
 
-                var filter = new Filter
+                filters.Add(new Filter
                 {
                     Column = column ?? string.Empty,
-                    Operator = string.IsNullOrWhiteSpace(filterOperator) ? "Equals" : filterOperator,
-                    Value = value ?? string.Empty
-                };
-
-                if (IsValidFilter(filter))
-                {
-                    filters.Add(filter);
-                }
+                    Operator = filterOperator ?? string.Empty,
+                    Value = value
+                });
             }
 
             return filters.Count == 0 ? null : filters;
-        }
-
-        private static bool IsValidFilter(Filter filter)
-        {
-            return !string.IsNullOrWhiteSpace(filter.Column) &&
-                   !string.IsNullOrWhiteSpace(filter.Operator);
         }
     }
 }

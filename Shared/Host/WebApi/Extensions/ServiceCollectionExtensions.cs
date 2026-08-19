@@ -6,6 +6,7 @@ using aqua_api.Modules.Integrations.Infrastructure.Clients;
 using aqua_api.Modules.Integrations.Infrastructure.Options;
 using aqua_api.Shared.Infrastructure.Persistence.Data;
 using aqua_api.Shared.Host.WebApi.Hubs;
+using aqua_api.Shared.Host.WebApi.Filters;
 using aqua_api.Modules.System.Infrastructure.Startup;
 using aqua_api.Shared.Host.WebApi.Routing;
 using Hangfire;
@@ -39,6 +40,8 @@ public static class ServiceCollectionExtensions
         services.AddControllers(options =>
         {
             options.Conventions.Add(new IisSafeHttpMethodConvention());
+            options.Conventions.Add(new PagedPostRouteConvention());
+            options.Filters.Add<PagedRequestValidationFilter>();
         });
 
         services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>

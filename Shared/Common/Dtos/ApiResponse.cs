@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using aqua_api.Shared.Common.Exceptions;
 
 namespace aqua_api.Shared.Common.Dtos
 {
@@ -47,6 +48,14 @@ namespace aqua_api.Shared.Common.Dtos
         // Preferred signature (message, exceptionMessage, statusCode)
         public static ApiResponse<T> ErrorResult(string message, string? exceptionMessage = null,int statusCode = 500)
         {
+            if (statusCode >= 500
+                && PagedQueryValidationException.TryConsume(exceptionMessage, out var validationMessage))
+            {
+                message = validationMessage;
+                exceptionMessage = validationMessage;
+                statusCode = StatusCodes.Status400BadRequest;
+            }
+
             return new ApiResponse<T>
             {
                 Success = false,

@@ -1,813 +1,825 @@
-using System;
-using System.Linq;
+using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
+using System.Text.Json.Serialization;
+using aqua_api.Shared.Common.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Query;
 
-namespace aqua_api.Shared.Common.Helpers
+namespace aqua_api.Shared.Common.Helpers;
+
+public static class QueryHelper
 {
-    public static class QueryHelper
+    public const string SearchCollation = "Latin1_General_100_CI_AS";
+    private const int MaximumFilterCount = 20;
+    private const int MaximumSearchFieldCount = 12;
+    private const int MaximumSearchTermCount = 10;
+    private const int MaximumColumnLength = 100;
+    private const int MaximumOperatorLength = 30;
+    private const int MaximumFilterValueLength = 500;
+
+    public sealed record SearchTerm(string Raw, string Normalized);
+
+    public static void ValidateRequestContract(PagedRequest request)
     {
-        public const string SearchCollation = "Latin1_General_100_CI_AS";
+        ArgumentNullException.ThrowIfNull(request);
+        PagedQueryExtensions.ValidateRequest(request);
 
-        private static readonly MethodInfo CollateStringMethod = typeof(RelationalDbFunctionsExtensions)
-            .GetMethods(BindingFlags.Public | BindingFlags.Static)
-            .Single(method =>
-                method.Name == nameof(RelationalDbFunctionsExtensions.Collate)
-                && method.IsGenericMethodDefinition
-                && method.GetParameters().Length == 3)
-            .MakeGenericMethod(typeof(string));
+        _ = ParseFilterLogic(request.FilterLogic);
+        _ = ParseSortDirection(request.SortDirection);
 
-        private static readonly PropertyInfo EfFunctionsProperty = typeof(EF)
-            .GetProperty(nameof(EF.Functions), BindingFlags.Public | BindingFlags.Static)!;
-
-        private static readonly char[] SearchSeparators = [' ', '\t', '\r', '\n'];
-        private static readonly char[] SearchTermTokenSeparators =
-        [
-            ' ', '\t', '\r', '\n', '.', ',', '-', '_', '/', '\\', '\'', '"', '’', '`',
-            '(', ')', '[', ']', '{', '}', '&', '+', ':', ';', '!', '?', '|'
-        ];
-
-        public static readonly string[] CommonSearchableColumns =
+        var fields = request.SearchFields ?? [];
+        if (fields.Count > MaximumSearchFieldCount)
         {
-            "Name",
-            "Title",
-            "TitleName",
-            "Description",
-            "Code",
-            "ERPCode",
-            "ErpCode",
-            "Value",
-            "Type",
-            "Status",
-            "Reason",
-            "Comment",
-            "Comments",
-            "Notes",
-            "Text",
-            "Content",
-            "Message",
-            "Subject",
-            "Username",
-            "Email",
-            "FirstName",
-            "LastName",
-            "FullName",
-            "Phone",
-            "Phone1",
-            "Phone2",
-            "Address",
-            "Website",
-            "Url",
-            "Path",
-            "ProjectCode",
-            "ProjectName",
-            "CageCode",
-            "CageName",
-            "WarehouseCode",
-            "WarehouseName",
-            "BatchCode",
-            "StockCode",
-            "StockName",
-            "ErpStockCode",
-            "StokCode",
-            "Barcode",
-            "CurrencyCode",
-            "CurrencyName",
-            "Currency",
-            "GrupKodu",
-            "GrupAdi",
-            "Kod1",
-            "Kod1Adi",
-            "Kod2",
-            "Kod2Adi",
-            "Kod3",
-            "Kod3Adi",
-            "Kod4",
-            "Kod4Adi",
-            "Kod5",
-            "Kod5Adi",
-            "SerialPrefix",
-            "PermissionKey",
-            "DisplayName",
-            "SessionId",
-            "IpAddress",
-            "Browser",
-            "Platform",
-            "DeviceName",
-            "RoleNavigation.Title",
-            "PermissionDefinition.Name",
-            "PermissionDefinition.Code",
-            "Group.Name",
-            "User.Username",
-            "User.Email",
-            "User.FirstName",
-            "User.LastName",
-            "Stock.StockCode",
-            "Stock.StockName",
-            "Stock.ErpStockCode",
-            "FishStock.StockCode",
-            "FishStock.StockName",
-            "FishStock.ErpStockCode",
-            "FeedStock.StockCode",
-            "FeedStock.StockName",
-            "FeedStock.ErpStockCode",
-            "FromStock.StockCode",
-            "FromStock.StockName",
-            "FromStock.ErpStockCode",
-            "ToStock.StockCode",
-            "ToStock.StockName",
-            "ToStock.ErpStockCode",
-            "Project.ProjectCode",
-            "Project.ProjectName",
-            "SourceProject.ProjectCode",
-            "SourceProject.ProjectName",
-            "TargetProject.ProjectCode",
-            "TargetProject.ProjectName",
-            "FishBatch.BatchCode",
-            "FishBatch.Project.ProjectCode",
-            "FishBatch.Project.ProjectName",
-            "FishBatch.FishStock.ErpStockCode",
-            "FishBatch.FishStock.StockName",
-            "FromFishBatch.BatchCode",
-            "ToFishBatch.BatchCode",
-            "ProjectCage.Cage.CageCode",
-            "ProjectCage.Cage.CageName",
-            "ProjectCage.Project.ProjectCode",
-            "ProjectCage.Project.ProjectName",
-            "FromProjectCage.Cage.CageCode",
-            "FromProjectCage.Cage.CageName",
-            "FromProjectCage.Project.ProjectCode",
-            "FromProjectCage.Project.ProjectName",
-            "ToProjectCage.Cage.CageCode",
-            "ToProjectCage.Cage.CageName",
-            "ToProjectCage.Project.ProjectCode",
-            "ToProjectCage.Project.ProjectName",
-            "Cage.CageCode",
-            "Cage.CageName",
-            "Warehouse.WarehouseCode",
-            "Warehouse.WarehouseName",
-            "FromWarehouse.WarehouseCode",
-            "FromWarehouse.WarehouseName",
-            "ToWarehouse.WarehouseCode",
-            "ToWarehouse.WarehouseName",
-            "TargetWarehouse.WarehouseCode",
-            "TargetWarehouse.WarehouseName",
-            "OperationType.Code",
-            "OperationType.Name",
-            "WeatherType.Code",
-            "WeatherType.Name",
-            "WeatherSeverity.Code",
-            "WeatherSeverity.Name",
-            "CalibrationDefinition.CalibrationCode",
-            "CalibrationDefinition.CalibrationInfo",
-            "Feeding.FeedingNo",
-            "Shipment.ShipmentNo",
-            "Transfer.TransferNo",
-            "WarehouseTransfer.TransferNo",
-            "CageWarehouseTransfer.TransferNo",
-            "WarehouseCageTransfer.TransferNo",
-            "Weighing.WeighingNo",
-            "Mortality.MortalityNo",
-            "GoodsReceipt.ReceiptNo",
-            "StockConvert.ConvertNo",
-            "NetOperation.OperationNo"
+            throw Invalid($"En fazla {MaximumSearchFieldCount} arama alanı seçilebilir.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Search) && request.SearchFieldsSpecified && fields.Count == 0)
+        {
+            throw Invalid("Arama yapılırken en az bir arama alanı seçilmelidir.");
+        }
+
+        if (fields.Any(string.IsNullOrWhiteSpace))
+        {
+            throw Invalid("Arama alanı boş olamaz.");
+        }
+
+        if (fields.Any(field => field.Length > MaximumColumnLength))
+        {
+            throw Invalid($"Arama alanı en fazla {MaximumColumnLength} karakter olabilir.");
+        }
+
+        if (BuildSearchTerms(request.Search).Count > MaximumSearchTermCount)
+        {
+            throw Invalid($"Arama metni en fazla {MaximumSearchTermCount} kelime içerebilir.");
+        }
+
+        var filters = request.Filters ?? [];
+        if (filters.Count > MaximumFilterCount)
+        {
+            throw Invalid($"En fazla {MaximumFilterCount} gelişmiş filtre uygulanabilir.");
+        }
+
+        for (var index = 0; index < filters.Count; index++)
+        {
+            var filter = filters[index];
+            if (string.IsNullOrWhiteSpace(filter.Column))
+            {
+                throw InvalidFilter(index, "kolon adı zorunludur");
+            }
+
+            if (filter.Column.Length > MaximumColumnLength)
+            {
+                throw InvalidFilter(index, $"kolon adı en fazla {MaximumColumnLength} karakter olabilir");
+            }
+
+            if (string.IsNullOrWhiteSpace(filter.Operator))
+            {
+                throw InvalidFilter(index, "operatör zorunludur");
+            }
+
+            if (filter.Operator.Length > MaximumOperatorLength)
+            {
+                throw InvalidFilter(index, $"operatör en fazla {MaximumOperatorLength} karakter olabilir");
+            }
+
+            if (filter.Value?.Length > MaximumFilterValueLength)
+            {
+                throw InvalidFilter(index, $"değer en fazla {MaximumFilterValueLength} karakter olabilir");
+            }
+
+            var operation = ParseOperator(filter.Operator, index);
+            if (operation is not (FilterOperation.IsNull or FilterOperation.IsNotNull) && filter.Value is null)
+            {
+                throw InvalidFilter(index, $"'{filter.Column}' filtresi için değer zorunludur");
+            }
+        }
+    }
+
+    public static List<SearchTerm> BuildSearchTerms(string? search, bool includeCompoundTerm = true)
+    {
+        _ = includeCompoundTerm;
+        if (string.IsNullOrWhiteSpace(search))
+        {
+            return [];
+        }
+
+        return search.Trim()
+            .Split([' ', '\t', '\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(term => new SearchTerm(term, NormalizeSearchText(term)))
+            .ToList();
+    }
+
+    public static List<string> BuildNormalizedSearchTerms(string? search) =>
+        BuildSearchTerms(search)
+            .Select(term => term.Normalized)
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+
+    public static string NormalizeSearchText(string? value) =>
+        AsciiTurkishSearch.Fold(value?.Trim() ?? string.Empty);
+
+    public static IQueryable<T> ApplySearch<T>(
+        this IQueryable<T> query,
+        string? search,
+        params string[] searchableColumns)
+    {
+        if (!string.IsNullOrWhiteSpace(search) && searchableColumns.Length == 0)
+        {
+            throw Invalid("Genel arama için aranabilir kolon allowlist'i tanımlanmalıdır.");
+        }
+
+        var mapping = CreateColumnMapping<T>(searchableColumns);
+        var request = new PagedRequest
+        {
+            Search = search,
+            SearchFields = searchableColumns.Length == 0 ? [] : mapping.Keys.ToList()
         };
+        return ApplySearch(query, request, mapping, mapping.Keys.ToArray());
+    }
 
-        public sealed record SearchTerm(string Raw, string Normalized);
+    public static IQueryable<T> ApplySearch<T>(
+        this IQueryable<T> query,
+        PagedRequest request,
+        params string[] defaultSearchableColumns)
+    {
+        var mapping = CreateColumnMapping<T>(defaultSearchableColumns);
+        return ApplySearch(query, request, mapping, mapping.Keys.ToArray());
+    }
 
-        public static List<SearchTerm> BuildSearchTerms(string? search, bool includeCompoundTerm = true)
+    public static IQueryable<T> ApplySearch<T>(
+        this IQueryable<T> query,
+        PagedRequest request,
+        IReadOnlyDictionary<string, string> columnMapping,
+        IReadOnlyCollection<string>? defaultColumns = null)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(columnMapping);
+
+        request.MarkSearchApplied();
+        var search = request.Search?.Trim();
+        if (string.IsNullOrWhiteSpace(search))
         {
-            if (string.IsNullOrWhiteSpace(search))
-            {
-                return new List<SearchTerm>();
-            }
-
-            var terms = new List<SearchTerm>();
-            foreach (var chunk in search.Trim()
-                .Split(SearchSeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                .Where(term => !string.IsNullOrWhiteSpace(term)))
-            {
-                var tokens = chunk
-                    .Split(SearchTermTokenSeparators, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .Where(token => !string.IsNullOrWhiteSpace(token))
-                    .Distinct(StringComparer.Ordinal)
-                    .ToList();
-
-                if (includeCompoundTerm || tokens.Count <= 1)
-                {
-                    AddSearchTerm(terms, chunk);
-                    if (tokens.Count <= 1)
-                    {
-                        continue;
-                    }
-                }
-
-                foreach (var token in tokens)
-                {
-                    AddSearchTerm(terms, token);
-                }
-            }
-
-            return terms;
-        }
-
-        public static List<string> BuildNormalizedSearchTerms(string? search)
-        {
-            return BuildSearchTerms(search)
-                .Select(term => term.Normalized)
-                .Where(term => !string.IsNullOrWhiteSpace(term))
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
-        }
-
-        public static IQueryable<T> ApplySearch<T>(this IQueryable<T> query, string? search, params string[] searchableColumns)
-        {
-            if (string.IsNullOrWhiteSpace(search))
-            {
-                return query;
-            }
-
-            if (searchableColumns.Length == 0)
-            {
-                searchableColumns = CommonSearchableColumns
-                    .Concat(typeof(T)
-                        .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                        .Where(property => property.PropertyType == typeof(string))
-                        .Select(property => property.Name))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToArray();
-            }
-
-            var useEfSearch = IsEntityFrameworkQuery(query);
-            var terms = BuildSearchTerms(search, includeCompoundTerm: !useEfSearch);
-
-            if (terms.Count == 0)
-            {
-                return query;
-            }
-
-            var parameter = Expression.Parameter(typeof(T), "x");
-            Expression? searchPredicate = null;
-
-            foreach (var term in terms)
-            {
-                Expression? termPredicate = null;
-
-                foreach (var column in searchableColumns)
-                {
-                    var resolved = ResolvePropertyPath(parameter, typeof(T), column);
-                    if (resolved == null)
-                    {
-                        continue;
-                    }
-
-                    var (member, property) = resolved.Value;
-                    Expression? currentPredicate;
-                    if (property.PropertyType == typeof(string))
-                    {
-                        var notNull = Expression.NotEqual(member, Expression.Constant(null, typeof(string)));
-                        var columnPredicate = useEfSearch
-                            ? BuildSqlServerSearchPredicate(member, term.Raw, term.Normalized)
-                            : BuildInMemorySearchPredicate(member, term.Normalized);
-                        currentPredicate = Expression.AndAlso(notNull, columnPredicate);
-                    }
-                    else
-                    {
-                        currentPredicate = BuildScalarSearchPredicate(member, property.PropertyType, term.Raw);
-                    }
-
-                    if (currentPredicate == null)
-                    {
-                        continue;
-                    }
-
-                    termPredicate = termPredicate == null
-                        ? currentPredicate
-                        : Expression.OrElse(termPredicate, currentPredicate);
-                }
-
-                if (termPredicate == null)
-                {
-                    continue;
-                }
-
-                searchPredicate = searchPredicate == null
-                    ? termPredicate
-                    : Expression.AndAlso(searchPredicate, termPredicate);
-            }
-
-            if (searchPredicate == null)
-            {
-                return query;
-            }
-
-            var lambda = Expression.Lambda<Func<T, bool>>(searchPredicate, parameter);
-            return query.Where(lambda);
-        }
-
-        public static IQueryable<T> ApplySearch<T>(
-            this IQueryable<T> query,
-            PagedRequest request,
-            params string[] defaultSearchableColumns)
-        {
-            if (request == null || request.SearchFields == null || request.SearchFields.Count == 0)
-            {
-                return query.ApplySearch(request?.Search, defaultSearchableColumns);
-            }
-
-            var parameter = Expression.Parameter(typeof(T), "x");
-            var candidateColumns = (defaultSearchableColumns.Length > 0
-                    ? defaultSearchableColumns
-                    : CommonSearchableColumns
-                        .Concat(typeof(T)
-                            .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                            .Where(property => IsGeneralSearchScalar(property.PropertyType))
-                            .Select(property => property.Name)))
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-
-            var selectedColumns = request.SearchFields
-                .SelectMany(requestedField => candidateColumns.Where(candidate =>
-                    string.Equals(candidate, requestedField, StringComparison.OrdinalIgnoreCase) ||
-                    candidate.EndsWith($".{requestedField}", StringComparison.OrdinalIgnoreCase)))
-                .Where(column =>
-                {
-                    var resolved = ResolvePropertyPath(parameter, typeof(T), column);
-                    return resolved != null && IsGeneralSearchScalar(resolved.Value.property.PropertyType);
-                })
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToArray();
-
-            if (selectedColumns.Length == 0)
-            {
-                return string.IsNullOrWhiteSpace(request.Search)
-                    ? query
-                    : query.Where(_ => false);
-            }
-
-            return query.ApplySearch(request.Search, selectedColumns);
-        }
-
-        public static string NormalizeSearchText(string? value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                return string.Empty;
-            }
-
-            var normalized = value.Trim().ToLower(new CultureInfo("tr-TR")).Normalize(NormalizationForm.FormD);
-            var builder = new StringBuilder(normalized.Length);
-
-            foreach (var ch in normalized)
-            {
-                var category = CharUnicodeInfo.GetUnicodeCategory(ch);
-                if (category == UnicodeCategory.NonSpacingMark)
-                {
-                    continue;
-                }
-
-                var mapped = ch switch
-                {
-                    'ı' => 'i',
-                    'ğ' => 'g',
-                    'ü' => 'u',
-                    'ş' => 's',
-                    'ö' => 'o',
-                    'ç' => 'c',
-                    _ => ch
-                };
-
-                if (char.IsLetterOrDigit(mapped))
-                {
-                    builder.Append(mapped);
-                }
-            }
-
-            return builder.ToString();
-        }
-
-        private static void AddSearchTerm(ICollection<SearchTerm> terms, string raw)
-        {
-            var normalized = NormalizeSearchText(raw);
-            if (string.IsNullOrWhiteSpace(raw) && string.IsNullOrWhiteSpace(normalized))
-            {
-                return;
-            }
-
-            if (terms.Any(term =>
-                string.Equals(term.Raw, raw, StringComparison.Ordinal) &&
-                string.Equals(term.Normalized, normalized, StringComparison.Ordinal)))
-            {
-                return;
-            }
-
-            terms.Add(new SearchTerm(raw, normalized));
-        }
-
-        private static bool IsEntityFrameworkQuery<T>(IQueryable<T> query)
-        {
-            return query.Provider.GetType().Namespace?.Contains("EntityFrameworkCore", StringComparison.OrdinalIgnoreCase) == true;
-        }
-
-        private static Expression BuildInMemorySearchPredicate(Expression member, string normalizedTerm)
-        {
-            if (string.IsNullOrWhiteSpace(normalizedTerm))
-            {
-                return Expression.Constant(false);
-            }
-
-            var normalizeMethod = typeof(QueryHelper).GetMethod(nameof(NormalizeSearchText), BindingFlags.Public | BindingFlags.Static)!;
-            var normalizedMember = Expression.Call(normalizeMethod, member);
-            return Expression.Call(
-                normalizedMember,
-                typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) })!,
-                Expression.Constant(normalizedTerm));
-        }
-
-        private static Expression BuildSqlServerSearchPredicate(Expression member, string rawTerm, string normalizedTerm)
-        {
-            var containsMethod = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) })!;
-            var collatedMember = Expression.Call(
-                CollateStringMethod,
-                Expression.Property(null, EfFunctionsProperty),
-                member,
-                Expression.Constant(SearchCollation));
-
-            Expression? predicate = null;
-            if (!string.IsNullOrWhiteSpace(rawTerm))
-            {
-                predicate = Expression.Call(collatedMember, containsMethod, Expression.Constant(rawTerm.Trim()));
-            }
-
-            return predicate ?? Expression.Constant(true);
-        }
-
-        private static bool IsGeneralSearchScalar(Type propertyType)
-        {
-            var type = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-            return type == typeof(string) ||
-                   type == typeof(Guid) ||
-                   type == typeof(bool) ||
-                   type.IsEnum ||
-                   type == typeof(byte) ||
-                   type == typeof(short) ||
-                   type == typeof(int) ||
-                   type == typeof(long) ||
-                   type == typeof(float) ||
-                   type == typeof(double) ||
-                   type == typeof(decimal);
-        }
-
-        private static Expression? BuildScalarSearchPredicate(Expression member, Type propertyType, string rawTerm)
-        {
-            var targetType = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
-            object? parsedValue;
-
-            if (targetType == typeof(Guid))
-            {
-                if (!Guid.TryParse(rawTerm, out var guid)) return null;
-                parsedValue = guid;
-            }
-            else if (targetType == typeof(bool))
-            {
-                if (!bool.TryParse(rawTerm, out var boolean)) return null;
-                parsedValue = boolean;
-            }
-            else if (targetType.IsEnum)
-            {
-                if (!Enum.TryParse(targetType, rawTerm, true, out parsedValue)) return null;
-            }
-            else
-            {
-                try
-                {
-                    parsedValue = Convert.ChangeType(rawTerm, targetType, CultureInfo.InvariantCulture);
-                }
-                catch (Exception exception) when (exception is FormatException or InvalidCastException or OverflowException)
-                {
-                    return null;
-                }
-            }
-
-            var constant = Expression.Constant(parsedValue, targetType);
-            if (Nullable.GetUnderlyingType(propertyType) == null)
-            {
-                return Expression.Equal(member, constant);
-            }
-
-            var hasValue = Expression.Property(member, "HasValue");
-            var value = Expression.Property(member, "Value");
-            return Expression.AndAlso(hasValue, Expression.Equal(value, constant));
-        }
-
-        private static Expression BuildStringFilterPredicate(Expression member, string rawValue, string normalizedValue, string operatorLower, bool useEfSearch)
-        {
-            if (string.IsNullOrWhiteSpace(rawValue) && string.IsNullOrWhiteSpace(normalizedValue))
-            {
-                return Expression.Constant(true);
-            }
-
-            var methodName = operatorLower switch
-            {
-                "contains" => nameof(string.Contains),
-                "startswith" => nameof(string.StartsWith),
-                "endswith" => nameof(string.EndsWith),
-                _ => null
-            };
-
-            if (methodName == null)
-            {
-                return Expression.Equal(member, Expression.Constant(rawValue));
-            }
-
-            var method = typeof(string).GetMethod(methodName, new[] { typeof(string) })!;
-
-            if (!useEfSearch)
-            {
-                var normalizeMethod = typeof(QueryHelper).GetMethod(nameof(NormalizeSearchText), BindingFlags.Public | BindingFlags.Static)!;
-                var normalizedMember = Expression.Call(normalizeMethod, member);
-                return Expression.Call(normalizedMember, method, Expression.Constant(normalizedValue));
-            }
-
-            Expression? predicate = null;
-
-            if (!string.IsNullOrWhiteSpace(rawValue))
-            {
-                if (operatorLower == "contains")
-                {
-                    foreach (var term in BuildSearchTerms(rawValue, includeCompoundTerm: false))
-                    {
-                        if (string.IsNullOrWhiteSpace(term.Raw))
-                        {
-                            continue;
-                        }
-
-                        var termPredicate = Expression.Call(member, method, Expression.Constant(term.Raw.Trim()));
-                        predicate = predicate == null ? termPredicate : Expression.AndAlso(predicate, termPredicate);
-                    }
-                }
-                else
-                {
-                    predicate = Expression.Call(member, method, Expression.Constant(rawValue.Trim()));
-                }
-            }
-
-            return predicate ?? Expression.Constant(true);
-        }
-
-        private static (Expression expression, PropertyInfo property)? ResolvePropertyPath(Expression param, Type rootType, string path)
-        {
-            var parts = path.Split('.');
-            Expression current = param;
-            PropertyInfo? prop = null;
-            Type currentType = rootType;
-
-            foreach (var part in parts)
-            {
-                prop = currentType.GetProperty(part, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
-                if (prop == null) return null;
-                current = Expression.Property(current, prop);
-                currentType = prop.PropertyType;
-            }
-
-            return prop == null ? null : (current, prop);
-        }
-
-        private static string ResolveColumnName(string column, IReadOnlyDictionary<string, string>? columnMapping)
-        {
-            if (columnMapping == null) return column;
-            var mappingKey = columnMapping.Keys.FirstOrDefault(k => string.Equals(k, column, StringComparison.OrdinalIgnoreCase));
-            return mappingKey != null ? columnMapping[mappingKey] : column;
-        }
-
-        public static IQueryable<T> ApplyFilters<T>(this IQueryable<T> query, List<Filter>? filters, string filterLogic = "and", IReadOnlyDictionary<string, string>? columnMapping = null)
-        {
-            ParameterExpression param = Expression.Parameter(typeof(T), "x");
-            Expression? basePredicate = null;
-            var useEfSearch = IsEntityFrameworkQuery(query);
-
-            var isDeletedProperty = typeof(T).GetProperty("IsDeleted");
-            if (isDeletedProperty != null && (isDeletedProperty.PropertyType == typeof(bool) || isDeletedProperty.PropertyType == typeof(bool?)))
-            {
-                var isDeletedLeft = Expression.Property(param, isDeletedProperty);
-                var isDeletedExp = Expression.Equal(isDeletedLeft, Expression.Constant(false));
-                basePredicate = isDeletedExp;
-            }
-
-            if (filters == null || filters.Count == 0)
-            {
-                if (basePredicate == null) return query;
-                var defaultLambda = Expression.Lambda<Func<T, bool>>(basePredicate, param);
-                return query.Where(defaultLambda);
-            }
-
-            bool useOr = string.Equals(filterLogic, "or", StringComparison.OrdinalIgnoreCase);
-            Expression? filterPredicate = null;
-
-            foreach (var filter in filters)
-            {
-                if (string.IsNullOrEmpty(filter.Value)) continue;
-
-                var columnName = ResolveColumnName(filter.Column, columnMapping);
-
-                var resolved = ResolvePropertyPath(param, typeof(T), columnName);
-                if (resolved == null) continue;
-                var (left, property) = resolved.Value;
-
-                Expression? exp = null;
-
-                var operatorLower = filter.Operator.ToLowerInvariant();
-
-                if (property.PropertyType == typeof(string))
-                {
-                    exp = BuildStringFilterPredicate(
-                        left,
-                        filter.Value,
-                        NormalizeSearchText(filter.Value),
-                        operatorLower,
-                        useEfSearch);
-                    exp = Expression.AndAlso(
-                        Expression.NotEqual(left, Expression.Constant(null, typeof(string))),
-                        exp);
-                }
-                else if (property.PropertyType == typeof(int) || property.PropertyType == typeof(int?))
-                {
-                    if (int.TryParse(filter.Value, out int val))
-                    {
-                        exp = operatorLower switch
-                        {
-                            ">" or "gt" => Expression.GreaterThan(left, Expression.Constant(val)),
-                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, Expression.Constant(val)),
-                            "<" or "lt" => Expression.LessThan(left, Expression.Constant(val)),
-                            "<=" or "lte" => Expression.LessThanOrEqual(left, Expression.Constant(val)),
-                            _ => Expression.Equal(left, Expression.Constant(val))
-                        };
-                    }
-                }
-                else if (property.PropertyType == typeof(short) || property.PropertyType == typeof(short?))
-                {
-                    if (short.TryParse(filter.Value, out short val))
-                    {
-                        var constant = Expression.Constant(val, typeof(short));
-                        var comparableLeft = property.PropertyType == typeof(short?)
-                            ? Expression.Property(left, "Value")
-                            : left;
-                        var comparison = operatorLower switch
-                        {
-                            ">" or "gt" => Expression.GreaterThan(comparableLeft, constant),
-                            ">=" or "gte" => Expression.GreaterThanOrEqual(comparableLeft, constant),
-                            "<" or "lt" => Expression.LessThan(comparableLeft, constant),
-                            "<=" or "lte" => Expression.LessThanOrEqual(comparableLeft, constant),
-                            _ => Expression.Equal(comparableLeft, constant)
-                        };
-                        exp = property.PropertyType == typeof(short?)
-                            ? Expression.AndAlso(Expression.Property(left, "HasValue"), comparison)
-                            : comparison;
-                    }
-                }
-                else if (property.PropertyType == typeof(long) || property.PropertyType == typeof(long?))
-                {
-                    if (long.TryParse(filter.Value, out long val))
-                    {
-                        exp = operatorLower switch
-                        {
-                            ">" or "gt" => Expression.GreaterThan(left, Expression.Constant(val)),
-                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, Expression.Constant(val)),
-                            "<" or "lt" => Expression.LessThan(left, Expression.Constant(val)),
-                            "<=" or "lte" => Expression.LessThanOrEqual(left, Expression.Constant(val)),
-                            _ => Expression.Equal(left, Expression.Constant(val))
-                        };
-                    }
-                }
-                else if (property.PropertyType == typeof(decimal) || property.PropertyType == typeof(decimal?))
-                {
-                    if (decimal.TryParse(filter.Value, out decimal val))
-                    {
-                        exp = operatorLower switch
-                        {
-                            ">" or "gt" => Expression.GreaterThan(left, Expression.Constant(val)),
-                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, Expression.Constant(val)),
-                            "<" or "lt" => Expression.LessThan(left, Expression.Constant(val)),
-                            "<=" or "lte" => Expression.LessThanOrEqual(left, Expression.Constant(val)),
-                            _ => Expression.Equal(left, Expression.Constant(val))
-                        };
-                    }
-                }
-                else if (property.PropertyType == typeof(DateTime) || property.PropertyType == typeof(DateTime?))
-                {
-                    if (DateTime.TryParse(filter.Value, out DateTime val))
-                    {
-                        exp = operatorLower switch
-                        {
-                            ">" or "gt" => Expression.GreaterThan(left, Expression.Constant(val)),
-                            ">=" or "gte" => Expression.GreaterThanOrEqual(left, Expression.Constant(val)),
-                            "<" or "lt" => Expression.LessThan(left, Expression.Constant(val)),
-                            "<=" or "lte" => Expression.LessThanOrEqual(left, Expression.Constant(val)),
-                            _ => Expression.Equal(left, Expression.Constant(val))
-                        };
-                    }
-                }
-                else if (property.PropertyType == typeof(bool) || property.PropertyType == typeof(bool?))
-                {
-                    if (bool.TryParse(filter.Value, out bool val))
-                    {
-                        exp = Expression.Equal(left, Expression.Constant(val));
-                    }
-                }
-                else if (property.PropertyType.IsEnum)
-                {
-                    if (Enum.TryParse(property.PropertyType, filter.Value, true, out var enumVal))
-                    {
-                        exp = Expression.Equal(left, Expression.Constant(enumVal));
-                    }
-                }
-
-                if (exp != null)
-                {
-                    filterPredicate = filterPredicate == null
-                        ? exp
-                        : useOr
-                            ? Expression.OrElse(filterPredicate, exp)
-                            : Expression.AndAlso(filterPredicate, exp);
-                }
-            }
-
-            Expression? finalPredicate;
-            if (basePredicate != null && filterPredicate != null)
-                finalPredicate = Expression.AndAlso(basePredicate, filterPredicate);
-            else
-                finalPredicate = basePredicate ?? filterPredicate;
-
-            if (finalPredicate == null) return query;
-
-            var lambda = Expression.Lambda<Func<T, bool>>(finalPredicate, param);
-            return query.Where(lambda);
-        }
-
-        public static IQueryable<T> ApplySorting<T>(this IQueryable<T> query, string? sortBy, string? sortDirection, IReadOnlyDictionary<string, string>? columnMapping = null)
-        {
-            if (string.IsNullOrWhiteSpace(sortBy))
-            {
-                sortBy = "Id";
-            }
-
-            var resolvedSortBy = ResolveColumnName(sortBy, columnMapping);
-
-            var parameter = Expression.Parameter(typeof(T), "x");
-            var resolved = ResolvePropertyPath(parameter, typeof(T), resolvedSortBy);
-            if (resolved == null)
-            {
-                resolved = ResolvePropertyPath(parameter, typeof(T), "Id");
-                if (resolved == null) return query;
-            }
-
-            var (member, _) = resolved.Value;
-            var keySelector = Expression.Lambda(
-                typeof(Func<,>).MakeGenericType(typeof(T), member.Type),
-                member,
-                parameter
-            );
-
-            bool isDescending = string.IsNullOrWhiteSpace(sortDirection)
-                ? false
-                : sortDirection.Equals("desc", StringComparison.OrdinalIgnoreCase)
-                   || sortDirection.Equals("descending", StringComparison.OrdinalIgnoreCase);
-
-            var methodName = isDescending ? "OrderByDescending" : "OrderBy";
-            var call = Expression.Call(
-                typeof(Queryable),
-                methodName,
-                new[] { typeof(T), member.Type },
-                query.Expression,
-                keySelector
-            );
-
-            return query.Provider.CreateQuery<T>(call);
-        }
-
-        public static IQueryable<T> ApplyPagination<T>(this IQueryable<T> query, int pageNumber, int pageSize)
-        {
-            if (pageNumber < 1) pageNumber = 1;
-            if (pageSize < 1) pageSize = 20;
-
-            int skip = (pageNumber - 1) * pageSize;
-            return query.Skip(skip).Take(pageSize);
-        }
-
-        public static IQueryable<T> ApplyPagedRequest<T>(this IQueryable<T> query, PagedRequest request, IReadOnlyDictionary<string, string>? columnMapping = null)
-        {
-            if (request == null) return query;
-
-            query = query.ApplySearch(request);
-            query = query.ApplyFilters(request.Filters, request.FilterLogic, columnMapping);
-            query = query.ApplySorting(request.SortBy, request.SortDirection, columnMapping);
-            query = query.ApplyPagination(request.PageNumber, request.PageSize);
-
             return query;
         }
+
+        if (columnMapping.Count == 0)
+        {
+            throw Invalid("En az bir aranabilir kolon tanımlanmalıdır.");
+        }
+
+        var requestedColumns = request.SearchFields
+            .Where(field => !string.IsNullOrWhiteSpace(field))
+            .Select(field => field.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        if (requestedColumns.Length == 0)
+        {
+            requestedColumns = (defaultColumns is { Count: > 0 } ? defaultColumns : columnMapping.Keys)
+                .Where(field => !string.IsNullOrWhiteSpace(field))
+                .Select(field => field.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
+        if (request.SearchFields.Count > 0 && requestedColumns.Length > MaximumSearchFieldCount)
+        {
+            throw Invalid($"En fazla {MaximumSearchFieldCount} arama alanı seçilebilir.");
+        }
+
+        var parameter = Expression.Parameter(typeof(T), "x");
+        var members = requestedColumns.Select(column =>
+        {
+            if (column.Length > MaximumColumnLength)
+            {
+                throw Invalid($"Arama alanı en fazla {MaximumColumnLength} karakter olabilir.");
+            }
+
+            var path = ResolveColumn(column, columnMapping, "aranabilir", allowDirectTopLevel: true);
+            var resolved = ResolvePath(parameter, typeof(T), path)
+                ?? throw Invalid($"'{column}' aranabilir bir kolon değildir.");
+            if (!SupportsGeneralSearch(resolved.property.PropertyType))
+            {
+                throw Invalid($"'{column}' genel aramayı destekleyen bir kolon değildir.");
+            }
+
+            return resolved.member;
+        }).ToArray();
+
+        var terms = BuildSearchTerms(search);
+        if (terms.Count > MaximumSearchTermCount)
+        {
+            throw Invalid($"Arama metni en fazla {MaximumSearchTermCount} kelime içerebilir.");
+        }
+
+        var useSqlPattern = query.Provider is IAsyncQueryProvider;
+        Expression? allTerms = null;
+        foreach (var term in terms)
+        {
+            Expression? anyColumn = null;
+            foreach (var member in members)
+            {
+                var current = BuildGeneralSearchMatch(member, term.Raw, useSqlPattern);
+                if (current is null)
+                {
+                    continue;
+                }
+
+                anyColumn = anyColumn is null ? current : Expression.OrElse(anyColumn, current);
+            }
+
+            anyColumn ??= Expression.Constant(false);
+            allTerms = allTerms is null ? anyColumn : Expression.AndAlso(allTerms, anyColumn);
+        }
+
+        return allTerms is null
+            ? query
+            : query.Where(Expression.Lambda<Func<T, bool>>(allTerms, parameter));
+    }
+
+    public static IQueryable<T> ApplyFilters<T>(
+        this IQueryable<T> query,
+        List<Filter>? filters,
+        string filterLogic = "and",
+        IReadOnlyDictionary<string, string>? columnMapping = null)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        var list = filters?.ToList() ?? [];
+        if (list.Count > MaximumFilterCount)
+        {
+            throw Invalid($"En fazla {MaximumFilterCount} gelişmiş filtre uygulanabilir.");
+        }
+
+        var logic = ParseFilterLogic(filterLogic);
+        if (list.Count == 0)
+        {
+            return query;
+        }
+
+        var parameter = Expression.Parameter(typeof(T), "x");
+        Expression? combined = null;
+        for (var index = 0; index < list.Count; index++)
+        {
+            var filter = list[index];
+            if (string.IsNullOrWhiteSpace(filter.Column))
+            {
+                throw InvalidFilter(index, "kolon adı zorunludur");
+            }
+
+            if (filter.Column.Length > MaximumColumnLength)
+            {
+                throw InvalidFilter(index, $"kolon adı en fazla {MaximumColumnLength} karakter olabilir");
+            }
+
+            if (filter.Operator?.Length > MaximumOperatorLength)
+            {
+                throw InvalidFilter(index, $"operatör en fazla {MaximumOperatorLength} karakter olabilir");
+            }
+
+            if (filter.Value?.Length > MaximumFilterValueLength)
+            {
+                throw InvalidFilter(index, $"değer en fazla {MaximumFilterValueLength} karakter olabilir");
+            }
+
+            var path = ResolveColumn(filter.Column.Trim(), columnMapping, "filtrelenebilir", index, allowDirectTopLevel: true);
+            var resolved = ResolvePath(parameter, typeof(T), path)
+                ?? throw InvalidFilter(index, $"'{filter.Column}' filtrelenebilir bir kolon değildir");
+            var current = BuildFilter(resolved.member, resolved.property.PropertyType, filter, index);
+            combined = combined is null
+                ? current
+                : logic == FilterLogic.Or
+                    ? Expression.OrElse(combined, current)
+                    : Expression.AndAlso(combined, current);
+        }
+
+        return query.Where(Expression.Lambda<Func<T, bool>>(combined!, parameter));
+    }
+
+    public static IQueryable<T> ApplySorting<T>(
+        this IQueryable<T> query,
+        string? sortBy,
+        string? sortDirection,
+        IReadOnlyDictionary<string, string>? columnMapping = null)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        if (sortBy?.Length > MaximumColumnLength)
+        {
+            throw Invalid($"Sıralama kolonu en fazla {MaximumColumnLength} karakter olabilir.");
+        }
+
+        var descending = ParseSortDirection(sortDirection);
+        var requestedColumn = string.IsNullOrWhiteSpace(sortBy) ? "Id" : sortBy.Trim();
+        var path = ResolveColumn(requestedColumn, columnMapping, "sıralanabilir", allowDirectTopLevel: true);
+        var parameter = Expression.Parameter(typeof(T), "x");
+        var resolved = ResolvePath(parameter, typeof(T), path)
+            ?? throw Invalid($"'{requestedColumn}' sıralanabilir bir kolon değildir.");
+
+        var lambda = Expression.Lambda(resolved.member, parameter);
+        var method = descending ? nameof(Queryable.OrderByDescending) : nameof(Queryable.OrderBy);
+        var call = Expression.Call(
+            typeof(Queryable),
+            method,
+            [typeof(T), resolved.member.Type],
+            query.Expression,
+            Expression.Quote(lambda));
+        var sorted = query.Provider.CreateQuery<T>(call);
+
+        var id = ResolvePath(parameter, typeof(T), "Id");
+        if (id is null || path.Equals("Id", StringComparison.OrdinalIgnoreCase))
+        {
+            return sorted;
+        }
+
+        var idLambda = Expression.Lambda(id.Value.member, parameter);
+        var thenMethod = descending ? nameof(Queryable.ThenByDescending) : nameof(Queryable.ThenBy);
+        var stableCall = Expression.Call(
+            typeof(Queryable),
+            thenMethod,
+            [typeof(T), id.Value.member.Type],
+            sorted.Expression,
+            Expression.Quote(idLambda));
+        return sorted.Provider.CreateQuery<T>(stableCall);
+    }
+
+    public static IQueryable<T> ApplyPagination<T>(this IQueryable<T> query, int pageNumber, int pageSize)
+    {
+        PagedQueryExtensions.ValidatePagination(pageNumber, pageSize);
+        var skipLong = (long)(pageNumber - 1) * pageSize;
+        if (skipLong > int.MaxValue)
+        {
+            throw Invalid("İstenen sayfa numarası desteklenen sınırı aşıyor.");
+        }
+
+        return query.Skip((int)skipLong).Take(pageSize);
+    }
+
+    public static IQueryable<T> ApplyPagedRequest<T>(
+        this IQueryable<T> query,
+        PagedRequest request,
+        IReadOnlyDictionary<string, string>? columnMapping = null)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        var searchMapping = columnMapping ?? CreateColumnMapping<T>([]);
+        query = query.ApplySearch(request, searchMapping);
+        query = query.ApplyFilters(request.Filters, request.FilterLogic, columnMapping);
+        query = query.ApplySorting(request.SortBy, request.SortDirection, columnMapping);
+        return query.ApplyPagination(request.PageNumber, request.PageSize);
+    }
+
+    private static IReadOnlyDictionary<string, string> CreateColumnMapping<T>(IReadOnlyCollection<string> paths)
+    {
+        if (paths.Count == 0)
+        {
+            return typeof(T)
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(property =>
+                    property.CanRead
+                    && property.GetIndexParameters().Length == 0
+                    && property.GetCustomAttribute<JsonIgnoreAttribute>() is null
+                    && SupportsGeneralSearch(property.PropertyType))
+                .ToDictionary(
+                    property => property.Name,
+                    property => property.Name,
+                    StringComparer.OrdinalIgnoreCase);
+        }
+
+        var mapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var path in paths.Where(path => !string.IsNullOrWhiteSpace(path)))
+        {
+            var trimmed = path.Trim();
+            var alias = trimmed.Contains('.', StringComparison.Ordinal)
+                ? trimmed[(trimmed.LastIndexOf('.') + 1)..]
+                : trimmed;
+            if (!mapping.TryAdd(alias, trimmed))
+            {
+                throw Invalid($"'{alias}' arama alanı birden fazla iç kolona eşleniyor; açık bir alias eşlemesi gereklidir.");
+            }
+        }
+
+        return mapping;
+    }
+
+    private static bool SupportsGeneralSearch(Type propertyType)
+    {
+        var type = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+        return type == typeof(string)
+            || type == typeof(Guid)
+            || type == typeof(bool)
+            || type.IsEnum
+            || IsNumericType(type);
+    }
+
+    private static Expression? BuildGeneralSearchMatch(Expression member, string term, bool useSqlPattern)
+    {
+        var propertyType = member.Type;
+        var underlying = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+        if (underlying == typeof(string))
+        {
+            var notNull = Expression.NotEqual(member, Expression.Constant(null, typeof(string)));
+            var contains = useSqlPattern
+                ? Expression.Call(
+                    typeof(DbFunctionsExtensions),
+                    nameof(DbFunctionsExtensions.Like),
+                    Type.EmptyTypes,
+                    Expression.Property(null, typeof(EF), nameof(EF.Functions)),
+                    member,
+                    Expression.Constant(AsciiTurkishSearch.BuildContainsPattern(term)),
+                    Expression.Constant(AsciiTurkishSearch.LikeEscapeCharacter))
+                : Expression.Call(
+                    typeof(AsciiTurkishSearch),
+                    nameof(AsciiTurkishSearch.Contains),
+                    Type.EmptyTypes,
+                    member,
+                    Expression.Constant(term));
+            return Expression.AndAlso(notNull, contains);
+        }
+
+        if (!TryParseGeneralSearchValue(term, underlying, out var parsed))
+        {
+            return null;
+        }
+
+        Expression valueMember = member;
+        Expression? hasValue = null;
+        if (Nullable.GetUnderlyingType(propertyType) is not null)
+        {
+            hasValue = Expression.Property(member, "HasValue");
+            valueMember = Expression.Property(member, "Value");
+        }
+
+        var equals = Expression.Equal(valueMember, Expression.Constant(parsed, underlying));
+        return hasValue is null ? equals : Expression.AndAlso(hasValue, equals);
+    }
+
+    private static bool TryParseGeneralSearchValue(string term, Type targetType, out object? parsed)
+    {
+        parsed = null;
+        var value = term.Trim();
+        if (targetType.IsEnum)
+        {
+            if (!Enum.TryParse(targetType, value, true, out var enumValue)
+                || enumValue is null
+                || !Enum.IsDefined(targetType, enumValue))
+            {
+                return false;
+            }
+
+            parsed = enumValue;
+            return true;
+        }
+
+        if (targetType == typeof(Guid))
+        {
+            if (!Guid.TryParse(value, out var guid))
+            {
+                return false;
+            }
+
+            parsed = guid;
+            return true;
+        }
+
+        if (targetType == typeof(bool))
+        {
+            if (bool.TryParse(value, out var boolean))
+            {
+                parsed = boolean;
+                return true;
+            }
+
+            if (value == "1" || value == "0")
+            {
+                parsed = value == "1";
+                return true;
+            }
+
+            return false;
+        }
+
+        if (!IsNumericType(targetType))
+        {
+            return false;
+        }
+
+        try
+        {
+            parsed = Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture);
+            return parsed is not null;
+        }
+        catch (Exception exception) when (exception is FormatException or InvalidCastException or OverflowException)
+        {
+            return false;
+        }
+    }
+
+    private static bool IsNumericType(Type type) =>
+        type == typeof(byte)
+        || type == typeof(sbyte)
+        || type == typeof(short)
+        || type == typeof(ushort)
+        || type == typeof(int)
+        || type == typeof(uint)
+        || type == typeof(long)
+        || type == typeof(ulong)
+        || type == typeof(float)
+        || type == typeof(double)
+        || type == typeof(decimal);
+
+    private static Expression BuildFilter(Expression member, Type propertyType, Filter filter, int index)
+    {
+        var underlying = Nullable.GetUnderlyingType(propertyType) ?? propertyType;
+        var operation = ParseOperator(filter.Operator, index);
+        if (operation is FilterOperation.IsNull or FilterOperation.IsNotNull)
+        {
+            if (propertyType.IsValueType && Nullable.GetUnderlyingType(propertyType) is null)
+            {
+                throw InvalidFilter(index, $"'{filter.Column}' kolonu null karşılaştırmasını desteklemiyor");
+            }
+
+            var nullValue = Expression.Constant(null, propertyType);
+            return operation == FilterOperation.IsNull
+                ? Expression.Equal(member, nullValue)
+                : Expression.NotEqual(member, nullValue);
+        }
+
+        if (filter.Value is null)
+        {
+            throw InvalidFilter(index, $"'{filter.Column}' filtresi için değer zorunludur");
+        }
+
+        try
+        {
+            if (underlying == typeof(string))
+            {
+                if (operation is not (FilterOperation.Contains or FilterOperation.NotContains
+                    or FilterOperation.Equals or FilterOperation.NotEquals
+                    or FilterOperation.StartsWith or FilterOperation.EndsWith))
+                {
+                    throw InvalidFilter(index, $"'{filter.Operator}' metin kolonunda kullanılamaz");
+                }
+
+                var value = Expression.Constant(filter.Value);
+                var notNull = Expression.NotEqual(member, Expression.Constant(null, typeof(string)));
+                var isNull = Expression.Equal(member, Expression.Constant(null, typeof(string)));
+                var methodName = operation switch
+                {
+                    FilterOperation.Equals or FilterOperation.NotEquals => nameof(string.Equals),
+                    FilterOperation.StartsWith => nameof(string.StartsWith),
+                    FilterOperation.EndsWith => nameof(string.EndsWith),
+                    _ => nameof(string.Contains)
+                };
+                var stringComparison = Expression.Call(
+                    member,
+                    typeof(string).GetMethod(methodName, [typeof(string)])!,
+                    value);
+                return operation switch
+                {
+                    FilterOperation.NotEquals or FilterOperation.NotContains =>
+                        Expression.OrElse(isNull, Expression.Not(stringComparison)),
+                    _ => Expression.AndAlso(notNull, stringComparison)
+                };
+            }
+
+            if (operation is FilterOperation.Contains or FilterOperation.NotContains
+                or FilterOperation.StartsWith or FilterOperation.EndsWith)
+            {
+                throw InvalidFilter(index, $"'{filter.Operator}' operatörü {underlying.Name} kolonunda kullanılamaz");
+            }
+
+            var converted = ParseValue(filter.Value, underlying, index, filter.Column);
+            var constant = Expression.Constant(converted, underlying);
+            Expression valueMember = member;
+            Expression? hasValue = null;
+            if (Nullable.GetUnderlyingType(propertyType) is not null)
+            {
+                hasValue = Expression.Property(member, "HasValue");
+                valueMember = Expression.Property(member, "Value");
+            }
+
+            var comparison = operation switch
+            {
+                FilterOperation.NotEquals => Expression.NotEqual(valueMember, constant),
+                FilterOperation.GreaterThan => Expression.GreaterThan(valueMember, constant),
+                FilterOperation.GreaterThanOrEqual => Expression.GreaterThanOrEqual(valueMember, constant),
+                FilterOperation.LessThan => Expression.LessThan(valueMember, constant),
+                FilterOperation.LessThanOrEqual => Expression.LessThanOrEqual(valueMember, constant),
+                FilterOperation.Equals => Expression.Equal(valueMember, constant),
+                _ => throw InvalidFilter(index, $"'{filter.Operator}' operatörü desteklenmiyor")
+            };
+            if (hasValue is null)
+            {
+                return comparison;
+            }
+
+            return operation == FilterOperation.NotEquals
+                ? Expression.OrElse(Expression.Not(hasValue), comparison)
+                : Expression.AndAlso(hasValue, comparison);
+        }
+        catch (PagedQueryValidationException)
+        {
+            throw;
+        }
+        catch (Exception exception) when (exception is FormatException or InvalidCastException or OverflowException or ArgumentException)
+        {
+            throw InvalidFilter(index, $"'{filter.Value}' değeri '{filter.Column}' kolonu için geçersiz");
+        }
+    }
+
+    private static object ParseValue(string rawValue, Type targetType, int index, string column)
+    {
+        var value = rawValue.Trim();
+        if (targetType.IsEnum)
+        {
+            if (!Enum.TryParse(targetType, value, true, out var enumValue)
+                || enumValue is null
+                || !Enum.IsDefined(targetType, enumValue))
+            {
+                throw InvalidFilter(index, $"'{rawValue}' değeri '{column}' enum kolonu için geçersiz");
+            }
+
+            return enumValue;
+        }
+
+        if (targetType == typeof(Guid))
+        {
+            return Guid.TryParse(value, out var guid)
+                ? guid
+                : throw InvalidFilter(index, $"'{rawValue}' geçerli bir Guid değildir");
+        }
+
+        if (targetType == typeof(DateOnly))
+        {
+            return DateOnly.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var parsed)
+                ? parsed
+                : throw InvalidFilter(index, $"'{rawValue}' geçerli bir ISO tarih değildir");
+        }
+
+        if (targetType == typeof(TimeOnly))
+        {
+            return TimeOnly.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out var parsed)
+                ? parsed
+                : throw InvalidFilter(index, $"'{rawValue}' geçerli bir saat değildir");
+        }
+
+        if (targetType == typeof(DateTimeOffset))
+        {
+            return DateTimeOffset.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.RoundtripKind, out var parsed)
+                ? parsed
+                : throw InvalidFilter(index, $"'{rawValue}' geçerli bir ISO tarih/saat değildir");
+        }
+
+        if (targetType == typeof(DateTime))
+        {
+            return DateTime.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces | DateTimeStyles.RoundtripKind, out var parsed)
+                ? parsed
+                : throw InvalidFilter(index, $"'{rawValue}' geçerli bir ISO tarih/saat değildir");
+        }
+
+        if (targetType == typeof(bool))
+        {
+            if (bool.TryParse(value, out var boolean))
+            {
+                return boolean;
+            }
+
+            if (value == "1" || value == "0")
+            {
+                return value == "1";
+            }
+
+            throw InvalidFilter(index, $"'{rawValue}' geçerli bir boolean değildir");
+        }
+
+        return Convert.ChangeType(value, targetType, CultureInfo.InvariantCulture)
+            ?? throw InvalidFilter(index, $"'{rawValue}' değeri '{column}' kolonu için geçersiz");
+    }
+
+    private static string ResolveColumn(
+        string column,
+        IReadOnlyDictionary<string, string>? mapping,
+        string capability,
+        int? filterIndex = null,
+        bool allowDirectTopLevel = false)
+    {
+        if (mapping is null)
+        {
+            if (column.Contains('.', StringComparison.Ordinal))
+            {
+                throw filterIndex.HasValue
+                    ? InvalidFilter(filterIndex.Value, $"'{column}' iç içe alan yolu doğrudan kullanılamaz")
+                    : Invalid($"'{column}' iç içe alan yolu doğrudan kullanılamaz.");
+            }
+
+            return column;
+        }
+
+        var key = mapping.Keys.FirstOrDefault(item => item.Equals(column, StringComparison.OrdinalIgnoreCase));
+        if (key is not null)
+        {
+            return mapping[key];
+        }
+
+        if (column.Equals("Id", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Id";
+        }
+
+        if (allowDirectTopLevel && !column.Contains('.', StringComparison.Ordinal))
+        {
+            return column;
+        }
+
+        throw filterIndex.HasValue
+            ? InvalidFilter(filterIndex.Value, $"'{column}' izin verilen kolonlar arasında değildir")
+            : Invalid($"'{column}' {capability} kolonlar arasında değildir.");
+    }
+
+    private static (Expression member, PropertyInfo property)? ResolvePath(Expression root, Type rootType, string path)
+    {
+        Expression member = root;
+        PropertyInfo? property = null;
+        var type = rootType;
+        var segments = path.Split('.', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length is < 1 or > 4)
+        {
+            return null;
+        }
+
+        foreach (var segment in segments)
+        {
+            property = type.GetProperty(segment, BindingFlags.IgnoreCase | BindingFlags.Public | BindingFlags.Instance);
+            if (property is null)
+            {
+                return null;
+            }
+
+            member = Expression.Property(member, property);
+            type = property.PropertyType;
+        }
+
+        return property is null ? null : (member, property);
+    }
+
+    private static FilterOperation ParseOperator(string? value, int index) =>
+        value?.Trim().ToLowerInvariant() switch
+        {
+            "eq" or "equal" or "equals" or "=" => FilterOperation.Equals,
+            "ne" or "neq" or "notequal" or "notequals" or "!=" or "<>" => FilterOperation.NotEquals,
+            "contains" => FilterOperation.Contains,
+            "notcontains" => FilterOperation.NotContains,
+            "startswith" => FilterOperation.StartsWith,
+            "endswith" => FilterOperation.EndsWith,
+            "gt" or ">" => FilterOperation.GreaterThan,
+            "gte" or ">=" => FilterOperation.GreaterThanOrEqual,
+            "lt" or "<" => FilterOperation.LessThan,
+            "lte" or "<=" => FilterOperation.LessThanOrEqual,
+            "isnull" => FilterOperation.IsNull,
+            "isnotnull" => FilterOperation.IsNotNull,
+            _ => throw InvalidFilter(index, $"'{value}' filtre operatörü desteklenmiyor")
+        };
+
+    private static FilterLogic ParseFilterLogic(string? value) =>
+        value?.Trim().ToLowerInvariant() switch
+        {
+            null or "" or "and" => FilterLogic.And,
+            "or" => FilterLogic.Or,
+            _ => throw Invalid("Filtre mantığı yalnızca 'and' veya 'or' olabilir.")
+        };
+
+    private static bool ParseSortDirection(string? value) =>
+        value?.Trim().ToLowerInvariant() switch
+        {
+            null or "" or "asc" => false,
+            "desc" => true,
+            _ => throw Invalid("Sıralama yönü yalnızca 'asc' veya 'desc' olabilir.")
+        };
+
+    private static PagedQueryValidationException Invalid(string message) => new(message);
+
+    private static PagedQueryValidationException InvalidFilter(int index, string message) =>
+        Invalid($"{index + 1}. gelişmiş filtre geçersiz: {message}.");
+
+    private enum FilterLogic
+    {
+        And,
+        Or
+    }
+
+    private enum FilterOperation
+    {
+        Equals,
+        NotEquals,
+        Contains,
+        NotContains,
+        StartsWith,
+        EndsWith,
+        GreaterThan,
+        GreaterThanOrEqual,
+        LessThan,
+        LessThanOrEqual,
+        IsNull,
+        IsNotNull
     }
 }

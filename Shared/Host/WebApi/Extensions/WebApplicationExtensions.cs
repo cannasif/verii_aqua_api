@@ -6,6 +6,7 @@ using aqua_api.Modules.System.Infrastructure.BackgroundJobs.Interfaces;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
+using aqua_api.Shared.Common.Exceptions;
 
 namespace aqua_api.Shared.Host.WebApi.Extensions;
 
@@ -91,6 +92,21 @@ public static class WebApplicationExtensions
 
                     var conflictJson = System.Text.Json.JsonSerializer.Serialize(response);
                     await ctx.Response.WriteAsync(conflictJson);
+                    return;
+                }
+
+                var pagedValidationException = FindException<PagedQueryValidationException>(ex);
+                if (pagedValidationException != null)
+                {
+                    var response = ApiResponse<object>.ErrorResult(
+                        pagedValidationException.Message,
+                        pagedValidationException.Message,
+                        StatusCodes.Status400BadRequest);
+                    response.Errors = new List<string> { pagedValidationException.Message };
+
+                    ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
+                    ctx.Response.ContentType = "application/json";
+                    await ctx.Response.WriteAsJsonAsync(response);
                     return;
                 }
 
@@ -279,6 +295,23 @@ public static class WebApplicationExtensions
             if (current is DbUpdateException dbUpdateException)
             {
                 return dbUpdateException;
+            }
+
+            current = current.InnerException;
+        }
+
+        return null;
+    }
+
+    private static TException? FindException<TException>(Exception? exception)
+        where TException : Exception
+    {
+        var current = exception;
+        while (current != null)
+        {
+            if (current is TException match)
+            {
+                return match;
             }
 
             current = current.InnerException;
