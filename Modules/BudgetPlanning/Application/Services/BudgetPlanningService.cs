@@ -985,20 +985,61 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<BudgetPlanSalesLineDto>.ErrorResult("Satis plani icin once baliklari sanalda buyutmelisiniz.", "Satis plani icin once baliklari sanalda buyutmelisiniz.", StatusCodes.Status400BadRequest);
         }
 
-        var fishBatchExists = await _unitOfWork.Db.BudgetPlanFishBatches.AnyAsync(x =>
-            x.Id == dto.BudgetPlanFishBatchId && x.BudgetPlanId == budgetPlanId && !x.IsDeleted);
-        if (!fishBatchExists)
+        var batches = await FishBatchQuery()
+            .Where(x => x.BudgetPlanId == budgetPlanId)
+            .ToListAsync();
+        if (batches.All(x => x.Id != dto.BudgetPlanFishBatchId))
         {
             return ApiResponse<BudgetPlanSalesLineDto>.ErrorResult("Butce balik satiri bulunamadi.", "Butce balik satiri bulunamadi.", StatusCodes.Status404NotFound);
         }
 
-        var entity = await _unitOfWork.Db.BudgetPlanSalesLines.FirstOrDefaultAsync(x =>
+        var projections = await ProjectionQuery()
+            .Where(x => x.BudgetPlanId == budgetPlanId)
+            .ToListAsync();
+        var targetProjection = projections.FirstOrDefault(x =>
+            x.BudgetPlanFishBatchId == dto.BudgetPlanFishBatchId &&
+            x.Year == dto.Year &&
+            x.Month == dto.Month);
+        if (targetProjection == null)
+        {
+            return ApiResponse<BudgetPlanSalesLineDto>.ErrorResult(
+                "Bu ay ve parti icin buyutme sonucu bulunamadi.",
+                "Bu ay ve parti icin buyutme sonucu bulunamadi.",
+                StatusCodes.Status404NotFound);
+        }
+
+        var adjustments = await _unitOfWork.Db.BudgetPlanFishBatchAdjustments
+            .AsNoTracking()
+            .Where(x => x.BudgetPlanId == budgetPlanId && x.EffectiveYear.HasValue && x.EffectiveMonth.HasValue && !x.IsDeleted)
+            .ToListAsync();
+        var existingSales = await _unitOfWork.Db.BudgetPlanSalesLines
+            .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
+            .ToListAsync();
+        var entity = existingSales.FirstOrDefault(x =>
             x.BudgetPlanId == budgetPlanId &&
             x.BudgetPlanFishBatchId == dto.BudgetPlanFishBatchId &&
             x.Year == dto.Year &&
             x.Month == dto.Month &&
-            x.MarketType == dto.MarketType &&
-            !x.IsDeleted);
+            x.MarketType == dto.MarketType);
+
+        var prospectiveSales = existingSales
+            .Where(x => x != entity)
+            .Select(x => new SalesPlanningSeed(x.BudgetPlanFishBatchId, x.Year, x.Month, x.MarketType, x.SalesTon))
+            .Append(new SalesPlanningSeed(dto.BudgetPlanFishBatchId, dto.Year, dto.Month, dto.MarketType, Round(dto.SalesTon)))
+            .ToList();
+        var capacity = BuildSalesPlanningRows(batches, projections, adjustments, prospectiveSales);
+        if (capacity.ErrorMessage != null)
+        {
+            return ApiResponse<BudgetPlanSalesLineDto>.ErrorResult(
+                capacity.ErrorMessage,
+                capacity.ErrorMessage,
+                StatusCodes.Status400BadRequest);
+        }
+
+        var targetCapacity = capacity.Rows.First(x =>
+            x.BudgetPlanFishBatchId == dto.BudgetPlanFishBatchId &&
+            x.Year == dto.Year &&
+            x.Month == dto.Month);
 
         if (entity == null)
         {
@@ -1011,7 +1052,7 @@ public class BudgetPlanningService : IBudgetPlanningService
         entity.Month = dto.Month;
         entity.MarketType = dto.MarketType;
         entity.SalesTon = Round(dto.SalesTon);
-        entity.SalesCount = dto.SalesCount;
+        entity.SalesCount = CalculateSalesCount(dto.SalesTon * 1000m, targetCapacity.AverageGram, targetCapacity.AvailableCount);
         var resolvedPrice = dto.UnitPrice.HasValue
             ? await ResolveSalesPriceAsync(budgetPlanId, dto.Year, dto.Month, dto.CurrencyCode, dto.UnitPrice.Value)
             : await FindFishPriceAsync(budgetPlanId, dto.BudgetPlanFishBatchId, dto.Year, dto.Month, dto.MarketType);
@@ -1021,6 +1062,40 @@ public class BudgetPlanningService : IBudgetPlanningService
         entity.Description = NormalizeOptional(dto.Description);
         plan.Status = BudgetPlanStatus.SalesPlanned;
         plan.CalculatedAt = null;
+
+        // A sales edit invalidates every downstream calculated row. Removing these
+        // derived records prevents stale movement/distribution data from surviving.
+        _unitOfWork.Db.BudgetPlanSalesDistributions.RemoveRange(
+            _unitOfWork.Db.BudgetPlanSalesDistributions.Where(x => x.BudgetPlanId == budgetPlanId));
+        _unitOfWork.Db.BudgetPlanFeedingLines.RemoveRange(
+            _unitOfWork.Db.BudgetPlanFeedingLines.Where(x => x.BudgetPlanId == budgetPlanId));
+        _unitOfWork.Db.BudgetPlanMortalityLines.RemoveRange(
+            _unitOfWork.Db.BudgetPlanMortalityLines.Where(x => x.BudgetPlanId == budgetPlanId));
+
+        var growthOnlyRows = BuildSalesPlanningRows(batches, projections, adjustments, []).Rows
+            .ToDictionary(x => (x.BudgetPlanFishBatchId, x.Year, x.Month));
+        foreach (var projection in projections)
+        {
+            if (!growthOnlyRows.TryGetValue((projection.BudgetPlanFishBatchId, projection.Year, projection.Month), out var growthOnly))
+            {
+                continue;
+            }
+
+            var openingAverageGram = Math.Max(0m, RoundGrowthGram(growthOnly.AverageGram - projection.MonthlyGrowthGram));
+            projection.OpeningLiveCount = growthOnly.AvailableCount;
+            projection.OpeningAverageGram = openingAverageGram;
+            projection.OpeningBiomassKg = Round(growthOnly.AvailableCount * openingAverageGram / 1000m);
+            projection.ClosingAverageGram = growthOnly.AverageGram;
+            projection.SalesTon = 0m;
+            projection.SalesCount = 0;
+            projection.MortalityKg = 0m;
+            projection.MortalityCount = 0;
+            projection.FeedKg = 0m;
+            projection.FeedMortalityReductionPercent = 0m;
+            projection.FeedMortalityReductionKg = 0m;
+            projection.ClosingLiveCount = growthOnly.AvailableCount;
+            projection.ClosingBiomassKg = growthOnly.AvailableKg;
+        }
 
         await _unitOfWork.SaveChangesAsync();
         var saved = await SalesLineQuery()
@@ -1036,22 +1111,6 @@ public class BudgetPlanningService : IBudgetPlanningService
             return ApiResponse<BudgetPlanSalesLineDto>.ErrorResult("Satis tonu negatif olamaz.", "Satis tonu negatif olamaz.", StatusCodes.Status400BadRequest);
         }
 
-        var projection = await ProjectionQuery()
-            .FirstOrDefaultAsync(x =>
-                x.BudgetPlanId == budgetPlanId &&
-                x.BudgetPlanFishBatchId == dto.BudgetPlanFishBatchId &&
-                x.Year == dto.Year &&
-                x.Month == dto.Month);
-
-        if (projection == null)
-        {
-            return ApiResponse<BudgetPlanSalesLineDto>.ErrorResult("Bu ay ve parti icin buyutme sonucu bulunamadi.", "Bu ay ve parti icin buyutme sonucu bulunamadi.", StatusCodes.Status404NotFound);
-        }
-
-        var salesKg = Round(dto.SalesTon * 1000m);
-        var averageKg = projection.ClosingAverageGram / 1000m;
-        var salesCount = averageKg <= 0 ? 0 : (int)Math.Round(salesKg / averageKg, MidpointRounding.AwayFromZero);
-
         return await UpsertSalesLineAsync(budgetPlanId, new UpsertBudgetPlanSalesLineDto
         {
             BudgetPlanFishBatchId = dto.BudgetPlanFishBatchId,
@@ -1059,7 +1118,6 @@ public class BudgetPlanningService : IBudgetPlanningService
             Month = dto.Month,
             MarketType = dto.MarketType,
             SalesTon = dto.SalesTon,
-            SalesCount = salesCount,
             CurrencyCode = dto.CurrencyCode,
             UnitPrice = dto.UnitPrice,
             Description = NormalizeOptional(dto.Description)
@@ -1149,54 +1207,27 @@ public class BudgetPlanningService : IBudgetPlanningService
             .AsNoTracking()
             .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
             .ToListAsync();
-        var rows = await ProjectionQuery()
+        var projections = await ProjectionQuery()
             .Where(x => x.BudgetPlanId == budgetPlanId)
             .OrderBy(x => x.Year)
             .ThenBy(x => x.Month)
             .ThenBy(x => x.BudgetPlanFishBatch.BudgetPlanProject.ProjectCode)
             .ThenBy(x => x.BudgetPlanFishBatch.BatchCode)
             .ToListAsync();
+        var batches = await FishBatchQuery()
+            .Where(x => x.BudgetPlanId == budgetPlanId)
+            .ToListAsync();
+        var adjustments = await _unitOfWork.Db.BudgetPlanFishBatchAdjustments
+            .AsNoTracking()
+            .Where(x => x.BudgetPlanId == budgetPlanId && x.EffectiveYear.HasValue && x.EffectiveMonth.HasValue && !x.IsDeleted)
+            .ToListAsync();
+        var capacity = BuildSalesPlanningRows(
+            batches,
+            projections,
+            adjustments,
+            sales.Select(x => new SalesPlanningSeed(x.BudgetPlanFishBatchId, x.Year, x.Month, x.MarketType, x.SalesTon)).ToList());
 
-        return ApiResponse<List<BudgetSalesPlanningRowDto>>.SuccessResult(rows.Select(row =>
-        {
-            var plannedSalesKg = sales
-                .Where(x => x.BudgetPlanFishBatchId == row.BudgetPlanFishBatchId && x.Year == row.Year && x.Month == row.Month)
-                .Sum(x => x.SalesTon * 1000m);
-            var domesticSalesTon = sales
-                .Where(x => x.BudgetPlanFishBatchId == row.BudgetPlanFishBatchId && x.Year == row.Year && x.Month == row.Month && x.MarketType == BudgetMarketType.Domestic)
-                .Sum(x => x.SalesTon);
-            var foreignSalesTon = sales
-                .Where(x => x.BudgetPlanFishBatchId == row.BudgetPlanFishBatchId && x.Year == row.Year && x.Month == row.Month && x.MarketType == BudgetMarketType.Foreign)
-                .Sum(x => x.SalesTon);
-            var averageKg = row.ClosingAverageGram / 1000m;
-            var plannedSalesCount = averageKg <= 0 ? 0 : (int)Math.Round(plannedSalesKg / averageKg, MidpointRounding.AwayFromZero);
-            var remainingKg = Math.Max(0m, row.ClosingBiomassKg - plannedSalesKg);
-            var remainingCount = Math.Max(0, row.ClosingLiveCount - plannedSalesCount);
-
-            return new BudgetSalesPlanningRowDto
-            {
-                BudgetPlanFishBatchId = row.BudgetPlanFishBatchId,
-                ProjectCode = row.BudgetPlanFishBatch.BudgetPlanProject.ProjectCode,
-                ProjectName = row.BudgetPlanFishBatch.BudgetPlanProject.ProjectName,
-                BatchCode = row.BudgetPlanFishBatch.BatchCode,
-                FishStockCode = row.BudgetPlanFishBatch.FishStock.ErpStockCode,
-                FishStockName = row.BudgetPlanFishBatch.FishStock.StockName,
-                Year = row.Year,
-                Month = row.Month,
-                AverageGram = Round(row.ClosingAverageGram),
-                AverageKg = Round(averageKg),
-                AvailableCount = row.ClosingLiveCount,
-                AvailableKg = Round(row.ClosingBiomassKg),
-                AvailableTon = Round(row.ClosingBiomassKg / 1000m),
-                PlannedSalesTon = Round(plannedSalesKg / 1000m),
-                DomesticSalesTon = Round(domesticSalesTon),
-                ForeignSalesTon = Round(foreignSalesTon),
-                PlannedSalesCount = plannedSalesCount,
-                RemainingKg = Round(remainingKg),
-                RemainingTon = Round(remainingKg / 1000m),
-                RemainingCount = remainingCount
-            };
-        }).ToList(), "Islem basarili.");
+        return ApiResponse<List<BudgetSalesPlanningRowDto>>.SuccessResult(capacity.Rows, "Islem basarili.");
     }
 
     public async Task<ApiResponse<List<BudgetPlanExchangeRateDto>>> GetExchangeRatesAsync(long budgetPlanId)
@@ -2044,7 +2075,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                         ? sales.Where(x => x.BudgetPlanFishBatchId == batch.Id && x.Year == period.Year && x.Month == period.Month).ToList()
                         : new List<BudgetPlanSalesLine>();
                     var salesKg = includeSalesAndOperations
-                        ? Math.Min(periodSales.Sum(x => x.SalesTon * 1000m), grownBiomassKg)
+                        ? periodSales.Sum(x => x.SalesTon * 1000m)
                         : 0m;
                     var salesCount = includeSalesAndOperations && grownAverageGram > 0
                         ? (int)Math.Round(salesKg * 1000m / grownAverageGram, MidpointRounding.AwayFromZero)
@@ -2909,6 +2940,127 @@ public class BudgetPlanningService : IBudgetPlanningService
         return errors.Count == 0
             ? ApiResponse<bool>.SuccessResult(true, "Valid")
             : ApiResponse<bool>.ErrorResult(BuildDefinitionErrorMessage(errors), BuildDefinitionErrorMessage(errors), StatusCodes.Status400BadRequest);
+    }
+
+    private static SalesPlanningCalculation BuildSalesPlanningRows(
+        IReadOnlyCollection<BudgetPlanFishBatch> batches,
+        IReadOnlyCollection<BudgetPlanMonthlyProjection> projections,
+        IReadOnlyCollection<BudgetPlanFishBatchAdjustment> adjustments,
+        IReadOnlyCollection<SalesPlanningSeed> sales)
+    {
+        var result = new List<BudgetSalesPlanningRowDto>();
+        string? errorMessage = null;
+
+        foreach (var batch in batches
+                     .OrderBy(x => x.BudgetPlanProject.ProjectCode)
+                     .ThenBy(x => x.BatchCode))
+        {
+            var liveCount = batch.InitialLiveCount;
+            var averageGram = batch.InitialAverageGram;
+            var batchProjections = projections
+                .Where(x => x.BudgetPlanFishBatchId == batch.Id)
+                .OrderBy(x => x.Year)
+                .ThenBy(x => x.Month)
+                .ToList();
+
+            foreach (var projection in batchProjections)
+            {
+                foreach (var adjustment in adjustments.Where(x =>
+                             x.BudgetPlanFishBatchId == batch.Id &&
+                             x.EffectiveYear == projection.Year &&
+                             x.EffectiveMonth == projection.Month))
+                {
+                    if (adjustment.AdjustmentType == BudgetPlanFishBatchAdjustmentType.Increase)
+                    {
+                        var incomingAverageGram = adjustment.AverageGram > 0m ? adjustment.AverageGram : averageGram;
+                        var currentBiomassKg = liveCount * averageGram / 1000m;
+                        var incomingBiomassKg = adjustment.LiveCount * incomingAverageGram / 1000m;
+                        liveCount += adjustment.LiveCount;
+                        averageGram = liveCount <= 0
+                            ? 0m
+                            : RoundGrowthGram((currentBiomassKg + incomingBiomassKg) * 1000m / liveCount);
+                    }
+                    else
+                    {
+                        liveCount = Math.Max(0, liveCount - adjustment.LiveCount);
+                    }
+                }
+
+                var grownAverageGram = RoundGrowthGram(averageGram + projection.MonthlyGrowthGram);
+                var availableCount = liveCount;
+                var availableKg = Round(availableCount * grownAverageGram / 1000m);
+                var periodSales = sales.Where(x =>
+                    x.BudgetPlanFishBatchId == batch.Id &&
+                    x.Year == projection.Year &&
+                    x.Month == projection.Month).ToList();
+                var domesticSalesTon = Round(periodSales
+                    .Where(x => x.MarketType == BudgetMarketType.Domestic)
+                    .Sum(x => x.SalesTon));
+                var foreignSalesTon = Round(periodSales
+                    .Where(x => x.MarketType == BudgetMarketType.Foreign)
+                    .Sum(x => x.SalesTon));
+                var plannedSalesKg = Round((domesticSalesTon + foreignSalesTon) * 1000m);
+                var plannedSalesCount = CalculateSalesCount(plannedSalesKg, grownAverageGram, availableCount);
+
+                if (errorMessage == null && plannedSalesKg > availableKg + 0.001m)
+                {
+                    errorMessage = $"{batch.BudgetPlanProject.ProjectCode} / {batch.BatchCode} icin " +
+                                   $"{projection.Year}/{projection.Month:00} doneminde en fazla {Round(availableKg / 1000m):0.###} ton cikis yapilabilir. " +
+                                   $"Bu ay basinda {availableCount.ToString("N0", CultureInfo.GetCultureInfo("tr-TR"))} adet stok kalmistir.";
+                }
+
+                var appliedSalesKg = Math.Min(plannedSalesKg, availableKg);
+                var afterSalesLiveCount = Math.Max(0, availableCount - plannedSalesCount);
+                var afterSalesBiomassKg = Math.Max(0m, Round(availableKg - appliedSalesKg));
+                var afterSalesAverageGram = afterSalesLiveCount <= 0
+                    ? 0m
+                    : plannedSalesCount == 0
+                        ? grownAverageGram
+                        : RoundGrowthGram(afterSalesBiomassKg * 1000m / afterSalesLiveCount);
+
+                result.Add(new BudgetSalesPlanningRowDto
+                {
+                    BudgetPlanFishBatchId = batch.Id,
+                    ProjectCode = batch.BudgetPlanProject.ProjectCode,
+                    ProjectName = batch.BudgetPlanProject.ProjectName,
+                    BatchCode = batch.BatchCode,
+                    FishStockCode = batch.FishStock.ErpStockCode,
+                    FishStockName = batch.FishStock.StockName,
+                    Year = projection.Year,
+                    Month = projection.Month,
+                    AverageGram = Round(grownAverageGram),
+                    AverageKg = Round(grownAverageGram / 1000m),
+                    AvailableCount = availableCount,
+                    AvailableKg = availableKg,
+                    AvailableTon = Round(availableKg / 1000m),
+                    PlannedSalesKg = plannedSalesKg,
+                    PlannedSalesTon = Round(plannedSalesKg / 1000m),
+                    DomesticSalesTon = domesticSalesTon,
+                    ForeignSalesTon = foreignSalesTon,
+                    PlannedSalesCount = plannedSalesCount,
+                    RemainingKg = afterSalesBiomassKg,
+                    RemainingTon = Round(afterSalesBiomassKg / 1000m),
+                    RemainingCount = afterSalesLiveCount
+                });
+
+                liveCount = afterSalesLiveCount;
+                averageGram = afterSalesAverageGram;
+            }
+        }
+
+        return new SalesPlanningCalculation(result, errorMessage);
+    }
+
+    private static int CalculateSalesCount(decimal salesKg, decimal averageGram, int availableCount)
+    {
+        if (salesKg <= 0m || averageGram <= 0m || availableCount <= 0)
+        {
+            return 0;
+        }
+
+        return Math.Min(
+            availableCount,
+            (int)Math.Round(salesKg * 1000m / averageGram, MidpointRounding.AwayFromZero));
     }
 
     private static string DescribeBudgetBatch(BudgetPlanFishBatch batch)
@@ -3851,6 +4003,8 @@ public class BudgetPlanningService : IBudgetPlanningService
     private sealed record BalanceSeed(FishBatch FishBatch, int LiveCount, decimal AverageGram, decimal BiomassGram, DateTime AsOfDate);
     private sealed record ShipmentSeed(long FishBatchId, int FishCount, decimal BiomassGram, DateTime AsOfDate);
     private sealed record BudgetPeriod(int Year, int Month);
+    private sealed record SalesPlanningSeed(long BudgetPlanFishBatchId, int Year, int Month, BudgetMarketType MarketType, decimal SalesTon);
+    private sealed record SalesPlanningCalculation(List<BudgetSalesPlanningRowDto> Rows, string? ErrorMessage);
     private sealed record SalesAllocation(BudgetPlanSalesLine SalesLine, decimal SalesKg, int SalesCount);
     private sealed record ResolvedSalesPrice(string CurrencyCode, decimal UnitPrice, decimal? UnitPriceEuro, decimal? ExchangeRate);
 }

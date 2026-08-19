@@ -1271,6 +1271,148 @@ public class BudgetPlanningServiceIntegrationTests
             .Where(x => x.BudgetPlanId == plan.Id)
             .Select(x => x.SalesCount)
             .SingleAsync());
+
+        Assert.True(await db.BudgetPlanSalesDistributions.AnyAsync(x => x.BudgetPlanId == plan.Id));
+        Assert.True(await db.BudgetPlanFeedingLines.AnyAsync(x => x.BudgetPlanId == plan.Id));
+        Assert.True(await db.BudgetPlanMortalityLines.AnyAsync(x => x.BudgetPlanId == plan.Id));
+
+        var revisedSale = await service.UpsertSalesTonAsync(plan.Id, new UpsertBudgetPlanSalesTonDto
+        {
+            BudgetPlanFishBatchId = projection.BudgetPlanFishBatchId,
+            Year = projection.Year,
+            Month = projection.Month,
+            SalesTon = 0.04m
+        });
+
+        Assert.True(revisedSale.Success, revisedSale.Message);
+        Assert.False(await db.BudgetPlanSalesDistributions.AnyAsync(x => x.BudgetPlanId == plan.Id));
+        Assert.False(await db.BudgetPlanFeedingLines.AnyAsync(x => x.BudgetPlanId == plan.Id));
+        Assert.False(await db.BudgetPlanMortalityLines.AnyAsync(x => x.BudgetPlanId == plan.Id));
+        var restoredGrowth = await db.BudgetPlanMonthlyProjections.SingleAsync(x => x.Id == projection.Id);
+        Assert.Equal(0m, restoredGrowth.SalesTon);
+        Assert.Equal(0, restoredGrowth.SalesCount);
+        Assert.Equal(0m, restoredGrowth.FeedKg);
+        Assert.Equal(0, restoredGrowth.MortalityCount);
+        Assert.Equal(BudgetPlanStatus.SalesPlanned, await db.BudgetPlans.Where(x => x.Id == plan.Id).Select(x => x.Status).SingleAsync());
+    }
+
+    [Fact]
+    public async Task SalesPlanning_CarriesRemainingStockForward_AndRejectsExcessTon()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var service = fixture.Service;
+
+        var fishStock = new Stock { ErpStockCode = "CAP-FISH", StockName = "Capacity Fish", Unit = "AD" };
+        db.Stocks.Add(fishStock);
+        await db.SaveChangesAsync();
+        var plan = new BudgetPlan
+        {
+            BudgetNo = "BUD-CAPACITY",
+            BudgetCode = "CAPACITY",
+            BudgetName = "Capacity",
+            StartYear = 2026,
+            StartMonth = 4,
+            EndYear = 2026,
+            EndMonth = 7,
+            Status = BudgetPlanStatus.GrowthCalculated
+        };
+        db.BudgetPlans.Add(plan);
+        await db.SaveChangesAsync();
+        var project = new BudgetPlanProject
+        {
+            BudgetPlanId = plan.Id,
+            SourceType = BudgetPlanSourceType.Virtual,
+            ProjectCode = "CAP-PROJECT",
+            ProjectName = "Capacity Project"
+        };
+        db.BudgetPlanProjects.Add(project);
+        await db.SaveChangesAsync();
+        var batch = new BudgetPlanFishBatch
+        {
+            BudgetPlanId = plan.Id,
+            BudgetPlanProjectId = project.Id,
+            SourceType = BudgetPlanSourceType.Virtual,
+            FishStockId = fishStock.Id,
+            BatchCode = "CAP-BATCH",
+            InitialLiveCount = 4_000,
+            InitialAverageGram = 1_000m,
+            InitialBiomassKg = 4_000m,
+            GrowthStartYear = 2026,
+            GrowthStartMonth = 4
+        };
+        db.BudgetPlanFishBatches.Add(batch);
+        await db.SaveChangesAsync();
+        foreach (var month in Enumerable.Range(4, 4))
+        {
+            db.BudgetPlanMonthlyProjections.Add(new BudgetPlanMonthlyProjection
+            {
+                BudgetPlanId = plan.Id,
+                BudgetPlanFishBatchId = batch.Id,
+                Year = 2026,
+                Month = month,
+                MonthIndex = month - 3,
+                OpeningLiveCount = 4_000,
+                OpeningAverageGram = 1_000m,
+                OpeningBiomassKg = 4_000m,
+                MonthlyGrowthGram = 0m,
+                ClosingAverageGram = 1_000m,
+                ClosingLiveCount = 4_000,
+                ClosingBiomassKg = 4_000m
+            });
+        }
+        await db.SaveChangesAsync();
+
+        var april = await service.UpsertSalesTonAsync(plan.Id, new UpsertBudgetPlanSalesTonDto
+        {
+            BudgetPlanFishBatchId = batch.Id,
+            Year = 2026,
+            Month = 4,
+            SalesTon = 1m
+        });
+        var june = await service.UpsertSalesTonAsync(plan.Id, new UpsertBudgetPlanSalesTonDto
+        {
+            BudgetPlanFishBatchId = batch.Id,
+            Year = 2026,
+            Month = 6,
+            SalesTon = 1m
+        });
+
+        Assert.True(april.Success, april.Message);
+        Assert.True(june.Success, june.Message);
+        var rows = await service.GetSalesPlanningRowsAsync(plan.Id);
+        var july = rows.Data!.Single(x => x.Year == 2026 && x.Month == 7);
+        Assert.Equal(2_000, july.AvailableCount);
+        Assert.Equal(2_000m, july.AvailableKg);
+        Assert.Equal(2m, july.AvailableTon);
+        Assert.Equal(2_000, rows.Data!.Single(x => x.Month == 6).RemainingCount);
+
+        var excess = await service.UpsertSalesTonAsync(plan.Id, new UpsertBudgetPlanSalesTonDto
+        {
+            BudgetPlanFishBatchId = batch.Id,
+            Year = 2026,
+            Month = 7,
+            SalesTon = 2.001m
+        });
+
+        Assert.False(excess.Success);
+        Assert.Equal(400, excess.StatusCode);
+        Assert.Contains("en fazla 2 ton", excess.Message);
+        Assert.Contains("2.000 adet", excess.Message);
+        Assert.False(await db.BudgetPlanSalesLines.AnyAsync(x => x.BudgetPlanId == plan.Id && x.Month == 7));
+
+        var maximum = await service.UpsertSalesTonAsync(plan.Id, new UpsertBudgetPlanSalesTonDto
+        {
+            BudgetPlanFishBatchId = batch.Id,
+            Year = 2026,
+            Month = 7,
+            SalesTon = 2m
+        });
+        Assert.True(maximum.Success, maximum.Message);
+        var afterMaximum = await service.GetSalesPlanningRowsAsync(plan.Id);
+        var soldOut = afterMaximum.Data!.Single(x => x.Month == 7);
+        Assert.Equal(0, soldOut.RemainingCount);
+        Assert.Equal(0m, soldOut.RemainingTon);
     }
 
     [Fact]

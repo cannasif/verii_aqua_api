@@ -202,6 +202,7 @@ public class BudgetSalesPlanningRowDto
     public int AvailableCount { get; set; }
     public decimal AvailableKg { get; set; }
     public decimal AvailableTon { get; set; }
+    public decimal PlannedSalesKg { get; set; }
     public decimal PlannedSalesTon { get; set; }
     public decimal DomesticSalesTon { get; set; }
     public decimal ForeignSalesTon { get; set; }
