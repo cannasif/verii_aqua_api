@@ -8,6 +8,13 @@ namespace aqua_api.Modules.Shipments.Application.Services
 {
     public class ShipmentService : IShipmentService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["ShipmentNo"] = "ShipmentNo",
+            ["ShipmentDate"] = "ShipmentDate",
+            ["ProjectCode"] = "Project.ProjectCode",
+            ["ProjectName"] = "Project.ProjectName"
+        };
         private readonly IUnitOfWork _unitOfWork;
         private readonly IShipmentRepository _shipmentRepository;
         private readonly IBalanceLedgerManager _balanceLedgerManager;
@@ -69,11 +76,11 @@ namespace aqua_api.Modules.Shipments.Application.Services
                     .Query()
                     .Where(x => !x.IsDeleted)
                     .Include(x => x.Project)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(Shipment.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 

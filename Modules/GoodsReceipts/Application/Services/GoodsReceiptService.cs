@@ -9,6 +9,13 @@ namespace aqua_api.Modules.GoodsReceipts.Application.Services
 {
     public class GoodsReceiptService : IGoodsReceiptService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["ReceiptNo"] = "ReceiptNo",
+            ["ReceiptDate"] = "ReceiptDate",
+            ["ProjectCode"] = "Project.ProjectCode",
+            ["ProjectName"] = "Project.ProjectName"
+        };
         private readonly AquaDbContext _db;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
@@ -62,11 +69,11 @@ namespace aqua_api.Modules.GoodsReceipts.Application.Services
                     .Query()
                     .Where(x => !x.IsDeleted)
                     .Include(x => x.Project)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(GoodsReceipt.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 

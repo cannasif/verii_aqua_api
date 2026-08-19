@@ -6,6 +6,23 @@ namespace aqua_api.Modules.Projects.Application.Services
 {
     public class ProjectCageService : IProjectCageService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Id"] = "Id",
+                ["ProjectId"] = "ProjectId",
+                ["ProjectCode"] = "Project.ProjectCode",
+                ["ProjectName"] = "Project.ProjectName",
+                ["CageId"] = "CageId",
+                ["CageCode"] = "Cage.CageCode",
+                ["CageName"] = "Cage.CageName",
+                ["AssignedDate"] = "AssignedDate",
+                ["UnassignedDate"] = "UnassignedDate"
+            };
+
+        private static readonly string[] DefaultSearchFields =
+            ["ProjectCode", "ProjectName", "CageCode", "CageName"];
+
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
@@ -59,11 +76,11 @@ namespace aqua_api.Modules.Projects.Application.Services
                     .Where(x => !x.IsDeleted)
                     .Include(x => x.Project)
                     .Include(x => x.Cage)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns, DefaultSearchFields)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(ProjectCage.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 

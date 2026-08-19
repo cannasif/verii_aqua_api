@@ -7,6 +7,15 @@ namespace aqua_api.Modules.Cages.Application.Services
 {
     public class CageWarehouseMappingService : ICageWarehouseMappingService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["CageCode"] = "Cage.CageCode",
+            ["CageName"] = "Cage.CageName",
+            ["ErpWarehouseCode"] = "Warehouse.ErpWarehouseCode",
+            ["WarehouseName"] = "Warehouse.WarehouseName",
+            ["IsActive"] = "IsActive",
+            ["Note"] = "Note"
+        };
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
@@ -50,11 +59,11 @@ namespace aqua_api.Modules.Cages.Application.Services
 
                 var query = QueryWithIncludes()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(CageWarehouseMapping.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
                 var entities = await query

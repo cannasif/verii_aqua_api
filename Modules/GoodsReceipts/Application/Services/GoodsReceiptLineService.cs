@@ -7,6 +7,19 @@ namespace aqua_api.Modules.GoodsReceipts.Application.Services
 {
     public class GoodsReceiptLineService : IGoodsReceiptLineService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["ItemType"] = "ItemType",
+            ["StockCode"] = "Stock.ErpStockCode",
+            ["StockName"] = "Stock.StockName",
+            ["BatchCode"] = "FishBatch.BatchCode",
+            ["FishCount"] = "FishCount",
+            ["TotalGram"] = "TotalGram",
+            ["FishTotalGram"] = "FishTotalGram",
+            ["CurrencyCode"] = "CurrencyCode",
+            ["UnitPrice"] = "UnitPrice",
+            ["LocalLineAmount"] = "LocalLineAmount"
+        };
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
@@ -89,11 +102,11 @@ namespace aqua_api.Modules.GoodsReceipts.Application.Services
                     .Include(x => x.Stock)
                     .Include(x => x.FishBatch)
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(GoodsReceiptLine.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 

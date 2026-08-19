@@ -7,6 +7,14 @@ namespace aqua_api.Modules.NetOperations.Application.Services
 {
     public class NetOperationService : INetOperationService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["OperationNo"] = "OperationNo",
+            ["OperationDate"] = "OperationDate",
+            ["OperationTypeName"] = "OperationType.Name",
+            ["ProjectCode"] = "Project.ProjectCode",
+            ["ProjectName"] = "Project.ProjectName"
+        };
         private readonly IUnitOfWork _unitOfWork;
         private readonly INetOperationRepository _netOperationRepository;
         private readonly IMapper _mapper;
@@ -66,11 +74,11 @@ namespace aqua_api.Modules.NetOperations.Application.Services
                     .Where(x => !x.IsDeleted)
                     .Include(x => x.Project)
                     .Include(x => x.OperationType)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(NetOperation.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 

@@ -6,6 +6,19 @@ namespace aqua_api.Modules.Projects.Application.Services
 {
     public class ProjectService : IProjectService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Id"] = "Id",
+                ["ProjectCode"] = "ProjectCode",
+                ["ProjectName"] = "ProjectName",
+                ["StartDate"] = "StartDate",
+                ["EndDate"] = "EndDate",
+                ["Status"] = "Status"
+            };
+
+        private static readonly string[] DefaultSearchFields = ["ProjectCode", "ProjectName"];
+
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
@@ -55,11 +68,11 @@ namespace aqua_api.Modules.Projects.Application.Services
                 var query = _unitOfWork.Projects
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns, DefaultSearchFields)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(Project.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 

@@ -6,6 +6,17 @@ namespace aqua_api.Modules.SeaWaterTemperature.Application.Services
 {
     public class SeaWaterTemperatureService : ISeaWaterTemperatureService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["ProjectCode"] = "Project.ProjectCode",
+            ["ProjectName"] = "Project.ProjectName",
+            ["CageCode"] = "ProjectCage.Cage.CageCode",
+            ["CageName"] = "ProjectCage.Cage.CageName",
+            ["RecordDate"] = "RecordDate",
+            ["WaterTemperatureCelsius"] = "WaterTemperatureCelsius",
+            ["WeatherDescription"] = "WeatherDescription",
+            ["Note"] = "Note"
+        };
         private readonly IUnitOfWork _unitOfWork;
 
         public SeaWaterTemperatureService(IUnitOfWork unitOfWork)
@@ -47,11 +58,11 @@ namespace aqua_api.Modules.SeaWaterTemperature.Application.Services
                 request.Filters ??= new List<Filter>();
 
                 var query = BaseQuery()
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(SeaWaterTemperatureEntity.RecordDate) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
                 var entities = await query

@@ -6,6 +6,25 @@ namespace aqua_api.Modules.FishBatches.Application.Services
 {
     public class FishBatchService : IFishBatchService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["Id"] = "Id",
+                ["BatchCode"] = "BatchCode",
+                ["ProjectId"] = "ProjectId",
+                ["ProjectCode"] = "Project.ProjectCode",
+                ["ProjectName"] = "Project.ProjectName",
+                ["FishStockId"] = "FishStockId",
+                ["ErpStockCode"] = "FishStock.ErpStockCode",
+                ["StockName"] = "FishStock.StockName",
+                ["CurrentAverageGram"] = "CurrentAverageGram",
+                ["StartDate"] = "StartDate",
+                ["EndDate"] = "EndDate"
+            };
+
+        private static readonly string[] DefaultSearchFields =
+            ["BatchCode", "ProjectCode", "ProjectName", "ErpStockCode", "StockName"];
+
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
@@ -55,11 +74,11 @@ namespace aqua_api.Modules.FishBatches.Application.Services
                 var query = _unitOfWork.FishBatches
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns, DefaultSearchFields)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(FishBatch.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 

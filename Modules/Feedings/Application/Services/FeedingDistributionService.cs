@@ -76,7 +76,7 @@ namespace aqua_api.Modules.Feedings.Application.Services
                 var query = _unitOfWork.FeedingDistributions
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request)
+                    .ApplySearch(request, ColumnMapping)
                     .ApplyFilters(request.Filters, request.FilterLogic, ColumnMapping);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(FeedingDistribution.Id) : request.SortBy;

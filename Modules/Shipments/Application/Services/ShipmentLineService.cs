@@ -8,6 +8,21 @@ namespace aqua_api.Modules.Shipments.Application.Services
 {
     public class ShipmentLineService : IShipmentLineService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["ShipmentNo"] = "Shipment.ShipmentNo",
+            ["BatchCode"] = "FishBatch.BatchCode",
+            ["ProjectCode"] = "Shipment.Project.ProjectCode",
+            ["ProjectName"] = "Shipment.Project.ProjectName",
+            ["FromCageCode"] = "FromProjectCage.Cage.CageCode",
+            ["FromCageName"] = "FromProjectCage.Cage.CageName",
+            ["FishCount"] = "FishCount",
+            ["AverageGram"] = "AverageGram",
+            ["TotalKg"] = "TotalKg",
+            ["CurrencyCode"] = "CurrencyCode",
+            ["UnitPrice"] = "UnitPrice",
+            ["LocalLineAmount"] = "LocalLineAmount"
+        };
         private readonly IUnitOfWork _unitOfWork;
         private readonly IBalanceLedgerManager _balanceLedgerManager;
         private readonly IFishGrowthLedgerReplayService _ledgerReplayService;
@@ -95,11 +110,11 @@ namespace aqua_api.Modules.Shipments.Application.Services
                 var query = _unitOfWork.ShipmentLines
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(ShipmentLine.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 

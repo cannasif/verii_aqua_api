@@ -6,6 +6,18 @@ namespace aqua_api.Modules.DailyWeathers.Application.Services
 {
     public class DailyWeatherService : IDailyWeatherService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["ProjectCode"] = "Project.ProjectCode",
+            ["ProjectName"] = "Project.ProjectName",
+            ["WeatherDate"] = "WeatherDate",
+            ["WeatherTypeName"] = "WeatherType.Name",
+            ["WeatherSeverityName"] = "WeatherSeverity.Name",
+            ["WeatherSeverityScore"] = "WeatherSeverity.Score",
+            ["DissolvedOxygenMgL"] = "DissolvedOxygenMgL",
+            ["SalinityPpt"] = "SalinityPpt",
+            ["Ph"] = "Ph"
+        };
         private readonly IUnitOfWork _unitOfWork;
         private readonly IDailyWeatherRepository _dailyWeatherRepository;
         private readonly IMapper _mapper;
@@ -63,11 +75,11 @@ namespace aqua_api.Modules.DailyWeathers.Application.Services
                     .Include(x => x.Project)
                     .Include(x => x.WeatherType)
                     .Include(x => x.WeatherSeverity)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(DailyWeather.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 

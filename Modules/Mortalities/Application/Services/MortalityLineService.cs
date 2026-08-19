@@ -86,7 +86,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     .Include(x => x.ProjectCage)
                         .ThenInclude(x => x!.Cage)
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request)
+                    .ApplySearch(request, ColumnMapping)
                     .ApplyFilters(request.Filters, request.FilterLogic, ColumnMapping);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(MortalityLine.Id) : request.SortBy;

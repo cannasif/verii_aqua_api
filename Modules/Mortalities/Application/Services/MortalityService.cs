@@ -9,6 +9,18 @@ namespace aqua_api.Modules.Mortalities.Application.Services
 {
     public class MortalityService : IMortalityService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["MortalityNo"] = "MortalityNo",
+            ["MortalityDate"] = "MortalityDate",
+            ["ProjectCode"] = "Project.ProjectCode",
+            ["ProjectName"] = "Project.ProjectName",
+            ["IsERPIntegrated"] = "IsERPIntegrated",
+            ["ERPReferenceNumber"] = "ERPReferenceNumber",
+            ["ERPIntegrationDate"] = "ERPIntegrationDate",
+            ["ERPIntegrationStatus"] = "ERPIntegrationStatus",
+            ["ERPErrorMessage"] = "ERPErrorMessage"
+        };
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMortalityRepository _mortalityRepository;
         private readonly IBalanceLedgerManager _balanceLedgerManager;
@@ -75,11 +87,11 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                     .Query()
                     .Where(x => !x.IsDeleted)
                     .Include(x => x.Project)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(Mortality.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 

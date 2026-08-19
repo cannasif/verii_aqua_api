@@ -9,6 +9,19 @@ namespace aqua_api.Modules.Feedings.Application.Services
 {
     public class FeedingService : IFeedingService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["FeedingNo"] = "FeedingNo",
+            ["FeedingDate"] = "FeedingDate",
+            ["FeedingSlot"] = "FeedingSlot",
+            ["ProjectCode"] = "Project.ProjectCode",
+            ["ProjectName"] = "Project.ProjectName",
+            ["IsERPIntegrated"] = "IsERPIntegrated",
+            ["ERPReferenceNumber"] = "ERPReferenceNumber",
+            ["ERPIntegrationDate"] = "ERPIntegrationDate",
+            ["ERPIntegrationStatus"] = "ERPIntegrationStatus",
+            ["ERPErrorMessage"] = "ERPErrorMessage"
+        };
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
@@ -82,11 +95,11 @@ namespace aqua_api.Modules.Feedings.Application.Services
                     .Query()
                     .Where(x => !x.IsDeleted)
                     .Include(x => x.Project)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(Feeding.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 
