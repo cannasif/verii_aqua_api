@@ -6,9 +6,10 @@ public interface IBudgetPlanningService
     Task<ApiResponse<BudgetPlanDto>> GetPlanAsync(long id);
     Task<ApiResponse<BudgetPlanDto>> CreatePlanAsync(CreateBudgetPlanDto dto);
     Task<ApiResponse<BudgetPlanDto>> CopyPlanAsync(long sourceBudgetPlanId, CopyBudgetPlanDto dto);
+    Task<ApiResponse<bool>> DeletePlanAsync(long id, long? userId = null);
     Task<ApiResponse<List<BudgetPlanFishBatchDto>>> GetPlanFishBatchesAsync(long budgetPlanId);
     Task<ApiResponse<List<BudgetPlanFishBatchAdjustmentDto>>> GetFishBatchAdjustmentsAsync(long budgetPlanId);
-    Task<ApiResponse<List<BudgetAvailableFishBatchDto>>> GetAvailableFishBatchesAsync();
+    Task<ApiResponse<List<BudgetAvailableFishBatchDto>>> GetAvailableFishBatchesAsync(long? budgetPlanId = null);
     Task<ApiResponse<List<BudgetPlanFishBatchDto>>> AddActualFishBatchesAsync(long budgetPlanId, AddActualFishBatchesToBudgetDto dto);
     Task<ApiResponse<BudgetPlanFishBatchDto>> AddVirtualFishBatchAsync(long budgetPlanId, AddVirtualFishBatchDto dto);
     Task<ApiResponse<BudgetPlanFishBatchAdjustmentDto>> CreateFishBatchAdjustmentAsync(long budgetPlanId, CreateBudgetPlanFishBatchAdjustmentDto dto);

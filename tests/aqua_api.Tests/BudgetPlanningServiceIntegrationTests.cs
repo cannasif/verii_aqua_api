@@ -239,9 +239,9 @@ public class BudgetPlanningServiceIntegrationTests
             BudgetCode = "IMPORT-OVERRIDE",
             BudgetName = "Biological start override",
             StartYear = 2026,
-            StartMonth = 3,
+            StartMonth = 8,
             EndYear = 2027,
-            EndMonth = 3
+            EndMonth = 8
         };
         db.BudgetPlans.Add(budgetPlan);
         await db.SaveChangesAsync();
@@ -255,10 +255,239 @@ public class BudgetPlanningServiceIntegrationTests
 
         Assert.True(imported.Success, imported.Message);
         var importedBatch = Assert.Single(imported.Data!);
-        Assert.Equal(720m, importedBatch.InitialAverageGram);
-        Assert.Equal(307_776.24m, importedBatch.InitialBiomassKg);
+        Assert.Equal(719.339m, importedBatch.InitialAverageGram);
+        Assert.Equal(307_493.73m, importedBatch.InitialBiomassKg);
         Assert.Equal(2024, importedBatch.GrowthStartYear);
         Assert.Equal(7, importedBatch.GrowthStartMonth);
+    }
+
+    [Fact]
+    public async Task AddActualFishBatches_UsesBudgetMonthOpeningSnapshot_NotCurrentGram()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+
+        var stock = new Stock { ErpStockCode = "HIST-FISH", StockName = "Historical Fish", Unit = "AD" };
+        var cage = new Cage { CageCode = "HIST-CAGE", CageName = "Historical Cage" };
+        var project = new Project
+        {
+            ProjectCode = "HIST-PROJECT",
+            ProjectName = "Historical Project",
+            StartDate = new DateTime(2026, 3, 1),
+            Status = DocumentStatus.Posted
+        };
+        db.AddRange(stock, cage, project);
+        await db.SaveChangesAsync();
+
+        var projectCage = new ProjectCage { ProjectId = project.Id, CageId = cage.Id, AssignedDate = project.StartDate };
+        var fishBatch = new FishBatch
+        {
+            ProjectId = project.Id,
+            FishStockId = stock.Id,
+            BatchCode = "HIST-BATCH",
+            CurrentAverageGram = 250m,
+            StartDate = project.StartDate
+        };
+        db.AddRange(projectCage, fishBatch);
+        await db.SaveChangesAsync();
+
+        db.BatchMovements.AddRange(
+            new BatchMovement
+            {
+                FishBatchId = fishBatch.Id,
+                ProjectCageId = projectCage.Id,
+                MovementDate = new DateTime(2026, 3, 1),
+                MovementType = BatchMovementType.Stocking,
+                SignedCount = 1_000,
+                SignedBiomassGram = 100_000m,
+                ToAverageGram = 100m,
+                ReferenceTable = "TEST",
+                ReferenceId = 1
+            },
+            new BatchMovement
+            {
+                FishBatchId = fishBatch.Id,
+                ProjectCageId = projectCage.Id,
+                MovementDate = new DateTime(2026, 3, 31, 23, 59, 59),
+                MovementType = BatchMovementType.FishGrowth,
+                SignedCount = 0,
+                SignedBiomassGram = 50_000m,
+                FromAverageGram = 100m,
+                ToAverageGram = 150m,
+                ReferenceTable = "TEST",
+                ReferenceId = 2
+            },
+            new BatchMovement
+            {
+                FishBatchId = fishBatch.Id,
+                ProjectCageId = projectCage.Id,
+                MovementDate = new DateTime(2026, 4, 30, 23, 59, 59),
+                MovementType = BatchMovementType.FishGrowth,
+                SignedCount = 0,
+                SignedBiomassGram = 100_000m,
+                FromAverageGram = 150m,
+                ToAverageGram = 250m,
+                ReferenceTable = "TEST",
+                ReferenceId = 3
+            });
+        db.BatchCageBalances.Add(new BatchCageBalance
+        {
+            FishBatchId = fishBatch.Id,
+            ProjectCageId = projectCage.Id,
+            LiveCount = 1_000,
+            AverageGram = 250m,
+            BiomassGram = 250_000m,
+            AsOfDate = new DateTime(2026, 4, 30, 23, 59, 59)
+        });
+        var plan = new BudgetPlan
+        {
+            BudgetNo = "BUD-HIST-OPENING",
+            BudgetCode = "HIST-OPENING",
+            BudgetName = "Historical Opening",
+            StartYear = 2026,
+            StartMonth = 4,
+            EndYear = 2026,
+            EndMonth = 12
+        };
+        db.BudgetPlans.Add(plan);
+        await db.SaveChangesAsync();
+
+        var available = await fixture.Service.GetAvailableFishBatchesAsync(plan.Id);
+        var opening = Assert.Single(available.Data!);
+        Assert.Equal(1_000, opening.LiveCount);
+        Assert.Equal(150m, opening.AverageGram);
+        Assert.Equal(150m, opening.BiomassKg);
+        Assert.Equal(new DateTime(2026, 3, 31, 23, 59, 59), opening.AsOfDate);
+
+        var imported = await fixture.Service.AddActualFishBatchesAsync(plan.Id, new AddActualFishBatchesToBudgetDto
+        {
+            FishBatchIds = [fishBatch.Id]
+        });
+
+        Assert.True(imported.Success, imported.Message);
+        var importedBatch = Assert.Single(imported.Data!);
+        Assert.Equal(150m, importedBatch.InitialAverageGram);
+        Assert.Equal(150m, importedBatch.InitialBiomassKg);
+    }
+
+    [Fact]
+    public async Task DeletePlan_SoftDeletesTheCompleteRelatedGraph()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+
+        var fishStock = new Stock { ErpStockCode = "DELETE-FISH", StockName = "Delete Fish", Unit = "AD" };
+        var feedStock = new Stock { ErpStockCode = "DELETE-FEED", StockName = "Delete Feed", Unit = "KG" };
+        var calibration = new BudgetCalibrationDefinition { CalibrationCode = "DELETE-CAL", CalibrationInfo = "0 - 9999 gr" };
+        db.AddRange(fishStock, feedStock, calibration);
+        await db.SaveChangesAsync();
+        var plan = await SeedBudgetPlanAsync(db, fishStock.Id, BudgetPlanStatus.Calculated);
+        var project = await db.BudgetPlanProjects.SingleAsync(x => x.BudgetPlanId == plan.Id);
+        var batch = await db.BudgetPlanFishBatches.SingleAsync(x => x.BudgetPlanId == plan.Id);
+        var projection = new BudgetPlanMonthlyProjection
+        {
+            BudgetPlanId = plan.Id,
+            BudgetPlanFishBatchId = batch.Id,
+            Year = 2026,
+            Month = 1,
+            OpeningLiveCount = 1_000,
+            OpeningAverageGram = 100m,
+            OpeningBiomassKg = 100m,
+            ClosingAverageGram = 110m,
+            ClosingLiveCount = 1_000,
+            ClosingBiomassKg = 110m
+        };
+        var sale = new BudgetPlanSalesLine
+        {
+            BudgetPlanId = plan.Id,
+            BudgetPlanFishBatchId = batch.Id,
+            Year = 2026,
+            Month = 1,
+            SalesTon = 0.01m,
+            SalesCount = 91
+        };
+        db.AddRange(projection, sale);
+        await db.SaveChangesAsync();
+        db.AddRange(
+            new BudgetPlanFishBatchAdjustment
+            {
+                BudgetPlanId = plan.Id,
+                BudgetPlanFishBatchId = batch.Id,
+                AdjustmentType = BudgetPlanFishBatchAdjustmentType.Increase,
+                LiveCount = 10,
+                AverageGram = 100m,
+                BiomassKg = 1m
+            },
+            new BudgetPlanSalesDistribution
+            {
+                BudgetPlanId = plan.Id,
+                BudgetPlanMonthlyProjectionId = projection.Id,
+                BudgetPlanSalesLineId = sale.Id,
+                BudgetPlanFishBatchId = batch.Id,
+                Year = 2026,
+                Month = 1,
+                SalesTon = 0.01m,
+                SalesKg = 10m,
+                SalesCount = 91,
+                UnitGram = 110m
+            },
+            new BudgetPlanFeedingLine
+            {
+                BudgetPlanId = plan.Id,
+                BudgetPlanMonthlyProjectionId = projection.Id,
+                BudgetPlanFishBatchId = batch.Id,
+                FeedStockId = feedStock.Id,
+                Year = 2026,
+                Month = 1,
+                FeedKg = 5m
+            },
+            new BudgetPlanMortalityLine
+            {
+                BudgetPlanId = plan.Id,
+                BudgetPlanMonthlyProjectionId = projection.Id,
+                BudgetPlanFishBatchId = batch.Id,
+                Year = 2026,
+                Month = 1,
+                MortalityCount = 1,
+                MortalityKg = 0.11m
+            },
+            new BudgetPlanExchangeRate
+            {
+                BudgetPlanId = plan.Id,
+                Year = 2026,
+                Month = 1,
+                CurrencyCode = "EUR",
+                RateType = "Budget",
+                ExchangeRate = 50m
+            },
+            new BudgetPlanFishPrice
+            {
+                BudgetPlanId = plan.Id,
+                FishStockId = fishStock.Id,
+                CalibrationDefinitionId = calibration.Id,
+                Year = 2026,
+                Month = 1,
+                CurrencyCode = "EUR",
+                UnitPrice = 6m
+            });
+        await db.SaveChangesAsync();
+
+        var result = await fixture.Service.DeletePlanAsync(plan.Id);
+
+        Assert.True(result.Success, result.Message);
+        db.ChangeTracker.Clear();
+        Assert.True(await db.BudgetPlans.IgnoreQueryFilters().Where(x => x.Id == plan.Id).Select(x => x.IsDeleted).SingleAsync());
+        Assert.All(await db.BudgetPlanProjects.IgnoreQueryFilters().Where(x => x.BudgetPlanId == plan.Id).ToListAsync(), x => Assert.True(x.IsDeleted));
+        Assert.All(await db.BudgetPlanFishBatches.IgnoreQueryFilters().Where(x => x.BudgetPlanId == plan.Id).ToListAsync(), x => Assert.True(x.IsDeleted));
+        Assert.All(await db.BudgetPlanFishBatchAdjustments.IgnoreQueryFilters().Where(x => x.BudgetPlanId == plan.Id).ToListAsync(), x => Assert.True(x.IsDeleted));
+        Assert.All(await db.BudgetPlanMonthlyProjections.IgnoreQueryFilters().Where(x => x.BudgetPlanId == plan.Id).ToListAsync(), x => Assert.True(x.IsDeleted));
+        Assert.All(await db.BudgetPlanSalesLines.IgnoreQueryFilters().Where(x => x.BudgetPlanId == plan.Id).ToListAsync(), x => Assert.True(x.IsDeleted));
+        Assert.All(await db.BudgetPlanSalesDistributions.IgnoreQueryFilters().Where(x => x.BudgetPlanId == plan.Id).ToListAsync(), x => Assert.True(x.IsDeleted));
+        Assert.All(await db.BudgetPlanFeedingLines.IgnoreQueryFilters().Where(x => x.BudgetPlanId == plan.Id).ToListAsync(), x => Assert.True(x.IsDeleted));
+        Assert.All(await db.BudgetPlanMortalityLines.IgnoreQueryFilters().Where(x => x.BudgetPlanId == plan.Id).ToListAsync(), x => Assert.True(x.IsDeleted));
+        Assert.All(await db.BudgetPlanExchangeRates.IgnoreQueryFilters().Where(x => x.BudgetPlanId == plan.Id).ToListAsync(), x => Assert.True(x.IsDeleted));
+        Assert.All(await db.BudgetPlanFishPrices.IgnoreQueryFilters().Where(x => x.BudgetPlanId == plan.Id).ToListAsync(), x => Assert.True(x.IsDeleted));
+        Assert.Equal(project.Id, (await db.BudgetPlanProjects.IgnoreQueryFilters().SingleAsync(x => x.BudgetPlanId == plan.Id)).Id);
     }
 
     [Fact]

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace aqua_api.Modules.BudgetPlanning.Api;
 
@@ -43,10 +44,24 @@ public class BudgetPlanningController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
-    [HttpGet("available-fish-batches")]
-    public async Task<ActionResult<ApiResponse<List<BudgetAvailableFishBatchDto>>>> GetAvailableFishBatches()
+    private long? GetUserId()
     {
-        var result = await _service.GetAvailableFishBatchesAsync();
+        var raw = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return long.TryParse(raw, out var userId) ? userId : null;
+    }
+
+    [HttpDelete("{id:long}")]
+    [HttpPost("{id:long}/delete")]
+    public async Task<ActionResult<ApiResponse<bool>>> DeletePlan(long id)
+    {
+        var result = await _service.DeletePlanAsync(id, GetUserId());
+        return StatusCode(result.StatusCode, result);
+    }
+
+    [HttpGet("available-fish-batches")]
+    public async Task<ActionResult<ApiResponse<List<BudgetAvailableFishBatchDto>>>> GetAvailableFishBatches([FromQuery] long? budgetPlanId)
+    {
+        var result = await _service.GetAvailableFishBatchesAsync(budgetPlanId);
         return StatusCode(result.StatusCode, result);
     }
 

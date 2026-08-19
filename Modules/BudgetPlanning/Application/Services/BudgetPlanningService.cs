@@ -393,8 +393,61 @@ public class BudgetPlanningService : IBudgetPlanningService
         }
     }
 
-    public async Task<ApiResponse<List<BudgetAvailableFishBatchDto>>> GetAvailableFishBatchesAsync()
+    public async Task<ApiResponse<bool>> DeletePlanAsync(long id, long? userId = null)
     {
+        var plan = await _unitOfWork.Db.BudgetPlans
+            .IgnoreQueryFilters()
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+        if (plan == null)
+        {
+            return ApiResponse<bool>.ErrorResult(
+                "Butce plani bulunamadi.",
+                "Butce plani bulunamadi.",
+                StatusCodes.Status404NotFound);
+        }
+
+        await _unitOfWork.BeginTransactionAsync();
+        try
+        {
+            var graph = new List<BaseEntity>();
+            graph.AddRange(await _unitOfWork.Db.BudgetPlanSalesDistributions.IgnoreQueryFilters().Where(x => x.BudgetPlanId == id && !x.IsDeleted).ToListAsync());
+            graph.AddRange(await _unitOfWork.Db.BudgetPlanFeedingLines.IgnoreQueryFilters().Where(x => x.BudgetPlanId == id && !x.IsDeleted).ToListAsync());
+            graph.AddRange(await _unitOfWork.Db.BudgetPlanMortalityLines.IgnoreQueryFilters().Where(x => x.BudgetPlanId == id && !x.IsDeleted).ToListAsync());
+            graph.AddRange(await _unitOfWork.Db.BudgetPlanMonthlyProjections.IgnoreQueryFilters().Where(x => x.BudgetPlanId == id && !x.IsDeleted).ToListAsync());
+            graph.AddRange(await _unitOfWork.Db.BudgetPlanSalesLines.IgnoreQueryFilters().Where(x => x.BudgetPlanId == id && !x.IsDeleted).ToListAsync());
+            graph.AddRange(await _unitOfWork.Db.BudgetPlanFishBatchAdjustments.IgnoreQueryFilters().Where(x => x.BudgetPlanId == id && !x.IsDeleted).ToListAsync());
+            graph.AddRange(await _unitOfWork.Db.BudgetPlanFishPrices.IgnoreQueryFilters().Where(x => x.BudgetPlanId == id && !x.IsDeleted).ToListAsync());
+            graph.AddRange(await _unitOfWork.Db.BudgetPlanExchangeRates.IgnoreQueryFilters().Where(x => x.BudgetPlanId == id && !x.IsDeleted).ToListAsync());
+            graph.AddRange(await _unitOfWork.Db.BudgetPlanFishBatches.IgnoreQueryFilters().Where(x => x.BudgetPlanId == id && !x.IsDeleted).ToListAsync());
+            graph.AddRange(await _unitOfWork.Db.BudgetPlanProjects.IgnoreQueryFilters().Where(x => x.BudgetPlanId == id && !x.IsDeleted).ToListAsync());
+            graph.Add(plan);
+
+            var deletedAt = DateTimeProvider.Now;
+            foreach (var entity in graph)
+            {
+                entity.IsDeleted = true;
+                entity.DeletedDate = deletedAt;
+                entity.DeletedBy = userId;
+            }
+
+            await _unitOfWork.SaveChangesAsync();
+            await _unitOfWork.CommitTransactionAsync();
+            return ApiResponse<bool>.SuccessResult(true, "Butce plani ve bagli tum kayitlari silindi.");
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync();
+            throw;
+        }
+    }
+
+    public async Task<ApiResponse<List<BudgetAvailableFishBatchDto>>> GetAvailableFishBatchesAsync(long? budgetPlanId = null)
+    {
+        if (budgetPlanId.HasValue)
+        {
+            return await GetAvailableFishBatchesAtPlanOpeningAsync(budgetPlanId.Value);
+        }
+
 #pragma warning disable CS8602
         var cageBalances = await _unitOfWork.Db.BatchCageBalances
             .AsNoTracking()
@@ -513,6 +566,146 @@ public class BudgetPlanningService : IBudgetPlanningService
         return ApiResponse<List<BudgetAvailableFishBatchDto>>.SuccessResult(rows, "Islem basarili.");
     }
 
+    private async Task<ApiResponse<List<BudgetAvailableFishBatchDto>>> GetAvailableFishBatchesAtPlanOpeningAsync(long budgetPlanId)
+    {
+        var plan = await _unitOfWork.Db.BudgetPlans
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == budgetPlanId && !x.IsDeleted);
+        if (plan == null)
+        {
+            return ApiResponse<List<BudgetAvailableFishBatchDto>>.ErrorResult(
+                "Butce plani bulunamadi.",
+                "Butce plani bulunamadi.",
+                StatusCodes.Status404NotFound);
+        }
+
+        // The selected budget month is an opening balance. Movements dated before
+        // the first day of that month define the count, biomass and average gram.
+        // This prevents today's gram value from leaking into a historical budget.
+        var openingDate = new DateTime(plan.StartYear, plan.StartMonth, 1);
+        var historicalIds = await _unitOfWork.Db.BatchMovements
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted && x.MovementDate < openingDate)
+            .Select(x => x.FishBatchId)
+            .Distinct()
+            .ToListAsync();
+
+        var currentSnapshots = (await GetAvailableFishBatchesAsync()).Data ?? [];
+        var fallbackIds = currentSnapshots
+            .Where(x => x.AsOfDate < openingDate)
+            .Select(x => x.FishBatchId);
+        var fishBatchIds = historicalIds.Concat(fallbackIds).Distinct().ToList();
+        if (fishBatchIds.Count == 0)
+        {
+            return ApiResponse<List<BudgetAvailableFishBatchDto>>.SuccessResult([], "Butce baslangicinda mevcut balik partisi bulunamadi.");
+        }
+
+        var movements = await _unitOfWork.Db.BatchMovements
+            .AsNoTracking()
+            .Where(x =>
+                !x.IsDeleted &&
+                fishBatchIds.Contains(x.FishBatchId) &&
+                x.MovementDate < openingDate)
+            .ToListAsync();
+
+#pragma warning disable CS8602
+        var fishBatches = await _unitOfWork.Db.FishBatches
+            .AsNoTracking()
+            .Include(x => x.Project)
+            .Include(x => x.FishStock)
+            .Where(x =>
+                fishBatchIds.Contains(x.Id) &&
+                !x.IsDeleted &&
+                x.StartDate < openingDate &&
+                x.Project != null &&
+                x.Project.Status != DocumentStatus.Cancelled)
+            .ToListAsync();
+#pragma warning restore CS8602
+
+        var postedShipmentRows = await _unitOfWork.Db.ShipmentLines
+            .AsNoTracking()
+            .Where(x =>
+                !x.IsDeleted &&
+                fishBatchIds.Contains(x.FishBatchId) &&
+                x.Shipment != null &&
+                !x.Shipment.IsDeleted &&
+                x.Shipment.Status == DocumentStatus.Posted &&
+                x.Shipment.ShipmentDate < openingDate)
+            .Select(x => new ShipmentSeed(x.FishBatchId, x.FishCount, x.BiomassGram, x.Shipment!.ShipmentDate))
+            .ToListAsync();
+        var representedShipmentRows = movements
+            .Where(x =>
+                x.MovementType == BatchMovementType.Shipment &&
+                (x.SignedCount < 0 || x.SignedBiomassGram < 0m))
+            .Select(x => new ShipmentSeed(
+                x.FishBatchId,
+                x.SignedCount < 0 ? -x.SignedCount : 0,
+                x.SignedBiomassGram < 0m ? -x.SignedBiomassGram : 0m,
+                x.MovementDate))
+            .ToList();
+        var postedByBatch = postedShipmentRows
+            .GroupBy(x => x.FishBatchId)
+            .ToDictionary(x => x.Key, x => (Count: x.Sum(y => y.FishCount), Biomass: x.Sum(y => y.BiomassGram)));
+        var representedByBatch = representedShipmentRows
+            .GroupBy(x => x.FishBatchId)
+            .ToDictionary(x => x.Key, x => (Count: x.Sum(y => y.FishCount), Biomass: x.Sum(y => y.BiomassGram)));
+        var fallbackByBatch = currentSnapshots.ToDictionary(x => x.FishBatchId);
+
+        var rows = new List<BudgetAvailableFishBatchDto>();
+        foreach (var fishBatch in fishBatches)
+        {
+            var batchMovements = movements.Where(x => x.FishBatchId == fishBatch.Id).ToList();
+            var snapshot = BatchReportMassCalculator.CalculateSnapshot(batchMovements);
+            var liveCount = snapshot.LiveCount;
+            var biomassGram = snapshot.BiomassGram;
+            var asOfDate = batchMovements.Count == 0
+                ? fishBatch.StartDate
+                : batchMovements.Max(x => x.MovementDate);
+
+            if ((batchMovements.Count == 0 || liveCount <= 0 || biomassGram <= 0m) &&
+                fallbackByBatch.TryGetValue(fishBatch.Id, out var fallback) &&
+                fallback.AsOfDate < openingDate)
+            {
+                liveCount = fallback.LiveCount;
+                biomassGram = fallback.BiomassKg * 1000m;
+                asOfDate = fallback.AsOfDate;
+            }
+
+            postedByBatch.TryGetValue(fishBatch.Id, out var posted);
+            representedByBatch.TryGetValue(fishBatch.Id, out var represented);
+            var missingShipmentCount = Math.Max(0, posted.Count - represented.Count);
+            var missingShipmentBiomass = Math.Max(0m, posted.Biomass - represented.Biomass);
+            liveCount = Math.Max(0, liveCount - missingShipmentCount);
+            biomassGram = Math.Max(0m, biomassGram - missingShipmentBiomass);
+            if (liveCount <= 0 || biomassGram <= 0m)
+            {
+                continue;
+            }
+
+            rows.Add(new BudgetAvailableFishBatchDto
+            {
+                FishBatchId = fishBatch.Id,
+                ProjectId = fishBatch.ProjectId,
+                ProjectCode = fishBatch.Project?.ProjectCode ?? string.Empty,
+                ProjectName = fishBatch.Project?.ProjectName ?? string.Empty,
+                BatchCode = fishBatch.BatchCode,
+                FishStockId = fishBatch.FishStockId,
+                FishStockCode = fishBatch.FishStock?.ErpStockCode,
+                FishStockName = fishBatch.FishStock?.StockName,
+                LiveCount = liveCount,
+                AverageGram = Round(biomassGram / liveCount),
+                BiomassKg = Round(biomassGram / 1000m),
+                AsOfDate = asOfDate,
+                GrowthStartYear = fishBatch.StartDate.Year,
+                GrowthStartMonth = fishBatch.StartDate.Month
+            });
+        }
+
+        return ApiResponse<List<BudgetAvailableFishBatchDto>>.SuccessResult(
+            rows.OrderBy(x => x.ProjectCode).ThenBy(x => x.BatchCode).ToList(),
+            $"{plan.StartMonth:00}/{plan.StartYear} butce acilis stogu getirildi.");
+    }
+
     public async Task<ApiResponse<List<BudgetPlanFishBatchDto>>> GetPlanFishBatchesAsync(long budgetPlanId)
     {
         return ApiResponse<List<BudgetPlanFishBatchDto>>.SuccessResult(await LoadPlanFishBatchesAsync(budgetPlanId), "Islem basarili.");
@@ -555,7 +748,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                 StatusCodes.Status400BadRequest);
         }
 
-        var available = (await GetAvailableFishBatchesAsync()).Data?
+        var available = (await GetAvailableFishBatchesAsync(plan.Id)).Data?
             .Where(x => dto.FishBatchIds.Contains(x.FishBatchId))
             .ToList() ?? new List<BudgetAvailableFishBatchDto>();
 
@@ -572,7 +765,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                     continue;
                 }
 
-                var initialAverageGram = CeilingWholeGram(source.AverageGram);
+                var initialAverageGram = Round(source.AverageGram);
                 await _unitOfWork.Repository<BudgetPlanFishBatch>().AddAsync(new BudgetPlanFishBatch
                 {
                     BudgetPlanId = plan.Id,
@@ -583,7 +776,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                     BatchCode = source.BatchCode,
                     InitialLiveCount = source.LiveCount,
                     InitialAverageGram = initialAverageGram,
-                    InitialBiomassKg = Round(source.LiveCount * initialAverageGram / 1000m),
+                    InitialBiomassKg = Round(source.BiomassKg),
                     GrowthStartYear = dto.GrowthStartYear ?? source.GrowthStartYear,
                     GrowthStartMonth = dto.GrowthStartMonth ?? source.GrowthStartMonth
                 });
