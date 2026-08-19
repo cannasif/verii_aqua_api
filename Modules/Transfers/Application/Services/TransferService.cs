@@ -7,6 +7,13 @@ namespace aqua_api.Modules.Transfers.Application.Services
 {
     public class TransferService : ITransferService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["TransferNo"] = "TransferNo",
+            ["TransferDate"] = "TransferDate",
+            ["ProjectCode"] = "Project.ProjectCode",
+            ["ProjectName"] = "Project.ProjectName"
+        };
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITransferRepository _transferRepository;
         private readonly IBalanceLedgerManager _balanceLedgerManager;
@@ -67,11 +74,11 @@ namespace aqua_api.Modules.Transfers.Application.Services
                     .Query()
                     .Where(x => !x.IsDeleted)
                     .Include(x => x.Project)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(Transfer.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 

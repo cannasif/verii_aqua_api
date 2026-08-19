@@ -5,6 +5,21 @@ namespace aqua_api.Modules.NetInventory.Application.Services;
 
 public class NetInventoryMovementService : INetInventoryMovementService
 {
+    private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["MovementNo"] = "MovementNo",
+        ["MovementDate"] = "MovementDate",
+        ["NetTypeName"] = "NetType",
+        ["MovementTypeName"] = "MovementType",
+        ["ProjectCode"] = "Project.ProjectCode",
+        ["StockCode"] = "Stock.ErpStockCode",
+        ["SourceWarehouseCode"] = "SourceWarehouse.ErpWarehouseCode",
+        ["TargetWarehouseCode"] = "TargetWarehouse.ErpWarehouseCode",
+        ["SourceCageCode"] = "SourceProjectCage.Cage.CageCode",
+        ["TargetCageCode"] = "TargetProjectCage.Cage.CageCode",
+        ["Quantity"] = "Quantity",
+        ["Note"] = "Note"
+    };
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILocalizationService _localizationService;
 
@@ -22,11 +37,11 @@ public class NetInventoryMovementService : INetInventoryMovementService
             request.Filters ??= new List<Filter>();
 
             var query = BuildQuery()
-                .ApplySearch(request)
-                .ApplyFilters(request.Filters, request.FilterLogic);
+                .ApplySearch(request, PagedColumns)
+                .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
             var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(NetInventoryMovement.MovementDate) : request.SortBy;
-            query = query.ApplySorting(sortBy, request.SortDirection);
+            query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
             var totalCount = await query.CountAsync();
             var entities = await query.ApplyPagination(request.PageNumber, request.PageSize).ToListAsync();

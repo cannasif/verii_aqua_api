@@ -6,6 +6,20 @@ namespace aqua_api.Modules.StockConverts.Application.Services
 {
     public class StockConvertLineService : IStockConvertLineService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["FromBatchCode"] = "FromFishBatch.BatchCode",
+            ["ToBatchCode"] = "ToFishBatch.BatchCode",
+            ["FromProjectCode"] = "FromProjectCage.Project.ProjectCode",
+            ["FromCageCode"] = "FromProjectCage.Cage.CageCode",
+            ["FromCageName"] = "FromProjectCage.Cage.CageName",
+            ["ToCageCode"] = "ToProjectCage.Cage.CageCode",
+            ["ToCageName"] = "ToProjectCage.Cage.CageName",
+            ["FishCount"] = "FishCount",
+            ["AverageGram"] = "AverageGram",
+            ["NewAverageGram"] = "NewAverageGram",
+            ["BiomassGram"] = "BiomassGram"
+        };
         private readonly IUnitOfWork _unitOfWork;
         private readonly IStockConvertService _stockConvertService;
         private readonly IMapper _mapper;
@@ -81,11 +95,11 @@ namespace aqua_api.Modules.StockConverts.Application.Services
                     .Include(x => x.ToProjectCage)
                         .ThenInclude(x => x!.Cage)
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(StockConvertLine.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 

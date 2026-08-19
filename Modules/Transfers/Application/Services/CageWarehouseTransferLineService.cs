@@ -7,6 +7,19 @@ namespace aqua_api.Modules.Transfers.Application.Services
 {
     public class CageWarehouseTransferLineService : ICageWarehouseTransferLineService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["BatchCode"] = "FishBatch.BatchCode",
+            ["FromProjectCode"] = "FromProjectCage.Project.ProjectCode",
+            ["FromProjectName"] = "FromProjectCage.Project.ProjectName",
+            ["FromCageCode"] = "FromProjectCage.Cage.CageCode",
+            ["FromCageName"] = "FromProjectCage.Cage.CageName",
+            ["ToWarehouseCode"] = "ToWarehouse.ErpWarehouseCode",
+            ["ToWarehouseName"] = "ToWarehouse.WarehouseName",
+            ["FishCount"] = "FishCount",
+            ["AverageGram"] = "AverageGram",
+            ["BiomassGram"] = "BiomassGram"
+        };
         private readonly IUnitOfWork _unitOfWork;
         private readonly IBalanceLedgerManager _balanceLedgerManager;
         private readonly ICageWarehouseTransferService _transferService;
@@ -66,11 +79,11 @@ namespace aqua_api.Modules.Transfers.Application.Services
                 var query = _unitOfWork.Repository<CageWarehouseTransferLine>()
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(CageWarehouseTransferLine.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
                 var entities = await query.ApplyPagination(request.PageNumber, request.PageSize).ToListAsync();

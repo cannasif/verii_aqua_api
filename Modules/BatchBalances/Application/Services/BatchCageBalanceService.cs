@@ -7,16 +7,20 @@ namespace aqua_api.Modules.BatchBalances.Application.Services
 {
     public class BatchCageBalanceService : IBatchCageBalanceService
     {
-        private static readonly string[] SearchableColumns =
-        [
-            "FishBatch.BatchCode",
-            "FishBatch.Project.ProjectCode",
-            "FishBatch.Project.ProjectName",
-            "FishBatch.FishStock.ErpStockCode",
-            "FishBatch.FishStock.StockName",
-            "ProjectCage.Cage.CageCode",
-            "ProjectCage.Cage.CageName"
-        ];
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["BatchCode"] = "FishBatch.BatchCode",
+            ["ProjectCode"] = "FishBatch.Project.ProjectCode",
+            ["ProjectName"] = "FishBatch.Project.ProjectName",
+            ["FishStockCode"] = "FishBatch.FishStock.ErpStockCode",
+            ["FishStockName"] = "FishBatch.FishStock.StockName",
+            ["ProjectCageCode"] = "ProjectCage.Cage.CageCode",
+            ["ProjectCageName"] = "ProjectCage.Cage.CageName",
+            ["LiveCount"] = "LiveCount",
+            ["AverageGram"] = "AverageGram",
+            ["BiomassGram"] = "BiomassGram",
+            ["AsOfDate"] = "AsOfDate"
+        };
 
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
@@ -73,11 +77,11 @@ namespace aqua_api.Modules.BatchBalances.Application.Services
                 var query = _unitOfWork.BatchCageBalances
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request, SearchableColumns)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(BatchCageBalance.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var page = await query
                     .Include(x => x.FishBatch)

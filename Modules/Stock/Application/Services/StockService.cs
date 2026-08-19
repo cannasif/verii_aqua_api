@@ -12,6 +12,7 @@ namespace aqua_api.Modules.Stock.Application.Services
         [
             nameof(StockEntity.StockName),
             nameof(StockEntity.ErpStockCode),
+            nameof(StockEntity.Unit),
             nameof(StockEntity.GrupKodu),
             nameof(StockEntity.GrupAdi),
             nameof(StockEntity.UreticiKodu),

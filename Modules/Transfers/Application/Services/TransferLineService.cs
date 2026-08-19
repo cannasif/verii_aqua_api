@@ -6,6 +6,21 @@ namespace aqua_api.Modules.Transfers.Application.Services
 {
     public class TransferLineService : ITransferLineService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["BatchCode"] = "FishBatch.BatchCode",
+            ["FromProjectCode"] = "FromProjectCage.Project.ProjectCode",
+            ["FromProjectName"] = "FromProjectCage.Project.ProjectName",
+            ["FromCageCode"] = "FromProjectCage.Cage.CageCode",
+            ["FromCageName"] = "FromProjectCage.Cage.CageName",
+            ["ToProjectCode"] = "ToProjectCage.Project.ProjectCode",
+            ["ToProjectName"] = "ToProjectCage.Project.ProjectName",
+            ["ToCageCode"] = "ToProjectCage.Cage.CageCode",
+            ["ToCageName"] = "ToProjectCage.Cage.CageName",
+            ["FishCount"] = "FishCount",
+            ["AverageGram"] = "AverageGram",
+            ["BiomassGram"] = "BiomassGram"
+        };
         private readonly IUnitOfWork _unitOfWork;
         private readonly ITransferService _transferService;
         private readonly IBalanceLedgerManager _balanceLedgerManager;
@@ -82,11 +97,11 @@ namespace aqua_api.Modules.Transfers.Application.Services
                     .Include(x => x.ToProjectCage)
                         .ThenInclude(x => x!.Cage)
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(TransferLine.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 

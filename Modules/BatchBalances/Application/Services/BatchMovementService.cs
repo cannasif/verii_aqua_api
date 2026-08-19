@@ -7,6 +7,20 @@ namespace aqua_api.Modules.BatchBalances.Application.Services
 {
     public class BatchMovementService : IBatchMovementService
     {
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["ProjectCode"] = "FishBatch.Project.ProjectCode",
+            ["ProjectName"] = "FishBatch.Project.ProjectName",
+            ["BatchCode"] = "FishBatch.BatchCode",
+            ["FishStockName"] = "FishBatch.FishStock.StockName",
+            ["ProjectCageCode"] = "ProjectCage.Cage.CageCode",
+            ["MovementTypeName"] = "MovementType",
+            ["FromAverageGram"] = "FromAverageGram",
+            ["ToAverageGram"] = "ToAverageGram",
+            ["SignedCount"] = "SignedCount",
+            ["SignedBiomassGram"] = "SignedBiomassGram",
+            ["MovementDate"] = "MovementDate"
+        };
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
@@ -62,11 +76,11 @@ namespace aqua_api.Modules.BatchBalances.Application.Services
                 var query = _unitOfWork.BatchMovements
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(BatchMovement.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var totalCount = await query.CountAsync();
 

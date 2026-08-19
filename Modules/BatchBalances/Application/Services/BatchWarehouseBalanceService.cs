@@ -7,16 +7,20 @@ namespace aqua_api.Modules.BatchBalances.Application.Services
 {
     public class BatchWarehouseBalanceService : IBatchWarehouseBalanceService
     {
-        private static readonly string[] SearchableColumns =
-        [
-            "Project.ProjectCode",
-            "Project.ProjectName",
-            "FishBatch.BatchCode",
-            "FishBatch.FishStock.ErpStockCode",
-            "FishBatch.FishStock.StockName",
-            "Warehouse.WarehouseCode",
-            "Warehouse.WarehouseName"
-        ];
+        private static readonly IReadOnlyDictionary<string, string> PagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["ProjectCode"] = "Project.ProjectCode",
+            ["ProjectName"] = "Project.ProjectName",
+            ["BatchCode"] = "FishBatch.BatchCode",
+            ["FishStockCode"] = "FishBatch.FishStock.ErpStockCode",
+            ["FishStockName"] = "FishBatch.FishStock.StockName",
+            ["WarehouseCode"] = "Warehouse.ErpWarehouseCode",
+            ["WarehouseName"] = "Warehouse.WarehouseName",
+            ["LiveCount"] = "LiveCount",
+            ["AverageGram"] = "AverageGram",
+            ["BiomassGram"] = "BiomassGram",
+            ["AsOfDate"] = "AsOfDate"
+        };
 
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
@@ -73,11 +77,11 @@ namespace aqua_api.Modules.BatchBalances.Application.Services
                 var query = _unitOfWork.BatchWarehouseBalances
                     .Query()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request, SearchableColumns)
-                    .ApplyFilters(request.Filters, request.FilterLogic);
+                    .ApplySearch(request, PagedColumns)
+                    .ApplyFilters(request.Filters, request.FilterLogic, PagedColumns);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(BatchWarehouseBalance.Id) : request.SortBy;
-                query = query.ApplySorting(sortBy, request.SortDirection);
+                query = query.ApplySorting(sortBy, request.SortDirection, PagedColumns);
 
                 var page = await query
                     .Include(x => x.Project)
