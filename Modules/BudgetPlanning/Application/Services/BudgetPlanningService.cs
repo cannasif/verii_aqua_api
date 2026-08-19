@@ -2750,7 +2750,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             TotalSalesTon = Round(plan.MonthlyProjections.Where(x => !x.IsDeleted).Sum(x => x.SalesTon)),
             TotalFeedKg = Round(plan.MonthlyProjections.Where(x => !x.IsDeleted).Sum(x => x.FeedKg)),
             TotalMortalityKg = Round(plan.MonthlyProjections.Where(x => !x.IsDeleted).Sum(x => x.MortalityKg))
-        };
+        }.WithAuditFrom(plan);
     }
 
     private static BudgetPlanFishBatchDto MapFishBatch(BudgetPlanFishBatch entity)
@@ -2776,7 +2776,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             GrowthStartYear = entity.GrowthStartYear,
             GrowthStartMonth = entity.GrowthStartMonth,
             Note = entity.Note
-        };
+        }.WithAuditFrom(entity);
     }
 
     private static BudgetPlanSalesLineDto MapSalesLine(BudgetPlanSalesLine entity, decimal? exchangeRate = null)
@@ -2807,7 +2807,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             ExchangeRate = exchangeRate,
             SalesAmountTry = exchangeRate.HasValue ? Round(salesAmountEuro * exchangeRate.Value) : null,
             Description = entity.Description
-        };
+        }.WithAuditFrom(entity);
     }
 
     private static BudgetPlanSalesDistributionDto MapSalesDistribution(BudgetPlanSalesDistribution entity)
@@ -2834,7 +2834,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             Amount = entity.Amount,
             AmountEuro = entity.AmountEuro,
             AmountTry = entity.AmountTry
-        };
+        }.WithAuditFrom(entity);
     }
 
     private static BudgetPlanExchangeRateDto MapExchangeRate(BudgetPlanExchangeRate entity)
@@ -2852,7 +2852,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             SourceReference = entity.SourceReference,
             IsManualOverride = entity.IsManualOverride,
             Description = entity.Description
-        };
+        }.WithAuditFrom(entity);
     }
 
     private static BudgetPlanFishPriceDto MapFishPrice(BudgetPlanFishPrice entity, decimal? exchangeRate)
@@ -2882,7 +2882,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             ExchangeRate = resolvedExchangeRate,
             UnitPriceTry = resolvedExchangeRate.HasValue ? Round(entity.UnitPrice * resolvedExchangeRate.Value) : null,
             Description = entity.Description
-        };
+        }.WithAuditFrom(entity);
     }
 
     private static BudgetPlanFishBatchAdjustmentDto MapFishBatchAdjustment(BudgetPlanFishBatchAdjustment entity)
@@ -2903,7 +2903,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             BatchCode = entity.BudgetPlanFishBatch.BatchCode,
             FishStockCode = entity.BudgetPlanFishBatch.FishStock.ErpStockCode,
             FishStockName = entity.BudgetPlanFishBatch.FishStock.StockName
-        };
+        }.WithAuditFrom(entity);
     }
 
     private static BudgetPlanFeedingLineDto MapFeedingLine(BudgetPlanFeedingLine entity)
@@ -2926,7 +2926,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             MortalityReductionPercent = entity.MortalityReductionPercent,
             MortalityReductionKg = entity.MortalityReductionKg,
             FeedKg = entity.FeedKg
-        };
+        }.WithAuditFrom(entity);
     }
 
     private static BudgetPlanMortalityLineDto MapMortalityLine(BudgetPlanMortalityLine entity)
@@ -2945,7 +2945,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             MortalityRatePercent = entity.MortalityRatePercent,
             MortalityCount = entity.MortalityCount,
             MortalityKg = entity.MortalityKg
-        };
+        }.WithAuditFrom(entity);
     }
 
     private static BudgetPlanMonthlyProjectionDto MapProjection(BudgetPlanMonthlyProjection entity)
@@ -2982,7 +2982,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             ClosingBiomassKg = entity.ClosingBiomassKg,
             CalibrationCode = entity.CalibrationDefinition?.CalibrationCode,
             WaterTemperatureCelsius = entity.WaterTemperature?.WaterTemperatureCelsius
-        };
+        }.WithAuditFrom(entity);
     }
 
     private static BudgetMortalityRateDefinitionDto MapMortalityRate(BudgetMortalityRateDefinition entity)
@@ -2998,7 +2998,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             GrowthMonthNo = entity.GrowthMonthNo,
             MortalityRatePercent = entity.MortalityRatePercent,
             Description = entity.Description
-        };
+        }.WithAuditFrom(entity);
     }
 
     private static ApiResponse<bool> ValidateMortalityRate(CreateBudgetMortalityRateDefinitionDto dto)
@@ -3562,7 +3562,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             IncreaseRatePercent = entity.IncreaseRatePercent,
             IncreasePeriodMonths = entity.IncreasePeriodMonths,
             Description = entity.Description
-        };
+        }.WithAuditFrom(entity);
     }
 
     private static ApiResponse<T>? ValidateExchangeRateValues<T>(UpsertBudgetPlanExchangeRateDto dto)

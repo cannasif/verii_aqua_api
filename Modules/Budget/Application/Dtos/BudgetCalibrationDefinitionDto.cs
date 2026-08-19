@@ -1,6 +1,6 @@
 namespace aqua_api.Modules.Budget.Application.Dtos
 {
-    public class BudgetCalibrationDefinitionDto
+    public class BudgetCalibrationDefinitionDto : AuditDto
     {
         public long Id { get; set; }
         public string CalibrationCode { get; set; } = string.Empty;

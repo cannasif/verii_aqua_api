@@ -1,6 +1,6 @@
 namespace aqua_api.Modules.Budget.Application.Dtos
 {
-    public class BudgetFeedConsumptionRateDto
+    public class BudgetFeedConsumptionRateDto : AuditDto
     {
         public long Id { get; set; }
         public long WaterTemperatureId { get; set; }

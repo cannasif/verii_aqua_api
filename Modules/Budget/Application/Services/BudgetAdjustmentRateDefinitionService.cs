@@ -197,7 +197,7 @@ public class BudgetAdjustmentRateDefinitionService : IBudgetAdjustmentRateDefini
         return duplicate ? Conflict("Bu balik ve buyume ayi icin kalite yuzdesi zaten var.") : ApiResponse<bool>.SuccessResult(true, "Valid");
     }
 
-    private static BudgetFeedMortalityRateDto MapFeedMortality(BudgetFeedMortalityRate entity) => new()
+    private static BudgetFeedMortalityRateDto MapFeedMortality(BudgetFeedMortalityRate entity) => new BudgetFeedMortalityRateDto
     {
         Id = entity.Id, WaterTemperatureId = entity.WaterTemperatureId, WaterTemperatureYear = entity.WaterTemperature?.Year,
         WaterTemperatureMonth = entity.WaterTemperature?.Month, WaterTemperatureCelsius = entity.WaterTemperature?.WaterTemperatureCelsius,
@@ -205,14 +205,14 @@ public class BudgetAdjustmentRateDefinitionService : IBudgetAdjustmentRateDefini
         CalibrationInfo = entity.CalibrationDefinition?.CalibrationInfo, FeedStockId = entity.FeedStockId,
         FeedStockCode = entity.FeedStock?.ErpStockCode, FeedStockName = entity.FeedStock?.StockName,
         ReductionRatePercent = entity.ReductionRatePercent, Description = entity.Description
-    };
+    }.WithAuditFrom(entity);
 
-    private static BudgetFishGrowthQualityDto MapGrowthQuality(BudgetFishGrowthQuality entity) => new()
+    private static BudgetFishGrowthQualityDto MapGrowthQuality(BudgetFishGrowthQuality entity) => new BudgetFishGrowthQualityDto
     {
         Id = entity.Id, FishStockId = entity.FishStockId, FishStockCode = entity.FishStock?.ErpStockCode,
         FishStockName = entity.FishStock?.StockName, GrowthMonthNo = entity.GrowthMonthNo,
         QualityPercent = entity.QualityPercent, Description = entity.Description
-    };
+    }.WithAuditFrom(entity);
 
     private static ApiResponse<bool> Invalid(string message) => ApiResponse<bool>.ErrorResult(message, message, StatusCodes.Status400BadRequest);
     private static ApiResponse<bool> Conflict(string message) => ApiResponse<bool>.ErrorResult(message, message, StatusCodes.Status409Conflict);

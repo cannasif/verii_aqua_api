@@ -216,7 +216,7 @@ namespace aqua_api.Modules.Budget.Application.Services
                 Month = entity.Month,
                 WaterTemperatureCelsius = entity.WaterTemperatureCelsius,
                 Description = entity.Description
-            };
+            }.WithAuditFrom(entity);
         }
     }
 }

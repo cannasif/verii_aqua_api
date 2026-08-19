@@ -438,7 +438,7 @@ namespace aqua_api.Modules.Budget.Application.Services
                     .OrderBy(x => x.GrowthMonthNo)
                     .Select(MapLine)
                     .ToList()
-            };
+            }.WithAuditFrom(entity);
         }
 
         private static BudgetFishGrowthProfileSummaryDto MapSummary(BudgetFishGrowthProfile entity)
@@ -455,7 +455,7 @@ namespace aqua_api.Modules.Budget.Application.Services
                 Description = entity.Description,
                 LineCount = activeLines.Count,
                 FinalTotalGram = activeLines.Count == 0 ? 0 : activeLines.MaxBy(x => x.GrowthMonthNo)?.TotalGram ?? 0
-            };
+            }.WithAuditFrom(entity);
         }
 
         private static BudgetFishGrowthProfileLineDto MapLine(BudgetFishGrowthProfileLine line)
@@ -468,7 +468,7 @@ namespace aqua_api.Modules.Budget.Application.Services
                 CalendarMonth = line.CalendarMonth,
                 MonthlyGrowthGram = line.MonthlyGrowthGram,
                 TotalGram = line.TotalGram
-            };
+            }.WithAuditFrom(line);
         }
 
         private static BudgetFishGrowthProfileDto CreateEmptyProfile(long stockId, int startMonth)

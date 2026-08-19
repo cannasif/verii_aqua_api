@@ -306,7 +306,7 @@ namespace aqua_api.Modules.Budget.Application.Services
                 FeedStockName = entity.FeedStock?.StockName,
                 FeedAmount = entity.FeedAmount,
                 Description = entity.Description
-            };
+            }.WithAuditFrom(entity);
         }
 
         private static StockGetDto MapStock(aqua_api.Modules.Stock.Domain.Entities.Stock stock)
@@ -335,7 +335,7 @@ namespace aqua_api.Modules.Budget.Application.Services
                 ERPIntegrationNumber = stock.ERPIntegrationNumber,
                 LastSyncDate = stock.LastSyncDate,
                 CountTriedBy = stock.CountTriedBy
-            };
+            }.WithAuditFrom(stock);
         }
 
         private static string? NormalizeOptional(string? value)

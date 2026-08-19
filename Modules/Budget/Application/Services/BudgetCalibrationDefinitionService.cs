@@ -198,7 +198,7 @@ namespace aqua_api.Modules.Budget.Application.Services
                 CalibrationCode = entity.CalibrationCode,
                 CalibrationInfo = entity.CalibrationInfo,
                 Description = entity.Description
-            };
+            }.WithAuditFrom(entity);
         }
 
         private static string NormalizeRequired(string value)

@@ -2,7 +2,7 @@ using aqua_api.Modules.BudgetPlanning.Domain.Enums;
 
 namespace aqua_api.Modules.BudgetPlanning.Application.Dtos;
 
-public class BudgetPlanDto
+public class BudgetPlanDto : AuditDto
 {
     public long Id { get; set; }
     public string BudgetNo { get; set; } = string.Empty;
@@ -46,7 +46,7 @@ public class CopyBudgetPlanDto
     public string? Description { get; set; }
 }
 
-public class BudgetPlanProjectDto
+public class BudgetPlanProjectDto : AuditDto
 {
     public long Id { get; set; }
     public long BudgetPlanId { get; set; }
@@ -56,7 +56,7 @@ public class BudgetPlanProjectDto
     public string ProjectName { get; set; } = string.Empty;
 }
 
-public class BudgetPlanFishBatchDto
+public class BudgetPlanFishBatchDto : AuditDto
 {
     public long Id { get; set; }
     public long BudgetPlanId { get; set; }
@@ -90,9 +90,16 @@ public class CreateBudgetPlanFishBatchAdjustmentDto
     public string? Description { get; set; }
 }
 
-public class BudgetPlanFishBatchAdjustmentDto : CreateBudgetPlanFishBatchAdjustmentDto
+public class BudgetPlanFishBatchAdjustmentDto : AuditDto
 {
     public long Id { get; set; }
+    public long BudgetPlanFishBatchId { get; set; }
+    public BudgetPlanFishBatchAdjustmentType AdjustmentType { get; set; }
+    public int? EffectiveYear { get; set; }
+    public int? EffectiveMonth { get; set; }
+    public int LiveCount { get; set; }
+    public decimal? AverageGram { get; set; }
+    public string? Description { get; set; }
     public string ProjectCode { get; set; } = string.Empty;
     public string ProjectName { get; set; } = string.Empty;
     public string BatchCode { get; set; } = string.Empty;
@@ -154,9 +161,18 @@ public class UpsertBudgetPlanSalesLineDto
     public string? Description { get; set; }
 }
 
-public class BudgetPlanSalesLineDto : UpsertBudgetPlanSalesLineDto
+public class BudgetPlanSalesLineDto : AuditDto
 {
     public long Id { get; set; }
+    public long BudgetPlanFishBatchId { get; set; }
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public BudgetMarketType MarketType { get; set; } = BudgetMarketType.Domestic;
+    public decimal SalesTon { get; set; }
+    public int? SalesCount { get; set; }
+    public string CurrencyCode { get; set; } = "EUR";
+    public decimal? UnitPrice { get; set; }
+    public string? Description { get; set; }
     public string ProjectCode { get; set; } = string.Empty;
     public string ProjectName { get; set; } = string.Empty;
     public string BatchCode { get; set; } = string.Empty;
@@ -283,10 +299,19 @@ public class UpsertBudgetPlanExchangeRateDto
     public string? Description { get; set; }
 }
 
-public class BudgetPlanExchangeRateDto : UpsertBudgetPlanExchangeRateDto
+public class BudgetPlanExchangeRateDto : AuditDto
 {
     public long Id { get; set; }
     public long BudgetPlanId { get; set; }
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public string CurrencyCode { get; set; } = string.Empty;
+    public string RateType { get; set; } = "Budget";
+    public decimal ExchangeRate { get; set; }
+    public string SourceType { get; set; } = "Manual";
+    public string? SourceReference { get; set; }
+    public bool IsManualOverride { get; set; } = true;
+    public string? Description { get; set; }
 }
 
 public class UpsertBudgetPlanFishPriceDto
@@ -305,7 +330,7 @@ public class UpsertBudgetPlanFishPriceDto
     public string? Description { get; set; }
 }
 
-public class BudgetPlanSalesDistributionDto
+public class BudgetPlanSalesDistributionDto : AuditDto
 {
     public long Id { get; set; }
     public long BudgetPlanFishBatchId { get; set; }
@@ -342,10 +367,22 @@ public class GenerateBudgetPlanFishPricesDto
     public List<long> CalibrationDefinitionIds { get; set; } = new();
 }
 
-public class BudgetPlanFishPriceDto : UpsertBudgetPlanFishPriceDto
+public class BudgetPlanFishPriceDto : AuditDto
 {
     public long Id { get; set; }
     public long BudgetPlanId { get; set; }
+    public long? FishStockId { get; set; }
+    public long CalibrationDefinitionId { get; set; }
+    public int Year { get; set; }
+    public int Month { get; set; }
+    public BudgetFishPriceType PriceType { get; set; } = BudgetFishPriceType.Sales;
+    public BudgetMarketType MarketType { get; set; } = BudgetMarketType.Domestic;
+    public string CurrencyCode { get; set; } = "EUR";
+    public decimal UnitPrice { get; set; }
+    public decimal? UnitPriceEuro { get; set; }
+    public decimal IncreaseRatePercent { get; set; }
+    public int IncreasePeriodMonths { get; set; } = 1;
+    public string? Description { get; set; }
     public string? FishStockCode { get; set; }
     public string? FishStockName { get; set; }
     public string CalibrationCode { get; set; } = string.Empty;
@@ -355,7 +392,7 @@ public class BudgetPlanFishPriceDto : UpsertBudgetPlanFishPriceDto
     public decimal? UnitPriceTry { get; set; }
 }
 
-public class BudgetPlanFeedingLineDto
+public class BudgetPlanFeedingLineDto : AuditDto
 {
     public long Id { get; set; }
     public long BudgetPlanFishBatchId { get; set; }
@@ -375,7 +412,7 @@ public class BudgetPlanFeedingLineDto
     public decimal FeedKg { get; set; }
 }
 
-public class BudgetPlanMortalityLineDto
+public class BudgetPlanMortalityLineDto : AuditDto
 {
     public long Id { get; set; }
     public long BudgetPlanFishBatchId { get; set; }
@@ -391,7 +428,7 @@ public class BudgetPlanMortalityLineDto
     public decimal MortalityKg { get; set; }
 }
 
-public class BudgetPlanMonthlyProjectionDto
+public class BudgetPlanMonthlyProjectionDto : AuditDto
 {
     public long Id { get; set; }
     public long BudgetPlanFishBatchId { get; set; }
@@ -450,9 +487,14 @@ public class CreateBudgetMortalityRateDefinitionDto
     public string? Description { get; set; }
 }
 
-public class BudgetMortalityRateDefinitionDto : CreateBudgetMortalityRateDefinitionDto
+public class BudgetMortalityRateDefinitionDto : AuditDto
 {
     public long Id { get; set; }
+    public long? FishStockId { get; set; }
+    public long? CalibrationDefinitionId { get; set; }
+    public int? GrowthMonthNo { get; set; }
+    public decimal MortalityRatePercent { get; set; }
+    public string? Description { get; set; }
     public string? FishStockCode { get; set; }
     public string? FishStockName { get; set; }
     public string? CalibrationCode { get; set; }

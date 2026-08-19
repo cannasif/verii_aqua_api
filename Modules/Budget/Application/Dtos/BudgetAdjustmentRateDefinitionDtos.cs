@@ -1,6 +1,6 @@
 namespace aqua_api.Modules.Budget.Application.Dtos;
 
-public class BudgetFeedMortalityRateDto
+public class BudgetFeedMortalityRateDto : AuditDto
 {
     public long Id { get; set; }
     public long WaterTemperatureId { get; set; }
@@ -26,7 +26,7 @@ public class CreateBudgetFeedMortalityRateDto
     public string? Description { get; set; }
 }
 
-public class BudgetFishGrowthQualityDto
+public class BudgetFishGrowthQualityDto : AuditDto
 {
     public long Id { get; set; }
     public long FishStockId { get; set; }

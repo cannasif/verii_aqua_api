@@ -1,6 +1,6 @@
 namespace aqua_api.Modules.Budget.Application.Dtos
 {
-    public class BudgetFishGrowthProfileDto
+    public class BudgetFishGrowthProfileDto : AuditDto
     {
         public long Id { get; set; }
         public long StockId { get; set; }
@@ -12,7 +12,7 @@ namespace aqua_api.Modules.Budget.Application.Dtos
         public List<BudgetFishGrowthProfileLineDto> Lines { get; set; } = new();
     }
 
-    public class BudgetFishGrowthProfileSummaryDto
+    public class BudgetFishGrowthProfileSummaryDto : AuditDto
     {
         public long Id { get; set; }
         public long StockId { get; set; }
@@ -25,7 +25,7 @@ namespace aqua_api.Modules.Budget.Application.Dtos
         public decimal FinalTotalGram { get; set; }
     }
 
-    public class BudgetFishGrowthProfileLineDto
+    public class BudgetFishGrowthProfileLineDto : AuditDto
     {
         public long Id { get; set; }
         public long BudgetFishGrowthProfileId { get; set; }
