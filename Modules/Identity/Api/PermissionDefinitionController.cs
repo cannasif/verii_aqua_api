@@ -15,8 +15,8 @@ namespace aqua_api.Modules.Identity.Api
             _permissionDefinitionService = permissionDefinitionService;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<ApiResponse<PagedResponse<PermissionDefinitionDto>>>> GetAll([FromQuery] PagedRequest request)
+        [HttpPost("paged")]
+        public async Task<ActionResult<ApiResponse<PagedResponse<PermissionDefinitionDto>>>> GetAll([FromBody] PagedRequest request)
         {
             var result = await _permissionDefinitionService.GetAllAsync(request);
             return StatusCode(result.StatusCode, result);

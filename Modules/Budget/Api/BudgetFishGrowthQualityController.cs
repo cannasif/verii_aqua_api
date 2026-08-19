@@ -12,8 +12,8 @@ public class BudgetFishGrowthQualityController : ControllerBase
 
     public BudgetFishGrowthQualityController(IBudgetAdjustmentRateDefinitionService service) => _service = service;
 
-    [HttpGet]
-    public async Task<ActionResult<ApiResponse<PagedResponse<BudgetFishGrowthQualityDto>>>> GetAll([FromQuery] PagedRequest request)
+    [HttpPost("paged")]
+    public async Task<ActionResult<ApiResponse<PagedResponse<BudgetFishGrowthQualityDto>>>> GetAll([FromBody] PagedRequest request)
     {
         var result = await _service.GetFishGrowthQualitiesAsync(request);
         return StatusCode(result.StatusCode, result);

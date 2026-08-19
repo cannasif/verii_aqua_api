@@ -15,8 +15,8 @@ public class BudgetPlanningController : ControllerBase
         _service = service;
     }
 
-    [HttpGet]
-    public async Task<ActionResult<ApiResponse<PagedResponse<BudgetPlanDto>>>> GetPlans([FromQuery] PagedRequest request)
+    [HttpPost("paged")]
+    public async Task<ActionResult<ApiResponse<PagedResponse<BudgetPlanDto>>>> GetPlans([FromBody] PagedRequest request)
     {
         var result = await _service.GetPlansAsync(request);
         return StatusCode(result.StatusCode, result);
@@ -225,8 +225,8 @@ public class BudgetPlanningController : ControllerBase
         return StatusCode(result.StatusCode, result);
     }
 
-    [HttpGet("mortality-rates")]
-    public async Task<ActionResult<ApiResponse<PagedResponse<BudgetMortalityRateDefinitionDto>>>> GetMortalityRates([FromQuery] PagedRequest request)
+    [HttpPost("mortality-rates/paged")]
+    public async Task<ActionResult<ApiResponse<PagedResponse<BudgetMortalityRateDefinitionDto>>>> GetMortalityRates([FromBody] PagedRequest request)
     {
         var result = await _service.GetMortalityRatesAsync(request);
         return StatusCode(result.StatusCode, result);

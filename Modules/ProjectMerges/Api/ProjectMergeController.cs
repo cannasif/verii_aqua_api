@@ -25,8 +25,8 @@ namespace aqua_api.Modules.ProjectMerges.Api
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpGet]
-        public async Task<ActionResult<ApiResponse<PagedResponse<ProjectMergeDto>>>> GetAll([FromQuery] PagedRequest request)
+        [HttpPost("paged")]
+        public async Task<ActionResult<ApiResponse<PagedResponse<ProjectMergeDto>>>> GetAll([FromBody] PagedRequest request)
         {
             var result = await _service.GetAllAsync(request);
             return StatusCode(result.StatusCode, result);

@@ -22,8 +22,8 @@ namespace aqua_api.Modules.Cages.Api
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpGet]
-        public async Task<ActionResult<ApiResponse<PagedResponse<CageDto>>>> GetAll([FromQuery] PagedRequest request)
+        [HttpPost("paged")]
+        public async Task<ActionResult<ApiResponse<PagedResponse<CageDto>>>> GetAll([FromBody] PagedRequest request)
         {
             var result = await _service.GetAllAsync(request);
             return StatusCode(result.StatusCode, result);

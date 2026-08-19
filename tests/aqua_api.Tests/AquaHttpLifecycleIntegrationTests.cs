@@ -1441,11 +1441,17 @@ public sealed class AquaHttpLifecycleIntegrationTests : IClassFixture<AquaHttpTe
         Assert.Equal(12m, day4.ShipmentBiomassGram / 1000m);
         Assert.True(day4.Fed);
 
-        var cageBalances = await GetAsync<PagedResponse<BatchCageBalanceDto>>(client, "/api/aqua/BatchCageBalance");
+        var cageBalances = await PostAsync<PagedResponse<BatchCageBalanceDto>>(
+            client,
+            "/api/aqua/BatchCageBalance/paged",
+            new PagedRequest { PageNumber = 1, PageSize = 20 });
         Assert.True(cageBalances.Success);
         Assert.True(cageBalances.Data!.Items.Count >= 2);
 
-        var movements = await GetAsync<PagedResponse<BatchMovementDto>>(client, "/api/aqua/BatchMovement");
+        var movements = await PostAsync<PagedResponse<BatchMovementDto>>(
+            client,
+            "/api/aqua/BatchMovement/paged",
+            new PagedRequest { PageNumber = 1, PageSize = 20 });
         Assert.True(movements.Success);
         Assert.True(movements.Data!.TotalCount >= 15);
 

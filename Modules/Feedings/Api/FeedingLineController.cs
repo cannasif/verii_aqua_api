@@ -22,8 +22,8 @@ namespace aqua_api.Modules.Feedings.Api
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpGet]
-        public async Task<ActionResult<ApiResponse<PagedResponse<FeedingLineDto>>>> GetAll([FromQuery] PagedRequest request)
+        [HttpPost("paged")]
+        public async Task<ActionResult<ApiResponse<PagedResponse<FeedingLineDto>>>> GetAll([FromBody] PagedRequest request)
         {
             var result = await _service.GetAllAsync(request);
             return StatusCode(result.StatusCode, result);

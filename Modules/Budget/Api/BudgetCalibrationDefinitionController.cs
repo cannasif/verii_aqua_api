@@ -23,8 +23,8 @@ namespace aqua_api.Modules.Budget.Api
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpGet]
-        public async Task<ActionResult<ApiResponse<PagedResponse<BudgetCalibrationDefinitionDto>>>> GetAll([FromQuery] PagedRequest request)
+        [HttpPost("paged")]
+        public async Task<ActionResult<ApiResponse<PagedResponse<BudgetCalibrationDefinitionDto>>>> GetAll([FromBody] PagedRequest request)
         {
             var result = await _service.GetAllAsync(request);
             return StatusCode(result.StatusCode, result);

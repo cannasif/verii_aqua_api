@@ -37,9 +37,9 @@ namespace aqua_api.Modules.Integrations.Api
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpGet("getAllCustomers/paged")]
+        [HttpPost("getAllCustomers/paged")]
         public async Task<ActionResult<ApiResponse<PagedResponse<CariDto>>>> GetCustomersPaged(
-            [FromQuery] PagedRequest request)
+            [FromBody] PagedRequest request)
         {
             var paged = await _netsisReadService.GetCustomersPagedAsync(request);
             return StatusCode(paged.StatusCode, paged);
@@ -53,9 +53,9 @@ namespace aqua_api.Modules.Integrations.Api
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpGet("getAllProducts/paged")]
+        [HttpPost("getAllProducts/paged")]
         public async Task<ActionResult<ApiResponse<PagedResponse<StokFunctionDto>>>> GetStocksPaged(
-            [FromQuery] PagedRequest request)
+            [FromBody] PagedRequest request)
         {
             var paged = await _netsisReadService.GetStocksPagedAsync(request);
             return StatusCode(paged.StatusCode, paged);
@@ -69,9 +69,9 @@ namespace aqua_api.Modules.Integrations.Api
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpGet("getAllWarehouses/paged")]
+        [HttpPost("getAllWarehouses/paged")]
         public async Task<ActionResult<ApiResponse<PagedResponse<DepoDto>>>> GetWarehousesPaged(
-            [FromQuery] PagedRequest request)
+            [FromBody] PagedRequest request)
         {
             var paged = await _netsisReadService.GetWarehousesPagedAsync(request);
             return StatusCode(paged.StatusCode, paged);
@@ -93,9 +93,9 @@ namespace aqua_api.Modules.Integrations.Api
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpGet("getBranches/paged")]
+        [HttpPost("getBranches/paged")]
         public async Task<ActionResult<ApiResponse<PagedResponse<BranchDto>>>> GetBranchesPaged(
-            [FromQuery] PagedRequest request)
+            [FromBody] PagedRequest request)
         {
             var paged = await _netsisReadService.GetBranchesPagedAsync(request);
             return StatusCode(paged.StatusCode, paged);
@@ -148,17 +148,17 @@ namespace aqua_api.Modules.Integrations.Api
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpGet("getGoodsReceiptAndShipmentMovements/paged")]
+        [HttpPost("getGoodsReceiptAndShipmentMovements/paged")]
         public async Task<ActionResult<ApiResponse<PagedResponse<MalKabulVeSevkiyatDto>>>> GetGoodsReceiptAndShipmentMovementsPaged(
-            [FromQuery] GoodsReceiptShipmentMovementPagedRequest request)
+            [FromBody] GoodsReceiptShipmentMovementPagedRequest request)
         {
             var paged = await _netsisReadService.GetGoodsReceiptAndShipmentMovementsPagedAsync(request);
             return StatusCode(paged.StatusCode, paged);
         }
 
-        [HttpGet("getReceiptShipmentMovementMirror/paged")]
+        [HttpPost("getReceiptShipmentMovementMirror/paged")]
         public async Task<ActionResult<ApiResponse<PagedResponse<ErpReceiptShipmentMovementDto>>>> GetReceiptShipmentMovementMirrorPaged(
-            [FromQuery] PagedRequest request)
+            [FromBody] PagedRequest request)
         {
             var paged = await _netsisReadService.GetReceiptShipmentMovementMirrorPagedAsync(request);
             return StatusCode(paged.StatusCode, paged);

@@ -12,8 +12,8 @@ public class BudgetFeedMortalityRateController : ControllerBase
 
     public BudgetFeedMortalityRateController(IBudgetAdjustmentRateDefinitionService service) => _service = service;
 
-    [HttpGet]
-    public async Task<ActionResult<ApiResponse<PagedResponse<BudgetFeedMortalityRateDto>>>> GetAll([FromQuery] PagedRequest request)
+    [HttpPost("paged")]
+    public async Task<ActionResult<ApiResponse<PagedResponse<BudgetFeedMortalityRateDto>>>> GetAll([FromBody] PagedRequest request)
     {
         var result = await _service.GetFeedMortalityRatesAsync(request);
         return StatusCode(result.StatusCode, result);

@@ -17,15 +17,15 @@ namespace aqua_api.Modules.Stock.Api
             _localizationService = localizationService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Get([FromQuery] PagedRequest request)
+        [HttpPost("paged")]
+        public async Task<IActionResult> Get([FromBody] PagedRequest request)
         {
             var result = await _stockService.GetAllStocksAsync(request);
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpGet("withImages")]
-        public async Task<IActionResult> GetWithImages([FromQuery] PagedRequest request)
+        [HttpPost("withImages/paged")]
+        public async Task<IActionResult> GetWithImages([FromBody] PagedRequest request)
         {
             var result = await _stockService.GetAllStocksWithImagesAsync(request);
             return StatusCode(result.StatusCode, result);

@@ -15,8 +15,8 @@ public class NetInventoryMovementController : ControllerBase
         _service = service;
     }
 
-    [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] PagedRequest request)
+    [HttpPost("paged")]
+    public async Task<IActionResult> GetAll([FromBody] PagedRequest request)
     {
         var result = await _service.GetAllAsync(request);
         return StatusCode(result.StatusCode, result);

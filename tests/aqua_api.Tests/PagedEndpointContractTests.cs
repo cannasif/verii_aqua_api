@@ -1,8 +1,10 @@
 using aqua_api.Shared.Common.Dtos;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 using Xunit;
 
 namespace aqua_api.Tests;
@@ -95,7 +97,7 @@ public sealed class PagedEndpointContractTests : IClassFixture<AquaHttpTestWebAp
     }
 
     [Fact]
-    public void EveryGetActionUsingPagedRequest_HasCanonicalPostPagedRoute()
+    public void EveryPagedAction_IsPostOnlyCanonicalRouteWithBodyBinding()
     {
         _ = _factory.CreateClient();
         var endpoints = _factory.Services
@@ -112,24 +114,20 @@ public sealed class PagedEndpointContractTests : IClassFixture<AquaHttpTestWebAp
                 typeof(PagedRequest).IsAssignableFrom(parameter.ParameterType)) == true)
             .ToList();
 
-        var getActions = endpoints
-            .Where(item => item.Methods.Contains(HttpMethods.Get, StringComparer.OrdinalIgnoreCase))
-            .Select(item => item.Action!.MethodInfo)
-            .Distinct()
-            .ToList();
-
-        Assert.NotEmpty(getActions);
-        foreach (var action in getActions)
+        Assert.NotEmpty(endpoints);
+        foreach (var endpoint in endpoints)
         {
-            var postEndpoint = endpoints.FirstOrDefault(item =>
-                item.Action!.MethodInfo == action
-                && item.Methods.Contains(HttpMethods.Post, StringComparer.OrdinalIgnoreCase));
-
-            Assert.NotNull(postEndpoint);
+            Assert.Contains(HttpMethods.Post, endpoint.Methods, StringComparer.OrdinalIgnoreCase);
+            Assert.DoesNotContain(HttpMethods.Get, endpoint.Methods, StringComparer.OrdinalIgnoreCase);
             Assert.EndsWith(
                 "/paged",
-                postEndpoint.Endpoint.RoutePattern.RawText?.TrimEnd('/'),
+                endpoint.Endpoint.RoutePattern.RawText?.TrimEnd('/'),
                 StringComparison.OrdinalIgnoreCase);
+
+            var pagedParameters = endpoint.Action!.MethodInfo.GetParameters()
+                .Where(parameter => typeof(PagedRequest).IsAssignableFrom(parameter.ParameterType));
+            Assert.All(pagedParameters, parameter =>
+                Assert.NotNull(parameter.GetCustomAttribute<FromBodyAttribute>()));
         }
     }
 

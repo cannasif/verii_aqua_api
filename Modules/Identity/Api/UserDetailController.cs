@@ -17,8 +17,8 @@ namespace aqua_api.Modules.Identity.Api
             _localizationService = localizationService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll([FromQuery] PagedRequest request)
+        [HttpPost("paged")]
+        public async Task<IActionResult> GetAll([FromBody] PagedRequest request)
         {
             var result = await _service.GetPagedAsync(request);
             return StatusCode(result.StatusCode, result);

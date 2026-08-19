@@ -17,17 +17,10 @@ namespace aqua_api.Modules.Identity.Api
             _localizationService = localizationService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Get([FromQuery] PagedRequest request)
+        [HttpPost("paged")]
+        public async Task<IActionResult> Get([FromBody] PagedRequest request)
         {
             var result = await _service.GetAllUsersAsync(request);
-            return StatusCode(result.StatusCode, result);
-        }
-
-        [HttpPost("query")]
-        public async Task<IActionResult> Query([FromBody] PagedRequest? request)
-        {
-            var result = await _service.GetAllUsersAsync(request ?? new PagedRequest());
             return StatusCode(result.StatusCode, result);
         }
 

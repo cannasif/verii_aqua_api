@@ -23,15 +23,15 @@ namespace aqua_api.Modules.Budget.Api
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpGet]
-        public async Task<ActionResult<ApiResponse<PagedResponse<BudgetFeedConsumptionRateDto>>>> GetAll([FromQuery] PagedRequest request)
+        [HttpPost("paged")]
+        public async Task<ActionResult<ApiResponse<PagedResponse<BudgetFeedConsumptionRateDto>>>> GetAll([FromBody] PagedRequest request)
         {
             var result = await _service.GetAllAsync(request);
             return StatusCode(result.StatusCode, result);
         }
 
-        [HttpGet("feed-stocks")]
-        public async Task<ActionResult<ApiResponse<PagedResponse<StockGetDto>>>> GetFeedStocks([FromQuery] PagedRequest request)
+        [HttpPost("feed-stocks/paged")]
+        public async Task<ActionResult<ApiResponse<PagedResponse<StockGetDto>>>> GetFeedStocks([FromBody] PagedRequest request)
         {
             var result = await _service.GetFeedStocksAsync(request);
             return StatusCode(result.StatusCode, result);

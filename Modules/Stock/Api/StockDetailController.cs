@@ -17,8 +17,8 @@ namespace aqua_api.Modules.Stock.Api
             _localizationService = localizationService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> Get([FromQuery] PagedRequest request)
+        [HttpPost("paged")]
+        public async Task<IActionResult> Get([FromBody] PagedRequest request)
         {
             var result = await _stockDetailService.GetAllStockDetailsAsync(request);
             return StatusCode(result.StatusCode, result);

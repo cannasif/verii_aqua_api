@@ -15,8 +15,8 @@ namespace aqua_api.Modules.Warehouse.Api
             _service = service;
         }
 
-        [HttpGet]
-        public async Task<ActionResult<ApiResponse<PagedResponse<WarehouseDto>>>> GetAll([FromQuery] PagedRequest request)
+        [HttpPost("paged")]
+        public async Task<ActionResult<ApiResponse<PagedResponse<WarehouseDto>>>> GetAll([FromBody] PagedRequest request)
         {
             var result = await _service.GetAllAsync(request);
             return StatusCode(result.StatusCode, result);

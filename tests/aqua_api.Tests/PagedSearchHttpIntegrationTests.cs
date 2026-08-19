@@ -113,8 +113,9 @@ public sealed class PagedSearchHttpIntegrationTests : IClassFixture<AquaHttpTest
             batchId = batch.Id;
         }
 
-        using var projectResponse = await client.GetAsync(
-            "/api/aqua/Project?pageNumber=1&pageSize=500");
+        using var projectResponse = await client.PostAsJsonAsync(
+            "/api/aqua/Project/paged",
+            new PagedRequest { PageNumber = 1, PageSize = 500 });
         Assert.Equal(HttpStatusCode.OK, projectResponse.StatusCode);
         var projectBody = await projectResponse.Content.ReadFromJsonAsync<ApiResponse<PagedResponse<ProjectDto>>>();
         Assert.Contains(projectBody!.Data!.Items, item => item.ProjectCode == projectCode);
