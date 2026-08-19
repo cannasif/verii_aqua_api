@@ -1,5 +1,4 @@
 using System.Text.Json;
-using aqua_api.Modules.Integrations.Application.Dtos;
 using aqua_api.Shared.Common.Dtos;
 using aqua_api.Shared.Common.Exceptions;
 using aqua_api.Shared.Common.Helpers;
@@ -74,15 +73,4 @@ public sealed class PagedRequestJsonContractTests
         Assert.True(request.SearchFieldsSpecified);
     }
 
-    [Fact]
-    public void Deserialize_BindsDerivedPagedRequestPropertiesFromBody()
-    {
-        var request = JsonSerializer.Deserialize<GoodsReceiptShipmentMovementPagedRequest>(
-            """{ "pageNumber": 2, "pageSize": 75, "baslangicTarihi": "2026-08-19" }""",
-            JsonOptions)!;
-
-        Assert.Equal(2, request.PageNumber);
-        Assert.Equal(75, request.PageSize);
-        Assert.Equal(new DateTime(2026, 8, 19), request.BaslangicTarihi);
-    }
 }

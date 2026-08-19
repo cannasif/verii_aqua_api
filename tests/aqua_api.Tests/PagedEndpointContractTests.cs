@@ -71,12 +71,7 @@ public sealed class PagedEndpointContractTests : IClassFixture<AquaHttpTestWebAp
         "/api/CurrentDirection/paged",
         "/api/CurrentDirectionMatch/paged",
         "/api/NetInventoryMovement/paged",
-        "/api/NetsisRead/getAllCustomers/paged",
-        "/api/NetsisRead/getAllProducts/paged",
-        "/api/NetsisRead/getAllWarehouses/paged",
-        "/api/NetsisRead/getBranches/paged",
-        "/api/NetsisRead/getGoodsReceiptAndShipmentMovements/paged",
-        "/api/NetsisRead/getReceiptShipmentMovementMirror/paged",
+        "/api/erp-receipt-shipment-movements/paged",
         "/api/permission-definitions/paged",
         "/api/permission-groups/paged",
         "/api/SeaWaterTemperature/paged",
@@ -95,6 +90,23 @@ public sealed class PagedEndpointContractTests : IClassFixture<AquaHttpTestWebAp
     public PagedEndpointContractTests(AquaHttpTestWebApplicationFactory factory)
     {
         _factory = factory;
+    }
+
+    [Fact]
+    public void NetsisFunctionReadController_DoesNotExposePagedActions()
+    {
+        _ = _factory.CreateClient();
+        var pagedActions = _factory.Services
+            .GetRequiredService<EndpointDataSource>()
+            .Endpoints
+            .OfType<RouteEndpoint>()
+            .Select(endpoint => endpoint.Metadata.GetMetadata<ControllerActionDescriptor>())
+            .Where(action => action?.ControllerTypeInfo.AsType() == typeof(Modules.Integrations.Api.NetsisReadController))
+            .Where(action => action!.Parameters.Any(parameter =>
+                typeof(PagedRequest).IsAssignableFrom(parameter.ParameterType)))
+            .ToList();
+
+        Assert.Empty(pagedActions);
     }
 
     [Fact]

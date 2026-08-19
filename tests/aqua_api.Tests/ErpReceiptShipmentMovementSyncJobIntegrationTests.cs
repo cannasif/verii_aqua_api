@@ -1129,19 +1129,14 @@ public sealed class ErpReceiptShipmentMovementSyncJobIntegrationTests
 
         public Task<ApiResponse<short>> GetBranchCodeFromContextAsync() => throw new NotSupportedException();
         public Task<ApiResponse<List<CariDto>>> GetCustomersAsync(string? customerCode) => throw new NotSupportedException();
-        public Task<ApiResponse<PagedResponse<CariDto>>> GetCustomersPagedAsync(int pageNumber, int pageSize, string? search, string? sortBy, string? sortDirection) => throw new NotSupportedException();
         public Task<ApiResponse<List<CariDto>>> GetCustomersByCodesAsync(IEnumerable<string> customerCodes) => throw new NotSupportedException();
         public Task<ApiResponse<List<DepoDto>>> GetWarehousesAsync(short? warehouseCode) => throw new NotSupportedException();
-        public Task<ApiResponse<PagedResponse<DepoDto>>> GetWarehousesPagedAsync(int pageNumber, int pageSize, string? search, string? sortBy, string? sortDirection) => throw new NotSupportedException();
         public Task<ApiResponse<List<StokFunctionDto>>> GetStocksAsync(string? stockCode) => throw new NotSupportedException();
-        public Task<ApiResponse<PagedResponse<StokFunctionDto>>> GetStocksPagedAsync(int pageNumber, int pageSize, string? search, string? sortBy, string? sortDirection) => throw new NotSupportedException();
         public Task<ApiResponse<List<BranchDto>>> GetBranchesAsync(int? branchNo = null) => throw new NotSupportedException();
-        public Task<ApiResponse<PagedResponse<BranchDto>>> GetBranchesPagedAsync(int pageNumber, int pageSize, string? search, string? sortBy, string? sortDirection) => throw new NotSupportedException();
         public Task<ApiResponse<List<KurDto>>> GetExchangeRatesAsync(DateTime date, int pricingType) => throw new NotSupportedException();
         public Task<ApiResponse<List<ErpShippingAddressDto>>> GetShippingAddressesAsync(string customerCode) => throw new NotSupportedException();
         public Task<ApiResponse<List<StokGroupDto>>> GetStockGroupsAsync(string? groupCode) => throw new NotSupportedException();
         public Task<ApiResponse<List<ProjeDto>>> GetProjectsAsync() => throw new NotSupportedException();
-        public Task<ApiResponse<PagedResponse<MalKabulVeSevkiyatDto>>> GetGoodsReceiptAndShipmentMovementsPagedAsync(int pageNumber, int pageSize, string? search, DateTime? startDate, string? sortBy, string? sortDirection) => throw new NotSupportedException();
         public Task<ApiResponse<List<ErpReceiptShipmentMovementDto>>> GetReceiptShipmentMovementMirrorAsync() => throw new NotSupportedException();
         public Task<ApiResponse<PagedResponse<ErpReceiptShipmentMovementDto>>> GetReceiptShipmentMovementMirrorPagedAsync(int pageNumber, int pageSize, string? search, string? sortBy, string? sortDirection) => throw new NotSupportedException();
         public Task<ApiResponse<object>> HealthCheckAsync() => throw new NotSupportedException();
