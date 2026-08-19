@@ -1,4 +1,5 @@
 using aqua_api.Shared.Common.Dtos;
+using aqua_api.Modules.System.Api;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -153,5 +154,38 @@ public sealed class PagedEndpointContractTests : IClassFixture<AquaHttpTestWebAp
         Assert.True(
             missing.Length == 0 && stale.Length == 0,
             $"Paged route manifest uyuşmuyor. Eksik:\n{string.Join("\n", missing)}\nEski/fazla:\n{string.Join("\n", stale)}");
+    }
+
+    [Fact]
+    public void HangfirePagedEndpoints_ArePostOnlyBodyRoutes()
+    {
+        _ = _factory.CreateClient();
+        var endpoints = _factory.Services
+            .GetRequiredService<EndpointDataSource>()
+            .Endpoints
+            .OfType<RouteEndpoint>()
+            .Select(endpoint => new
+            {
+                Endpoint = endpoint,
+                Action = endpoint.Metadata.GetMetadata<ControllerActionDescriptor>(),
+                Methods = endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods ?? []
+            })
+            .Where(item => item.Action?.Parameters.Any(parameter =>
+                parameter.ParameterType == typeof(HangfirePagedRequest)) == true)
+            .ToList();
+
+        Assert.Equal(4, endpoints.Count);
+        Assert.All(endpoints, endpoint =>
+        {
+            Assert.Contains(HttpMethods.Post, endpoint.Methods, StringComparer.OrdinalIgnoreCase);
+            Assert.DoesNotContain(HttpMethods.Get, endpoint.Methods, StringComparer.OrdinalIgnoreCase);
+            Assert.EndsWith(
+                "/paged",
+                endpoint.Endpoint.RoutePattern.RawText?.TrimEnd('/'),
+                StringComparison.OrdinalIgnoreCase);
+            Assert.NotNull(endpoint.Action!.MethodInfo.GetParameters()
+                .Single(parameter => parameter.ParameterType == typeof(HangfirePagedRequest))
+                .GetCustomAttribute<FromBodyAttribute>());
+        });
     }
 }

@@ -11,6 +11,13 @@ using aqua_api.Modules.System.Infrastructure.Monitoring;
 
 namespace aqua_api.Modules.System.Api
 {
+    public sealed class HangfirePagedRequest
+    {
+        public int? PageNumber { get; set; }
+        public int? PageSize { get; set; }
+        public string? Search { get; set; }
+    }
+
     [ApiController]
     [Route("api/hangfire")]
     [Authorize]
@@ -147,33 +154,34 @@ namespace aqua_api.Modules.System.Api
             });
         }
 
-        [HttpGet("failed")]
-        public Task<IActionResult> GetFailed(
-            [FromQuery] int? pageNumber = null,
-            [FromQuery] int? pageSize = null,
-            [FromQuery] string? search = null,
-            [FromQuery] int from = 0,
-            [FromQuery] int count = 20)
+        [HttpPost("failed/paged")]
+        public Task<IActionResult> GetFailed([FromBody] HangfirePagedRequest request)
         {
-            var (resolvedFrom, resolvedCount) = ResolvePaging(pageNumber, pageSize, from, count, 20);
-            return GetFailuresFromDb(null, null, search, resolvedFrom, resolvedCount);
+            return GetFailuresFromDbCore(request, 20);
         }
 
-        [HttpGet("failures-from-db")]
-        public async Task<IActionResult> GetFailuresFromDb(
-            [FromQuery] int? pageNumber = null,
-            [FromQuery] int? pageSize = null,
-            [FromQuery] string? search = null,
-            [FromQuery] int from = 0,
-            [FromQuery] int count = 50)
+        [HttpPost("failures-from-db/paged")]
+        public Task<IActionResult> GetFailuresFromDb([FromBody] HangfirePagedRequest request)
         {
-            var (resolvedFrom, resolvedCount) = ResolvePaging(pageNumber, pageSize, from, count, 50);
+            return GetFailuresFromDbCore(request, 50);
+        }
+
+        private async Task<IActionResult> GetFailuresFromDbCore(
+            HangfirePagedRequest request,
+            int fallbackPageSize)
+        {
+            var (resolvedFrom, resolvedCount) = ResolvePaging(
+                request.PageNumber,
+                request.PageSize,
+                0,
+                fallbackPageSize,
+                fallbackPageSize);
 
             var query = _db.JobFailureLogs
                 .AsNoTracking()
                 .Where(x => !x.IsDeleted);
 
-            query = ApplyFailureSearch(query, search);
+            query = ApplyFailureSearch(query, request.Search);
 
             var rawItems = await query
                 .OrderByDescending(x => x.FailedAt)
@@ -215,21 +223,21 @@ namespace aqua_api.Modules.System.Api
             });
         }
 
-        [HttpGet("successes-from-db")]
-        public async Task<IActionResult> GetSuccessesFromDb(
-            [FromQuery] int? pageNumber = null,
-            [FromQuery] int? pageSize = null,
-            [FromQuery] string? search = null,
-            [FromQuery] int from = 0,
-            [FromQuery] int count = 50)
+        [HttpPost("successes-from-db/paged")]
+        public async Task<IActionResult> GetSuccessesFromDb([FromBody] HangfirePagedRequest request)
         {
-            var (resolvedFrom, resolvedCount) = ResolvePaging(pageNumber, pageSize, from, count, 50);
+            var (resolvedFrom, resolvedCount) = ResolvePaging(
+                request.PageNumber,
+                request.PageSize,
+                0,
+                50,
+                50);
 
             var successQuery = _db.JobExecutionLogs
                 .AsNoTracking()
                 .Where(x => !x.IsDeleted && x.Status == "Succeeded");
 
-            successQuery = ApplySuccessSearch(successQuery, search);
+            successQuery = ApplySuccessSearch(successQuery, request.Search);
 
             var rawItems = await successQuery
                 .OrderByDescending(x => x.FinishedAt)
@@ -269,21 +277,21 @@ namespace aqua_api.Modules.System.Api
             });
         }
 
-        [HttpGet("dead-letter")]
-        public async Task<IActionResult> GetDeadLetter(
-            [FromQuery] int? pageNumber = null,
-            [FromQuery] int? pageSize = null,
-            [FromQuery] string? search = null,
-            [FromQuery] int from = 0,
-            [FromQuery] int count = 20)
+        [HttpPost("dead-letter/paged")]
+        public async Task<IActionResult> GetDeadLetter([FromBody] HangfirePagedRequest request)
         {
-            var (resolvedFrom, resolvedCount) = ResolvePaging(pageNumber, pageSize, from, count, 20);
+            var (resolvedFrom, resolvedCount) = ResolvePaging(
+                request.PageNumber,
+                request.PageSize,
+                0,
+                20,
+                20);
 
             var deadLetterQuery = _db.JobFailureLogs
                 .AsNoTracking()
                 .Where(x => !x.IsDeleted && x.Queue == "dead-letter");
 
-            deadLetterQuery = ApplyFailureSearch(deadLetterQuery, search);
+            deadLetterQuery = ApplyFailureSearch(deadLetterQuery, request.Search);
 
             var rawItems = await deadLetterQuery
                 .OrderByDescending(x => x.FailedAt)
