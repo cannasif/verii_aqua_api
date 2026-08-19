@@ -150,14 +150,9 @@ namespace aqua_api.Modules.Integrations.Api
 
         [HttpGet("getGoodsReceiptAndShipmentMovements/paged")]
         public async Task<ActionResult<ApiResponse<PagedResponse<MalKabulVeSevkiyatDto>>>> GetGoodsReceiptAndShipmentMovementsPaged(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 20,
-            [FromQuery] string? search = null,
-            [FromQuery] DateTime? baslangicTarihi = null,
-            [FromQuery] string? sortBy = null,
-            [FromQuery] string? sortDirection = null)
+            [FromQuery] GoodsReceiptShipmentMovementPagedRequest request)
         {
-            var paged = await _netsisReadService.GetGoodsReceiptAndShipmentMovementsPagedAsync(pageNumber, pageSize, search, baslangicTarihi, sortBy, sortDirection);
+            var paged = await _netsisReadService.GetGoodsReceiptAndShipmentMovementsPagedAsync(request);
             return StatusCode(paged.StatusCode, paged);
         }
 

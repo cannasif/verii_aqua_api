@@ -31,6 +31,14 @@ namespace aqua_api.Modules.Integrations.Application.Services
         Task<ApiResponse<List<ProjeDto>>> GetProjectsAsync();
         Task<ApiResponse<List<MalKabulVeSevkiyatDto>>> GetGoodsReceiptAndShipmentMovementsAsync(DateTime? startDate = null);
         Task<ApiResponse<PagedResponse<MalKabulVeSevkiyatDto>>> GetGoodsReceiptAndShipmentMovementsPagedAsync(int pageNumber, int pageSize, string? search, DateTime? startDate, string? sortBy, string? sortDirection);
+        Task<ApiResponse<PagedResponse<MalKabulVeSevkiyatDto>>> GetGoodsReceiptAndShipmentMovementsPagedAsync(GoodsReceiptShipmentMovementPagedRequest request) =>
+            GetGoodsReceiptAndShipmentMovementsPagedAsync(
+                request.PageNumber,
+                request.PageSize,
+                request.Search,
+                request.BaslangicTarihi,
+                request.SortBy,
+                request.SortDirection);
         Task<ApiResponse<List<ErpReceiptShipmentMovementDto>>> GetReceiptShipmentMovementMirrorAsync();
         Task<ApiResponse<PagedResponse<ErpReceiptShipmentMovementDto>>> GetReceiptShipmentMovementMirrorPagedAsync(int pageNumber, int pageSize, string? search, string? sortBy, string? sortDirection);
         Task<ApiResponse<PagedResponse<ErpReceiptShipmentMovementDto>>> GetReceiptShipmentMovementMirrorPagedAsync(PagedRequest request) =>

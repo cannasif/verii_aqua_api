@@ -77,6 +77,45 @@ namespace aqua_api.Modules.Integrations.Application.Services
                 [nameof(BranchDto.Unvan)] = nameof(RII_FN_BRANCHES.UNVAN),
             };
 
+        private static readonly IReadOnlyDictionary<string, string> GoodsReceiptShipmentGridColumns =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                [nameof(MalKabulVeSevkiyatDto.Tarih)] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.Tarih),
+                [nameof(MalKabulVeSevkiyatDto.FisNo)] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.FisNo),
+                ["DocumentNo"] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.FisNo),
+                [nameof(MalKabulVeSevkiyatDto.KafesKodu)] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.KafesKodu),
+                ["ErpWarehouseCode"] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.KafesKodu),
+                [nameof(MalKabulVeSevkiyatDto.ProjeKodu)] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.ProjeKodu),
+                ["ErpProjectCode"] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.ProjeKodu),
+                [nameof(MalKabulVeSevkiyatDto.StokKodu)] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.StokKodu),
+                ["ErpStockCode"] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.StokKodu),
+                [nameof(MalKabulVeSevkiyatDto.StokAdi)] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.StokAdi),
+                ["ErpStockName"] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.StokAdi),
+                [nameof(MalKabulVeSevkiyatDto.Miktar)] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.Miktar),
+                ["Quantity"] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.Miktar),
+                [nameof(MalKabulVeSevkiyatDto.HareketTuru)] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.HareketTuru),
+                ["MovementKind"] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.HareketTuru),
+                [nameof(MalKabulVeSevkiyatDto.GcKodu)] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.GcKodu),
+                ["InOutCode"] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.GcKodu),
+                [nameof(MalKabulVeSevkiyatDto.GrupKodu)] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.GrupKodu),
+                ["StockGroupCode"] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.GrupKodu),
+                [nameof(MalKabulVeSevkiyatDto.IslemTuru)] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.IslemTuru),
+                ["OperationType"] = nameof(RII_FN_MAL_KABUL_VE_SEVKIYAT.IslemTuru),
+            };
+
+        private static readonly string[] GoodsReceiptShipmentDefaultSearchFields =
+        [
+            nameof(MalKabulVeSevkiyatDto.FisNo),
+            nameof(MalKabulVeSevkiyatDto.KafesKodu),
+            nameof(MalKabulVeSevkiyatDto.ProjeKodu),
+            nameof(MalKabulVeSevkiyatDto.StokKodu),
+            nameof(MalKabulVeSevkiyatDto.StokAdi),
+            nameof(MalKabulVeSevkiyatDto.HareketTuru),
+            nameof(MalKabulVeSevkiyatDto.GcKodu),
+            nameof(MalKabulVeSevkiyatDto.GrupKodu),
+            nameof(MalKabulVeSevkiyatDto.IslemTuru),
+        ];
+
         private readonly AquaDbContext _dbContext;
         private readonly ILogger<NetsisReadService> _logger;
         private readonly ILocalizationService _localizationService;
@@ -175,10 +214,13 @@ namespace aqua_api.Modules.Integrations.Application.Services
                 }
 
                 query = query
-                    .ApplySearch(MapSearchFields(request, WarehouseGridColumns), WarehouseGridColumns.Values.ToArray())
+                    .ApplySearch(request, WarehouseGridColumns)
                     .ApplyFilters(request.Filters, request.FilterLogic, WarehouseGridColumns);
 
-                query = ApplyWarehouseSort(query, request.SortBy, request.SortDirection);
+                query = query.ApplySorting(
+                    string.IsNullOrWhiteSpace(request.SortBy) ? nameof(DepoDto.DepoKodu) : request.SortBy,
+                    request.SortDirection,
+                    WarehouseGridColumns);
 
                 var totalCount = await query.CountAsync();
                 var rows = await query
@@ -260,10 +302,13 @@ namespace aqua_api.Modules.Integrations.Application.Services
                     .AsNoTracking();
 
                 query = query
-                    .ApplySearch(MapSearchFields(request, CustomerGridColumns), CustomerGridColumns.Values.ToArray())
+                    .ApplySearch(request, CustomerGridColumns)
                     .ApplyFilters(request.Filters, request.FilterLogic, CustomerGridColumns);
 
-                query = ApplyCustomerSort(query, request.SortBy, request.SortDirection);
+                query = query.ApplySorting(
+                    string.IsNullOrWhiteSpace(request.SortBy) ? nameof(CariDto.CariKod) : request.SortBy,
+                    request.SortDirection,
+                    CustomerGridColumns);
 
                 var totalCount = await query.CountAsync();
                 var rows = await query
@@ -382,10 +427,13 @@ namespace aqua_api.Modules.Integrations.Application.Services
                 }
 
                 query = query
-                    .ApplySearch(MapSearchFields(request, StockGridColumns), StockGridColumns.Values.ToArray())
+                    .ApplySearch(request, StockGridColumns)
                     .ApplyFilters(request.Filters, request.FilterLogic, StockGridColumns);
 
-                query = ApplyStockSort(query, request.SortBy, request.SortDirection);
+                query = query.ApplySorting(
+                    string.IsNullOrWhiteSpace(request.SortBy) ? nameof(StokFunctionDto.StokKodu) : request.SortBy,
+                    request.SortDirection,
+                    StockGridColumns);
 
                 var totalCount = await query.CountAsync();
                 var rows = await query
@@ -494,10 +542,13 @@ namespace aqua_api.Modules.Integrations.Application.Services
                     .AsNoTracking();
 
                 query = query
-                    .ApplySearch(MapSearchFields(request, BranchGridColumns), BranchGridColumns.Values.ToArray())
+                    .ApplySearch(request, BranchGridColumns)
                     .ApplyFilters(request.Filters, request.FilterLogic, BranchGridColumns);
 
-                query = ApplyBranchSort(query, request.SortBy, request.SortDirection);
+                query = query.ApplySorting(
+                    string.IsNullOrWhiteSpace(request.SortBy) ? nameof(BranchDto.SubeKodu) : request.SortBy,
+                    request.SortDirection,
+                    BranchGridColumns);
 
                 var totalCount = await query.CountAsync();
                 var rows = await query
@@ -779,42 +830,58 @@ namespace aqua_api.Modules.Integrations.Application.Services
             string? sortBy,
             string? sortDirection)
         {
+            return await GetGoodsReceiptAndShipmentMovementsPagedAsync(new GoodsReceiptShipmentMovementPagedRequest
+            {
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                Search = search,
+                BaslangicTarihi = startDate,
+                SortBy = sortBy,
+                SortDirection = sortDirection,
+            });
+        }
+
+        public async Task<ApiResponse<PagedResponse<MalKabulVeSevkiyatDto>>> GetGoodsReceiptAndShipmentMovementsPagedAsync(
+            GoodsReceiptShipmentMovementPagedRequest request)
+        {
             try
             {
-                var paging = NormalizePaging(pageNumber, pageSize);
-                var query = startDate.HasValue
+                request ??= new GoodsReceiptShipmentMovementPagedRequest();
+                var query = request.BaslangicTarihi.HasValue
                     ? _dbContext.RII_FN_MAL_KABUL_VE_SEVKIYAT
-                        .FromSqlRaw("SELECT * FROM dbo.fn_MalKabulVeSevkiyatListesi({0})", startDate.Value.Date)
+                        .FromSqlRaw("SELECT * FROM dbo.fn_MalKabulVeSevkiyatListesi({0})", request.BaslangicTarihi.Value.Date)
                     : _dbContext.RII_FN_MAL_KABUL_VE_SEVKIYAT
                         .FromSqlRaw("SELECT * FROM dbo.fn_MalKabulVeSevkiyatListesi(DEFAULT)");
 
-                query = query.AsNoTracking();
-
-                var normalizedSearch = NormalizeSearch(search);
-                if (!string.IsNullOrWhiteSpace(normalizedSearch))
-                {
-                    var pattern = BuildLikePattern(normalizedSearch);
-                    query = query.Where(x =>
-                        (x.FisNo != null && EF.Functions.Like(x.FisNo, pattern))
-                        || (x.KafesKodu.HasValue && EF.Functions.Like(x.KafesKodu.Value.ToString(), pattern))
-                        || (x.ProjeKodu != null && EF.Functions.Like(x.ProjeKodu, pattern))
-                        || EF.Functions.Like(x.StokKodu, pattern)
-                        || (x.StokAdi != null && EF.Functions.Like(x.StokAdi, pattern))
-                        || EF.Functions.Like(x.HareketTuru, pattern)
-                        || EF.Functions.Like(x.GcKodu, pattern)
-                        || (x.GrupKodu != null && EF.Functions.Like(x.GrupKodu, pattern))
-                        || EF.Functions.Like(x.IslemTuru, pattern));
-                }
-
-                query = ApplyGoodsReceiptShipmentSort(query, sortBy, sortDirection);
+                query = query
+                    .AsNoTracking()
+                    .ApplySearch(request, GoodsReceiptShipmentGridColumns, GoodsReceiptShipmentDefaultSearchFields)
+                    .ApplyFilters(request.Filters, request.FilterLogic, GoodsReceiptShipmentGridColumns);
 
                 var totalCount = await query.CountAsync();
-                var rows = await query
-                    .Skip((paging.PageNumber - 1) * paging.PageSize)
-                    .Take(paging.PageSize)
+                var ordered = query.ApplySorting(
+                    string.IsNullOrWhiteSpace(request.SortBy) ? nameof(MalKabulVeSevkiyatDto.Tarih) : request.SortBy,
+                    request.SortDirection,
+                    GoodsReceiptShipmentGridColumns);
+                ordered = ((IOrderedQueryable<RII_FN_MAL_KABUL_VE_SEVKIYAT>)ordered)
+                    .ThenBy(x => x.FisNo)
+                    .ThenBy(x => x.StokKodu)
+                    .ThenBy(x => x.ProjeKodu)
+                    .ThenBy(x => x.KafesKodu)
+                    .ThenBy(x => x.HareketTuru)
+                    .ThenBy(x => x.GcKodu)
+                    .ThenBy(x => x.IslemTuru);
+
+                var rows = await ordered
+                    .ApplyPagination(request.PageNumber, request.PageSize)
                     .ToListAsync();
 
-                return ToPagedSuccess(_mapper.Map<List<MalKabulVeSevkiyatDto>>(rows), totalCount, paging.PageNumber, paging.PageSize, "ErpService.MalKabulVeSevkiyatRecordsRetrieved");
+                return ToPagedSuccess(
+                    _mapper.Map<List<MalKabulVeSevkiyatDto>>(rows),
+                    totalCount,
+                    request.PageNumber,
+                    request.PageSize,
+                    "ErpService.MalKabulVeSevkiyatRecordsRetrieved");
             }
             catch (Exception ex)
             {
@@ -921,20 +988,20 @@ namespace aqua_api.Modules.Integrations.Application.Services
             try
             {
                 request ??= new PagedRequest();
-                var paging = NormalizePaging(request.PageNumber, request.PageSize);
                 var query = BuildReceiptShipmentMovementMirrorQuery()
                     .ApplySearch(request)
                     .ApplyFilters(request.Filters, request.FilterLogic);
 
-                query = ApplyReceiptShipmentMovementMirrorSort(query, request.SortBy, request.SortDirection);
+                query = query.ApplySorting(
+                    string.IsNullOrWhiteSpace(request.SortBy) ? nameof(ErpReceiptShipmentMovementDto.MovementDate) : request.SortBy,
+                    request.SortDirection);
 
                 var totalCount = await query.CountAsync();
                 var rows = await query
-                    .Skip((paging.PageNumber - 1) * paging.PageSize)
-                    .Take(paging.PageSize)
+                    .ApplyPagination(request.PageNumber, request.PageSize)
                     .ToListAsync();
 
-                return ToPagedSuccess(rows, totalCount, paging.PageNumber, paging.PageSize, "ErpService.ReceiptShipmentMovementMirrorRetrieved");
+                return ToPagedSuccess(rows, totalCount, request.PageNumber, request.PageSize, "ErpService.ReceiptShipmentMovementMirrorRetrieved");
             }
             catch (Exception ex)
             {
@@ -1038,34 +1105,6 @@ namespace aqua_api.Modules.Integrations.Application.Services
         private static (int PageNumber, int PageSize) NormalizePaging(int pageNumber, int pageSize)
         {
             return (Math.Max(pageNumber, 1), Math.Clamp(pageSize, 1, 500));
-        }
-
-        private static string? NormalizeSearch(string? search)
-        {
-            return string.IsNullOrWhiteSpace(search) ? null : search.Trim();
-        }
-
-        private static string BuildLikePattern(string search)
-        {
-            return $"%{search.Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]")}%";
-        }
-
-        private static PagedRequest MapSearchFields(
-            PagedRequest request,
-            IReadOnlyDictionary<string, string> columnMapping)
-        {
-            var mappedFields = (request.SearchFields ?? new List<string>())
-                .Select(field => columnMapping.TryGetValue(field, out var mapped) ? mapped : null)
-                .Where(field => !string.IsNullOrWhiteSpace(field))
-                .Cast<string>()
-                .Distinct(StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            return new PagedRequest
-            {
-                Search = request.Search,
-                SearchFields = mappedFields,
-            };
         }
 
         private int? ResolvePositiveBranchCode()
@@ -1204,24 +1243,6 @@ namespace aqua_api.Modules.Integrations.Application.Services
             {
                 "unvan" or "branchname" => ApplySort(query, x => x.UNVAN, sortDirection),
                 _ => ApplySort(query, x => x.SUBE_KODU, sortDirection),
-            };
-        }
-
-        private static IQueryable<RII_FN_MAL_KABUL_VE_SEVKIYAT> ApplyGoodsReceiptShipmentSort(IQueryable<RII_FN_MAL_KABUL_VE_SEVKIYAT> query, string? sortBy, string? sortDirection)
-        {
-            return (sortBy ?? "Tarih").Trim().ToLowerInvariant() switch
-            {
-                "fisno" or "documentno" => ApplySort(query, x => x.FisNo, sortDirection),
-                "kafeskodu" or "erpwarehousecode" => ApplySort(query, x => x.KafesKodu, sortDirection),
-                "projekodu" or "erpprojectcode" => ApplySort(query, x => x.ProjeKodu, sortDirection),
-                "stokkodu" or "erpstockcode" => ApplySort(query, x => x.StokKodu, sortDirection),
-                "stokadi" or "erpstockname" => ApplySort(query, x => x.StokAdi, sortDirection),
-                "miktar" or "quantity" => ApplySort(query, x => x.Miktar, sortDirection),
-                "hareketturu" or "movementkind" => ApplySort(query, x => x.HareketTuru, sortDirection),
-                "gckodu" or "inoutcode" => ApplySort(query, x => x.GcKodu, sortDirection),
-                "grupkodu" or "stockgroupcode" => ApplySort(query, x => x.GrupKodu, sortDirection),
-                "islemturu" or "operationtype" => ApplySort(query, x => x.IslemTuru, sortDirection),
-                _ => ApplySort(query, x => x.Tarih, string.IsNullOrWhiteSpace(sortDirection) ? "desc" : sortDirection),
             };
         }
 
