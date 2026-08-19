@@ -90,7 +90,11 @@ namespace aqua_api.Modules.Identity.Application.Services
 
                 var columnMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    { "role", "RoleNavigation.Title" }
+                    { "role", "RoleNavigation.Title" },
+                    { "createdBy", "CreatedBy" },
+                    { "createdDate", "CreatedDate" },
+                    { "updatedBy", "UpdatedBy" },
+                    { "updatedDate", "UpdatedDate" }
                 };
 
                 var query = _uow.Users.Query()

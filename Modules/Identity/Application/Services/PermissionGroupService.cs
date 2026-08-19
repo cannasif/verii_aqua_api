@@ -347,6 +347,8 @@ namespace aqua_api.Modules.Identity.Application.Services
                 PermissionCodes = groupPermissions.Select(x => x.PermissionDefinition.Code).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(x => x).ToList(),
                 CreatedDate = entity.CreatedDate,
                 UpdatedDate = entity.UpdatedDate,
+                CreatedBy = entity.CreatedBy,
+                UpdatedBy = entity.UpdatedBy,
                 DeletedDate = entity.DeletedDate,
                 IsDeleted = entity.IsDeleted,
                 CreatedByFullUser = entity.CreatedByUser != null ? $"{entity.CreatedByUser.FirstName} {entity.CreatedByUser.LastName}".Trim() : null,

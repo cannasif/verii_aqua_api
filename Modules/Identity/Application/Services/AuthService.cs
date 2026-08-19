@@ -614,6 +614,9 @@ namespace aqua_api.Modules.Identity.Application.Services
                 LastLoginDate = user.LastLoginDate,
                 FullName = user.FullName,
                 CreatedDate = user.CreatedDate,
+                UpdatedDate = user.UpdatedDate,
+                CreatedBy = user.CreatedBy,
+                UpdatedBy = user.UpdatedBy,
                 IsDeleted = user.IsDeleted
             };
         }

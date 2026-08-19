@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace aqua_api.Modules.Identity.Application.Dtos
 {
-    public class UserDto
+    public class UserDto : AuditDto
     {
         public long Id { get; set; }
         public string Username { get; set; } = string.Empty;
@@ -18,7 +18,6 @@ namespace aqua_api.Modules.Identity.Application.Dtos
         public bool IsActive { get; set; }
         public DateTime? LastLoginDate { get; set; }
         public string FullName { get; set; } = string.Empty;
-        public DateTime CreatedDate { get; set; }
         public bool IsDeleted { get; set; }
     }
 
