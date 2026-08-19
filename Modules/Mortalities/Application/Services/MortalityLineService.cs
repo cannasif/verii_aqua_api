@@ -8,6 +8,7 @@ namespace aqua_api.Modules.Mortalities.Application.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMortalityService _mortalityService;
+        private readonly IFishGrowthLedgerReplayService _ledgerReplayService;
         private readonly IMapper _mapper;
         private readonly ILocalizationService _localizationService;
         private static readonly IReadOnlyDictionary<string, string> ColumnMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -27,11 +28,13 @@ namespace aqua_api.Modules.Mortalities.Application.Services
         public MortalityLineService(
             IUnitOfWork unitOfWork,
             IMortalityService mortalityService,
+            IFishGrowthLedgerReplayService ledgerReplayService,
             IMapper mapper,
             ILocalizationService localizationService)
         {
             _unitOfWork = unitOfWork;
             _mortalityService = mortalityService;
+            _ledgerReplayService = ledgerReplayService;
             _mapper = mapper;
             _localizationService = localizationService;
         }
@@ -385,6 +388,25 @@ namespace aqua_api.Modules.Mortalities.Application.Services
 
                 EnsureMortalityCanBeChanged(entity.Mortality);
 
+                var mortality = entity.Mortality
+                    ?? throw new InvalidOperationException(
+                        _localizationService.GetLocalizedString("MortalityLineService.NotFound"));
+                var isPosted = mortality.Status == DocumentStatus.Posted;
+                var userId = entity.UpdatedBy
+                    ?? entity.CreatedBy
+                    ?? mortality.UpdatedBy
+                    ?? mortality.CreatedBy
+                    ?? 1L;
+
+                if (isPosted)
+                {
+                    await _ledgerReplayService.PrepareAsync(
+                        mortality.ProjectId,
+                        entity.FishBatchId,
+                        entity.ProjectCageId,
+                        userId);
+                }
+
                 var isDeleted = await repo.SoftDeleteAsync(id);
 
                 if (!isDeleted)
@@ -396,22 +418,50 @@ namespace aqua_api.Modules.Mortalities.Application.Services
                         StatusCodes.Status404NotFound);
                 }
 
+                if (isPosted)
+                {
+                    var now = DateTimeProvider.UtcNow;
+                    var movements = await _unitOfWork.Db.BatchMovements
+                        .Where(x =>
+                            !x.IsDeleted
+                            && x.FishBatchId == entity.FishBatchId
+                            && x.ProjectCageId == entity.ProjectCageId
+                            && x.MovementType == BatchMovementType.Mortality
+                            && x.ReferenceTable == "RII_MORTALITY"
+                            && x.ReferenceId == mortality.Id)
+                        .ToListAsync();
+                    foreach (var movement in movements)
+                    {
+                        movement.IsDeleted = true;
+                        movement.DeletedBy = userId;
+                        movement.DeletedDate = now;
+                    }
+                }
+
+                var hasActiveLines = await _unitOfWork.MortalityLines
+                    .Query()
+                    .AnyAsync(x =>
+                        x.MortalityId == mortality.Id
+                        && x.Id != entity.Id
+                        && !x.IsDeleted);
+                if (!hasActiveLines)
+                {
+                    mortality.IsDeleted = true;
+                    mortality.DeletedBy = userId;
+                    mortality.DeletedDate = DateTimeProvider.UtcNow;
+                }
+
                 await _unitOfWork.SaveChangesAsync();
 
-                if (entity.Mortality != null &&
-                    !entity.Mortality.IsERPIntegrated &&
-                    (entity.Mortality.Status == DocumentStatus.Draft || entity.Mortality.Status == DocumentStatus.Posted))
+                if (isPosted)
                 {
-                    var userId = entity.UpdatedBy ?? entity.CreatedBy ?? entity.Mortality.UpdatedBy ?? entity.Mortality.CreatedBy ?? 1L;
-                    var postResult = await _mortalityService.PostAquaAndQueueErpWithinCurrentTransactionAsync(entity.Mortality.Id, userId);
-                    if (!postResult.Success)
-                    {
-                        await _unitOfWork.RollbackTransactionAsync();
-                        return ApiResponse<bool>.ErrorResult(
-                            postResult.Message,
-                            postResult.ExceptionMessage,
-                            postResult.StatusCode);
-                    }
+                    await _ledgerReplayService.ReplayAsync(
+                        mortality.ProjectId,
+                        entity.FishBatchId,
+                        entity.ProjectCageId,
+                        mortality.MortalityDate,
+                        userId);
+                    await _unitOfWork.SaveChangesAsync();
                 }
 
                 await _unitOfWork.CommitTransactionAsync();
