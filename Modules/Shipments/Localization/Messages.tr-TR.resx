@@ -46,6 +46,7 @@
     <value>Dahili sunucu hatası oluştu.</value>
   </data>
   <data name="ShipmentLineService.FishCountMustBePositive" xml:space="preserve"><value>Sevk adedi sıfırdan büyük olmalıdır.</value></data>
+  <data name="ShipmentLineService.TotalKgMustBePositive" xml:space="preserve"><value>Toplam sevkiyat kg sıfırdan büyük olmalıdır.</value></data>
   <data name="ShipmentLineService.SourceNotFound" xml:space="preserve"><value>Seçilen proje, kafes veya balık partisi eşleşmesi bulunamadı.</value></data>
   <data name="ShipmentLineService.ExitWeightNotFound" xml:space="preserve"><value>Sevkiyat tarihinde geçerli çıkış gramajı bulunamadı. Önce ilgili kafesin gramaj hareketlerini kontrol edin.</value></data>
   <data name="ShipmentLineService.PostedCannotBeChanged" xml:space="preserve"><value>Post edilmiş sevkiyat satırı değiştirilemez. Tarihsel çıkış gramajı korunmalıdır.</value></data>

@@ -46,6 +46,7 @@
     <value>An internal server error occurred.</value>
   </data>
   <data name="ShipmentLineService.FishCountMustBePositive" xml:space="preserve"><value>Shipment quantity must be greater than zero.</value></data>
+  <data name="ShipmentLineService.TotalKgMustBePositive" xml:space="preserve"><value>Total shipment kg must be greater than zero.</value></data>
   <data name="ShipmentLineService.SourceNotFound" xml:space="preserve"><value>The selected project, cage, or fish batch mapping was not found.</value></data>
   <data name="ShipmentLineService.ExitWeightNotFound" xml:space="preserve"><value>No valid exit weight was found for the shipment date. Check the cage weight movements first.</value></data>
   <data name="ShipmentLineService.PostedCannotBeChanged" xml:space="preserve"><value>A posted shipment line cannot be changed. Its historical exit weight must be preserved.</value></data>

@@ -269,6 +269,7 @@ namespace aqua_api.Modules.Shipments.Application.Services
                     FishBatchId = dto.FishBatchId,
                     FromProjectCageId = dto.FromProjectCageId,
                     FishCount = dto.FishCount,
+                    TotalKg = dto.TotalKg,
                     CurrencyCode = dto.CurrencyCode,
                     ExchangeRate = dto.ExchangeRate,
                     UnitPrice = dto.UnitPrice,
@@ -597,20 +598,45 @@ namespace aqua_api.Modules.Shipments.Application.Services
                 dto.FromProjectCageId,
                 shipmentDate,
                 BatchMovementType.Shipment);
-            if (sourceMass.AverageGram <= 0)
-            {
-                throw new InvalidOperationException(
-                    _localizationService.GetLocalizedString("ShipmentLineService.ExitWeightNotFound"));
-            }
             if (sourceMass.LiveCount < dto.FishCount)
             {
                 throw new InvalidOperationException(
                     _localizationService.GetLocalizedString("BalanceLedgerManager.BatchCageCountCannotGoNegative"));
             }
 
+            if (dto.TotalKg.HasValue)
+            {
+                if (dto.TotalKg.Value <= 0m)
+                {
+                    throw new InvalidOperationException(
+                        _localizationService.GetLocalizedString("ShipmentLineService.TotalKgMustBePositive"));
+                }
+
+                dto.TotalKg = RoundWeight(dto.TotalKg.Value);
+                dto.BiomassGram = RoundWeight(dto.TotalKg.Value * 1000m);
+                dto.AverageGram = RoundWeight(dto.BiomassGram / dto.FishCount);
+
+                if (sourceMass.BiomassGram < dto.BiomassGram)
+                {
+                    throw new InvalidOperationException(
+                        _localizationService.GetLocalizedString("BalanceLedgerManager.BatchCageBiomassCannotGoNegative"));
+                }
+
+                return;
+            }
+
+            if (sourceMass.AverageGram <= 0)
+            {
+                throw new InvalidOperationException(
+                    _localizationService.GetLocalizedString("ShipmentLineService.ExitWeightNotFound"));
+            }
+
             dto.AverageGram = sourceMass.AverageGram;
             dto.BiomassGram = BatchMath.CalculateBiomassGram(dto.FishCount, dto.AverageGram);
         }
+
+        private static decimal RoundWeight(decimal value) =>
+            Math.Round(value, 8, MidpointRounding.AwayFromZero);
 
         private void EnsureDraft(DocumentStatus status)
         {

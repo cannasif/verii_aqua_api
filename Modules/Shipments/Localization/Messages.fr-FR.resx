@@ -46,6 +46,7 @@
     <value>Une erreur interne du serveur s'est produite.</value>
   </data>
   <data name="ShipmentLineService.FishCountMustBePositive" xml:space="preserve"><value>La quantité expédiée doit être supérieure à zéro.</value></data>
+  <data name="ShipmentLineService.TotalKgMustBePositive" xml:space="preserve"><value>Le total en kg de l'expédition doit être supérieur à zéro.</value></data>
   <data name="ShipmentLineService.SourceNotFound" xml:space="preserve"><value>La correspondance projet, cage ou lot de poissons sélectionnée est introuvable.</value></data>
   <data name="ShipmentLineService.ExitWeightNotFound" xml:space="preserve"><value>Aucun poids de sortie valide n'a été trouvé à la date d'expédition. Vérifiez d'abord les mouvements de poids de la cage.</value></data>
   <data name="ShipmentLineService.PostedCannotBeChanged" xml:space="preserve"><value>Une ligne d'expédition comptabilisée ne peut pas être modifiée. Son poids de sortie historique doit être conservé.</value></data>

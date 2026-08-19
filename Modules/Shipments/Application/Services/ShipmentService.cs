@@ -238,14 +238,29 @@ namespace aqua_api.Modules.Shipments.Application.Services
                         throw new InvalidOperationException(
                             _localizationService.GetLocalizedString("BalanceLedgerManager.BatchCageCountCannotGoNegative"));
                     }
-                    if (sourceMass.AverageGram <= 0m)
+
+                    var hasEnteredTotalKg = line.TotalKg is > 0m;
+                    if (hasEnteredTotalKg)
+                    {
+                        line.TotalKg = RoundWeight(line.TotalKg!.Value);
+                        line.BiomassGram = RoundWeight(line.TotalKg.Value * 1000m);
+                        line.AverageGram = RoundWeight(line.BiomassGram / line.FishCount);
+                        if (sourceMass.BiomassGram < line.BiomassGram)
+                        {
+                            throw new InvalidOperationException(
+                                _localizationService.GetLocalizedString("BalanceLedgerManager.BatchCageBiomassCannotGoNegative"));
+                        }
+                    }
+                    else if (sourceMass.AverageGram <= 0m)
                     {
                         throw new InvalidOperationException(
                             _localizationService.GetLocalizedString("ShipmentLineService.ExitWeightNotFound"));
                     }
-
-                    line.AverageGram = sourceMass.AverageGram;
-                    line.BiomassGram = BatchMath.CalculateBiomassGram(line.FishCount, sourceMass.AverageGram);
+                    else
+                    {
+                        line.AverageGram = sourceMass.AverageGram;
+                        line.BiomassGram = BatchMath.CalculateBiomassGram(line.FishCount, sourceMass.AverageGram);
+                    }
                     NormalizePricing(line);
 
                     await _balanceLedgerManager.ApplyDelta(
@@ -265,7 +280,8 @@ namespace aqua_api.Modules.Shipments.Application.Services
                         null,
                         line.AverageGram,
                         null,
-                        userId);
+                        actorUserId: userId,
+                        reportedBiomassGram: hasEnteredTotalKg ? -line.BiomassGram : null);
 
                     if (shipment.TargetWarehouseId.HasValue)
                     {
@@ -286,7 +302,8 @@ namespace aqua_api.Modules.Shipments.Application.Services
                             null,
                             null,
                             line.AverageGram,
-                            userId);
+                            actorUserId: userId,
+                            reportedBiomassGram: hasEnteredTotalKg ? line.BiomassGram : null);
                     }
                 }
 
@@ -428,6 +445,9 @@ namespace aqua_api.Modules.Shipments.Application.Services
             line.LineAmount = pricing.LineAmount;
             line.LocalLineAmount = pricing.LocalLineAmount;
         }
+
+        private static decimal RoundWeight(decimal value) =>
+            Math.Round(value, 8, MidpointRounding.AwayFromZero);
 
         private async Task<long> ValidateAndResolveWarehouseIdAsync(long warehouseId)
         {

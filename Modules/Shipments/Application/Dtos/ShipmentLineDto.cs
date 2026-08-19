@@ -19,6 +19,7 @@ namespace aqua_api.Modules.Shipments.Application.Dtos
         public int FishCount { get; set; }
         public decimal AverageGram { get; set; }
         public decimal BiomassGram { get; set; }
+        public decimal TotalKg { get; set; }
         public string CurrencyCode { get; set; } = "TRY";
         public decimal? ExchangeRate { get; set; } = 1;
         public decimal? UnitPrice { get; set; }
@@ -35,6 +36,7 @@ namespace aqua_api.Modules.Shipments.Application.Dtos
         public int FishCount { get; set; }
         public decimal AverageGram { get; set; }
         public decimal BiomassGram { get; set; }
+        public decimal? TotalKg { get; set; }
         public string CurrencyCode { get; set; } = "TRY";
         public decimal? ExchangeRate { get; set; } = 1;
         public decimal? UnitPrice { get; set; }
@@ -57,6 +59,7 @@ namespace aqua_api.Modules.Shipments.Application.Dtos
         public int FishCount { get; set; }
         public decimal AverageGram { get; set; }
         public decimal BiomassGram { get; set; }
+        public decimal? TotalKg { get; set; }
         public string CurrencyCode { get; set; } = "TRY";
         public decimal? ExchangeRate { get; set; } = 1;
         public decimal? UnitPrice { get; set; }

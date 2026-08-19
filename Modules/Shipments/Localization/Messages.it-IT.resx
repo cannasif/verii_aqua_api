@@ -46,6 +46,7 @@
     <value>Si è verificato un errore interno del server.</value>
   </data>
   <data name="ShipmentLineService.FishCountMustBePositive" xml:space="preserve"><value>La quantità spedita deve essere maggiore di zero.</value></data>
+  <data name="ShipmentLineService.TotalKgMustBePositive" xml:space="preserve"><value>Il totale in kg della spedizione deve essere maggiore di zero.</value></data>
   <data name="ShipmentLineService.SourceNotFound" xml:space="preserve"><value>La corrispondenza selezionata tra progetto, gabbia o lotto di pesci non è stata trovata.</value></data>
   <data name="ShipmentLineService.ExitWeightNotFound" xml:space="preserve"><value>Non è stato trovato un peso di uscita valido per la data di spedizione. Verificare prima i movimenti di peso della gabbia.</value></data>
   <data name="ShipmentLineService.PostedCannotBeChanged" xml:space="preserve"><value>Una riga di spedizione contabilizzata non può essere modificata. Il peso di uscita storico deve essere conservato.</value></data>
