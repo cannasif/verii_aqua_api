@@ -307,7 +307,7 @@ namespace aqua_api.Modules.ProjectMerges.Application.Services
                         SourceProjectId = x.SourceProjectId,
                         SourceProjectCode = x.SourceProjectCode,
                         SourceProjectName = x.SourceProjectName,
-                    })
+                    }.WithAuditFrom(x))
                     .ToList(),
                 Cages = entity.Cages
                     .Where(x => !x.IsDeleted)
@@ -321,9 +321,9 @@ namespace aqua_api.Modules.ProjectMerges.Application.Services
                         CageId = x.CageId,
                         CageCode = x.CageCode,
                         CageName = x.CageName,
-                    })
+                    }.WithAuditFrom(x))
                     .ToList(),
-            };
+            }.WithAuditFrom(entity);
         }
     }
 }

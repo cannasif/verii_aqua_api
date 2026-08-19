@@ -3,7 +3,7 @@ using StockEntity = aqua_api.Modules.Stock.Domain.Entities.Stock;
 
 namespace aqua_api.Modules.Feedings.Application.Dtos
 {
-    public class FeedingLineDto
+    public class FeedingLineDto : AuditDto
     {
         public long Id { get; set; }
         public long FeedingId { get; set; }

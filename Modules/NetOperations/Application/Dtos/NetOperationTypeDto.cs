@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.NetOperations.Application.Dtos
 {
-    public class NetOperationTypeDto
+    public class NetOperationTypeDto : AuditDto
     {
         public long Id { get; set; }
         public string Code { get; set; } = string.Empty;

@@ -1,6 +1,6 @@
 namespace aqua_api.Modules.Warehouse.Application.Dtos
 {
-    public class WarehouseDto
+    public class WarehouseDto : AuditDto
     {
         public long Id { get; set; }
         public short ErpWarehouseCode { get; set; }

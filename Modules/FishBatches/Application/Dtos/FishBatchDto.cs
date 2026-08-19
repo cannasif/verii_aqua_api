@@ -3,7 +3,7 @@ using StockEntity = aqua_api.Modules.Stock.Domain.Entities.Stock;
 
 namespace aqua_api.Modules.FishBatches.Application.Dtos
 {
-    public class FishBatchDto
+    public class FishBatchDto : AuditDto
     {
         public long Id { get; set; }
         public long ProjectId { get; set; }

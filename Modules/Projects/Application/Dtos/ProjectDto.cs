@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.Projects.Application.Dtos
 {
-    public class ProjectDto
+    public class ProjectDto : AuditDto
     {
         public long Id { get; set; }
         public string ProjectCode { get; set; } = string.Empty;

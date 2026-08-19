@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.Transfers.Application.Dtos
 {
-    public class WarehouseTransferDto
+    public class WarehouseTransferDto : AuditDto
     {
         public long Id { get; set; }
         public long ProjectId { get; set; }

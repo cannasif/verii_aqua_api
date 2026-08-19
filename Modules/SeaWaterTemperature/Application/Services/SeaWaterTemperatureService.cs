@@ -268,7 +268,7 @@ namespace aqua_api.Modules.SeaWaterTemperature.Application.Services
                 WaterTemperatureCelsius = entity.WaterTemperatureCelsius,
                 WeatherDescription = entity.WeatherDescription,
                 Note = entity.Note
-            };
+            }.WithAuditFrom(entity);
         }
     }
 }

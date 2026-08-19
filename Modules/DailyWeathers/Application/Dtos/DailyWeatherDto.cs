@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.DailyWeathers.Application.Dtos
 {
-    public class DailyWeatherDto
+    public class DailyWeatherDto : AuditDto
     {
         public long Id { get; set; }
         public long ProjectId { get; set; }

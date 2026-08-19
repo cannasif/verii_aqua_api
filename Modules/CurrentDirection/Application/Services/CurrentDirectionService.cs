@@ -181,7 +181,7 @@ namespace aqua_api.Modules.CurrentDirection.Application.Services
             {
                 Id = entity.Id,
                 Name = entity.Name
-            };
+            }.WithAuditFrom(entity);
         }
     }
 }

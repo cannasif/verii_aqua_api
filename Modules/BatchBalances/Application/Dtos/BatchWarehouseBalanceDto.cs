@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.BatchBalances.Application.Dtos
 {
-    public class BatchWarehouseBalanceDto
+    public class BatchWarehouseBalanceDto : AuditDto
     {
         public long Id { get; set; }
         public long ProjectId { get; set; }

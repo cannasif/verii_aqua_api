@@ -1,7 +1,7 @@
 
 namespace aqua_api.Modules.Shipments.Application.Dtos
 {
-    public class ShipmentDto
+    public class ShipmentDto : AuditDto
     {
         public long Id { get; set; }
         public long ProjectId { get; set; }

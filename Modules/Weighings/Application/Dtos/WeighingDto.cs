@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.Weighings.Application.Dtos
 {
-    public class WeighingDto
+    public class WeighingDto : AuditDto
     {
         public long Id { get; set; }
         public long ProjectId { get; set; }

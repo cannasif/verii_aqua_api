@@ -1,6 +1,6 @@
 namespace aqua_api.Modules.FishGrowths.Application.Dtos;
 
-public class FishGrowthDto
+public class FishGrowthDto : AuditDto
 {
     public long Id { get; set; }
     public long ProjectId { get; set; }

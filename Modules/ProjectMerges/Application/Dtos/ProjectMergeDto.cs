@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace aqua_api.Modules.ProjectMerges.Application.Dtos
 {
-    public class ProjectMergeDto
+    public class ProjectMergeDto : AuditDto
     {
         public long Id { get; set; }
         public long TargetProjectId { get; set; }
@@ -16,7 +16,7 @@ namespace aqua_api.Modules.ProjectMerges.Application.Dtos
         public List<ProjectMergeCageDto> Cages { get; set; } = new();
     }
 
-    public class ProjectMergeSourceDto
+    public class ProjectMergeSourceDto : AuditDto
     {
         public long Id { get; set; }
         public long SourceProjectId { get; set; }
@@ -24,7 +24,7 @@ namespace aqua_api.Modules.ProjectMerges.Application.Dtos
         public string SourceProjectName { get; set; } = string.Empty;
     }
 
-    public class ProjectMergeCageDto
+    public class ProjectMergeCageDto : AuditDto
     {
         public long Id { get; set; }
         public long SourceProjectId { get; set; }

@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.Mortalities.Application.Dtos
 {
-    public class MortalityDto
+    public class MortalityDto : AuditDto
     {
         public long Id { get; set; }
         public long ProjectId { get; set; }

@@ -1,6 +1,6 @@
 namespace aqua_api.Modules.Cages.Application.Dtos
 {
-    public class CageWarehouseMappingDto
+    public class CageWarehouseMappingDto : AuditDto
     {
         public long Id { get; set; }
         public long CageId { get; set; }

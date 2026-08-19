@@ -426,7 +426,7 @@ public class NetInventoryMovementService : INetInventoryMovementService
             TargetCageName = entity.TargetProjectCage?.Cage?.CageName,
             Quantity = entity.Quantity,
             Note = entity.Note
-        };
+        }.WithAuditFrom(entity);
     }
 
     private static string? NormalizeNote(string? note)

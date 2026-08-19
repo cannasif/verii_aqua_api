@@ -218,7 +218,7 @@ namespace aqua_api.Modules.WindDirection.Application.Services
                 WindDirectionName = entity.WindDirection?.Name,
                 RecordDate = entity.RecordDate,
                 Note = entity.Note
-            };
+            }.WithAuditFrom(entity);
         }
     }
 }

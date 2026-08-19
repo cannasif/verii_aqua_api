@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.Projects.Application.Dtos
 {
-    public class ProjectCageDto
+    public class ProjectCageDto : AuditDto
     {
         public long Id { get; set; }
         public long ProjectId { get; set; }

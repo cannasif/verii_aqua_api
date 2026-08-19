@@ -724,7 +724,7 @@ public class FishGrowthService : IFishGrowthService
         });
     }
 
-    private static FishGrowthDto Map(FishGrowth entity) => new()
+    private static FishGrowthDto Map(FishGrowth entity) => new FishGrowthDto
     {
         Id = entity.Id,
         ProjectId = entity.ProjectId,
@@ -748,7 +748,7 @@ public class FishGrowthService : IFishGrowthService
         PreviousBiomassGram = entity.PreviousBiomassGram,
         NewBiomassGram = entity.NewBiomassGram,
         Description = entity.Description
-    };
+    }.WithAuditFrom(entity);
 
     private (decimal GrowthGram, decimal NewAverageGram) ResolveGrowthValues(
         CreateFishGrowthDto dto,

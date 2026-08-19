@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.WindDirection.Application.Dtos
 {
-    public class WindDirectionDto
+    public class WindDirectionDto : AuditDto
     {
         public long Id { get; set; }
         public string Name { get; set; } = string.Empty;
@@ -17,7 +17,7 @@ namespace aqua_api.Modules.WindDirection.Application.Dtos
     {
     }
 
-    public class WindDirectionMatchDto
+    public class WindDirectionMatchDto : AuditDto
     {
         public long Id { get; set; }
         public long ProjectId { get; set; }

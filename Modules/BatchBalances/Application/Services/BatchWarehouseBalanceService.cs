@@ -232,7 +232,7 @@ namespace aqua_api.Modules.BatchBalances.Application.Services
                 AverageGram = entity.AverageGram,
                 BiomassGram = entity.BiomassGram,
                 AsOfDate = entity.AsOfDate,
-            };
+            }.WithAuditFrom(entity);
         }
     }
 }

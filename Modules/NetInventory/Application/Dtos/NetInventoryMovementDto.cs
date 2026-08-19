@@ -2,7 +2,7 @@ using aqua_api.Modules.NetInventory.Domain.Enums;
 
 namespace aqua_api.Modules.NetInventory.Application.Dtos;
 
-public class NetInventoryMovementDto
+public class NetInventoryMovementDto : AuditDto
 {
     public long Id { get; set; }
     public string MovementNo { get; set; } = string.Empty;

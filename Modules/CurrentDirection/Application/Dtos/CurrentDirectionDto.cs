@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.CurrentDirection.Application.Dtos
 {
-    public class CurrentDirectionDto
+    public class CurrentDirectionDto : AuditDto
     {
         public long Id { get; set; }
         public string Name { get; set; } = string.Empty;
@@ -17,7 +17,7 @@ namespace aqua_api.Modules.CurrentDirection.Application.Dtos
     {
     }
 
-    public class CurrentDirectionMatchDto
+    public class CurrentDirectionMatchDto : AuditDto
     {
         public long Id { get; set; }
         public long ProjectId { get; set; }

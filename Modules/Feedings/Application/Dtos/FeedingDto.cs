@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.Feedings.Application.Dtos
 {
-    public class FeedingDto
+    public class FeedingDto : AuditDto
     {
         public long Id { get; set; }
         public long ProjectId { get; set; }

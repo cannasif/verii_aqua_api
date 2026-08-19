@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.StockConverts.Application.Dtos
 {
-    public class StockConvertDto
+    public class StockConvertDto : AuditDto
     {
         public long Id { get; set; }
         public long ProjectId { get; set; }

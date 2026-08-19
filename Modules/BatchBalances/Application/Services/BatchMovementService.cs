@@ -329,7 +329,7 @@ namespace aqua_api.Modules.BatchBalances.Application.Services
                         stockConvertById,
                         goodsReceiptById),
                     Note = entity.Note,
-                };
+                }.WithAuditFrom(entity);
             }).ToList();
         }
 

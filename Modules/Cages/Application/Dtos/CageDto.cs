@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.Cages.Application.Dtos
 {
-    public class CageDto
+    public class CageDto : AuditDto
     {
         public long Id { get; set; }
         public string CageCode { get; set; } = string.Empty;

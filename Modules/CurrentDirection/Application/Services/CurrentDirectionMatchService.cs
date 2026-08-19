@@ -218,7 +218,7 @@ namespace aqua_api.Modules.CurrentDirection.Application.Services
                 CurrentDirectionName = entity.CurrentDirection?.Name,
                 RecordDate = entity.RecordDate,
                 Note = entity.Note
-            };
+            }.WithAuditFrom(entity);
         }
     }
 }

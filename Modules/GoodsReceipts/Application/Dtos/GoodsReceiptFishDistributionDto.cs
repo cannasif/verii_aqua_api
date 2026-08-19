@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.GoodsReceipts.Application.Dtos
 {
-    public class GoodsReceiptFishDistributionDto
+    public class GoodsReceiptFishDistributionDto : AuditDto
     {
         public long Id { get; set; }
         public long GoodsReceiptLineId { get; set; }

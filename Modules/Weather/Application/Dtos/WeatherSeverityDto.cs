@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.Weather.Application.Dtos
 {
-    public class WeatherSeverityDto
+    public class WeatherSeverityDto : AuditDto
     {
         public long Id { get; set; }
         public string Code { get; set; } = string.Empty;

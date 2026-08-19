@@ -2,7 +2,7 @@ using System;
 
 namespace aqua_api.Modules.SeaWaterTemperature.Application.Dtos
 {
-    public class SeaWaterTemperatureDto
+    public class SeaWaterTemperatureDto : AuditDto
     {
         public long Id { get; set; }
         public long ProjectId { get; set; }
