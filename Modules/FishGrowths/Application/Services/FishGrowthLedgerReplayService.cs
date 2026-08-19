@@ -380,6 +380,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         {
             var shipment = line.Shipment!;
             var isOpeningImport = IsOpeningImportShipmentLine(line);
+            var hasEnteredTotalKg = line.TotalKg is > 0m;
             var cageMovements = FindShipmentMovements(
                 movements,
                 line,
@@ -388,14 +389,20 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
                 null,
                 -line.FishCount,
                 usedCageMovementIds);
-            var inventoryAverageGram = isOpeningImport
-                ? cageMovements
+            var inventoryAverageGram = hasEnteredTotalKg
+                ? RoundShipmentWeight(line.BiomassGram / line.FishCount)
+                : isOpeningImport
+                    ? cageMovements
                     .Select(x => x.FromAverageGram)
                     .FirstOrDefault(x => x is > 0m)
                     ?? await ResolveOpeningImportAverageGramAsync(fishBatch.Id, projectCageId)
-                : line.AverageGram;
-            var sourceSignedBiomassGram = RoundBiomass(-line.FishCount * inventoryAverageGram);
-            decimal? sourceReportedBiomassGram = isOpeningImport ? -line.BiomassGram : null;
+                    : line.AverageGram;
+            var sourceSignedBiomassGram = hasEnteredTotalKg
+                ? -line.BiomassGram
+                : RoundBiomass(-line.FishCount * inventoryAverageGram);
+            decimal? sourceReportedBiomassGram = isOpeningImport || hasEnteredTotalKg
+                ? -line.BiomassGram
+                : null;
             if (cageMovements.Count == 0)
             {
                 var movement = CreateShipmentMovement(
@@ -460,7 +467,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
                     line.FishCount,
                     -sourceSignedBiomassGram,
                     inventoryAverageGram,
-                    isOpeningImport ? line.BiomassGram : null,
+                    isOpeningImport || hasEnteredTotalKg ? line.BiomassGram : null,
                     userId);
                 await _unitOfWork.Db.BatchMovements.AddAsync(movement);
                 synchronization.RegisterMovementReplacement(
@@ -484,7 +491,7 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
                     line.FishCount,
                     -sourceSignedBiomassGram,
                     inventoryAverageGram,
-                    isOpeningImport ? line.BiomassGram : null,
+                    isOpeningImport || hasEnteredTotalKg ? line.BiomassGram : null,
                     userId,
                     synchronization);
             }
@@ -946,6 +953,11 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
     private static bool IsOpeningImportShipmentLine(ShipmentLine line) =>
         line.ErpSourceMovementKey?.StartsWith("OPENING_IMPORT:", StringComparison.OrdinalIgnoreCase) == true;
 
+    private static bool IsEnteredTotalKgShipmentMovement(BatchMovement movement) =>
+        movement.MovementType == BatchMovementType.Shipment
+        && movement.ReportedBiomassGram.HasValue
+        && !BatchReportMassCalculator.IsOpeningImportHistoricalExit(movement);
+
     private static bool ReferenceTableEquals(string left, string right) =>
         string.Equals(
             NormalizeReferenceTable(left),
@@ -1022,6 +1034,28 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
         {
             movement.ReportedBiomassGram = movement.SignedBiomassGram;
         }
+
+        if (IsEnteredTotalKgShipmentMovement(movement))
+        {
+            var enteredBiomassDelta = RoundShipmentWeight(movement.ReportedBiomassGram!.Value);
+            var enteredNextCount = fishCount + movement.SignedCount;
+            var enteredNextBiomass = biomassGram + enteredBiomassDelta;
+            EnsureNonNegativeState(enteredNextCount, enteredNextBiomass);
+
+            var shipmentAverageGram = movement.SignedCount != 0
+                ? RoundShipmentWeight(Math.Abs(enteredBiomassDelta / movement.SignedCount))
+                : 0m;
+            movement.SignedBiomassGram = enteredBiomassDelta;
+            movement.FromAverageGram = shipmentAverageGram;
+            movement.ToAverageGram = shipmentAverageGram;
+            movement.ActorUserId = userId;
+            movement.UpdatedBy = userId;
+            movement.UpdatedDate = DateTimeProvider.UtcNow;
+            fishCount = enteredNextCount;
+            biomassGram = RoundShipmentWeight(enteredNextBiomass);
+            return;
+        }
+
         var biomassDelta = RoundBiomass(movement.SignedCount * averageGram);
         var nextCount = fishCount + movement.SignedCount;
         var nextBiomass = biomassGram + biomassDelta;
@@ -1332,6 +1366,9 @@ public sealed class FishGrowthLedgerReplayService : IFishGrowthLedgerReplayServi
 
     private static decimal RoundAverage(decimal value) =>
         Math.Round(value, 3, MidpointRounding.AwayFromZero);
+
+    private static decimal RoundShipmentWeight(decimal value) =>
+        Math.Round(value, 8, MidpointRounding.AwayFromZero);
 
     private static decimal RoundBiomass(decimal value) =>
         Math.Round(value, 3, MidpointRounding.AwayFromZero);

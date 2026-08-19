@@ -34,6 +34,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
         /// </summary>
         public static decimal CalculateInventorySignedBiomassGram(BatchMovement movement)
         {
+            if (IsEnteredTotalKgShipment(movement))
+            {
+                return Round(movement.ReportedBiomassGram!.Value);
+            }
+
             if (movement.SignedCount != 0)
             {
                 var averageGram = ResolveMovementAverageGram(movement);
@@ -211,6 +216,14 @@ namespace aqua_api.Modules.Aqua.Application.Services
                     return;
                 }
 
+                if (IsEnteredTotalKgShipment(movement))
+                {
+                    biomassGram += movement.ReportedBiomassGram!.Value;
+                    liveCount = nextCount;
+                    biomassGram = liveCount == 0 ? 0m : Math.Max(0m, biomassGram);
+                    return;
+                }
+
                 var movementAverageGram = IsOpeningImportHistoricalExit(movement) && liveCount > 0
                     ? Round(biomassGram / liveCount)
                     : ResolveMovementAverageGram(movement);
@@ -274,6 +287,11 @@ namespace aqua_api.Modules.Aqua.Application.Services
         private static bool IsMixedStockingCorrection(BatchMovement movement) =>
             movement.MovementType == BatchMovementType.Stocking
             && movement.Note?.StartsWith("ERP fish receipt delta", StringComparison.OrdinalIgnoreCase) == true;
+
+        private static bool IsEnteredTotalKgShipment(BatchMovement movement) =>
+            movement.MovementType == BatchMovementType.Shipment
+            && movement.ReportedBiomassGram.HasValue
+            && !IsOpeningImportHistoricalExit(movement);
 
         private readonly record struct MovementLocationKey(
             long FishBatchId,

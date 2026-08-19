@@ -670,7 +670,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     $"{fromLabel} -> {targetWarehouseLabel}",
                     row.FishCount > 0 ? $"count:{row.FishCount}" : null,
                     $"avg:{row.AverageGram}g",
-                    row.FishCount > 0 ? $"biomass:{BatchReportMassCalculator.CalculateBiomassGram(row.FishCount, row.AverageGram)}g" : null,
+                    row.FishCount > 0 ? $"biomass:{row.BiomassGram}g" : null,
                     header?.Note
                 });
                 AddByDate(shipmentByCageDate, row.FromProjectCageId, date, 1);
@@ -679,7 +679,7 @@ namespace aqua_api.Modules.AquaReports.Application.Services
                     shipmentBiomassByCageDate,
                     row.FromProjectCageId,
                     date,
-                    BatchReportMassCalculator.CalculateBiomassGram(row.FishCount, row.AverageGram));
+                    row.BiomassGram);
                 AppendDetail(shipmentDetailsByCageDate, row.FromProjectCageId, date, detail);
             }
 
