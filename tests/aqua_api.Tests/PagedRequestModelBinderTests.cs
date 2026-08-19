@@ -1,8 +1,10 @@
 using System.Globalization;
 using System.Text;
 using aqua_api.Shared.Common.Dtos;
+using aqua_api.Shared.Common.Exceptions;
 using aqua_api.Shared.Common.Helpers;
 using aqua_api.Shared.Host.WebApi.ModelBinding;
+using aqua_api.Modules.Integrations.Application.Dtos;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
@@ -38,6 +40,7 @@ public class PagedRequestModelBinderTests
         Assert.Equal(50, request.PageSize);
         Assert.Equal("BATCH-001", request.Search);
         Assert.Equal(new[] { "BatchCode", "ProjectCode" }, request.SearchFields);
+        Assert.True(request.SearchFieldsSpecified);
         Assert.Equal("Id", request.SortBy);
         Assert.Equal("asc", request.SortDirection);
         Assert.Equal("or", request.FilterLogic);
@@ -98,7 +101,7 @@ public class PagedRequestModelBinderTests
     }
 
     [Fact]
-    public async Task BindModelAsync_ShouldNormalizeInvalidBodyPageSizeToTwentyRows()
+    public async Task BindModelAsync_ShouldPreserveInvalidBodyPagingForValidation()
     {
         const string json = """
         {
@@ -110,8 +113,8 @@ public class PagedRequestModelBinderTests
 
         var request = await BindAsync(HttpMethods.Post, json);
 
-        Assert.Equal(1, request.PageNumber);
-        Assert.Equal(20, request.PageSize);
+        Assert.Equal(0, request.PageNumber);
+        Assert.Equal(0, request.PageSize);
         Assert.Equal("Korçay", request.Search);
         Assert.NotNull(request.Filters);
         Assert.Empty(request.Filters);
@@ -131,6 +134,33 @@ public class PagedRequestModelBinderTests
 
         Assert.NotNull(request.SearchFields);
         Assert.Empty(request.SearchFields);
+        Assert.True(request.SearchFieldsSpecified);
+    }
+
+    [Fact]
+    public async Task BindModelAsync_ShouldDistinguishMissingSearchFieldsFromExplicitEmptySelection()
+    {
+        var missing = await BindAsync(HttpMethods.Post, """{ "search": "BATCH-001" }""");
+        var explicitEmpty = await BindAsync(HttpMethods.Post, """{ "search": "BATCH-001", "searchFields": [] }""");
+
+        Assert.False(missing.SearchFieldsSpecified);
+        Assert.True(explicitEmpty.SearchFieldsSpecified);
+        Assert.Throws<PagedQueryValidationException>(() => QueryHelper.ValidateRequestContract(explicitEmpty));
+    }
+
+    [Fact]
+    public async Task BindModelAsync_ShouldBindDerivedIsoDateFromLegacyGetQuery()
+    {
+        var binder = new PagedRequestModelBinder();
+        var httpContext = new DefaultHttpContext();
+        httpContext.Request.Method = HttpMethods.Get;
+        httpContext.Request.QueryString = new QueryString("?baslangicTarihi=2026-08-19");
+        var bindingContext = CreateBindingContext(httpContext, typeof(GoodsReceiptShipmentMovementPagedRequest));
+
+        await binder.BindModelAsync(bindingContext);
+
+        var request = Assert.IsType<GoodsReceiptShipmentMovementPagedRequest>(bindingContext.Result.Model);
+        Assert.Equal(new DateTime(2026, 8, 19), request.BaslangicTarihi);
     }
 
     private static async Task<PagedRequest> BindAsync(string method, string? json = null)
@@ -153,7 +183,7 @@ public class PagedRequestModelBinderTests
         return Assert.IsType<PagedRequest>(bindingContext.Result.Model);
     }
 
-    private static DefaultModelBindingContext CreateBindingContext(HttpContext httpContext)
+    private static DefaultModelBindingContext CreateBindingContext(HttpContext httpContext, Type? modelType = null)
     {
         var modelState = new ModelStateDictionary();
         var actionContext = new ActionContext(
@@ -166,7 +196,7 @@ public class PagedRequestModelBinderTests
         return new DefaultModelBindingContext
         {
             ActionContext = actionContext,
-            ModelMetadata = metadataProvider.GetMetadataForType(typeof(PagedRequest)),
+            ModelMetadata = metadataProvider.GetMetadataForType(modelType ?? typeof(PagedRequest)),
             ModelName = "request",
             ModelState = modelState,
             ValueProvider = new QueryStringValueProvider(
