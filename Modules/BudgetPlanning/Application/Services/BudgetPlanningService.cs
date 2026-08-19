@@ -1012,6 +1012,14 @@ public class BudgetPlanningService : IBudgetPlanningService
             .AsNoTracking()
             .Where(x => x.BudgetPlanId == budgetPlanId && x.EffectiveYear.HasValue && x.EffectiveMonth.HasValue && !x.IsDeleted)
             .ToListAsync();
+        var calibrations = await _unitOfWork.Db.BudgetCalibrationDefinitions
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted)
+            .ToListAsync();
+        var mortalityRates = await _unitOfWork.Db.BudgetMortalityRateDefinitions
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted)
+            .ToListAsync();
         var existingSales = await _unitOfWork.Db.BudgetPlanSalesLines
             .Where(x => x.BudgetPlanId == budgetPlanId && !x.IsDeleted)
             .ToListAsync();
@@ -1027,7 +1035,13 @@ public class BudgetPlanningService : IBudgetPlanningService
             .Select(x => new SalesPlanningSeed(x.BudgetPlanFishBatchId, x.Year, x.Month, x.MarketType, x.SalesTon))
             .Append(new SalesPlanningSeed(dto.BudgetPlanFishBatchId, dto.Year, dto.Month, dto.MarketType, Round(dto.SalesTon)))
             .ToList();
-        var capacity = BuildSalesPlanningRows(batches, projections, adjustments, prospectiveSales);
+        var capacity = BuildSalesPlanningRows(
+            batches,
+            projections,
+            adjustments,
+            prospectiveSales,
+            calibrations,
+            mortalityRates);
         if (capacity.ErrorMessage != null)
         {
             return ApiResponse<BudgetPlanSalesLineDto>.ErrorResult(
@@ -1221,11 +1235,21 @@ public class BudgetPlanningService : IBudgetPlanningService
             .AsNoTracking()
             .Where(x => x.BudgetPlanId == budgetPlanId && x.EffectiveYear.HasValue && x.EffectiveMonth.HasValue && !x.IsDeleted)
             .ToListAsync();
+        var calibrations = await _unitOfWork.Db.BudgetCalibrationDefinitions
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted)
+            .ToListAsync();
+        var mortalityRates = await _unitOfWork.Db.BudgetMortalityRateDefinitions
+            .AsNoTracking()
+            .Where(x => !x.IsDeleted)
+            .ToListAsync();
         var capacity = BuildSalesPlanningRows(
             batches,
             projections,
             adjustments,
-            sales.Select(x => new SalesPlanningSeed(x.BudgetPlanFishBatchId, x.Year, x.Month, x.MarketType, x.SalesTon)).ToList());
+            sales.Select(x => new SalesPlanningSeed(x.BudgetPlanFishBatchId, x.Year, x.Month, x.MarketType, x.SalesTon)).ToList(),
+            calibrations,
+            mortalityRates);
 
         return ApiResponse<List<BudgetSalesPlanningRowDto>>.SuccessResult(capacity.Rows, "Islem basarili.");
     }
@@ -2946,7 +2970,9 @@ public class BudgetPlanningService : IBudgetPlanningService
         IReadOnlyCollection<BudgetPlanFishBatch> batches,
         IReadOnlyCollection<BudgetPlanMonthlyProjection> projections,
         IReadOnlyCollection<BudgetPlanFishBatchAdjustment> adjustments,
-        IReadOnlyCollection<SalesPlanningSeed> sales)
+        IReadOnlyCollection<SalesPlanningSeed> sales,
+        List<BudgetCalibrationDefinition>? calibrations = null,
+        List<BudgetMortalityRateDefinition>? mortalityRates = null)
     {
         var result = new List<BudgetSalesPlanningRowDto>();
         string? errorMessage = null;
@@ -3043,7 +3069,26 @@ public class BudgetPlanningService : IBudgetPlanningService
                     RemainingCount = afterSalesLiveCount
                 });
 
-                liveCount = afterSalesLiveCount;
+                var mortalityCount = 0;
+                if (calibrations != null && mortalityRates != null)
+                {
+                    var calibration = FindCalibration(calibrations, CeilingWholeGram(afterSalesAverageGram));
+                    var mortalityRate = FindMortalityRateDefinition(
+                        mortalityRates,
+                        batch.FishStockId,
+                        calibration?.Id,
+                        projection.MonthIndex);
+                    mortalityCount = Math.Min(
+                        afterSalesLiveCount,
+                        (int)Math.Round(
+                            afterSalesLiveCount * (mortalityRate?.MortalityRatePercent ?? 0m) / 100m,
+                            MidpointRounding.AwayFromZero));
+                }
+
+                // Sales happen before monthly mortality. The current row keeps the
+                // immediate post-sale remainder, while the next month's available
+                // stock must carry the mortality-adjusted count forward.
+                liveCount = Math.Max(0, afterSalesLiveCount - mortalityCount);
                 averageGram = afterSalesAverageGram;
             }
         }

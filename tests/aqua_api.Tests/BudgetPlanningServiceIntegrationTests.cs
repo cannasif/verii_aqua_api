@@ -1416,6 +1416,129 @@ public class BudgetPlanningServiceIntegrationTests
     }
 
     [Fact]
+    public async Task SalesPlanning_CarriesMonthlyMortalityForward_AndRejectsExcessTon()
+    {
+        await using var fixture = await CreateFixtureAsync();
+        var db = fixture.Db;
+        var service = fixture.Service;
+
+        var fishStock = new Stock { ErpStockCode = "MORT-CAP-FISH", StockName = "Mortality Capacity Fish", Unit = "AD" };
+        db.Stocks.Add(fishStock);
+        await db.SaveChangesAsync();
+
+        var plan = new BudgetPlan
+        {
+            BudgetNo = "BUD-MORT-CAPACITY",
+            BudgetCode = "MORT-CAPACITY",
+            BudgetName = "Mortality Capacity",
+            StartYear = 2026,
+            StartMonth = 4,
+            EndYear = 2026,
+            EndMonth = 6,
+            Status = BudgetPlanStatus.GrowthCalculated
+        };
+        db.BudgetPlans.Add(plan);
+        await db.SaveChangesAsync();
+
+        var project = new BudgetPlanProject
+        {
+            BudgetPlanId = plan.Id,
+            SourceType = BudgetPlanSourceType.Virtual,
+            ProjectCode = "MORT-CAP-PROJECT",
+            ProjectName = "Mortality Capacity Project"
+        };
+        db.BudgetPlanProjects.Add(project);
+        await db.SaveChangesAsync();
+
+        var batch = new BudgetPlanFishBatch
+        {
+            BudgetPlanId = plan.Id,
+            BudgetPlanProjectId = project.Id,
+            SourceType = BudgetPlanSourceType.Virtual,
+            FishStockId = fishStock.Id,
+            BatchCode = "MORT-CAP-BATCH",
+            InitialLiveCount = 4_000,
+            InitialAverageGram = 1_000m,
+            InitialBiomassKg = 4_000m,
+            GrowthStartYear = 2026,
+            GrowthStartMonth = 4
+        };
+        db.BudgetPlanFishBatches.Add(batch);
+        await db.SaveChangesAsync();
+
+        foreach (var month in Enumerable.Range(4, 3))
+        {
+            db.BudgetPlanMonthlyProjections.Add(new BudgetPlanMonthlyProjection
+            {
+                BudgetPlanId = plan.Id,
+                BudgetPlanFishBatchId = batch.Id,
+                Year = 2026,
+                Month = month,
+                MonthIndex = month - 3,
+                OpeningLiveCount = 4_000,
+                OpeningAverageGram = 1_000m,
+                OpeningBiomassKg = 4_000m,
+                MonthlyGrowthGram = 0m,
+                ClosingAverageGram = 1_000m,
+                ClosingLiveCount = 4_000,
+                ClosingBiomassKg = 4_000m
+            });
+        }
+
+        var calibration = new BudgetCalibrationDefinition
+        {
+            CalibrationCode = "MORT-CAP-ALL",
+            CalibrationInfo = "0 - 9999 gr"
+        };
+        db.BudgetCalibrationDefinitions.Add(calibration);
+        await db.SaveChangesAsync();
+        db.BudgetMortalityRateDefinitions.Add(new BudgetMortalityRateDefinition
+        {
+            FishStockId = fishStock.Id,
+            CalibrationDefinitionId = calibration.Id,
+            MortalityRatePercent = 10m
+        });
+        await db.SaveChangesAsync();
+
+        var initialRows = await service.GetSalesPlanningRowsAsync(plan.Id);
+        Assert.True(initialRows.Success, initialRows.Message);
+        var initialCapacityRows = Assert.IsType<List<BudgetSalesPlanningRowDto>>(initialRows.Data);
+        Assert.Equal(4_000, initialCapacityRows.Single(x => x.Month == 4).AvailableCount);
+        Assert.Equal(3_600, initialCapacityRows.Single(x => x.Month == 5).AvailableCount);
+        Assert.Equal(3_240, initialCapacityRows.Single(x => x.Month == 6).AvailableCount);
+
+        var maySale = await service.UpsertSalesTonAsync(plan.Id, new UpsertBudgetPlanSalesTonDto
+        {
+            BudgetPlanFishBatchId = batch.Id,
+            Year = 2026,
+            Month = 5,
+            SalesTon = 1m
+        });
+        Assert.True(maySale.Success, maySale.Message);
+
+        var afterMaySale = await service.GetSalesPlanningRowsAsync(plan.Id);
+        Assert.True(afterMaySale.Success, afterMaySale.Message);
+        var revisedCapacityRows = Assert.IsType<List<BudgetSalesPlanningRowDto>>(afterMaySale.Data);
+        Assert.Equal(3_600, revisedCapacityRows.Single(x => x.Month == 5).AvailableCount);
+        Assert.Equal(2_600, revisedCapacityRows.Single(x => x.Month == 5).RemainingCount);
+        Assert.Equal(2_340, revisedCapacityRows.Single(x => x.Month == 6).AvailableCount);
+
+        var excess = await service.UpsertSalesTonAsync(plan.Id, new UpsertBudgetPlanSalesTonDto
+        {
+            BudgetPlanFishBatchId = batch.Id,
+            Year = 2026,
+            Month = 6,
+            SalesTon = 2.341m
+        });
+
+        Assert.False(excess.Success);
+        Assert.Equal(400, excess.StatusCode);
+        Assert.Contains("en fazla 2,34 ton", excess.Message);
+        Assert.Contains("2.340 adet", excess.Message);
+        Assert.False(await db.BudgetPlanSalesLines.AnyAsync(x => x.BudgetPlanId == plan.Id && x.Month == 6));
+    }
+
+    [Fact]
     public async Task Calculate_DistributesDomesticAndForeignSalesByCalibrationAndPrice()
     {
         await using var fixture = await CreateFixtureAsync();
