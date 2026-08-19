@@ -207,6 +207,9 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.Equal(307_493.73m, row.BiomassKg);
         Assert.Equal(719.339m, row.AverageGram);
         Assert.Equal(new DateTime(2026, 7, 20), row.AsOfDate);
+        Assert.Equal(project.StartDate, row.ProjectStartDate);
+        Assert.Equal(fishBatch.StartDate, row.FishEntryDate);
+        Assert.False(row.HasSufficientGrowthDefinition);
 
         balance.LiveCount = 427_467;
         balance.AverageGram = 719.339m;
@@ -273,7 +276,7 @@ public class BudgetPlanningServiceIntegrationTests
         {
             ProjectCode = "HIST-PROJECT",
             ProjectName = "Historical Project",
-            StartDate = new DateTime(2026, 3, 1),
+            StartDate = new DateTime(2026, 2, 1),
             Status = DocumentStatus.Posted
         };
         db.AddRange(stock, cage, project);
@@ -286,7 +289,7 @@ public class BudgetPlanningServiceIntegrationTests
             FishStockId = stock.Id,
             BatchCode = "HIST-BATCH",
             CurrentAverageGram = 250m,
-            StartDate = project.StartDate
+            StartDate = new DateTime(2026, 3, 1)
         };
         db.AddRange(projectCage, fishBatch);
         await db.SaveChangesAsync();
@@ -350,6 +353,23 @@ public class BudgetPlanningServiceIntegrationTests
             EndMonth = 12
         };
         db.BudgetPlans.Add(plan);
+        var growthProfile = new BudgetFishGrowthProfile
+        {
+            StockId = stock.Id,
+            StartMonth = 3,
+            Name = "Levrek March profile"
+        };
+        for (var monthNo = 1; monthNo <= 10; monthNo++)
+        {
+            growthProfile.Lines.Add(new BudgetFishGrowthProfileLine
+            {
+                GrowthMonthNo = monthNo,
+                CalendarMonth = ((monthNo + 1) % 12) + 1,
+                MonthlyGrowthGram = 10m,
+                TotalGram = monthNo * 10m
+            });
+        }
+        db.BudgetFishGrowthProfiles.Add(growthProfile);
         await db.SaveChangesAsync();
 
         var available = await fixture.Service.GetAvailableFishBatchesAsync(plan.Id);
@@ -358,6 +378,16 @@ public class BudgetPlanningServiceIntegrationTests
         Assert.Equal(150m, opening.AverageGram);
         Assert.Equal(150m, opening.BiomassKg);
         Assert.Equal(new DateTime(2026, 3, 31, 23, 59, 59), opening.AsOfDate);
+        Assert.Equal(project.StartDate, opening.ProjectStartDate);
+        Assert.Equal(fishBatch.StartDate, opening.FishEntryDate);
+        Assert.Equal(2, opening.MonthsInProjectAtBudgetStart);
+        Assert.Equal(1, opening.MonthsInSystemAtBudgetStart);
+        Assert.Equal(2, opening.FirstBudgetGrowthMonthNo);
+        Assert.Equal(10, opening.LastBudgetGrowthMonthNo);
+        Assert.Equal(growthProfile.Id, opening.GrowthProfileId);
+        Assert.Equal(growthProfile.Name, opening.GrowthProfileName);
+        Assert.True(opening.IsExactGrowthProfileMatch);
+        Assert.True(opening.HasSufficientGrowthDefinition);
 
         var imported = await fixture.Service.AddActualFishBatchesAsync(plan.Id, new AddActualFishBatchesToBudgetDto
         {

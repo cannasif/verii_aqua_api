@@ -519,6 +519,8 @@ public class BudgetPlanningService : IBudgetPlanningService
                     FishCount: group.Sum(x => x.FishCount),
                     BiomassGram: group.Sum(x => x.BiomassGram),
                     AsOfDate: group.Max(x => x.AsOfDate)));
+        var growthProfiles = await LoadGrowthProfilesAsync();
+        var currentPeriod = DateTimeProvider.Now;
 
         var rows = cageBalances
             .Select(x => new BalanceSeed(x.FishBatch!, x.LiveCount, x.AverageGram, x.BiomassGram, x.AsOfDate))
@@ -538,7 +540,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                     ? 0m
                     : Math.Max(0m, balanceBiomassGram - unrepresentedBiomassGram) / 1000m;
                 var averageGram = liveCount <= 0 ? first.CurrentAverageGram : (biomassKg * 1000m) / liveCount;
-                return new BudgetAvailableFishBatchDto
+                var row = new BudgetAvailableFishBatchDto
                 {
                     FishBatchId = first.Id,
                     ProjectId = first.ProjectId,
@@ -557,6 +559,15 @@ public class BudgetPlanningService : IBudgetPlanningService
                     GrowthStartYear = first.StartDate.Year,
                     GrowthStartMonth = first.StartDate.Month
                 };
+                ApplyAvailabilityGrowthContext(
+                    row,
+                    first,
+                    currentPeriod.Year,
+                    currentPeriod.Month,
+                    currentPeriod.Year,
+                    currentPeriod.Month,
+                    growthProfiles);
+                return row;
             })
             .Where(x => x.LiveCount > 0 && x.BiomassKg > 0)
             .OrderBy(x => x.ProjectCode)
@@ -650,6 +661,7 @@ public class BudgetPlanningService : IBudgetPlanningService
             .GroupBy(x => x.FishBatchId)
             .ToDictionary(x => x.Key, x => (Count: x.Sum(y => y.FishCount), Biomass: x.Sum(y => y.BiomassGram)));
         var fallbackByBatch = currentSnapshots.ToDictionary(x => x.FishBatchId);
+        var growthProfiles = await LoadGrowthProfilesAsync();
 
         var rows = new List<BudgetAvailableFishBatchDto>();
         foreach (var fishBatch in fishBatches)
@@ -682,7 +694,7 @@ public class BudgetPlanningService : IBudgetPlanningService
                 continue;
             }
 
-            rows.Add(new BudgetAvailableFishBatchDto
+            var row = new BudgetAvailableFishBatchDto
             {
                 FishBatchId = fishBatch.Id,
                 ProjectId = fishBatch.ProjectId,
@@ -698,7 +710,16 @@ public class BudgetPlanningService : IBudgetPlanningService
                 AsOfDate = asOfDate,
                 GrowthStartYear = fishBatch.StartDate.Year,
                 GrowthStartMonth = fishBatch.StartDate.Month
-            });
+            };
+            ApplyAvailabilityGrowthContext(
+                row,
+                fishBatch,
+                plan.StartYear,
+                plan.StartMonth,
+                plan.EndYear,
+                plan.EndMonth,
+                growthProfiles);
+            rows.Add(row);
         }
 
         return ApiResponse<List<BudgetAvailableFishBatchDto>>.SuccessResult(
@@ -2730,25 +2751,99 @@ public class BudgetPlanningService : IBudgetPlanningService
         List<BudgetFishGrowthProfile> profiles,
         BudgetPlanFishBatch batch)
     {
+        return FindGrowthProfile(
+            profiles,
+            batch.FishStockId,
+            batch.GrowthStartMonth,
+            batch.FishStock?.StockName);
+    }
+
+    private static BudgetFishGrowthProfile? FindGrowthProfile(
+        List<BudgetFishGrowthProfile> profiles,
+        long fishStockId,
+        int growthStartMonth,
+        string? fishStockName)
+    {
         var exactProfile = profiles.FirstOrDefault(x =>
-            x.StockId == batch.FishStockId &&
-            x.StartMonth == batch.GrowthStartMonth);
+            x.StockId == fishStockId &&
+            x.StartMonth == growthStartMonth);
         if (exactProfile != null)
         {
             return exactProfile;
         }
 
-        var speciesKey = FindFishSpeciesKey(batch.FishStock?.StockName);
+        var speciesKey = FindFishSpeciesKey(fishStockName);
         if (speciesKey == null)
         {
             return null;
         }
 
         return profiles
-            .Where(x => x.StartMonth == batch.GrowthStartMonth)
+            .Where(x => x.StartMonth == growthStartMonth)
             .Where(x => FindFishSpeciesKey(x.Stock?.StockName) == speciesKey)
             .OrderBy(x => x.Id)
             .FirstOrDefault();
+    }
+
+    private async Task<List<BudgetFishGrowthProfile>> LoadGrowthProfilesAsync()
+    {
+        return await _unitOfWork.Db.BudgetFishGrowthProfiles
+            .AsNoTracking()
+            .Include(x => x.Stock)
+            .Include(x => x.Lines)
+            .Where(x => !x.IsDeleted)
+            .ToListAsync();
+    }
+
+    private static void ApplyAvailabilityGrowthContext(
+        BudgetAvailableFishBatchDto row,
+        FishBatch fishBatch,
+        int budgetStartYear,
+        int budgetStartMonth,
+        int budgetEndYear,
+        int budgetEndMonth,
+        List<BudgetFishGrowthProfile> growthProfiles)
+    {
+        var projectStartDate = fishBatch.Project?.StartDate ?? fishBatch.StartDate;
+        var elapsedProjectMonths = MonthsBetween(
+            projectStartDate.Year,
+            projectStartDate.Month,
+            budgetStartYear,
+            budgetStartMonth);
+        var elapsedFishMonths = MonthsBetween(
+            fishBatch.StartDate.Year,
+            fishBatch.StartDate.Month,
+            budgetStartYear,
+            budgetStartMonth);
+        var firstGrowthMonthNo = ResolveGrowthMonthNo(Math.Max(0, elapsedFishMonths));
+        var planMonthCount = MonthsBetween(
+            budgetStartYear,
+            budgetStartMonth,
+            budgetEndYear,
+            budgetEndMonth) + 1;
+        var lastGrowthMonthNo = firstGrowthMonthNo + Math.Max(1, planMonthCount) - 1;
+        var profile = FindGrowthProfile(
+            growthProfiles,
+            fishBatch.FishStockId,
+            fishBatch.StartDate.Month,
+            fishBatch.FishStock?.StockName);
+        var definedGrowthMonths = profile?.Lines
+            .Where(x => !x.IsDeleted)
+            .Select(x => x.GrowthMonthNo)
+            .ToHashSet() ?? [];
+
+        row.ProjectStartDate = projectStartDate;
+        row.FishEntryDate = fishBatch.StartDate;
+        row.MonthsInProjectAtBudgetStart = Math.Max(0, elapsedProjectMonths);
+        row.MonthsInSystemAtBudgetStart = Math.Max(0, elapsedFishMonths);
+        row.FirstBudgetGrowthMonthNo = firstGrowthMonthNo;
+        row.LastBudgetGrowthMonthNo = lastGrowthMonthNo;
+        row.GrowthProfileId = profile?.Id;
+        row.GrowthProfileName = profile?.Name;
+        row.IsExactGrowthProfileMatch = profile?.StockId == fishBatch.FishStockId;
+        row.HasSufficientGrowthDefinition = profile != null &&
+            Enumerable.Range(firstGrowthMonthNo, lastGrowthMonthNo - firstGrowthMonthNo + 1)
+                .All(definedGrowthMonths.Contains);
     }
 
     private static string? FindFishSpeciesKey(string? stockName)

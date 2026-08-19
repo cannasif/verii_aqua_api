@@ -146,6 +146,16 @@ public class BudgetAvailableFishBatchDto
     public DateTime AsOfDate { get; set; }
     public int GrowthStartYear { get; set; }
     public int GrowthStartMonth { get; set; }
+    public DateTime ProjectStartDate { get; set; }
+    public DateTime FishEntryDate { get; set; }
+    public int MonthsInProjectAtBudgetStart { get; set; }
+    public int MonthsInSystemAtBudgetStart { get; set; }
+    public int FirstBudgetGrowthMonthNo { get; set; }
+    public int LastBudgetGrowthMonthNo { get; set; }
+    public long? GrowthProfileId { get; set; }
+    public string? GrowthProfileName { get; set; }
+    public bool IsExactGrowthProfileMatch { get; set; }
+    public bool HasSufficientGrowthDefinition { get; set; }
 }
 
 public class UpsertBudgetPlanSalesLineDto
