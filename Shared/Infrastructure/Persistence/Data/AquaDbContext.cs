@@ -118,17 +118,6 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-            {
-                foreach (var property in entityType.GetProperties())
-                {
-                    if (property.ClrType == typeof(decimal) || property.ClrType == typeof(decimal?))
-                    {
-                        property.SetColumnType("decimal(18,6)");
-                    }
-                }
-            }
-
             modelBuilder.Entity<RII_FN_KUR>(entity =>
             {
                 entity.HasNoKey();
@@ -242,6 +231,22 @@ namespace aqua_api.Shared.Infrastructure.Persistence.Data
             });
 
             modelBuilder.ApplyConfigurationsFromAssembly(typeof(AquaDbContext).Assembly);
+
+            // Keep every persisted decimal value at the same database precision.
+            // This runs after entity configurations so field-specific legacy
+            // precision declarations cannot silently reduce gram or amount values.
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                foreach (var property in entityType.GetProperties())
+                {
+                    if (property.ClrType == typeof(decimal) || property.ClrType == typeof(decimal?))
+                    {
+                        property.SetPrecision(28);
+                        property.SetScale(8);
+                        property.SetColumnType("decimal(28,8)");
+                    }
+                }
+            }
         }
     }
 }

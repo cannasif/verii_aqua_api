@@ -33,4 +33,39 @@ public sealed class AquaModelNamingConventionTests
             "RII table names must stay uppercase snake_case to match production SQL table renames. Invalid names: " +
             string.Join(", ", invalidTableNames));
     }
+
+    [Fact]
+    public void DecimalProperties_ShouldUsePrecision28Scale8()
+    {
+        var options = new DbContextOptionsBuilder<AquaDbContext>()
+            .UseSqlServer("Server=(local);Database=ModelOnly;Trusted_Connection=True;TrustServerCertificate=True;")
+            .Options;
+
+        using var db = new AquaDbContext(options);
+
+        var invalidProperties = db.Model
+            .GetEntityTypes()
+            .SelectMany(entityType => entityType.GetProperties()
+                .Where(property => property.ClrType == typeof(decimal) || property.ClrType == typeof(decimal?))
+                .Select(property => new
+                {
+                    Name = $"{entityType.DisplayName()}.{property.Name}",
+                    Precision = property.GetPrecision(),
+                    Scale = property.GetScale(),
+                    ColumnType = property.GetColumnType()
+                }))
+            .Where(property =>
+                property.Precision != 28 ||
+                property.Scale != 8 ||
+                !string.Equals(property.ColumnType, "decimal(28,8)", StringComparison.OrdinalIgnoreCase))
+            .Select(property =>
+                $"{property.Name} ({property.ColumnType}, {property.Precision},{property.Scale})")
+            .OrderBy(property => property, StringComparer.Ordinal)
+            .ToList();
+
+        Assert.True(
+            invalidProperties.Count == 0,
+            "All decimal properties must use decimal(28,8). Invalid properties: " +
+            string.Join(", ", invalidProperties));
+    }
 }
