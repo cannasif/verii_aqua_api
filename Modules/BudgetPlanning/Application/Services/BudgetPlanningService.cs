@@ -12,6 +12,28 @@ public class BudgetPlanningService : IBudgetPlanningService
 {
     private const string ErpExchangeRateSourceType = "ERP";
     private const string ErpExchangeRateSourceName = "MAVIDEN..TB_PBI_DOVIZ";
+    private static readonly IReadOnlyDictionary<string, string> PlanPagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["BudgetNo"] = "BudgetNo",
+        ["BudgetCode"] = "BudgetCode",
+        ["BudgetName"] = "BudgetName",
+        ["StartYear"] = "StartYear",
+        ["StartMonth"] = "StartMonth",
+        ["EndYear"] = "EndYear",
+        ["EndMonth"] = "EndMonth",
+        ["Status"] = "Status",
+        ["Description"] = "Description",
+        ["CalculatedAt"] = "CalculatedAt"
+    };
+    private static readonly IReadOnlyDictionary<string, string> MortalityRatePagedColumns = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["FishStockCode"] = "FishStock.ErpStockCode",
+        ["FishStockName"] = "FishStock.StockName",
+        ["CalibrationCode"] = "CalibrationDefinition.CalibrationCode",
+        ["GrowthMonthNo"] = "GrowthMonthNo",
+        ["MortalityRatePercent"] = "MortalityRatePercent",
+        ["Description"] = "Description"
+    };
     private readonly IUnitOfWork _unitOfWork;
     private readonly IBudgetExchangeRateReadService? _exchangeRateReadService;
 
@@ -33,11 +55,11 @@ public class BudgetPlanningService : IBudgetPlanningService
             .Include(x => x.FishBatches)
             .Include(x => x.MonthlyProjections)
             .Where(x => !x.IsDeleted)
-            .ApplySearch(request)
-            .ApplyFilters(request.Filters, request.FilterLogic);
+            .ApplySearch(request, PlanPagedColumns)
+            .ApplyFilters(request.Filters, request.FilterLogic, PlanPagedColumns);
 
         var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(BudgetPlan.Id) : request.SortBy;
-        query = query.ApplySorting(sortBy, request.SortDirection);
+        query = query.ApplySorting(sortBy, request.SortDirection, PlanPagedColumns);
 
         var totalCount = await query.CountAsync();
         var plans = await query.ApplyPagination(request.PageNumber, request.PageSize).ToListAsync();
@@ -2119,8 +2141,13 @@ public class BudgetPlanningService : IBudgetPlanningService
             .Include(x => x.FishStock)
             .Include(x => x.CalibrationDefinition)
             .Where(x => !x.IsDeleted)
-            .ApplySearch(request)
-            .ApplyFilters(request.Filters, request.FilterLogic);
+            .ApplySearch(request, MortalityRatePagedColumns)
+            .ApplyFilters(request.Filters, request.FilterLogic, MortalityRatePagedColumns);
+
+        query = query.ApplySorting(
+            string.IsNullOrWhiteSpace(request.SortBy) ? nameof(BudgetMortalityRateDefinition.Id) : request.SortBy,
+            request.SortDirection,
+            MortalityRatePagedColumns);
 
         var totalCount = await query.CountAsync();
         var rows = await query.ApplyPagination(request.PageNumber, request.PageSize).ToListAsync();

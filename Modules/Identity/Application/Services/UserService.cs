@@ -13,13 +13,24 @@ namespace aqua_api.Modules.Identity.Application.Services
 {
     public class UserService : IUserService
     {
-        private static readonly string[] UserSearchableColumns =
+        private static readonly IReadOnlyDictionary<string, string> UserSearchableColumns =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            [nameof(User.Id)] = nameof(User.Id),
+            [nameof(User.Username)] = nameof(User.Username),
+            [nameof(User.Email)] = nameof(User.Email),
+            [nameof(User.FirstName)] = nameof(User.FirstName),
+            [nameof(User.LastName)] = nameof(User.LastName),
+            ["Role"] = "RoleNavigation.Title"
+        };
+
+        private static readonly string[] DefaultUserSearchFields =
         {
             nameof(User.Username),
             nameof(User.Email),
             nameof(User.FirstName),
             nameof(User.LastName),
-            "RoleNavigation.Title"
+            "Role"
         };
 
         private const long UserRoleId = 1;
@@ -79,8 +90,7 @@ namespace aqua_api.Modules.Identity.Application.Services
 
                 var columnMapping = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
                 {
-                    { "role", "RoleNavigation.Title" },
-                    { "managerFullName", "ManagerUser.FirstName" }
+                    { "role", "RoleNavigation.Title" }
                 };
 
                 var query = _uow.Users.Query()
@@ -91,37 +101,40 @@ namespace aqua_api.Modules.Identity.Application.Services
                     .Include(u => u.CreatedByUser)
                     .Include(u => u.UpdatedByUser)
                     .Include(u => u.DeletedByUser)
-                    .ApplySearch(request, UserSearchableColumns);
+                    .ApplySearch(request, UserSearchableColumns, DefaultUserSearchFields);
 
-                var fullNameFilters = request.Filters
+                var customNameFilters = (request.Filters ?? [])
                     .Where(f => string.Equals(f.Column, "fullName", StringComparison.OrdinalIgnoreCase)
-                        && string.Equals(f.Operator, "contains", StringComparison.OrdinalIgnoreCase)
-                        && !string.IsNullOrWhiteSpace(f.Value))
+                        || string.Equals(f.Column, "managerFullName", StringComparison.OrdinalIgnoreCase))
                     .ToList();
 
-                foreach (var filter in fullNameFilters)
-                {
-                    var terms = filter.Value
-                        .Trim()
-                        .ToLowerInvariant()
-                        .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                var remainingFilters = (request.Filters ?? [])
+                    .Where(f => !string.Equals(f.Column, "fullName", StringComparison.OrdinalIgnoreCase)
+                        && !string.Equals(f.Column, "managerFullName", StringComparison.OrdinalIgnoreCase))
+                    .ToList();
 
-                    foreach (var term in terms)
+                if (request.FilterLogic.Equals("or", StringComparison.OrdinalIgnoreCase) && customNameFilters.Count > 0)
+                {
+                    IQueryable<long>? matchingIds = remainingFilters.Count == 0
+                        ? null
+                        : query.ApplyFilters(remainingFilters, "or", columnMapping).Select(user => user.Id);
+
+                    foreach (var filter in customNameFilters)
                     {
-                        var searchTerm = term;
-                        query = query.Where(u =>
-                            ((u.FirstName ?? string.Empty).ToLower().Contains(searchTerm)) ||
-                            ((u.LastName ?? string.Empty).ToLower().Contains(searchTerm)) ||
-                            ((u.Username ?? string.Empty).ToLower().Contains(searchTerm)) ||
-                            ((u.Email ?? string.Empty).ToLower().Contains(searchTerm)));
+                        var customIds = ApplyUserNameFilter(query, filter).Select(user => user.Id);
+                        matchingIds = matchingIds is null ? customIds : matchingIds.Union(customIds);
+                    }
+
+                    query = query.Where(user => matchingIds!.Contains(user.Id));
+                }
+                else
+                {
+                    query = query.ApplyFilters(remainingFilters, request.FilterLogic, columnMapping);
+                    foreach (var filter in customNameFilters)
+                    {
+                        query = ApplyUserNameFilter(query, filter);
                     }
                 }
-
-                var remainingFilters = request.Filters
-                    .Where(f => !string.Equals(f.Column, "fullName", StringComparison.OrdinalIgnoreCase))
-                    .ToList();
-
-                query = query.ApplyFilters(remainingFilters, request.FilterLogic, columnMapping);
 
                 var sortBy = request.SortBy ?? nameof(User.Id);
 
@@ -135,9 +148,11 @@ namespace aqua_api.Modules.Identity.Application.Services
                         ? query
                             .OrderByDescending(u => (u.FirstName ?? string.Empty) + " " + (u.LastName ?? string.Empty))
                             .ThenByDescending(u => u.Username)
+                            .ThenByDescending(u => u.Id)
                         : query
                             .OrderBy(u => (u.FirstName ?? string.Empty) + " " + (u.LastName ?? string.Empty))
-                            .ThenBy(u => u.Username);
+                            .ThenBy(u => u.Username)
+                            .ThenBy(u => u.Id);
                 }
                 else
                 {
@@ -165,6 +180,39 @@ namespace aqua_api.Modules.Identity.Application.Services
                     _loc.GetLocalizedString("UserService.GetAllUsersExceptionMessage", ex.Message),
                     StatusCodes.Status500InternalServerError);
             }
+        }
+
+        private static IQueryable<User> ApplyUserNameFilter(IQueryable<User> query, Filter filter)
+        {
+            var isManager = string.Equals(filter.Column, "managerFullName", StringComparison.OrdinalIgnoreCase);
+            var operation = filter.Operator?.Trim().ToLowerInvariant();
+            var value = filter.Value;
+            var requiresValue = operation is not ("isnull" or "isnotnull");
+            if (requiresValue && value is null)
+            {
+                throw new PagedQueryValidationException($"'{filter.Column}' filtresi için değer zorunludur.");
+            }
+
+            return (operation, isManager) switch
+            {
+                ("contains", false) => query.Where(user => ((user.FirstName ?? "") + " " + (user.LastName ?? "")).Contains(value!)),
+                ("notcontains", false) => query.Where(user => !((user.FirstName ?? "") + " " + (user.LastName ?? "")).Contains(value!)),
+                ("startswith", false) => query.Where(user => ((user.FirstName ?? "") + " " + (user.LastName ?? "")).StartsWith(value!)),
+                ("endswith", false) => query.Where(user => ((user.FirstName ?? "") + " " + (user.LastName ?? "")).EndsWith(value!)),
+                ("equals" or "eq" or "=", false) => query.Where(user => ((user.FirstName ?? "") + " " + (user.LastName ?? "")) == value),
+                ("notequals" or "ne" or "!=" or "<>", false) => query.Where(user => ((user.FirstName ?? "") + " " + (user.LastName ?? "")) != value),
+                ("isnull", false) => query.Where(user => user.FirstName == null && user.LastName == null),
+                ("isnotnull", false) => query.Where(user => user.FirstName != null || user.LastName != null),
+                ("contains", true) => query.Where(user => user.ManagerUser != null && ((user.ManagerUser.FirstName ?? "") + " " + (user.ManagerUser.LastName ?? "")).Contains(value!)),
+                ("notcontains", true) => query.Where(user => user.ManagerUser == null || !((user.ManagerUser.FirstName ?? "") + " " + (user.ManagerUser.LastName ?? "")).Contains(value!)),
+                ("startswith", true) => query.Where(user => user.ManagerUser != null && ((user.ManagerUser.FirstName ?? "") + " " + (user.ManagerUser.LastName ?? "")).StartsWith(value!)),
+                ("endswith", true) => query.Where(user => user.ManagerUser != null && ((user.ManagerUser.FirstName ?? "") + " " + (user.ManagerUser.LastName ?? "")).EndsWith(value!)),
+                ("equals" or "eq" or "=", true) => query.Where(user => user.ManagerUser != null && ((user.ManagerUser.FirstName ?? "") + " " + (user.ManagerUser.LastName ?? "")) == value),
+                ("notequals" or "ne" or "!=" or "<>", true) => query.Where(user => user.ManagerUser == null || ((user.ManagerUser.FirstName ?? "") + " " + (user.ManagerUser.LastName ?? "")) != value),
+                ("isnull", true) => query.Where(user => user.ManagerUser == null),
+                ("isnotnull", true) => query.Where(user => user.ManagerUser != null),
+                _ => throw new PagedQueryValidationException($"'{filter.Operator}' operatörü '{filter.Column}' kolonunda kullanılamaz.")
+            };
         }
 
         public async Task<ApiResponse<UserDto>> GetUserByIdAsync(long id)

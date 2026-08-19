@@ -54,7 +54,7 @@ namespace aqua_api.Modules.Budget.Application.Services
                 var query = BaseQuery()
                     .AsNoTracking()
                     .Where(x => !x.IsDeleted)
-                    .ApplySearch(request)
+                    .ApplySearch(request, ColumnMapping)
                     .ApplyFilters(request.Filters, request.FilterLogic, ColumnMapping);
 
                 var sortBy = string.IsNullOrWhiteSpace(request.SortBy) ? nameof(BudgetFeedConsumptionRate.WaterTemperatureId) : request.SortBy;
